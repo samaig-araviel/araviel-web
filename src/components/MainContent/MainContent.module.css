@@ -1,0 +1,32 @@
+/* ============================================
+   MAIN CONTENT STYLES
+   ============================================ */
+
+.main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  transition: margin-left var(--transition-slow);
+}
+
+.main.sidebarCollapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+@media (max-width: 1024px) {
+  .main {
+    margin-left: 240px;
+  }
+
+  .main.sidebarCollapsed {
+    margin-left: var(--sidebar-collapsed-width);
+  }
+}
+
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0 !important;
+  }
+}

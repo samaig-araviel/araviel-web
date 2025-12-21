@@ -1,0 +1,43 @@
+/* ============================================
+   AVATAR COMPONENT STYLES
+   ============================================ */
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #ffffff;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+/* Sizes */
+.sm {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.md {
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.lg {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+/* Variants */
+.primary {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+  box-shadow: 0 2px 8px rgba(217, 120, 70, 0.25);
+}
+
+.secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
