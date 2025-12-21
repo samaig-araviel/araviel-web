@@ -1,0 +1,457 @@
+/* ============================================
+   WELCOME SCREEN STYLES
+   ============================================ */
+
+.welcomeScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.welcomeContent {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* Greeting */
+.greeting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.logo {
+  color: var(--accent-primary);
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(217, 120, 70, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(217, 120, 70, 0.5));
+  }
+}
+
+.greetingText {
+  font-size: var(--font-3xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+/* Action Buttons */
+.actionsContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 4px 0;
+}
+
+.actions::-webkit-scrollbar {
+  display: none;
+}
+
+.actionButton {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  font-size: var(--font-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.actionButton:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.scrollButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+}
+
+.scrollButton:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--text-tertiary);
+}
+
+.scrollLeft {
+  left: -16px;
+}
+
+.scrollRight {
+  right: -16px;
+}
+
+/* Input Container */
+.inputContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 12px;
+  transition: all var(--transition-fast);
+}
+
+.inputContainer:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px var(--accent-lighter);
+}
+
+/* Attachments Preview */
+.attachmentsPreview {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.attachmentItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  max-width: 200px;
+}
+
+.attachmentImage {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.attachmentFile {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+
+.attachmentInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attachmentName {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachmentSize {
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+}
+
+.attachmentRemove {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.attachmentRemove:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+/* Input Wrapper */
+.inputWrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.attachWrapper {
+  position: relative;
+}
+
+.attachButton {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.attachButton:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--text-tertiary);
+}
+
+.attachMenu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  min-width: 200px;
+  box-shadow: var(--shadow-md);
+  animation: slideUp var(--transition-normal);
+  z-index: var(--z-dropdown);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.attachOption {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: var(--font-base);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.attachOption:hover {
+  background: var(--bg-secondary);
+}
+
+.attachOption svg {
+  color: var(--text-secondary);
+}
+
+.fileInput {
+  display: none;
+}
+
+/* Textarea */
+.textarea {
+  flex: 1;
+  min-height: 40px;
+  max-height: 200px;
+  padding: 10px 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: var(--font-base);
+  line-height: 1.5;
+  resize: none;
+}
+
+.textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Model Selector */
+.modelWrapper {
+  position: relative;
+}
+
+.modelButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: var(--font-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.modelButton:hover {
+  background: var(--bg-primary);
+  border-color: var(--text-tertiary);
+  color: var(--text-primary);
+}
+
+.modelName {
+  font-weight: 500;
+}
+
+.modelDropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 6px;
+  min-width: 280px;
+  box-shadow: var(--shadow-md);
+  animation: slideUp var(--transition-normal);
+  z-index: var(--z-dropdown);
+}
+
+.modelOption {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.modelOption:hover {
+  background: var(--bg-secondary);
+}
+
+.modelOption.active {
+  background: var(--accent-light);
+}
+
+.modelInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.modelOptionName {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modelDescription {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+}
+
+/* Submit Button */
+.submitButton {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.submitButton.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+  cursor: pointer;
+}
+
+.submitButton.active:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .welcomeScreen {
+    padding: 24px 16px;
+  }
+
+  .greetingText {
+    font-size: var(--font-xl);
+  }
+
+  .scrollButton {
+    display: none;
+  }
+
+  .inputWrapper {
+    flex-wrap: wrap;
+  }
+
+  .modelButton {
+    order: -1;
+    width: auto;
+  }
+
+  .textarea {
+    order: 0;
+    flex-basis: 100%;
+  }
+}

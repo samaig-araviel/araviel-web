@@ -1,0 +1,10 @@
+/* ============================================
+   APP LAYOUT STYLES
+   ============================================ */
+
+.app {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  position: relative;
+}
