@@ -7,16 +7,18 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   padding: 40px 24px;
-  max-width: 800px;
-  margin: 0 auto;
-  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .welcomeContent {
   display: flex;
   flex-direction: column;
   gap: 32px;
+  width: 100%;
+  max-width: 720px;
 }
 
 /* Greeting */
@@ -43,7 +45,7 @@
 }
 
 .greetingText {
-  font-size: var(--font-3xl);
+  font-size: 28px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.02em;
@@ -54,6 +56,9 @@
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0 20px;
 }
 
 .actions {
@@ -63,7 +68,9 @@
   scroll-behavior: smooth;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 4px 0;
+  padding: 4px;
+  justify-content: flex-start;
+  width: 100%;
 }
 
 .actions::-webkit-scrollbar {
@@ -88,6 +95,7 @@
   background: var(--accent-light);
   border-color: var(--accent-primary);
   color: var(--accent-primary);
+  transform: translateY(-1px);
 }
 
 .scrollButton {
@@ -115,11 +123,11 @@
 }
 
 .scrollLeft {
-  left: -16px;
+  left: 0;
 }
 
 .scrollRight {
-  right: -16px;
+  right: 0;
 }
 
 /* Input Container */
@@ -130,7 +138,7 @@
   background: var(--bg-tertiary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
-  padding: 12px;
+  padding: 16px;
   transition: all var(--transition-fast);
 }
 
@@ -150,7 +158,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 6px 10px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -179,6 +187,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
 }
 
 .attachmentName {
@@ -219,7 +228,7 @@
 .inputWrapper {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: 10px;
 }
 
 .attachWrapper {
@@ -238,6 +247,7 @@
   color: var(--text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .attachButton:hover {
@@ -303,7 +313,7 @@
   flex: 1;
   min-height: 40px;
   max-height: 200px;
-  padding: 10px 0;
+  padding: 10px 4px;
   background: transparent;
   border: none;
   outline: none;
@@ -335,6 +345,7 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .modelButton:hover {
@@ -425,33 +436,72 @@
 .submitButton.active:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
+  transform: scale(1.05);
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .welcomeScreen {
     padding: 24px 16px;
+    justify-content: flex-start;
+    padding-top: 60px;
+  }
+
+  .welcomeContent {
+    gap: 24px;
   }
 
   .greetingText {
-    font-size: var(--font-xl);
+    font-size: 22px;
+  }
+
+  .actionsContainer {
+    padding: 0;
   }
 
   .scrollButton {
     display: none;
   }
 
-  .inputWrapper {
-    flex-wrap: wrap;
+  .inputContainer {
+    padding: 12px;
   }
 
-  .modelButton {
-    order: -1;
-    width: auto;
+  .inputWrapper {
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .textarea {
     order: 0;
     flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .attachButton,
+  .submitButton {
+    width: 36px;
+    height: 36px;
+  }
+
+  .modelButton {
+    padding: 6px 10px;
+    font-size: var(--font-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .welcomeScreen {
+    padding: 16px 12px;
+    padding-top: 40px;
+  }
+
+  .greetingText {
+    font-size: 20px;
+  }
+
+  .actionButton {
+    padding: 8px 14px;
+    font-size: var(--font-sm);
   }
 }
