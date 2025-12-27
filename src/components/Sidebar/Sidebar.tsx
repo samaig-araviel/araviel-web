@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../../store';
 import { toggleSidebar, closeMobileSidebar } from '../../store/uiSlice';
 import { SidebarHeader } from './SidebarHeader';
@@ -12,8 +12,19 @@ import styles from './Sidebar.module.css';
 export const Sidebar: React.FC = () => {
   const dispatch = useAppDispatch();
   const { sidebarOpen, sidebarMobileOpen } = useAppSelector((state) => state.ui);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const isCollapsed = !sidebarOpen && !isMobile;
 
   const handleToggle = () => {
     if (isMobile) {
@@ -25,7 +36,7 @@ export const Sidebar: React.FC = () => {
 
   const sidebarClasses = [
     styles.sidebar,
-    !sidebarOpen && !isMobile ? styles.collapsed : '',
+    isCollapsed ? styles.collapsed : '',
     isMobile && sidebarMobileOpen ? styles.mobileOpen : '',
   ]
     .filter(Boolean)
@@ -42,12 +53,17 @@ export const Sidebar: React.FC = () => {
       )}
 
       <aside className={sidebarClasses}>
-        <SidebarHeader onToggle={handleToggle} isCollapsed={!sidebarOpen && !isMobile} />
-        <NewChatButton isCollapsed={!sidebarOpen && !isMobile} />
-        <ProjectsSection isCollapsed={!sidebarOpen && !isMobile} />
-        <NavigationItems isCollapsed={!sidebarOpen && !isMobile} />
-        <RecentsSection isCollapsed={!sidebarOpen && !isMobile} />
-        <ProfileSection isCollapsed={!sidebarOpen && !isMobile} />
+        <SidebarHeader onToggle={handleToggle} isCollapsed={isCollapsed} />
+        <NewChatButton isCollapsed={isCollapsed} />
+
+        {/* Scrollable content area */}
+        <div className={styles.scrollArea}>
+          <ProjectsSection isCollapsed={isCollapsed} />
+          <NavigationItems isCollapsed={isCollapsed} />
+          <RecentsSection isCollapsed={isCollapsed} />
+        </div>
+
+        <ProfileSection isCollapsed={isCollapsed} />
       </aside>
     </>
   );

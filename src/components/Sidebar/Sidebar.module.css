@@ -9,15 +9,27 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
   position: fixed;
   left: 0;
   top: 0;
-  transition: all var(--transition-slow);
+  transition: width var(--transition-slow), transform var(--transition-slow);
   z-index: var(--z-sidebar);
+  overflow: hidden;
 }
 
 .sidebar.collapsed {
   width: var(--sidebar-collapsed-width);
+}
+
+/* Scrollable content wrapper for middle sections */
+.scrollArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* Critical for flex overflow */
 }
 
 /* Mobile styles */
@@ -33,11 +45,12 @@
   .sidebar {
     transform: translateX(-100%);
     box-shadow: none;
+    width: 280px;
   }
 
   .sidebar.mobileOpen {
     transform: translateX(0);
-    box-shadow: 2px 0 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
   }
 }
 
