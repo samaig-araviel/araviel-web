@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Araviel - AI Lifestyle OS',
-  description: 'The calm AI assistant that intelligently routes your queries to the optimal AI model. Clarity, not chaos.',
-  keywords: ['AI', 'chat', 'GPT-4', 'Claude', 'Gemini', 'assistant', 'productivity'],
+  title: 'Araviel - Your Intelligent AI Companion',
+  description: 'Experience the next generation of AI assistance. Araviel intelligently routes your queries to the best AI model - Claude, GPT-4, or Gemini - for optimal results.',
+  keywords: ['AI', 'chat', 'GPT-4', 'Claude', 'Gemini', 'assistant', 'productivity', 'auto-routing'],
   authors: [{ name: 'Araviel' }],
 };
 
@@ -14,8 +14,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FAFBFC' },
-    { media: '(prefers-color-scheme: dark)', color: '#0F1117' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0f' },
   ],
 };
 
@@ -30,7 +30,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
         <script

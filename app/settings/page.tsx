@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAppStore } from '@/lib/store';
+import { MODELS, LEVELS } from '@/lib/constants';
+import { cn } from '@/lib/utils';
 import {
   ArrowLeft,
   Moon,
@@ -11,20 +13,27 @@ import {
   Shield,
   Download,
   Trash2,
-  User,
   Sparkles,
   Check,
+  Zap,
+  Cpu,
+  Globe,
+  Bell,
+  Volume2,
+  Palette,
+  ChevronRight,
+  MessageSquare,
+  Trophy,
+  Settings,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useAppStore } from '@/lib/store';
-import { Avatar } from '@/components/ui/Avatar';
-import { Button } from '@/components/ui/Button';
 import type { Theme, ModelSelection } from '@/types';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, theme, setTheme, updateUser, conversations } = useAppStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const currentLevel = LEVELS.find((l) => l.level === user.level) || LEVELS[0];
 
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
@@ -33,17 +42,16 @@ export default function SettingsPage() {
     } else if (newTheme === 'light') {
       document.documentElement.classList.remove('dark');
     } else {
-      // System theme
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.classList.toggle('dark', isDark);
     }
   };
 
-  const handleTrustModeToggle = () => {
+  const handleToggle = (key: 'autoRouting' | 'soundEffects' | 'animations') => {
     updateUser({
       preferences: {
         ...user.preferences,
-        trustMode: !user.preferences.trustMode,
+        [key]: !user.preferences[key],
       },
     });
   };
@@ -65,6 +73,8 @@ export default function SettingsPage() {
         preferences: user.preferences,
         xp: user.xp,
         streak: user.streak,
+        level: user.level,
+        achievements: user.achievements,
       },
       conversations: conversations.map((c) => ({
         title: c.title,
@@ -101,49 +111,49 @@ export default function SettingsPage() {
     { value: 'system', label: 'System', icon: Monitor },
   ];
 
-  const modelOptions: { value: ModelSelection; label: string; description: string }[] = [
-    { value: 'auto', label: 'Auto', description: 'Let Araviel choose the best model' },
-    { value: 'claude', label: 'Claude', description: 'Best for writing & analysis' },
-    { value: 'gpt4', label: 'GPT-4', description: 'Best for code & reasoning' },
-    { value: 'gemini', label: 'Gemini', description: 'Best for research & facts' },
+  const modelOptions: { value: ModelSelection; label: string; description: string; icon: typeof Zap }[] = [
+    { value: 'auto', label: 'Auto', description: 'Smart routing', icon: Zap },
+    { value: 'claude', label: 'Claude', description: 'Writing & analysis', icon: Sparkles },
+    { value: 'gpt4', label: 'GPT-4', description: 'Code & reasoning', icon: Cpu },
+    { value: 'gemini', label: 'Gemini', description: 'Research & facts', icon: Globe },
   ];
 
   return (
-    <div className="min-h-screen bg-background-primary pb-20 md:pb-0">
+    <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-border bg-background-secondary">
-        <div className="mx-auto flex max-w-2xl items-center gap-4 px-4 py-4">
+      <header className="sticky top-0 z-40 glass border-b border-[var(--border-primary)]">
+        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center gap-4">
           <button
             onClick={() => router.back()}
-            className="rounded-lg p-2 text-text-muted transition-colors hover:bg-background-tertiary hover:text-text-primary"
+            className="btn btn-ghost btn-icon"
+            aria-label="Back"
           >
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-lg font-semibold text-text-primary">Settings</h1>
+          <h1 className="text-lg font-semibold text-[var(--text-primary)]">Settings</h1>
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-6">
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6">
         {/* Profile Section */}
         <section className="mb-8">
-          <h2 className="mb-4 text-sm font-medium text-text-muted">Profile</h2>
-          <div className="rounded-xl border border-border bg-background-secondary p-4">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">
+            Profile
+          </h2>
+          <div className="card">
             <div className="flex items-center gap-4">
-              <Avatar
-                src={user.avatar}
-                alt={user.name}
-                fallback={user.name}
-                size="lg"
-              />
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
               <div className="flex-1">
-                <div className="text-base font-medium text-text-primary">{user.name}</div>
-                <div className="text-sm text-text-muted">{user.email}</div>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="rounded bg-accent-soft px-2 py-0.5 text-xs font-medium capitalize text-accent">
-                    {user.plan}
-                  </span>
-                  <span className="text-xs text-text-muted">
-                    {user.xp} XP · {user.streak} day streak
+                <div className="font-semibold text-[var(--text-primary)]">{user.name}</div>
+                <div className="text-sm text-[var(--text-muted)]">{user.email}</div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className={`level-badge level-${currentLevel.badge} w-6 h-6 text-xs`}>
+                    {user.level}
+                  </div>
+                  <span className="text-xs text-[var(--text-secondary)]">
+                    {currentLevel.name} · {user.xp.toLocaleString()} XP
                   </span>
                 </div>
               </div>
@@ -153,9 +163,14 @@ export default function SettingsPage() {
 
         {/* Appearance Section */}
         <section className="mb-8">
-          <h2 className="mb-4 text-sm font-medium text-text-muted">Appearance</h2>
-          <div className="rounded-xl border border-border bg-background-secondary p-4">
-            <div className="mb-3 text-sm font-medium text-text-primary">Theme</div>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">
+            Appearance
+          </h2>
+          <div className="card">
+            <div className="flex items-center gap-3 mb-4">
+              <Palette className="w-4 h-4 text-[var(--brand-primary)]" />
+              <span className="font-medium text-[var(--text-primary)]">Theme</span>
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {themeOptions.map((option) => {
                 const Icon = option.icon;
@@ -165,14 +180,14 @@ export default function SettingsPage() {
                     key={option.value}
                     onClick={() => handleThemeChange(option.value)}
                     className={cn(
-                      'flex flex-col items-center gap-2 rounded-lg border p-3 transition-all',
+                      'flex flex-col items-center gap-2 rounded-xl border p-4 transition-all',
                       isSelected
-                        ? 'border-accent bg-accent-soft'
-                        : 'border-border-subtle hover:border-border hover:bg-background-tertiary'
+                        ? 'border-[var(--brand-primary)] bg-[rgba(99,102,241,0.1)]'
+                        : 'border-[var(--border-primary)] hover:border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
                     )}
                   >
-                    <Icon className={cn('h-5 w-5', isSelected ? 'text-accent' : 'text-text-muted')} />
-                    <span className={cn('text-sm', isSelected ? 'text-accent font-medium' : 'text-text-secondary')}>
+                    <Icon className={cn('w-5 h-5', isSelected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]')} />
+                    <span className={cn('text-sm', isSelected ? 'text-[var(--brand-primary)] font-medium' : 'text-[var(--text-secondary)]')}>
                       {option.label}
                     </span>
                   </button>
@@ -184,64 +199,134 @@ export default function SettingsPage() {
 
         {/* AI Preferences Section */}
         <section className="mb-8">
-          <h2 className="mb-4 text-sm font-medium text-text-muted">AI Preferences</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">
+            AI Preferences
+          </h2>
           <div className="space-y-4">
             {/* Default Model */}
-            <div className="rounded-xl border border-border bg-background-secondary p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-accent" />
-                <span className="text-sm font-medium text-text-primary">Default Model</span>
+            <div className="card">
+              <div className="flex items-center gap-3 mb-4">
+                <Sparkles className="w-4 h-4 text-[var(--brand-primary)]" />
+                <span className="font-medium text-[var(--text-primary)]">Default Model</span>
               </div>
               <div className="space-y-2">
                 {modelOptions.map((option) => {
+                  const Icon = option.icon;
                   const isSelected = user.preferences.defaultModel === option.value;
                   return (
                     <button
                       key={option.value}
                       onClick={() => handleDefaultModelChange(option.value)}
                       className={cn(
-                        'flex w-full items-center justify-between rounded-lg border p-3 transition-all',
+                        'flex w-full items-center gap-3 rounded-xl border p-4 transition-all',
                         isSelected
-                          ? 'border-accent bg-accent-soft'
-                          : 'border-border-subtle hover:border-border hover:bg-background-tertiary'
+                          ? 'border-[var(--brand-primary)] bg-[rgba(99,102,241,0.1)]'
+                          : 'border-[var(--border-primary)] hover:border-[var(--border-secondary)] hover:bg-[var(--bg-tertiary)]'
                       )}
                     >
-                      <div className="text-left">
-                        <div className={cn('text-sm font-medium', isSelected ? 'text-accent' : 'text-text-primary')}>
+                      <Icon className={cn('w-5 h-5', isSelected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-muted)]')} />
+                      <div className="flex-1 text-left">
+                        <div className={cn('font-medium', isSelected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-primary)]')}>
                           {option.label}
                         </div>
-                        <div className="text-xs text-text-muted">{option.description}</div>
+                        <div className="text-xs text-[var(--text-muted)]">{option.description}</div>
                       </div>
-                      {isSelected && <Check className="h-4 w-4 text-accent" />}
+                      {isSelected && <Check className="w-5 h-5 text-[var(--brand-primary)]" />}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Trust Mode */}
-            <div className="rounded-xl border border-border bg-background-secondary p-4">
+            {/* Auto Routing Toggle */}
+            <div className="card">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background-tertiary">
-                    <Shield className="h-4 w-4 text-text-muted" />
+                  <div className="w-10 h-10 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center">
+                    <Zap className="w-5 h-5 text-[var(--brand-primary)]" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-text-primary">Trust Mode</div>
-                    <div className="text-xs text-text-muted">Allow more autonomous actions</div>
+                    <div className="font-medium text-[var(--text-primary)]">Smart Routing</div>
+                    <div className="text-xs text-[var(--text-muted)]">Auto-select best AI for your query</div>
                   </div>
                 </div>
                 <button
-                  onClick={handleTrustModeToggle}
+                  onClick={() => handleToggle('autoRouting')}
                   className={cn(
-                    'relative h-6 w-11 rounded-full transition-colors',
-                    user.preferences.trustMode ? 'bg-accent' : 'bg-border'
+                    'relative w-12 h-7 rounded-full transition-colors',
+                    user.preferences.autoRouting ? 'bg-[var(--brand-primary)]' : 'bg-[var(--border-secondary)]'
                   )}
                 >
                   <span
                     className={cn(
-                      'absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white transition-transform shadow-sm',
-                      user.preferences.trustMode && 'translate-x-5'
+                      'absolute left-1 top-1 w-5 h-5 rounded-full bg-white transition-transform shadow-sm',
+                      user.preferences.autoRouting && 'translate-x-5'
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Preferences Section */}
+        <section className="mb-8">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">
+            Preferences
+          </h2>
+          <div className="space-y-3">
+            {/* Sound Effects */}
+            <div className="card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center">
+                    <Volume2 className="w-5 h-5 text-[var(--text-muted)]" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-[var(--text-primary)]">Sound Effects</div>
+                    <div className="text-xs text-[var(--text-muted)]">Play sounds for actions</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleToggle('soundEffects')}
+                  className={cn(
+                    'relative w-12 h-7 rounded-full transition-colors',
+                    user.preferences.soundEffects ? 'bg-[var(--brand-primary)]' : 'bg-[var(--border-secondary)]'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute left-1 top-1 w-5 h-5 rounded-full bg-white transition-transform shadow-sm',
+                      user.preferences.soundEffects && 'translate-x-5'
+                    )}
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Animations */}
+            <div className="card">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center">
+                    <Sparkles className="w-5 h-5 text-[var(--text-muted)]" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-[var(--text-primary)]">Animations</div>
+                    <div className="text-xs text-[var(--text-muted)]">Enable UI animations</div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleToggle('animations')}
+                  className={cn(
+                    'relative w-12 h-7 rounded-full transition-colors',
+                    user.preferences.animations ? 'bg-[var(--brand-primary)]' : 'bg-[var(--border-secondary)]'
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'absolute left-1 top-1 w-5 h-5 rounded-full bg-white transition-transform shadow-sm',
+                      user.preferences.animations && 'translate-x-5'
                     )}
                   />
                 </button>
@@ -252,31 +337,34 @@ export default function SettingsPage() {
 
         {/* Data Section */}
         <section className="mb-8">
-          <h2 className="mb-4 text-sm font-medium text-text-muted">Data</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] mb-4">
+            Data
+          </h2>
           <div className="space-y-3">
             <button
               onClick={handleExportData}
-              className="flex w-full items-center gap-3 rounded-xl border border-border bg-background-secondary p-4 transition-colors hover:bg-background-tertiary"
+              className="w-full card card-interactive flex items-center gap-3"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background-tertiary">
-                <Download className="h-4 w-4 text-text-muted" />
+              <div className="w-10 h-10 rounded-xl bg-[var(--bg-tertiary)] flex items-center justify-center">
+                <Download className="w-5 h-5 text-[var(--text-muted)]" />
               </div>
-              <div className="text-left">
-                <div className="text-sm font-medium text-text-primary">Export Data</div>
-                <div className="text-xs text-text-muted">Download all your conversations and settings</div>
+              <div className="flex-1 text-left">
+                <div className="font-medium text-[var(--text-primary)]">Export Data</div>
+                <div className="text-xs text-[var(--text-muted)]">Download all your data</div>
               </div>
+              <ChevronRight className="w-5 h-5 text-[var(--text-muted)]" />
             </button>
 
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex w-full items-center gap-3 rounded-xl border border-error-soft bg-error-soft p-4 transition-colors hover:bg-error/10"
+              className="w-full card flex items-center gap-3 border-[var(--error-soft)] bg-[var(--error-soft)] hover:bg-[rgba(239,68,68,0.15)]"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-error/10">
-                <Trash2 className="h-4 w-4 text-error" />
+              <div className="w-10 h-10 rounded-xl bg-[rgba(239,68,68,0.1)] flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-[var(--error)]" />
               </div>
-              <div className="text-left">
-                <div className="text-sm font-medium text-error">Clear All Data</div>
-                <div className="text-xs text-text-muted">Delete all conversations and reset settings</div>
+              <div className="flex-1 text-left">
+                <div className="font-medium text-[var(--error)]">Clear All Data</div>
+                <div className="text-xs text-[var(--text-muted)]">Delete everything and start fresh</div>
               </div>
             </button>
           </div>
@@ -284,32 +372,66 @@ export default function SettingsPage() {
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="w-full max-w-sm animate-scale-in rounded-xl border border-border bg-background-secondary p-6 shadow-xl">
-              <h3 className="mb-2 text-lg font-semibold text-text-primary">Clear All Data?</h3>
-              <p className="mb-6 text-sm text-text-secondary">
-                This will permanently delete all your conversations and reset your settings. This action cannot be undone.
+          <div className="modal-overlay" onClick={() => setShowDeleteConfirm(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
+                Clear All Data?
+              </h3>
+              <p className="text-[var(--text-secondary)] mb-6">
+                This will permanently delete all your conversations, settings, and progress. This action cannot be undone.
               </p>
               <div className="flex gap-3">
-                <Button
-                  variant="secondary"
-                  className="flex-1"
+                <button
                   onClick={() => setShowDeleteConfirm(false)}
+                  className="btn btn-secondary flex-1"
                 >
                   Cancel
-                </Button>
-                <Button
-                  variant="danger"
-                  className="flex-1"
+                </button>
+                <button
                   onClick={handleClearData}
+                  className="btn flex-1 bg-[var(--error)] text-white hover:opacity-90"
                 >
                   Delete All
-                </Button>
+                </button>
               </div>
             </div>
           </div>
         )}
       </main>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 md:hidden glass border-t border-[var(--border-primary)] pb-safe">
+        <div className="flex items-center justify-around h-16">
+          <button
+            onClick={() => router.push('/')}
+            className="flex flex-col items-center gap-1 p-2 text-[var(--text-muted)]"
+          >
+            <Sparkles className="w-5 h-5" />
+            <span className="text-xs">Home</span>
+          </button>
+          <button
+            onClick={() => router.push('/chats')}
+            className="flex flex-col items-center gap-1 p-2 text-[var(--text-muted)]"
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span className="text-xs">Chats</span>
+          </button>
+          <button
+            onClick={() => router.push('/achievements')}
+            className="flex flex-col items-center gap-1 p-2 text-[var(--text-muted)]"
+          >
+            <Trophy className="w-5 h-5" />
+            <span className="text-xs">Rewards</span>
+          </button>
+          <button
+            onClick={() => router.push('/settings')}
+            className="flex flex-col items-center gap-1 p-2 text-[var(--brand-primary)]"
+          >
+            <Settings className="w-5 h-5" />
+            <span className="text-xs">Settings</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }

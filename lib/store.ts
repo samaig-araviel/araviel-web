@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { generateId, generateConversationTitle } from './utils';
-import { DEFAULT_USER, DEFAULT_PROJECTS } from './constants';
+import { generateId, generateConversationTitle, calculateLevel, routeMessage } from './utils';
+import { DEFAULT_USER, DEFAULT_PROJECTS, LEVELS, XP_REWARDS } from './constants';
 import type {
   Theme,
   User,
@@ -10,35 +10,46 @@ import type {
   Model,
   ModelSelection,
   Project,
+  Notification,
 } from '@/types';
 
-// ===== TYPES =====
+// ============================================
+// APP STATE INTERFACE
+// ============================================
+
 interface AppState {
   // Theme
   theme: Theme;
   setTheme: (theme: Theme) => void;
 
-  // User
+  // User & Gamification
   user: User;
   updateUser: (updates: Partial<User>) => void;
-
-  // XP and Streak
   addXP: (amount: number) => void;
+  checkLevelUp: () => boolean;
   incrementStreak: () => void;
   resetStreak: () => void;
   lastActiveDate: string | null;
   checkAndUpdateStreak: () => void;
+  unlockAchievement: (achievementId: string) => void;
 
   // UI State
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
+  mobileMenuOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  setMobileMenuOpen: (open: boolean) => void;
   toggleSidebar: () => void;
+
+  // Notifications
+  notifications: Notification[];
+  addNotification: (notification: Omit<Notification, 'id'>) => void;
+  removeNotification: (id: string) => void;
 
   // Projects
   projects: Project[];
-  createProject: (name: string, color: string) => string;
+  createProject: (name: string, color: string, icon?: string) => string;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   addConversationToProject: (conversationId: string, projectId: string) => void;
@@ -51,6 +62,8 @@ interface AppState {
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
   updateConversationTitle: (id: string, title: string) => void;
+  pinConversation: (id: string) => void;
+  unpinConversation: (id: string) => void;
 
   // Chat
   selectedModel: ModelSelection;
@@ -64,87 +77,149 @@ interface AppState {
   getActiveConversation: () => Conversation | null;
   sendMessage: (content: string) => Promise<void>;
   stopGenerating: () => void;
+
+  // Input state
+  inputValue: string;
+  setInputValue: (value: string) => void;
 }
 
-// ===== MOCK AI RESPONSE =====
+// ============================================
+// MOCK AI RESPONSES
+// ============================================
+
 const generateMockResponse = (userMessage: string, model: Model): string => {
-  const responses: Record<string, string[]> = {
+  const responses: Record<Model, string[]> = {
     claude: [
-      `I understand you're asking about "${userMessage.slice(0, 30)}${userMessage.length > 30 ? '...' : ''}"
+      `I've carefully considered your question about "${userMessage.slice(0, 40)}${userMessage.length > 40 ? '...' : ''}"
 
-Here's my thoughtful analysis:
+**My Analysis:**
 
-**Key Points:**
+This is a thoughtful topic that deserves a nuanced approach. Let me break it down:
 
-1. This is an interesting topic that deserves careful consideration.
+1. **Understanding the Context** - First, it's important to consider the broader picture and what you're really trying to achieve.
 
-2. There are multiple perspectives to consider here.
+2. **Key Considerations** - There are several factors at play here that could influence the best path forward.
 
-3. I'd recommend approaching this methodically.
+3. **My Recommendation** - Based on my analysis, I'd suggest approaching this methodically and considering multiple perspectives.
 
-Would you like me to elaborate on any of these points?`,
+Would you like me to explore any of these points in more depth? I'm happy to dive deeper into the specifics.`,
     ],
     gpt4: [
-      `Here's my analysis:
+      `Here's a solution for your request:
 
-\`\`\`javascript
-// Example approach
-function solution() {
-  // Step 1: Understand the problem
-  // Step 2: Break it down
-  // Step 3: Implement
-  return "Result";
+\`\`\`typescript
+// Optimized implementation
+interface Solution {
+  approach: string;
+  implementation: () => void;
 }
+
+const solve = (input: string): Solution => {
+  // Step 1: Parse and validate
+  const validated = validateInput(input);
+
+  // Step 2: Process
+  const result = processData(validated);
+
+  // Step 3: Return formatted result
+  return {
+    approach: 'systematic',
+    implementation: () => console.log(result)
+  };
+};
+
+// Execute
+solve('${userMessage.slice(0, 20)}...');
 \`\`\`
 
-**Key insight:** Understanding the problem is half the solution.
+**Key Points:**
+- This approach ensures type safety and maintainability
+- The modular structure allows for easy testing
+- Performance is optimized for your use case
 
-Let me break this down:
-- First, identify the core issue
-- Then, develop a systematic approach
-- Finally, implement and verify
-
-Shall I clarify anything?`,
+Want me to explain any part in more detail or modify the implementation?`,
     ],
     gemini: [
-      `Based on my research:
+      `Based on my research on "${userMessage.slice(0, 30)}${userMessage.length > 30 ? '...' : ''}":
 
-**Overview:** Your question about "${userMessage.slice(0, 20)}${userMessage.length > 20 ? '...' : ''}" is quite interesting.
+**Overview**
+This is a fascinating topic with several important aspects to consider.
 
 **Key Facts:**
-- Multiple approaches exist for this
-- The best method depends on your context
-- Recent developments suggest new solutions
+- There are multiple approaches documented in current research
+- The most effective methods depend on your specific context
+- Recent developments have introduced new possibilities
 
-Would you like more details on any aspect?`,
+**Detailed Analysis:**
+
+| Aspect | Finding | Relevance |
+|--------|---------|-----------|
+| Primary | Well-documented | High |
+| Secondary | Emerging | Medium |
+| Tertiary | Experimental | Low |
+
+**Conclusion:**
+Based on the available evidence, I'd recommend focusing on the primary aspects first, then exploring secondary options as needed.
+
+Would you like me to research any specific aspect in more detail?`,
     ],
   };
 
-  const modelResponses = responses[model] || responses.claude;
+  const modelResponses = responses[model];
   return modelResponses[Math.floor(Math.random() * modelResponses.length)];
 };
 
-// ===== STORE =====
+// ============================================
+// STORE IMPLEMENTATION
+// ============================================
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      // Theme
+      // ===== THEME =====
       theme: 'system',
       setTheme: (theme) => set({ theme }),
 
-      // User
+      // ===== USER & GAMIFICATION =====
       user: DEFAULT_USER,
       updateUser: (updates) =>
         set((state) => ({
           user: { ...state.user, ...updates },
         })),
 
-      // XP and Streak
+      addXP: (amount) => {
+        set((state) => {
+          const newXP = state.user.xp + amount;
+          const newLevel = calculateLevel(newXP);
+          const leveledUp = newLevel > state.user.level;
+
+          if (leveledUp) {
+            const levelInfo = LEVELS.find((l) => l.level === newLevel);
+            state.addNotification({
+              type: 'achievement',
+              title: 'Level Up!',
+              message: `You've reached Level ${newLevel}: ${levelInfo?.name || 'Unknown'}`,
+              duration: 5000,
+            });
+          }
+
+          return {
+            user: {
+              ...state.user,
+              xp: newXP,
+              level: newLevel,
+            },
+          };
+        });
+      },
+
+      checkLevelUp: () => {
+        const state = get();
+        const newLevel = calculateLevel(state.user.xp);
+        return newLevel > state.user.level;
+      },
+
       lastActiveDate: null,
-      addXP: (amount) =>
-        set((state) => ({
-          user: { ...state.user, xp: state.user.xp + amount },
-        })),
       incrementStreak: () =>
         set((state) => ({
           user: { ...state.user, streak: state.user.streak + 1 },
@@ -153,6 +228,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           user: { ...state.user, streak: 1 },
         })),
+
       checkAndUpdateStreak: () => {
         const state = get();
         const today = new Date().toDateString();
@@ -160,12 +236,11 @@ export const useAppStore = create<AppState>()(
 
         if (!lastActive) {
           set({ lastActiveDate: today });
+          state.addXP(XP_REWARDS.DAILY_LOGIN);
           return;
         }
 
-        if (lastActive === today) {
-          return;
-        }
+        if (lastActive === today) return;
 
         const lastDate = new Date(lastActive);
         const todayDate = new Date(today);
@@ -175,34 +250,65 @@ export const useAppStore = create<AppState>()(
 
         if (diffDays === 1) {
           state.incrementStreak();
+          state.addXP(XP_REWARDS.DAILY_LOGIN + XP_REWARDS.STREAK_BONUS * state.user.streak);
         } else if (diffDays > 1) {
           state.resetStreak();
+          state.addXP(XP_REWARDS.DAILY_LOGIN);
         }
 
         set({ lastActiveDate: today });
       },
 
-      // UI State
+      unlockAchievement: (achievementId) =>
+        set((state) => {
+          if (state.user.achievements.includes(achievementId)) return state;
+          return {
+            user: {
+              ...state.user,
+              achievements: [...state.user.achievements, achievementId],
+            },
+          };
+        }),
+
+      // ===== UI STATE =====
       sidebarOpen: true,
       sidebarCollapsed: false,
+      mobileMenuOpen: false,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+      setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
-      // Projects
+      // ===== NOTIFICATIONS =====
+      notifications: [],
+      addNotification: (notification) =>
+        set((state) => ({
+          notifications: [
+            ...state.notifications,
+            { ...notification, id: generateId() },
+          ],
+        })),
+      removeNotification: (id) =>
+        set((state) => ({
+          notifications: state.notifications.filter((n) => n.id !== id),
+        })),
+
+      // ===== PROJECTS =====
       projects: DEFAULT_PROJECTS.map((p) => ({
         ...p,
         conversationIds: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       })),
-      createProject: (name, color) => {
+
+      createProject: (name, color, icon = 'Folder') => {
         const id = generateId();
         const newProject: Project = {
           id,
           name,
           color,
+          icon,
           conversationIds: [],
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -212,12 +318,14 @@ export const useAppStore = create<AppState>()(
         }));
         return id;
       },
+
       updateProject: (id, updates) =>
         set((state) => ({
           projects: state.projects.map((p) =>
             p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
           ),
         })),
+
       deleteProject: (id) =>
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== id),
@@ -225,6 +333,7 @@ export const useAppStore = create<AppState>()(
             c.projectId === id ? { ...c, projectId: undefined } : c
           ),
         })),
+
       addConversationToProject: (conversationId, projectId) =>
         set((state) => ({
           projects: state.projects.map((p) =>
@@ -240,6 +349,7 @@ export const useAppStore = create<AppState>()(
             c.id === conversationId ? { ...c, projectId } : c
           ),
         })),
+
       removeConversationFromProject: (conversationId) =>
         set((state) => ({
           projects: state.projects.map((p) => ({
@@ -251,7 +361,7 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      // Conversations
+      // ===== CONVERSATIONS =====
       conversations: [],
       activeConversationId: null,
 
@@ -278,6 +388,12 @@ export const useAppStore = create<AppState>()(
                   : p
               )
             : state.projects;
+
+          // Check for first-chat achievement
+          if (state.conversations.length === 0) {
+            state.unlockAchievement('first-chat');
+            state.addXP(25);
+          }
 
           return {
             conversations: [newConversation, ...state.conversations],
@@ -311,7 +427,21 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      // Chat
+      pinConversation: (id) =>
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, isPinned: true, updatedAt: new Date() } : c
+          ),
+        })),
+
+      unpinConversation: (id) =>
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, isPinned: false, updatedAt: new Date() } : c
+          ),
+        })),
+
+      // ===== CHAT =====
       selectedModel: 'auto',
       setSelectedModel: (model) => set({ selectedModel: model }),
 
@@ -360,7 +490,7 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      // Helpers
+      // ===== HELPERS =====
       getActiveConversation: () => {
         const state = get();
         return (
@@ -383,56 +513,41 @@ export const useAppStore = create<AppState>()(
           content,
         });
 
-        // Award XP for sending a message
-        state.addXP(5);
+        // Award XP
+        state.addXP(XP_REWARDS.MESSAGE_SENT);
         state.checkAndUpdateStreak();
 
-        // Set generating state
-        set({ isGenerating: true });
+        // Update total messages
+        set((state) => ({
+          user: {
+            ...state.user,
+            totalMessages: state.user.totalMessages + 1,
+          },
+        }));
 
-        // Determine model to use
-        let model: Model;
-        if (state.selectedModel === 'auto') {
-          if (content.toLowerCase().includes('code') || content.includes('```')) {
-            model = 'gpt4';
-          } else if (
-            content.toLowerCase().includes('research') ||
-            content.toLowerCase().includes('fact') ||
-            content.toLowerCase().includes('what is')
-          ) {
-            model = 'gemini';
-          } else {
-            model = 'claude';
-          }
-        } else {
-          model = state.selectedModel;
-        }
+        set({ isGenerating: true, inputValue: '' });
+
+        // Determine model with auto-routing
+        const { model, reason } = routeMessage(content, state.selectedModel);
 
         // Simulate API delay
         await new Promise((resolve) =>
-          setTimeout(resolve, 1200 + Math.random() * 800)
+          setTimeout(resolve, 1000 + Math.random() * 1000)
         );
 
         // Check if still generating
         if (!get().isGenerating) return;
-
-        // Routing reasons
-        const routingReasons: Record<Model, string> = {
-          claude: 'Best for thoughtful analysis and writing',
-          gpt4: 'Optimal for code and complex reasoning',
-          gemini: 'Great for research and factual information',
-        };
 
         // Add AI response
         state.addMessage(conversationId, {
           role: 'assistant',
           content: generateMockResponse(content, model),
           model,
-          routingReason: routingReasons[model],
+          routingReason: reason,
         });
 
-        // Award XP for completing a conversation turn
-        state.addXP(10);
+        // Award XP for completion
+        state.addXP(XP_REWARDS.CONVERSATION_COMPLETE);
 
         set({ isGenerating: false });
       },
@@ -440,6 +555,10 @@ export const useAppStore = create<AppState>()(
       stopGenerating: () => {
         set({ isGenerating: false });
       },
+
+      // ===== INPUT STATE =====
+      inputValue: '',
+      setInputValue: (value) => set({ inputValue: value }),
     }),
     {
       name: 'araviel-storage',
@@ -476,20 +595,56 @@ export const useAppStore = create<AppState>()(
         if (state?.user?.createdAt) {
           state.user.createdAt = new Date(state.user.createdAt);
         }
+        if (state?.user?.lastActiveAt) {
+          state.user.lastActiveAt = new Date(state.user.lastActiveAt);
+        }
       },
     }
   )
 );
 
-// ===== SELECTORS =====
+// ============================================
+// SELECTORS
+// ============================================
+
 export const selectTheme = (state: AppState) => state.theme;
 export const selectUser = (state: AppState) => state.user;
 export const selectConversations = (state: AppState) => state.conversations;
 export const selectProjects = (state: AppState) => state.projects;
-export const selectActiveConversationId = (state: AppState) =>
-  state.activeConversationId;
+export const selectActiveConversationId = (state: AppState) => state.activeConversationId;
 export const selectActiveConversation = (state: AppState) =>
   state.conversations.find((c) => c.id === state.activeConversationId) || null;
 export const selectSelectedModel = (state: AppState) => state.selectedModel;
 export const selectIsGenerating = (state: AppState) => state.isGenerating;
 export const selectSidebarCollapsed = (state: AppState) => state.sidebarCollapsed;
+export const selectNotifications = (state: AppState) => state.notifications;
+export const selectInputValue = (state: AppState) => state.inputValue;
+
+// Derived selectors
+export const selectPinnedConversations = (state: AppState) =>
+  state.conversations.filter((c) => c.isPinned);
+
+export const selectRecentConversations = (state: AppState) =>
+  state.conversations
+    .filter((c) => !c.isPinned)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 10);
+
+export const selectUserLevel = (state: AppState) => {
+  const { xp, level } = state.user;
+  const currentLevel = LEVELS.find((l) => l.level === level);
+  const nextLevel = LEVELS.find((l) => l.level === level + 1);
+
+  return {
+    level,
+    name: currentLevel?.name || 'Unknown',
+    badge: currentLevel?.badge || 'bronze',
+    xp,
+    minXp: currentLevel?.minXp || 0,
+    maxXp: currentLevel?.maxXp || 100,
+    nextLevelXp: nextLevel?.minXp || currentLevel?.maxXp || 100,
+    progress: currentLevel
+      ? ((xp - currentLevel.minXp) / (currentLevel.maxXp - currentLevel.minXp)) * 100
+      : 0,
+  };
+};

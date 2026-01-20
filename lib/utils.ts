@@ -1,5 +1,11 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { LEVELS, ROUTING_KEYWORDS } from './constants';
+import type { Model, ModelSelection } from '@/types';
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 
 /**
  * Merge Tailwind CSS classes with clsx
@@ -31,10 +37,10 @@ export function formatRelativeTime(date: Date): string {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffSecs < 60) return 'Just now';
-  if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? '' : 's'} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? '' : 's'} ago`;
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
 
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -139,24 +145,138 @@ export function generateConversationTitle(content: string): string {
 }
 
 /**
- * Check if code block language is supported
- */
-export function isCodeLanguageSupported(lang: string): boolean {
-  const supported = [
-    'javascript', 'typescript', 'python', 'java', 'c', 'cpp', 'csharp',
-    'go', 'rust', 'ruby', 'php', 'swift', 'kotlin', 'scala', 'html',
-    'css', 'scss', 'json', 'yaml', 'xml', 'markdown', 'sql', 'bash',
-    'shell', 'powershell', 'dockerfile', 'graphql',
-  ];
-  return supported.includes(lang.toLowerCase());
-}
-
-/**
  * Sleep function for async operations
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+// ============================================
+// GAMIFICATION UTILITIES
+// ============================================
+
+/**
+ * Calculate user level from XP
+ */
+export function calculateLevel(xp: number): number {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (xp >= LEVELS[i].minXp) {
+      return LEVELS[i].level;
+    }
+  }
+  return 1;
+}
+
+/**
+ * Get XP progress within current level
+ */
+export function getLevelProgress(xp: number): { progress: number; current: number; max: number } {
+  const level = calculateLevel(xp);
+  const currentLevel = LEVELS.find((l) => l.level === level);
+
+  if (!currentLevel) return { progress: 0, current: 0, max: 100 };
+
+  const current = xp - currentLevel.minXp;
+  const max = currentLevel.maxXp - currentLevel.minXp;
+  const progress = Math.min((current / max) * 100, 100);
+
+  return { progress, current, max };
+}
+
+/**
+ * Format XP number with commas
+ */
+export function formatXP(xp: number): string {
+  return xp.toLocaleString();
+}
+
+// ============================================
+// AUTO-ROUTING UTILITIES
+// ============================================
+
+interface RoutingResult {
+  model: Model;
+  reason: string;
+  confidence: number;
+}
+
+/**
+ * Route message to the best AI model based on content analysis
+ */
+export function routeMessage(content: string, selectedModel: ModelSelection): RoutingResult {
+  // If user explicitly selected a model, use it
+  if (selectedModel !== 'auto') {
+    const reasons: Record<Model, string> = {
+      claude: 'Selected Claude for writing & analysis',
+      gpt4: 'Selected GPT-4 for code & reasoning',
+      gemini: 'Selected Gemini for research & facts',
+    };
+    return {
+      model: selectedModel,
+      reason: reasons[selectedModel],
+      confidence: 1.0,
+    };
+  }
+
+  const lowerContent = content.toLowerCase();
+  const scores: Record<Model, number> = { claude: 0, gpt4: 0, gemini: 0 };
+
+  // Score based on keywords
+  for (const [model, keywords] of Object.entries(ROUTING_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (lowerContent.includes(keyword.toLowerCase())) {
+        scores[model as Model] += 1;
+      }
+    }
+  }
+
+  // Check for code blocks (strong indicator for GPT-4)
+  if (content.includes('```') || content.includes('function') || content.includes('const ')) {
+    scores.gpt4 += 3;
+  }
+
+  // Check for question patterns (indicator for research/Gemini)
+  if (/^(what|who|when|where|how|why|which)\s/i.test(content)) {
+    scores.gemini += 1;
+  }
+
+  // Check for creative/writing patterns (indicator for Claude)
+  if (/^(write|help me write|create|draft|compose)/i.test(content)) {
+    scores.claude += 2;
+  }
+
+  // Find highest scoring model
+  let bestModel: Model = 'claude'; // Default to Claude
+  let bestScore = scores.claude;
+
+  for (const [model, score] of Object.entries(scores)) {
+    if (score > bestScore) {
+      bestScore = score;
+      bestModel = model as Model;
+    }
+  }
+
+  // Calculate confidence based on score difference
+  const totalScore = Object.values(scores).reduce((a, b) => a + b, 0);
+  const confidence = totalScore > 0 ? bestScore / totalScore : 0.33;
+
+  // Generate routing reason
+  const reasons: Record<Model, string> = {
+    claude: 'Routed to Claude for thoughtful analysis',
+    gpt4: 'Routed to GPT-4 for code & technical tasks',
+    gemini: 'Routed to Gemini for research & facts',
+  };
+
+  return {
+    model: bestModel,
+    reason: reasons[bestModel],
+    confidence: Math.min(confidence, 1.0),
+  };
+}
+
+// ============================================
+// STORAGE UTILITIES
+// ============================================
 
 /**
  * Local storage helpers with error handling
@@ -188,3 +308,65 @@ export const storage = {
     }
   },
 };
+
+// ============================================
+// DATE UTILITIES
+// ============================================
+
+/**
+ * Check if date is today
+ */
+export function isToday(date: Date): boolean {
+  const today = new Date();
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
+}
+
+/**
+ * Check if date is yesterday
+ */
+export function isYesterday(date: Date): boolean {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  return (
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear()
+  );
+}
+
+/**
+ * Format date for display
+ */
+export function formatDate(date: Date): string {
+  if (isToday(date)) return 'Today';
+  if (isYesterday(date)) return 'Yesterday';
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+  });
+}
+
+// ============================================
+// VALIDATION UTILITIES
+// ============================================
+
+/**
+ * Check if string is valid email
+ */
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Check if string is empty or whitespace only
+ */
+export function isEmpty(str: string): boolean {
+  return !str || str.trim().length === 0;
+}
