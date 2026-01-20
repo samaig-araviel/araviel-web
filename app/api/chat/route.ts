@@ -9,7 +9,6 @@ function routeToModel(message: string, preferredModel: string): { model: Model; 
       claude: 'You selected Claude for this conversation.',
       gpt4: 'You selected GPT-4 for this conversation.',
       gemini: 'You selected Gemini for this conversation.',
-      perplexity: 'You selected Perplexity for this conversation.',
     };
     return {
       model: preferredModel as Model,
@@ -35,21 +34,6 @@ function routeToModel(message: string, preferredModel: string): { model: Model; 
     };
   }
 
-  // Real-time / search queries
-  if (
-    lowerMessage.includes('latest') ||
-    lowerMessage.includes('news') ||
-    lowerMessage.includes('today') ||
-    lowerMessage.includes('current') ||
-    lowerMessage.includes('search') ||
-    lowerMessage.includes('find')
-  ) {
-    return {
-      model: 'perplexity',
-      reason: 'Perplexity provides real-time search and up-to-date information.',
-    };
-  }
-
   // Research / factual queries
   if (
     lowerMessage.includes('research') ||
@@ -57,11 +41,14 @@ function routeToModel(message: string, preferredModel: string): { model: Model; 
     lowerMessage.includes('fact') ||
     lowerMessage.includes('statistics') ||
     lowerMessage.includes('data') ||
-    lowerMessage.includes('compare')
+    lowerMessage.includes('compare') ||
+    lowerMessage.includes('what is') ||
+    lowerMessage.includes('latest') ||
+    lowerMessage.includes('news')
   ) {
     return {
       model: 'gemini',
-      reason: 'Gemini Pro excels at research and providing factual, well-sourced information.',
+      reason: 'Gemini excels at research and providing factual, well-sourced information.',
     };
   }
 
@@ -112,36 +99,17 @@ Let me know if you need more specific guidance!`,
 
 Your question touches on several important areas. Here's a comprehensive overview:
 
-📊 **Key Statistics:**
-- Data point 1: Relevant finding
-- Data point 2: Supporting evidence
-- Data point 3: Contextual information
+**Key Findings:**
+- Multiple approaches exist for this topic
+- The best method depends on your context
+- Recent developments suggest new solutions
 
-📚 **Sources:**
-- Academic research supports these findings
-- Industry reports confirm the trends
-- Expert opinions align with this analysis
+**Recommendations:**
+- Consider the trade-offs carefully
+- Start with the most straightforward approach
+- Iterate based on results
 
 Would you like me to dive deeper into any specific aspect?`,
-
-    perplexity: `🔍 **Real-Time Search Results:**
-
-I searched for the latest information on your query. Here's what I found:
-
-**Top Results:**
-
-1. **Recent Development** - Updated information shows...
-2. **Trending Topic** - Current discussions highlight...
-3. **Expert Opinion** - Industry leaders suggest...
-
-**Key Takeaways:**
-- The landscape is evolving rapidly
-- Multiple factors influence the outcome
-- Staying informed is crucial
-
-*Sources: Based on real-time web search*
-
-Would you like me to search for more specific information?`,
   };
 
   return responses[model];

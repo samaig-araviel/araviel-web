@@ -1,17 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Paperclip, Search, Send, Sparkles, ChevronDown, X } from 'lucide-react';
+import { Send, Sparkles, ChevronDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MODELS, MODEL_LIST } from '@/lib/constants';
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownContent,
-  DropdownItem,
-  DropdownLabel,
-  DropdownDivider,
-} from '@/components/ui/Dropdown';
 import type { ModelSelection, Model } from '@/types';
 
 interface MainInputProps {
@@ -31,13 +23,14 @@ export function MainInput({
   onSubmit,
   selectedModel = 'auto',
   onModelChange,
-  placeholder = 'Ask me anything, or try one of the suggestions below...',
+  placeholder = 'Ask anything or start with a suggestion below...',
   disabled = false,
   autoFocus = false,
 }: MainInputProps) {
   const [localValue, setLocalValue] = useState(value);
-  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [isModelOpen, setIsModelOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setLocalValue(value);
@@ -49,11 +42,22 @@ export function MainInput({
     }
   }, [autoFocus]);
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsModelOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 300)}px`;
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
   };
 
@@ -81,16 +85,17 @@ export function MainInput({
     }
   };
 
+  const handleModelSelect = (model: ModelSelection) => {
+    onModelChange?.(model);
+    setIsModelOpen(false);
+  };
+
   const getModelDisplay = () => {
     if (selectedModel === 'auto') {
-      return { name: 'Auto', icon: <Sparkles className="h-4 w-4" />, color: 'text-accent' };
+      return { name: 'Auto', color: 'text-accent' };
     }
     const model = MODELS[selectedModel];
-    return {
-      name: model.name.split(' ')[0],
-      icon: <span>{model.icon}</span>,
-      color: '',
-    };
+    return { name: model?.name || 'Auto', color: '' };
   };
 
   const modelDisplay = getModelDisplay();
@@ -98,11 +103,8 @@ export function MainInput({
   return (
     <div
       className={cn(
-        `
-        relative rounded-2xl border border-border bg-background-secondary
-        transition-all duration-200
-        focus-within:border-accent focus-within:shadow-glow
-      `,
+        'relative rounded-xl border border-border bg-background-secondary shadow-sm transition-all duration-200',
+        'focus-within:border-accent focus-within:shadow-glow',
         disabled && 'opacity-50'
       )}
     >
@@ -114,124 +116,95 @@ export function MainInput({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
-        rows={3}
-        className="
-          w-full resize-none rounded-2xl bg-transparent
-          px-4 py-4 text-text-primary
-          placeholder:text-text-muted
-          focus:outline-none
-        "
-        style={{ minHeight: '120px', maxHeight: '300px' }}
+        rows={2}
+        className="w-full resize-none rounded-xl bg-transparent px-4 py-4 text-text-primary placeholder:text-text-placeholder focus:outline-none"
+        style={{ minHeight: '80px', maxHeight: '200px' }}
       />
 
       {/* Bottom Toolbar */}
       <div className="flex items-center justify-between border-t border-border-subtle px-3 py-2">
-        {/* Left Actions */}
-        <div className="flex items-center gap-1">
-          {/* Attach Button */}
+        {/* Model Selector */}
+        <div className="relative" ref={dropdownRef}>
           <button
-            className="
-              flex items-center gap-1.5 rounded-lg px-2.5 py-1.5
-              text-sm text-text-muted
-              transition-colors hover:bg-background-tertiary hover:text-text-primary
-            "
-            title="Attach file"
+            onClick={() => setIsModelOpen(!isModelOpen)}
+            className={cn(
+              'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors hover:bg-background-tertiary',
+              modelDisplay.color
+            )}
           >
-            <Paperclip className="h-4 w-4" />
-            <span className="hidden sm:inline">Attach</span>
+            {selectedModel === 'auto' ? (
+              <Sparkles className="h-4 w-4 text-accent" />
+            ) : (
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: MODELS[selectedModel]?.color }}
+              />
+            )}
+            <span className="font-medium">{modelDisplay.name}</span>
+            <ChevronDown className={cn('h-3.5 w-3.5 text-text-muted transition-transform', isModelOpen && 'rotate-180')} />
           </button>
 
-          {/* Web Search Toggle */}
-          <button
-            onClick={() => setWebSearchEnabled(!webSearchEnabled)}
-            className={cn(
-              `
-              flex items-center gap-1.5 rounded-lg px-2.5 py-1.5
-              text-sm transition-colors
-            `,
-              webSearchEnabled
-                ? 'bg-accent-soft text-accent'
-                : 'text-text-muted hover:bg-background-tertiary hover:text-text-primary'
-            )}
-            title="Enable web search"
-          >
-            <Search className="h-4 w-4" />
-            <span className="hidden sm:inline">Search</span>
-          </button>
+          {/* Dropdown Menu */}
+          {isModelOpen && (
+            <div className="absolute bottom-full left-0 mb-2 w-56 animate-fade-in rounded-lg border border-border bg-background-secondary p-1 shadow-lg">
+              <div className="px-2 py-1.5 text-xs font-medium text-text-muted">
+                Select Model
+              </div>
+              <div className="my-1 h-px bg-border-subtle" />
+
+              {/* Auto Option */}
+              <button
+                onClick={() => handleModelSelect('auto')}
+                className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-background-tertiary"
+              >
+                <Sparkles className="h-4 w-4 text-accent" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-sm font-medium text-text-primary">
+                    Auto
+                    <span className="text-xs text-text-muted">(Recommended)</span>
+                  </div>
+                  <div className="text-xs text-text-muted">Araviel chooses best</div>
+                </div>
+                {selectedModel === 'auto' && <Check className="h-4 w-4 text-accent" />}
+              </button>
+
+              <div className="my-1 h-px bg-border-subtle" />
+
+              {/* Model Options */}
+              {MODEL_LIST.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() => handleModelSelect(model.id as Model)}
+                  className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition-colors hover:bg-background-tertiary"
+                >
+                  <span
+                    className="h-3 w-3 rounded-full"
+                    style={{ backgroundColor: model.color }}
+                  />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-text-primary">{model.name}</div>
+                    <div className="text-xs text-text-muted">{model.description}</div>
+                  </div>
+                  {selectedModel === model.id && <Check className="h-4 w-4 text-accent" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Model Selector */}
-        <Dropdown>
-          <DropdownTrigger>
-            <div
-              className={cn(
-                `
-                flex items-center gap-1.5 rounded-lg px-2.5 py-1.5
-                text-sm transition-colors
-                hover:bg-background-tertiary
-              `,
-                modelDisplay.color
-              )}
-            >
-              {modelDisplay.icon}
-              <span>{modelDisplay.name}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
-            </div>
-          </DropdownTrigger>
-          <DropdownContent align="center" className="w-64">
-            <DropdownLabel>Select Model</DropdownLabel>
-            <DropdownDivider />
-
-            {/* Auto Option */}
-            <DropdownItem
-              icon={<Sparkles className="h-4 w-4 text-accent" />}
-              onClick={() => onModelChange?.('auto')}
-            >
-              <div className="flex flex-col">
-                <span className="flex items-center gap-2">
-                  Auto (Recommended)
-                  {selectedModel === 'auto' && (
-                    <span className="text-xs text-accent">✓</span>
-                  )}
-                </span>
-                <span className="text-xs text-text-muted">Araviel chooses best</span>
-              </div>
-            </DropdownItem>
-
-            <DropdownDivider />
-
-            {/* Model Options */}
-            {MODEL_LIST.map((model) => (
-              <DropdownItem
-                key={model.id}
-                icon={<span>{model.icon}</span>}
-                onClick={() => onModelChange?.(model.id as Model)}
-              >
-                <div className="flex flex-col">
-                  <span className="flex items-center gap-2">
-                    {model.name}
-                    {selectedModel === model.id && (
-                      <span className="text-xs text-accent">✓</span>
-                    )}
-                  </span>
-                  <span className="text-xs text-text-muted">{model.description}</span>
-                </div>
-              </DropdownItem>
-            ))}
-          </DropdownContent>
-        </Dropdown>
+        {/* Hint Text */}
+        <div className="hidden text-xs text-text-muted sm:block">
+          Press Enter to send
+        </div>
 
         {/* Send Button */}
         <button
           onClick={handleSubmit}
           disabled={disabled || !localValue.trim()}
           className={cn(
-            `
-            flex h-9 w-9 items-center justify-center rounded-lg
-            transition-all duration-200
-          `,
+            'flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150',
             localValue.trim() && !disabled
-              ? 'bg-accent text-white hover:bg-accent-hover active:scale-95'
+              ? 'bg-accent text-white hover:bg-accent-hover'
               : 'bg-background-tertiary text-text-muted cursor-not-allowed'
           )}
           title="Send message"

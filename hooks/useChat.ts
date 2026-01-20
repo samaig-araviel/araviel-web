@@ -7,6 +7,7 @@ import type { ModelSelection, QuickAction } from '@/types';
 export function useChat() {
   const {
     conversations,
+    projects,
     activeConversationId,
     selectedModel,
     isGenerating,
@@ -22,8 +23,8 @@ export function useChat() {
 
   const activeConversation = getActiveConversation();
 
-  const handleNewChat = useCallback(() => {
-    const id = createConversation();
+  const handleNewChat = useCallback((projectId?: string) => {
+    const id = createConversation(projectId);
     return id;
   }, [createConversation]);
 
@@ -36,7 +37,6 @@ export function useChat() {
 
   const handleSelectQuickAction = useCallback(
     (action: QuickAction) => {
-      // Return the prompt starter so the input can be prefilled
       return action.promptStarter;
     },
     []
@@ -73,6 +73,7 @@ export function useChat() {
   return {
     // State
     conversations,
+    projects,
     activeConversationId,
     activeConversation,
     selectedModel,

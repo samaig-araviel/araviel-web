@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Araviel - Clarity, not chaos',
-  description: 'The AI Lifestyle Operating System. Intelligently routes your queries to the optimal AI model for divine clarity.',
-  keywords: ['AI', 'chat', 'GPT-4', 'Claude', 'Gemini', 'Perplexity', 'assistant'],
+  title: 'Araviel - AI Lifestyle OS',
+  description: 'The calm AI assistant that intelligently routes your queries to the optimal AI model. Clarity, not chaos.',
+  keywords: ['AI', 'chat', 'GPT-4', 'Claude', 'Gemini', 'assistant', 'productivity'],
   authors: [{ name: 'Araviel' }],
 };
 
@@ -12,9 +12,10 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#FAFAFA' },
-    { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
+    { media: '(prefers-color-scheme: light)', color: '#FAFBFC' },
+    { media: '(prefers-color-scheme: dark)', color: '#0F1117' },
   ],
 };
 
@@ -26,13 +27,26 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
                 function getInitialTheme() {
-                  const stored = localStorage.getItem('araviel-theme');
-                  if (stored === 'dark' || stored === 'light') return stored;
+                  try {
+                    const stored = localStorage.getItem('araviel-storage');
+                    if (stored) {
+                      const parsed = JSON.parse(stored);
+                      if (parsed.state?.theme === 'dark' || parsed.state?.theme === 'light') {
+                        return parsed.state.theme;
+                      }
+                    }
+                  } catch(e) {}
                   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
                 }
                 const theme = getInitialTheme();

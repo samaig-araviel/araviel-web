@@ -1,107 +1,111 @@
 'use client';
 
-import { ArrowRight, MessageSquare } from 'lucide-react';
-import { cn, truncate, formatRelativeTime } from '@/lib/utils';
-import { MODELS } from '@/lib/constants';
-import { Card } from '@/components/ui/Card';
-import type { Conversation } from '@/types';
+import { MessageSquare, ArrowRight } from 'lucide-react';
+import { cn, formatRelativeTime, truncate } from '@/lib/utils';
+import type { Conversation, Project } from '@/types';
 
 interface RecentChatsProps {
   conversations: Conversation[];
+  projects?: Project[];
   onSelect?: (id: string) => void;
-  onViewAll?: () => void;
   maxItems?: number;
   className?: string;
 }
 
 export function RecentChats({
   conversations,
+  projects = [],
   onSelect,
-  onViewAll,
-  maxItems = 4,
+  maxItems = 5,
   className,
 }: RecentChatsProps) {
-  const recentChats = conversations.slice(0, maxItems);
+  const recentConversations = conversations
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, maxItems);
 
-  if (conversations.length === 0) {
+  const getProjectName = (projectId?: string) => {
+    if (!projectId) return null;
+    const project = projects.find((p) => p.id === projectId);
+    return project?.name || null;
+  };
+
+  const getProjectColor = (projectId?: string) => {
+    if (!projectId) return null;
+    const project = projects.find((p) => p.id === projectId);
+    return project?.color || null;
+  };
+
+  // Empty state
+  if (recentConversations.length === 0) {
     return (
-      <Card variant="bordered" padding="lg" className={className}>
-        <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background-tertiary">
+      <div className={cn('rounded-xl border border-border-subtle bg-background-secondary p-6', className)}>
+        <h3 className="mb-4 text-sm font-medium text-text-primary">
+          Continue where you left off
+        </h3>
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-background-tertiary">
             <MessageSquare className="h-6 w-6 text-text-muted" />
           </div>
-          <div>
-            <p className="font-medium text-text-primary">No conversations yet</p>
-            <p className="text-sm text-text-muted">
-              Start a new chat to see your history here.
-            </p>
-          </div>
+          <p className="text-sm text-text-secondary">No conversations yet</p>
+          <p className="mt-1 text-xs text-text-muted">Start a chat to see it here</p>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card variant="bordered" padding="none" className={className}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h3 className="font-medium text-text-primary">Recent Conversations</h3>
-        {conversations.length > maxItems && (
-          <button
-            onClick={onViewAll}
-            className="
-              flex items-center gap-1 text-sm text-accent
-              transition-colors hover:text-accent-hover
-            "
-          >
-            See all
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        )}
+    <div className={cn('rounded-xl border border-border-subtle bg-background-secondary', className)}>
+      <div className="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+        <h3 className="text-sm font-medium text-text-primary">
+          Continue where you left off
+        </h3>
       </div>
 
-      {/* Chat List */}
       <div className="divide-y divide-border-subtle">
-        {recentChats.map((chat) => {
-          const lastMessage = chat.messages[chat.messages.length - 1];
-          const model = lastMessage?.model ? MODELS[lastMessage.model] : null;
+        {recentConversations.map((conversation) => {
+          const projectName = getProjectName(conversation.projectId);
+          const projectColor = getProjectColor(conversation.projectId);
 
           return (
             <button
-              key={chat.id}
-              onClick={() => onSelect?.(chat.id)}
-              className="
-                flex w-full items-center gap-3 px-4 py-3
-                text-left transition-colors
-                hover:bg-background-tertiary
-                group
-              "
+              key={conversation.id}
+              onClick={() => onSelect?.(conversation.id)}
+              className="group flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-background-tertiary"
             >
-              {/* Model indicator */}
-              <span
-                className={cn(
-                  'h-2.5 w-2.5 shrink-0 rounded-full',
-                  model ? '' : 'bg-text-muted'
-                )}
-                style={{ backgroundColor: model?.color }}
-              />
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <p className="truncate font-medium text-text-primary group-hover:text-accent transition-colors">
-                  {truncate(chat.title, 40)}
-                </p>
-                <p className="text-sm text-text-muted">
-                  {formatRelativeTime(chat.updatedAt)}
-                </p>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-background-tertiary text-text-muted group-hover:bg-accent-soft group-hover:text-accent">
+                <MessageSquare className="h-4 w-4" />
               </div>
 
-              {/* Arrow on hover */}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm font-medium text-text-primary">
+                    {truncate(conversation.title, 40)}
+                  </span>
+                  {projectName && (
+                    <span
+                      className="shrink-0 rounded px-1.5 py-0.5 text-xs font-medium"
+                      style={{
+                        backgroundColor: `${projectColor}15`,
+                        color: projectColor || undefined,
+                      }}
+                    >
+                      {projectName}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-0.5 text-xs text-text-muted">
+                  {formatRelativeTime(conversation.updatedAt)}
+                  {conversation.messages.length > 0 && (
+                    <span> · {conversation.messages.length} messages</span>
+                  )}
+                </div>
+              </div>
+
               <ArrowRight className="h-4 w-4 shrink-0 text-text-muted opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 }

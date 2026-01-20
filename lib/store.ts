@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { generateId, generateConversationTitle, storage } from './utils';
-import { DEFAULT_USER, STORAGE_KEYS, MODELS } from './constants';
+import { generateId, generateConversationTitle } from './utils';
+import { DEFAULT_USER, DEFAULT_PROJECTS } from './constants';
 import type {
   Theme,
   User,
@@ -9,6 +9,7 @@ import type {
   Message,
   Model,
   ModelSelection,
+  Project,
 } from '@/types';
 
 // ===== TYPES =====
@@ -21,6 +22,13 @@ interface AppState {
   user: User;
   updateUser: (updates: Partial<User>) => void;
 
+  // XP and Streak
+  addXP: (amount: number) => void;
+  incrementStreak: () => void;
+  resetStreak: () => void;
+  lastActiveDate: string | null;
+  checkAndUpdateStreak: () => void;
+
   // UI State
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
@@ -28,10 +36,18 @@ interface AppState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   toggleSidebar: () => void;
 
+  // Projects
+  projects: Project[];
+  createProject: (name: string, color: string) => string;
+  updateProject: (id: string, updates: Partial<Project>) => void;
+  deleteProject: (id: string) => void;
+  addConversationToProject: (conversationId: string, projectId: string) => void;
+  removeConversationFromProject: (conversationId: string) => void;
+
   // Conversations
   conversations: Conversation[];
   activeConversationId: string | null;
-  createConversation: () => string;
+  createConversation: (projectId?: string) => string;
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
   updateConversationTitle: (id: string, title: string) => void;
@@ -54,66 +70,53 @@ interface AppState {
 const generateMockResponse = (userMessage: string, model: Model): string => {
   const responses: Record<string, string[]> = {
     claude: [
-      `I'd be happy to help with that! Let me analyze your request about "${userMessage.slice(0, 30)}..."
+      `I understand you're asking about "${userMessage.slice(0, 30)}${userMessage.length > 30 ? '...' : ''}"
 
-Based on my understanding, here are some key points:
+Here's my thoughtful analysis:
 
-1. **First consideration**: The context of your question suggests you're looking for a thoughtful approach.
+**Key Points:**
 
-2. **Second point**: There are multiple ways to tackle this, and I'll outline the most effective one.
+1. This is an interesting topic that deserves careful consideration.
 
-3. **Recommendation**: I suggest starting with the fundamentals and building from there.
+2. There are multiple perspectives to consider here.
+
+3. I'd recommend approaching this methodically.
 
 Would you like me to elaborate on any of these points?`,
     ],
     gpt4: [
-      `Great question! Here's my analysis:
+      `Here's my analysis:
 
 \`\`\`javascript
-// Example code snippet
+// Example approach
 function solution() {
-  console.log("Processing your request...");
+  // Step 1: Understand the problem
+  // Step 2: Break it down
+  // Step 3: Implement
   return "Result";
 }
 \`\`\`
 
-The key insight here is that **understanding the problem** is half the solution.
+**Key insight:** Understanding the problem is half the solution.
 
-Let me break it down:
-- First, we identify the core issue
-- Then, we develop a systematic approach
-- Finally, we implement and verify
+Let me break this down:
+- First, identify the core issue
+- Then, develop a systematic approach
+- Finally, implement and verify
 
-Is there anything specific you'd like me to clarify?`,
+Shall I clarify anything?`,
     ],
     gemini: [
-      `I've researched this topic thoroughly. Here's what I found:
+      `Based on my research:
 
-**Overview**: Your question about "${userMessage.slice(0, 20)}..." is quite interesting.
+**Overview:** Your question about "${userMessage.slice(0, 20)}${userMessage.length > 20 ? '...' : ''}" is quite interesting.
 
-**Key Facts**:
-• Research shows multiple approaches exist
-• The most effective method depends on your specific context
-• Recent studies suggest a balanced approach works best
+**Key Facts:**
+- Multiple approaches exist for this
+- The best method depends on your context
+- Recent developments suggest new solutions
 
-**Sources**: Based on my analysis of current information.
-
-Would you like more detailed information on any specific aspect?`,
-    ],
-    perplexity: [
-      `Based on real-time search results, here's the latest information:
-
-🔍 **Search Results Summary**:
-
-Your query relates to a topic that has been actively discussed. Here are the most relevant findings:
-
-1. Recent developments suggest new approaches
-2. Expert opinions vary, but consensus is emerging
-3. Practical applications are becoming more common
-
-**Sources reviewed**: Multiple authoritative sources confirm these findings.
-
-Let me know if you'd like me to search for more specific information!`,
+Would you like more details on any aspect?`,
     ],
   };
 
@@ -136,6 +139,49 @@ export const useAppStore = create<AppState>()(
           user: { ...state.user, ...updates },
         })),
 
+      // XP and Streak
+      lastActiveDate: null,
+      addXP: (amount) =>
+        set((state) => ({
+          user: { ...state.user, xp: state.user.xp + amount },
+        })),
+      incrementStreak: () =>
+        set((state) => ({
+          user: { ...state.user, streak: state.user.streak + 1 },
+        })),
+      resetStreak: () =>
+        set((state) => ({
+          user: { ...state.user, streak: 1 },
+        })),
+      checkAndUpdateStreak: () => {
+        const state = get();
+        const today = new Date().toDateString();
+        const lastActive = state.lastActiveDate;
+
+        if (!lastActive) {
+          set({ lastActiveDate: today });
+          return;
+        }
+
+        if (lastActive === today) {
+          return;
+        }
+
+        const lastDate = new Date(lastActive);
+        const todayDate = new Date(today);
+        const diffDays = Math.floor(
+          (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        if (diffDays === 1) {
+          state.incrementStreak();
+        } else if (diffDays > 1) {
+          state.resetStreak();
+        }
+
+        set({ lastActiveDate: today });
+      },
+
       // UI State
       sidebarOpen: true,
       sidebarCollapsed: false,
@@ -144,24 +190,101 @@ export const useAppStore = create<AppState>()(
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
 
+      // Projects
+      projects: DEFAULT_PROJECTS.map((p) => ({
+        ...p,
+        conversationIds: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })),
+      createProject: (name, color) => {
+        const id = generateId();
+        const newProject: Project = {
+          id,
+          name,
+          color,
+          conversationIds: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        set((state) => ({
+          projects: [...state.projects, newProject],
+        }));
+        return id;
+      },
+      updateProject: (id, updates) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === id ? { ...p, ...updates, updatedAt: new Date() } : p
+          ),
+        })),
+      deleteProject: (id) =>
+        set((state) => ({
+          projects: state.projects.filter((p) => p.id !== id),
+          conversations: state.conversations.map((c) =>
+            c.projectId === id ? { ...c, projectId: undefined } : c
+          ),
+        })),
+      addConversationToProject: (conversationId, projectId) =>
+        set((state) => ({
+          projects: state.projects.map((p) =>
+            p.id === projectId
+              ? {
+                  ...p,
+                  conversationIds: [...p.conversationIds, conversationId],
+                  updatedAt: new Date(),
+                }
+              : p
+          ),
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, projectId } : c
+          ),
+        })),
+      removeConversationFromProject: (conversationId) =>
+        set((state) => ({
+          projects: state.projects.map((p) => ({
+            ...p,
+            conversationIds: p.conversationIds.filter((id) => id !== conversationId),
+          })),
+          conversations: state.conversations.map((c) =>
+            c.id === conversationId ? { ...c, projectId: undefined } : c
+          ),
+        })),
+
       // Conversations
       conversations: [],
       activeConversationId: null,
 
-      createConversation: () => {
+      createConversation: (projectId?: string) => {
         const id = generateId();
         const newConversation: Conversation = {
           id,
           title: 'New conversation',
           messages: [],
+          projectId,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
 
-        set((state) => ({
-          conversations: [newConversation, ...state.conversations],
-          activeConversationId: id,
-        }));
+        set((state) => {
+          const updatedProjects = projectId
+            ? state.projects.map((p) =>
+                p.id === projectId
+                  ? {
+                      ...p,
+                      conversationIds: [...p.conversationIds, id],
+                      updatedAt: new Date(),
+                    }
+                  : p
+              )
+            : state.projects;
+
+          return {
+            conversations: [newConversation, ...state.conversations],
+            activeConversationId: id,
+            projects: updatedProjects,
+          };
+        });
 
         return id;
       },
@@ -169,6 +292,10 @@ export const useAppStore = create<AppState>()(
       deleteConversation: (id) =>
         set((state) => ({
           conversations: state.conversations.filter((c) => c.id !== id),
+          projects: state.projects.map((p) => ({
+            ...p,
+            conversationIds: p.conversationIds.filter((cId) => cId !== id),
+          })),
           activeConversationId:
             state.activeConversationId === id
               ? state.conversations.find((c) => c.id !== id)?.id || null
@@ -202,7 +329,6 @@ export const useAppStore = create<AppState>()(
               timestamp: new Date(),
             };
 
-            // Auto-generate title from first user message
             const shouldUpdateTitle =
               c.title === 'New conversation' &&
               message.role === 'user' &&
@@ -247,7 +373,6 @@ export const useAppStore = create<AppState>()(
         const state = get();
         let conversationId = state.activeConversationId;
 
-        // Create new conversation if none active
         if (!conversationId) {
           conversationId = state.createConversation();
         }
@@ -258,24 +383,22 @@ export const useAppStore = create<AppState>()(
           content,
         });
 
+        // Award XP for sending a message
+        state.addXP(5);
+        state.checkAndUpdateStreak();
+
         // Set generating state
         set({ isGenerating: true });
 
         // Determine model to use
         let model: Model;
         if (state.selectedModel === 'auto') {
-          // Simple auto-routing logic based on content
           if (content.toLowerCase().includes('code') || content.includes('```')) {
             model = 'gpt4';
           } else if (
-            content.toLowerCase().includes('search') ||
-            content.toLowerCase().includes('latest') ||
-            content.toLowerCase().includes('news')
-          ) {
-            model = 'perplexity';
-          } else if (
             content.toLowerCase().includes('research') ||
-            content.toLowerCase().includes('fact')
+            content.toLowerCase().includes('fact') ||
+            content.toLowerCase().includes('what is')
           ) {
             model = 'gemini';
           } else {
@@ -286,17 +409,18 @@ export const useAppStore = create<AppState>()(
         }
 
         // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1500 + Math.random() * 1000));
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1200 + Math.random() * 800)
+        );
 
-        // Check if still generating (user might have stopped)
+        // Check if still generating
         if (!get().isGenerating) return;
 
-        // Generate routing reason
+        // Routing reasons
         const routingReasons: Record<Model, string> = {
-          claude: 'Claude excels at thoughtful analysis and writing tasks.',
-          gpt4: 'GPT-4 is optimal for code and complex reasoning.',
-          gemini: 'Gemini Pro provides accurate research and factual information.',
-          perplexity: 'Perplexity offers real-time search capabilities.',
+          claude: 'Best for thoughtful analysis and writing',
+          gpt4: 'Optimal for code and complex reasoning',
+          gemini: 'Great for research and factual information',
         };
 
         // Add AI response
@@ -306,6 +430,9 @@ export const useAppStore = create<AppState>()(
           model,
           routingReason: routingReasons[model],
         });
+
+        // Award XP for completing a conversation turn
+        state.addXP(10);
 
         set({ isGenerating: false });
       },
@@ -321,12 +448,13 @@ export const useAppStore = create<AppState>()(
         theme: state.theme,
         user: state.user,
         conversations: state.conversations,
+        projects: state.projects,
         activeConversationId: state.activeConversationId,
         selectedModel: state.selectedModel,
         sidebarCollapsed: state.sidebarCollapsed,
+        lastActiveDate: state.lastActiveDate,
       }),
       onRehydrateStorage: () => (state) => {
-        // Convert date strings back to Date objects after rehydration
         if (state?.conversations) {
           state.conversations = state.conversations.map((conv) => ({
             ...conv,
@@ -338,6 +466,16 @@ export const useAppStore = create<AppState>()(
             })),
           }));
         }
+        if (state?.projects) {
+          state.projects = state.projects.map((proj) => ({
+            ...proj,
+            createdAt: new Date(proj.createdAt),
+            updatedAt: new Date(proj.updatedAt),
+          }));
+        }
+        if (state?.user?.createdAt) {
+          state.user.createdAt = new Date(state.user.createdAt);
+        }
       },
     }
   )
@@ -347,6 +485,7 @@ export const useAppStore = create<AppState>()(
 export const selectTheme = (state: AppState) => state.theme;
 export const selectUser = (state: AppState) => state.user;
 export const selectConversations = (state: AppState) => state.conversations;
+export const selectProjects = (state: AppState) => state.projects;
 export const selectActiveConversationId = (state: AppState) =>
   state.activeConversationId;
 export const selectActiveConversation = (state: AppState) =>
