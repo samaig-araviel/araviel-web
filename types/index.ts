@@ -1,5 +1,5 @@
 // ===== AI MODELS =====
-export type Model = 'claude' | 'gpt4' | 'gemini' | 'perplexity';
+export type Model = 'claude' | 'gpt4' | 'gemini';
 export type ModelSelection = Model | 'auto';
 
 export interface ModelInfo {
@@ -7,7 +7,6 @@ export interface ModelInfo {
   name: string;
   description: string;
   color: string;
-  icon: string;
 }
 
 // ===== USER =====
@@ -21,6 +20,7 @@ export interface UserPreferences {
   interests: string[];
   defaultModel: ModelSelection;
   responseLength: 'concise' | 'balanced' | 'detailed';
+  trustMode: boolean;
 }
 
 export interface User {
@@ -29,8 +29,20 @@ export interface User {
   email: string;
   avatar?: string;
   plan: Plan;
+  xp: number;
+  streak: number;
   preferences: UserPreferences;
   createdAt: Date;
+}
+
+// ===== PROJECTS =====
+export interface Project {
+  id: string;
+  name: string;
+  color: string;
+  conversationIds: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ===== MESSAGES =====
@@ -60,6 +72,7 @@ export interface Conversation {
   title: string;
   messages: Message[];
   model?: ModelSelection;
+  projectId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -69,8 +82,8 @@ export interface QuickAction {
   id: string;
   icon: string;
   label: string;
+  description: string;
   promptStarter: string;
-  color?: string;
 }
 
 // ===== DAILY INSIGHTS =====
@@ -81,7 +94,6 @@ export interface DailyInsight {
   type: InsightType;
   title: string;
   content: string;
-  icon: string;
 }
 
 // ===== UI STATE =====
@@ -116,4 +128,5 @@ export interface ConversationListItem {
   updatedAt: Date;
   lastModel?: Model;
   messageCount: number;
+  projectId?: string;
 }

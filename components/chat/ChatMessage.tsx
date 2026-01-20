@@ -1,11 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Copy, RefreshCw, ThumbsUp, ThumbsDown, RotateCcw, Check } from 'lucide-react';
+import { Copy, RefreshCw, ThumbsUp, ThumbsDown, Check, Sparkles } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 import { MODELS } from '@/lib/constants';
 import { Avatar } from '@/components/ui/Avatar';
-import { ModelBadge } from './ModelBadge';
 import type { Message, User } from '@/types';
 
 interface ChatMessageProps {
@@ -23,7 +22,6 @@ export function ChatMessage({
   user,
   isLast = false,
   onRegenerate,
-  onTryDifferent,
   onFeedback,
   className,
 }: ChatMessageProps) {
@@ -44,14 +42,12 @@ export function ChatMessage({
     onFeedback?.(positive);
   };
 
-  // Simple markdown rendering (you can enhance this with a proper markdown library)
+  // Simple markdown rendering
   const renderContent = (content: string) => {
-    // Split by code blocks
     const parts = content.split(/(```[\s\S]*?```)/g);
 
     return parts.map((part, index) => {
       if (part.startsWith('```')) {
-        // Code block
         const lines = part.slice(3, -3).split('\n');
         const language = lines[0] || 'text';
         const code = lines.slice(1).join('\n');
@@ -107,33 +103,34 @@ export function ChatMessage({
             size="md"
           />
         ) : (
-          <Avatar
-            fallback={modelInfo?.icon || '✨'}
-            size="md"
-          />
-        )}
-        {!isUser && modelInfo && (
-          <span
-            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background-primary"
-            style={{ backgroundColor: modelInfo.color }}
-          />
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-lg"
+            style={{ backgroundColor: modelInfo?.color || 'var(--accent)' }}
+          >
+            <Sparkles className="h-4 w-4 text-white" />
+          </div>
         )}
       </div>
 
       {/* Message Content */}
       <div
         className={cn(
-          'flex max-w-[85%] flex-col gap-2',
+          'flex max-w-[85%] flex-col gap-1.5',
           isUser && 'items-end'
         )}
       >
-        {/* Model Badge for AI messages */}
+        {/* Model indicator for AI messages */}
         {!isUser && message.model && (
-          <ModelBadge
-            model={message.model}
-            routingReason={message.routingReason}
-            size="sm"
-          />
+          <div className="flex items-center gap-2 px-1">
+            <span className="text-xs font-medium text-text-secondary">
+              {MODELS[message.model]?.name || 'AI'}
+            </span>
+            {message.routingReason && (
+              <span className="text-xs text-text-muted">
+                · {message.routingReason}
+              </span>
+            )}
+          </div>
         )}
 
         {/* Message Bubble */}
@@ -141,11 +138,11 @@ export function ChatMessage({
           className={cn(
             'rounded-2xl px-4 py-3',
             isUser
-              ? 'rounded-tr-md bg-accent-soft text-text-primary'
+              ? 'rounded-tr-md bg-accent text-white'
               : 'rounded-tl-md border border-border-subtle bg-background-secondary'
           )}
         >
-          <div className="text-sm leading-relaxed">
+          <div className={cn('text-sm leading-relaxed', isUser && 'text-white')}>
             {renderContent(message.content)}
           </div>
         </div>
@@ -166,11 +163,7 @@ export function ChatMessage({
           >
             <button
               onClick={handleCopy}
-              className="
-                flex items-center gap-1.5 rounded-md px-2 py-1
-                text-xs text-text-muted
-                transition-colors hover:bg-background-tertiary hover:text-text-primary
-              "
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-background-tertiary hover:text-text-primary"
               title="Copy"
             >
               {copied ? (
@@ -183,11 +176,7 @@ export function ChatMessage({
 
             <button
               onClick={onRegenerate}
-              className="
-                flex items-center gap-1.5 rounded-md px-2 py-1
-                text-xs text-text-muted
-                transition-colors hover:bg-background-tertiary hover:text-text-primary
-              "
+              className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-text-muted transition-colors hover:bg-background-tertiary hover:text-text-primary"
               title="Regenerate"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -199,12 +188,8 @@ export function ChatMessage({
             <button
               onClick={() => handleFeedback(true)}
               className={cn(
-                `
-                flex items-center gap-1 rounded-md p-1.5
-                text-text-muted transition-colors
-                hover:bg-background-tertiary hover:text-text-primary
-              `,
-                feedback === 'positive' && 'bg-success/10 text-success'
+                'flex items-center gap-1 rounded-md p-1.5 text-text-muted transition-colors hover:bg-background-tertiary hover:text-text-primary',
+                feedback === 'positive' && 'bg-success-soft text-success'
               )}
               title="Good response"
             >
@@ -214,31 +199,12 @@ export function ChatMessage({
             <button
               onClick={() => handleFeedback(false)}
               className={cn(
-                `
-                flex items-center gap-1 rounded-md p-1.5
-                text-text-muted transition-colors
-                hover:bg-background-tertiary hover:text-text-primary
-              `,
-                feedback === 'negative' && 'bg-error/10 text-error'
+                'flex items-center gap-1 rounded-md p-1.5 text-text-muted transition-colors hover:bg-background-tertiary hover:text-text-primary',
+                feedback === 'negative' && 'bg-error-soft text-error'
               )}
               title="Bad response"
             >
               <ThumbsDown className="h-3.5 w-3.5" />
-            </button>
-
-            <div className="mx-1 h-4 w-px bg-border" />
-
-            <button
-              onClick={onTryDifferent}
-              className="
-                flex items-center gap-1.5 rounded-md px-2 py-1
-                text-xs text-text-muted
-                transition-colors hover:bg-background-tertiary hover:text-text-primary
-              "
-              title="Try different model"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Try other</span>
             </button>
           </div>
         )}

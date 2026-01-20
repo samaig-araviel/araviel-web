@@ -4,7 +4,6 @@ import { useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAppStore } from '@/lib/store';
 import { useChat } from '@/hooks/useChat';
-import { useAppKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { ChatHeader } from '@/components/chat/ChatHeader';
@@ -19,6 +18,7 @@ export default function ChatPage() {
   const { user, sidebarCollapsed, setSidebarCollapsed, setActiveConversation } = useAppStore();
   const {
     conversations,
+    projects,
     activeConversation,
     selectedModel,
     isGenerating,
@@ -37,15 +37,6 @@ export default function ChatPage() {
       setActiveConversation(conversationId);
     }
   }, [conversationId, setActiveConversation]);
-
-  // Keyboard shortcuts
-  useAppKeyboardShortcuts({
-    onNewChat: () => {
-      const id = handleNewChat();
-      router.push(`/chat/${id}`);
-    },
-    onToggleSidebar: () => setSidebarCollapsed(!sidebarCollapsed),
-  });
 
   const handleConversationSelect = useCallback(
     (id: string) => {
@@ -68,14 +59,12 @@ export default function ChatPage() {
   }, [conversationId, handleDeleteConversation, router]);
 
   const handleShare = useCallback(() => {
-    // Implement share functionality
     if (navigator.share) {
       navigator.share({
         title: activeConversation?.title || 'Araviel Chat',
         url: window.location.href,
       });
     } else {
-      // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
     }
   }, [activeConversation?.title]);
@@ -96,12 +85,14 @@ export default function ChatPage() {
     URL.revokeObjectURL(url);
   }, [activeConversation]);
 
-  // Redirect to home if conversation not found
+  // Loading state
   if (!activeConversation && conversations.length > 0) {
-    // Give a moment for the store to sync
     return (
       <div className="flex h-screen items-center justify-center bg-background-primary">
-        <div className="text-text-muted">Loading...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 animate-pulse rounded-lg bg-accent-soft" />
+          <div className="text-sm text-text-muted">Loading conversation...</div>
+        </div>
       </div>
     );
   }
@@ -113,6 +104,7 @@ export default function ChatPage() {
         <Sidebar
           user={user}
           conversations={conversations}
+          projects={projects}
           activeConversationId={conversationId}
           collapsed={sidebarCollapsed}
           onCollapsedChange={setSidebarCollapsed}
@@ -160,10 +152,7 @@ export default function ChatPage() {
       </main>
 
       {/* Mobile Navigation */}
-      <MobileNav
-        onNewChat={handleNewChatClick}
-        onProfileClick={() => {}}
-      />
+      <MobileNav onNewChat={handleNewChatClick} />
     </div>
   );
 }

@@ -2,35 +2,31 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Home,
-  Compass,
-  Star,
+  Settings,
   Plus,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   MoreHorizontal,
   Pencil,
   Trash2,
+  MessageSquare,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { cn, truncate, groupConversationsByDate } from '@/lib/utils';
-import { SIDEBAR_NAV } from '@/lib/constants';
+import { useAppStore } from '@/lib/store';
 import { Avatar } from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/Button';
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownContent,
-  DropdownItem,
-  DropdownDivider,
-} from '@/components/ui/Dropdown';
-import { ProfileMenu } from './ProfileMenu';
-import type { Conversation, User } from '@/types';
+import type { Conversation, User, Project } from '@/types';
 
 interface SidebarProps {
   user: User;
   conversations: Conversation[];
+  projects: Project[];
   activeConversationId?: string;
   collapsed?: boolean;
   onCollapsedChange?: (collapsed: boolean) => void;
@@ -40,15 +36,15 @@ interface SidebarProps {
   onDeleteConversation?: (id: string) => void;
 }
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Home,
-  Compass,
-  Star,
-};
+const navItems = [
+  { id: 'home', label: 'Home', icon: Home, href: '/' },
+  { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+];
 
 export function Sidebar({
   user,
   conversations,
+  projects,
   activeConversationId,
   collapsed = false,
   onCollapsedChange,
@@ -58,17 +54,56 @@ export function Sidebar({
   onDeleteConversation,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { theme, setTheme } = useAppStore();
   const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [renameId, setRenameId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const groupedChats = groupConversationsByDate(conversations);
+
+  const handleRenameStart = (chat: Conversation) => {
+    setRenameId(chat.id);
+    setRenameValue(chat.title);
+    setOpenMenuId(null);
+  };
+
+  const handleRenameSubmit = (id: string) => {
+    if (renameValue.trim()) {
+      onRenameConversation?.(id, renameValue.trim());
+    }
+    setRenameId(null);
+    setRenameValue('');
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === 'Enter') {
+      handleRenameSubmit(id);
+    } else if (e.key === 'Escape') {
+      setRenameId(null);
+      setRenameValue('');
+    }
+  };
+
+  const toggleTheme = () => {
+    if (theme === 'dark') {
+      setTheme('light');
+      document.documentElement.classList.remove('dark');
+    } else {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
+  };
 
   const renderChatGroup = (title: string, chats: Conversation[]) => {
     if (chats.length === 0) return null;
 
     return (
-      <div key={title} className="mb-4">
+      <div key={title} className="mb-3">
         {!collapsed && (
-          <h4 className="mb-2 px-3 text-xs font-medium uppercase tracking-wider text-text-muted">
+          <h4 className="mb-1.5 px-3 text-xs font-medium text-text-muted">
             {title}
           </h4>
         )}
@@ -78,68 +113,80 @@ export function Sidebar({
               key={chat.id}
               className="group relative"
               onMouseEnter={() => setHoveredChatId(chat.id)}
-              onMouseLeave={() => setHoveredChatId(null)}
+              onMouseLeave={() => {
+                setHoveredChatId(null);
+                if (openMenuId === chat.id) setOpenMenuId(null);
+              }}
             >
-              <button
-                onClick={() => onSelectConversation?.(chat.id)}
-                className={cn(
-                  `
-                  flex w-full items-center gap-3 rounded-lg px-3 py-2
-                  text-sm text-text-secondary
-                  transition-colors duration-150
-                  hover:bg-background-tertiary hover:text-text-primary
-                `,
-                  activeConversationId === chat.id &&
-                    'bg-accent-soft text-accent'
-                )}
-                title={collapsed ? chat.title : undefined}
-              >
-                <span
+              {renameId === chat.id ? (
+                <div className="px-2">
+                  <input
+                    type="text"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={() => handleRenameSubmit(chat.id)}
+                    onKeyDown={(e) => handleRenameKeyDown(e, chat.id)}
+                    className="w-full rounded-md border border-accent bg-background-secondary px-2 py-1.5 text-sm text-text-primary focus:outline-none"
+                    autoFocus
+                  />
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    onSelectConversation?.(chat.id);
+                    router.push(`/chat/${chat.id}`);
+                  }}
                   className={cn(
-                    'h-2 w-2 shrink-0 rounded-full',
-                    chat.messages[chat.messages.length - 1]?.model === 'claude' && 'bg-model-claude',
-                    chat.messages[chat.messages.length - 1]?.model === 'gpt4' && 'bg-model-gpt4',
-                    chat.messages[chat.messages.length - 1]?.model === 'gemini' && 'bg-model-gemini',
-                    chat.messages[chat.messages.length - 1]?.model === 'perplexity' && 'bg-model-perplexity',
-                    !chat.messages[chat.messages.length - 1]?.model && 'bg-text-muted'
+                    'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-background-tertiary hover:text-text-primary',
+                    activeConversationId === chat.id && 'bg-accent-soft text-accent'
                   )}
-                />
-                {!collapsed && (
-                  <span className="flex-1 truncate text-left">
-                    {truncate(chat.title, 28)}
-                  </span>
-                )}
-              </button>
+                  title={collapsed ? chat.title : undefined}
+                >
+                  <MessageSquare className="h-4 w-4 shrink-0" />
+                  {!collapsed && (
+                    <span className="flex-1 truncate text-left">
+                      {truncate(chat.title, 22)}
+                    </span>
+                  )}
+                </button>
+              )}
 
-              {/* Chat actions on hover */}
-              {!collapsed && hoveredChatId === chat.id && (
-                <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-0.5">
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <span className="flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-border hover:text-text-primary">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </span>
-                    </DropdownTrigger>
-                    <DropdownContent align="end">
-                      <DropdownItem
-                        icon={<Pencil className="h-4 w-4" />}
-                        onClick={() => {
-                          const newTitle = prompt('Rename conversation:', chat.title);
-                          if (newTitle) onRenameConversation?.(chat.id, newTitle);
-                        }}
-                      >
-                        Rename
-                      </DropdownItem>
-                      <DropdownDivider />
-                      <DropdownItem
-                        icon={<Trash2 className="h-4 w-4" />}
-                        danger
-                        onClick={() => onDeleteConversation?.(chat.id)}
-                      >
-                        Delete
-                      </DropdownItem>
-                    </DropdownContent>
-                  </Dropdown>
+              {/* Chat menu */}
+              {!collapsed && hoveredChatId === chat.id && renameId !== chat.id && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenMenuId(openMenuId === chat.id ? null : chat.id);
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-border hover:text-text-primary"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+
+                    {openMenuId === chat.id && (
+                      <div className="absolute right-0 top-full z-50 mt-1 w-32 animate-fade-in rounded-lg border border-border bg-background-secondary p-1 shadow-lg">
+                        <button
+                          onClick={() => handleRenameStart(chat)}
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-text-secondary hover:bg-background-tertiary hover:text-text-primary"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Rename
+                        </button>
+                        <button
+                          onClick={() => {
+                            onDeleteConversation?.(chat.id);
+                            setOpenMenuId(null);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-error hover:bg-error-soft"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -152,24 +199,18 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        `
-        flex h-screen flex-col
-        border-r border-border bg-background-secondary
-        transition-all duration-300 ease-out
-      `,
-        collapsed ? 'w-[68px]' : 'w-[260px]'
+        'flex h-screen flex-col border-r border-border bg-background-secondary transition-all duration-200',
+        collapsed ? 'w-[60px]' : 'w-[260px]'
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <Link href="/" className="flex items-center gap-2.5">
-          {/* Logo */}
-          <div className="relative h-8 w-8 shrink-0">
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-accent to-purple-500 opacity-80" />
-            <div className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-accent to-purple-400" />
+      <div className="flex items-center justify-between border-b border-border-subtle px-3 py-3">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent">
+            <span className="text-sm font-bold text-white">A</span>
           </div>
           {!collapsed && (
-            <span className="text-lg font-semibold text-text-primary">Araviel</span>
+            <span className="text-base font-semibold text-text-primary">Araviel</span>
           )}
         </Link>
         <button
@@ -192,15 +233,15 @@ export function Sidebar({
           className={cn('w-full', collapsed && 'px-0')}
           size={collapsed ? 'icon' : 'md'}
         >
-          <Plus className="h-5 w-5" />
+          <Plus className="h-4 w-4" />
           {!collapsed && <span>New chat</span>}
         </Button>
       </div>
 
       {/* Navigation */}
-      <nav className="px-3">
-        {SIDEBAR_NAV.map((item) => {
-          const Icon = iconMap[item.icon];
+      <nav className="px-2">
+        {navItems.map((item) => {
+          const Icon = item.icon;
           const isActive = pathname === item.href;
 
           return (
@@ -208,43 +249,64 @@ export function Sidebar({
               key={item.id}
               href={item.href}
               className={cn(
-                `
-                flex items-center gap-3 rounded-lg px-3 py-2.5 mb-0.5
-                text-sm font-medium text-text-secondary
-                transition-colors duration-150
-                hover:bg-background-tertiary hover:text-text-primary
-              `,
+                'flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-background-tertiary hover:text-text-primary',
                 isActive && 'bg-accent-soft text-accent',
                 collapsed && 'justify-center'
               )}
               title={collapsed ? item.label : undefined}
             >
-              {Icon && <Icon className="h-5 w-5" />}
+              <Icon className="h-4 w-4" />
               {!collapsed && <span>{item.label}</span>}
-              {!collapsed && item.id === 'rewards' && (
-                <span className="ml-auto rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">
-                  42
-                </span>
-              )}
             </Link>
           );
         })}
       </nav>
 
       {/* Divider */}
-      <div className="mx-3 my-3 h-px bg-border" />
+      <div className="mx-3 my-2 h-px bg-border-subtle" />
+
+      {/* Projects Section */}
+      {!collapsed && projects.length > 0 && (
+        <div className="px-2">
+          <button
+            onClick={() => setProjectsExpanded(!projectsExpanded)}
+            className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-text-muted hover:text-text-secondary"
+          >
+            <span>Projects</span>
+            <ChevronDown
+              className={cn('h-3.5 w-3.5 transition-transform', !projectsExpanded && '-rotate-90')}
+            />
+          </button>
+          {projectsExpanded && (
+            <div className="space-y-0.5">
+              {projects.map((project) => (
+                <button
+                  key={project.id}
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-secondary transition-colors hover:bg-background-tertiary hover:text-text-primary"
+                >
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: project.color }}
+                  />
+                  <span className="truncate">{project.name}</span>
+                  <span className="ml-auto text-xs text-text-muted">
+                    {project.conversationIds.length}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="mx-3 my-2 h-px bg-border-subtle" />
+        </div>
+      )}
 
       {/* Chat History */}
       <div className="flex-1 overflow-y-auto px-2">
-        {!collapsed && conversations.length > 0 && (
-          <h3 className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-text-muted">
-            Recent
-          </h3>
-        )}
-
         {conversations.length === 0 ? (
           !collapsed && (
-            <p className="px-3 text-sm text-text-muted">No conversations yet</p>
+            <p className="px-3 py-4 text-center text-sm text-text-muted">
+              No conversations yet
+            </p>
           )
         ) : (
           <>
@@ -256,9 +318,37 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Profile Section */}
-      <div className="border-t border-border p-3">
-        <ProfileMenu user={user} collapsed={collapsed} />
+      {/* Footer - User Profile */}
+      <div className="border-t border-border-subtle p-3">
+        <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
+          <Avatar
+            src={user.avatar}
+            alt={user.name}
+            fallback={user.name}
+            size="sm"
+          />
+          {!collapsed && (
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-text-primary">
+                {user.name}
+              </div>
+              <div className="truncate text-xs text-text-muted">{user.email}</div>
+            </div>
+          )}
+          {!collapsed && (
+            <button
+              onClick={toggleTheme}
+              className="rounded-md p-1.5 text-text-muted transition-colors hover:bg-background-tertiary hover:text-text-primary"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </button>
+          )}
+        </div>
       </div>
     </aside>
   );

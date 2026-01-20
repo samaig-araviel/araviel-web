@@ -1,8 +1,8 @@
 'use client';
 
+import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MODELS } from '@/lib/constants';
-import { Avatar } from '@/components/ui/Avatar';
 import type { Model } from '@/types';
 
 interface TypingIndicatorProps {
@@ -22,25 +22,15 @@ export function TypingIndicator({ model, className }: TypingIndicatorProps) {
       )}
     >
       {/* Avatar */}
-      <div className="relative shrink-0">
-        <Avatar
-          fallback={modelInfo?.icon || '✨'}
-          size="md"
-        />
-        {modelInfo && (
-          <span
-            className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background-primary"
-            style={{ backgroundColor: modelInfo.color }}
-          />
-        )}
+      <div
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+        style={{ backgroundColor: modelInfo?.color || 'var(--accent)' }}
+      >
+        <Sparkles className="h-4 w-4 text-white" />
       </div>
 
       {/* Content */}
-      <div className="
-        rounded-2xl rounded-tl-md
-        border border-border-subtle bg-background-secondary
-        px-4 py-3
-      ">
+      <div className="rounded-2xl rounded-tl-md border border-border-subtle bg-background-secondary px-4 py-3">
         <p className="mb-2 text-sm text-text-muted">
           {displayName} is thinking...
         </p>
