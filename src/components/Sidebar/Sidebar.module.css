@@ -225,20 +225,60 @@
 }
 
 .recents {
-  margin-top: 24px;
+  margin-top: 16px;
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.recentsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.recentsHeader:hover {
+  background-color: var(--bg-hover);
 }
 
 .recentsLabel {
-  display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0 12px;
-  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+
+.recentsChevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.recentsChevron.expanded {
+  transform: rotate(180deg);
+}
+
+.recentsContent {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease, margin 0.2s ease;
+  margin-top: 0;
+}
+
+.recentsContent.recentsOpen {
+  max-height: 400px;
+  opacity: 1;
+  margin-top: 4px;
+  overflow-y: auto;
 }
 
 .recentsList {
@@ -250,12 +290,12 @@
 .recentItem {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   transition: background-color 0.15s ease, color 0.15s ease;
   text-align: left;
 }
@@ -271,29 +311,36 @@
   white-space: nowrap;
 }
 
+.recentsEmpty {
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 .recentsCollapsed {
-  margin-top: 24px;
+  margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   flex: 1;
 }
 
-.recentItemCollapsed {
+.recentsCollapsedIcon {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  padding: 0;
-  border-radius: 10px;
-  color: var(--text-secondary);
+  border-radius: 8px;
+  color: var(--text-muted);
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.recentItemCollapsed:hover {
+.recentsCollapsedIcon:hover {
   background-color: var(--bg-hover);
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .footer {
