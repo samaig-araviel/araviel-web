@@ -6,6 +6,7 @@ import { selectTheme, setTheme } from '../../store/slices/themeSlice'
 import {
   PlusIcon,
   ChevronLeftIcon,
+  ChevronDownIcon,
   ChatIcon,
   UserIcon,
   SunIcon,
@@ -22,6 +23,7 @@ export default function Sidebar() {
   const recentChats = useSelector(selectRecentChats)
   const themeMode = useSelector(selectTheme)
   const [isMobile, setIsMobile] = useState(false)
+  const [recentsExpanded, setRecentsExpanded] = useState(true)
 
   useEffect(() => {
     const checkMobile = () => {
@@ -58,6 +60,10 @@ export default function Sidebar() {
 
   const handleCloseSidebar = () => {
     dispatch(setCollapsed(true))
+  }
+
+  const toggleRecents = () => {
+    setRecentsExpanded(!recentsExpanded)
   }
 
   return (
@@ -106,37 +112,45 @@ export default function Sidebar() {
           {showFullContent && <span>New Chat</span>}
         </button>
 
-        {showFullContent && recentChats.length > 0 && (
+        {showFullContent && (
           <div className={styles.recents}>
-            <span className={styles.recentsLabel}>RECENTS</span>
-            <ul className={styles.recentsList}>
-              {recentChats.map((chat) => (
-                <li key={chat.id}>
-                  <button
-                    className={styles.recentItem}
-                    onClick={() => handleChatClick(chat.id)}
-                  >
-                    <ChatIcon />
-                    <span>{chat.title}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <button
+              className={styles.recentsHeader}
+              onClick={toggleRecents}
+              aria-expanded={recentsExpanded}
+            >
+              <span className={styles.recentsLabel}>Recents</span>
+              <span className={`${styles.recentsChevron} ${recentsExpanded ? styles.expanded : ''}`}>
+                <ChevronDownIcon />
+              </span>
+            </button>
+            <div className={`${styles.recentsContent} ${recentsExpanded ? styles.recentsOpen : ''}`}>
+              {recentChats.length > 0 ? (
+                <ul className={styles.recentsList}>
+                  {recentChats.map((chat) => (
+                    <li key={chat.id}>
+                      <button
+                        className={styles.recentItem}
+                        onClick={() => handleChatClick(chat.id)}
+                      >
+                        <ChatIcon />
+                        <span>{chat.title}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className={styles.recentsEmpty}>No recent chats</p>
+              )}
+            </div>
           </div>
         )}
 
-        {!showFullContent && recentChats.length > 0 && (
+        {!showFullContent && (
           <div className={styles.recentsCollapsed}>
-            {recentChats.map((chat) => (
-              <button
-                key={chat.id}
-                className={styles.recentItemCollapsed}
-                onClick={() => handleChatClick(chat.id)}
-                title={chat.title}
-              >
-                <ChatIcon />
-              </button>
-            ))}
+            <div className={styles.recentsCollapsedIcon} title="Recents">
+              <ChatIcon />
+            </div>
           </div>
         )}
 
