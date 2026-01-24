@@ -1,0 +1,147 @@
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background-color: var(--bg-primary);
+  transition: background-color 0.2s ease;
+  min-height: 100%;
+}
+
+.container {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.greeting {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.inputContainer {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.inputWrapper {
+  position: relative;
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 16px;
+  padding: 16px;
+  transition: border-color 0.15s ease, background-color 0.2s ease;
+}
+
+.inputWrapper:focus-within {
+  border-color: var(--text-muted);
+}
+
+.input {
+  width: 100%;
+  font-size: 16px;
+  color: var(--text-primary);
+  background: transparent;
+  resize: none;
+  min-height: 24px;
+  max-height: 200px;
+  line-height: 1.5;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.inputActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.modeSelector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: background-color 0.15s ease;
+}
+
+.modeSelector:hover {
+  background-color: var(--bg-hover);
+}
+
+.submitBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-secondary);
+  border-radius: 50%;
+  color: var(--text-muted);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.submitBtn:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+}
+
+.submitBtn.active {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+}
+
+.submitBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.actionBtn:hover {
+  background-color: var(--bg-button-hover);
+}
+
+.actionBtn.activeAction {
+  background-color: var(--bg-active);
+  border-color: var(--text-muted);
+}
