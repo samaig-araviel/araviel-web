@@ -5,19 +5,20 @@
   top: 16px;
   left: 16px;
   z-index: 1001;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   align-items: center;
   justify-content: center;
   background-color: var(--bg-button);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  transition: background-color 0.15s ease;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .mobileMenuBtn:hover {
   background-color: var(--bg-button-hover);
+  color: var(--text-primary);
 }
 
 /* Overlay for mobile */
@@ -28,11 +29,12 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.4);
   z-index: 999;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  backdrop-filter: blur(2px);
 }
 
 .overlayVisible {
@@ -48,33 +50,40 @@
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
-  transition: width 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
   position: relative;
   z-index: 1000;
   flex-shrink: 0;
 }
 
+/* Premium sleek collapsed sidebar */
 .sidebar.collapsed {
-  width: 60px;
-  padding: 12px 8px;
+  width: 52px;
+  padding: 16px 8px;
+  border-right-color: transparent;
 }
 
 /* Collapse button positioned on the right edge */
 .collapseBtn {
   position: absolute;
-  top: 24px;
+  top: 22px;
   right: -12px;
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   background-color: var(--bg-sidebar);
   border: 1px solid var(--border-color);
   border-radius: 50%;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.2s ease, opacity 0.2s ease;
   z-index: 10;
+  opacity: 0;
+}
+
+.sidebar:hover .collapseBtn {
+  opacity: 1;
 }
 
 .collapseBtn:hover {
@@ -84,18 +93,26 @@
 
 .collapsed .collapseBtn {
   transform: rotate(180deg);
+  right: -12px;
+  opacity: 0;
+}
+
+.collapsed:hover .collapseBtn {
+  opacity: 1;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 4px;
+  margin-bottom: 20px;
+  padding: 2px;
+  min-height: 32px;
 }
 
 .collapsed .header {
   justify-content: center;
+  margin-bottom: 16px;
 }
 
 .logo {
@@ -109,23 +126,29 @@
 }
 
 .logoIcon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   background-color: var(--text-primary);
   color: var(--bg-primary);
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 15px;
   flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.logoIcon:hover {
+  transform: scale(1.02);
 }
 
 .logoText {
   font-weight: 600;
   font-size: 16px;
   color: var(--text-primary);
+  letter-spacing: -0.01em;
 }
 
 /* Mobile close button in header */
@@ -136,7 +159,7 @@
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
-  border-radius: 6px;
+  border-radius: 8px;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
@@ -154,28 +177,33 @@
   padding: 10px 12px;
   background-color: var(--bg-button);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 10px;
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 24px;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  margin-bottom: 20px;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 .newChatBtn:hover {
   background-color: var(--bg-button-hover);
 }
 
+.newChatBtn:active {
+  transform: scale(0.98);
+}
+
 .collapsed .newChatBtn {
-  padding: 10px;
-  width: 44px;
-  height: 44px;
+  padding: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
 }
 
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .navItem {
@@ -183,8 +211,8 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 500;
@@ -204,10 +232,12 @@
 .collapsed .navItem {
   justify-content: center;
   padding: 10px;
+  width: 36px;
+  height: 36px;
 }
 
 .recents {
-  margin-top: 32px;
+  margin-top: 24px;
   flex: 1;
   overflow-y: auto;
 }
@@ -226,7 +256,7 @@
 .recentsList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .recentItem {
@@ -234,8 +264,8 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   color: var(--text-secondary);
   font-size: 14px;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -254,10 +284,10 @@
 }
 
 .recentsCollapsed {
-  margin-top: 32px;
+  margin-top: 24px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
   flex: 1;
 }
 
@@ -265,9 +295,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
   color: var(--text-secondary);
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -279,15 +310,19 @@
 
 .footer {
   margin-top: auto;
-  padding-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-color);
+}
+
+.collapsed .footer {
+  border-top-color: transparent;
 }
 
 .userSection {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 8px;
@@ -295,7 +330,9 @@
 
 .collapsed .userSection {
   justify-content: center;
-  padding: 10px;
+  padding: 8px;
+  width: 36px;
+  height: 36px;
 }
 
 .themeToggle {
@@ -303,7 +340,7 @@
   align-items: center;
   gap: 0;
   background-color: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 4px;
 }
 
@@ -313,7 +350,7 @@
   align-items: center;
   justify-content: center;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text-muted);
   transition: background-color 0.15s ease, color 0.15s ease;
 }
@@ -330,11 +367,13 @@
 
 .collapsed .themeToggle {
   flex-direction: column;
-  padding: 4px;
+  padding: 3px;
+  border-radius: 10px;
 }
 
 .collapsed .themeBtn {
   padding: 6px;
+  border-radius: 8px;
 }
 
 /* Mobile styles */
@@ -361,6 +400,7 @@
     padding: 16px 12px;
     transform: translateX(-100%);
     box-shadow: var(--shadow-lg);
+    border-right: 1px solid var(--border-color);
   }
 
   .sidebar:not(.collapsed) {
@@ -371,6 +411,7 @@
     width: 280px;
     padding: 16px 12px;
     transform: translateX(-100%);
+    border-right: 1px solid var(--border-color);
   }
 
   /* Hide collapse button on mobile */
@@ -381,6 +422,7 @@
   /* Reset collapsed styles on mobile since sidebar shows full content */
   .collapsed .header {
     justify-content: space-between;
+    margin-bottom: 20px;
   }
 
   .collapsed .logo {
@@ -395,16 +437,25 @@
     padding: 10px 12px;
     width: 100%;
     height: auto;
+    border-radius: 10px;
   }
 
   .collapsed .navItem {
     justify-content: flex-start;
-    padding: 12px;
+    padding: 10px 12px;
+    width: 100%;
+    height: auto;
   }
 
   .collapsed .userSection {
     justify-content: flex-start;
-    padding: 12px;
+    padding: 8px 12px;
+    width: 100%;
+    height: auto;
+  }
+
+  .collapsed .footer {
+    border-top: 1px solid var(--border-color);
   }
 
   .collapsed .themeToggle {
