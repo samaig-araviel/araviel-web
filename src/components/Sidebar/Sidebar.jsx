@@ -93,8 +93,20 @@ export default function Sidebar() {
 
         <div className={styles.header}>
           <div className={styles.logo}>
-            <div className={styles.logoIcon}>A</div>
-            {showFullContent && <span className={styles.logoText}>Araviel</span>}
+            {showFullContent ? (
+              <>
+                <div className={styles.logoIcon}>A</div>
+                <span className={styles.logoText}>Araviel</span>
+              </>
+            ) : (
+              <button
+                className={styles.logoExpandBtn}
+                onClick={() => dispatch(toggleSidebar())}
+                aria-label="Expand sidebar"
+              >
+                <ChevronLeftIcon />
+              </button>
+            )}
           </div>
           {isMobile && (
             <button

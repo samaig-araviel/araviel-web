@@ -85,6 +85,28 @@
 }
 
 .collapsed .collapseBtn {
+  display: none;
+}
+
+.logoExpandBtn {
+  width: 32px;
+  height: 32px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.logoExpandBtn:hover {
+  background-color: var(--bg-button-hover);
+  color: var(--text-primary);
+}
+
+.logoExpandBtn svg {
   transform: rotate(180deg);
 }
 
