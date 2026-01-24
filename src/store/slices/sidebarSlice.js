@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit'
 
 const getInitialCollapsed = () => {
   const saved = localStorage.getItem('araviel-sidebar-collapsed')
+  if (saved === null) return true // Default to collapsed
   return saved === 'true'
 }
 

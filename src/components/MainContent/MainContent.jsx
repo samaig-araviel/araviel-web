@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectInputValue, selectMode, setInputValue, setMode } from '../../store/slices/chatSlice'
-import { SendIcon, CodeIcon, PenIcon } from '../Icons'
+import { SendIcon, CodeIcon, PenIcon, CloseIcon } from '../Icons'
 import styles from './MainContent.module.css'
 
 const getGreeting = () => {
@@ -12,15 +12,19 @@ const getGreeting = () => {
 }
 
 const codePrompts = [
-  { id: 1, title: 'Debug my code', prompt: 'Help me debug this code and find the issue:' },
-  { id: 2, title: 'Write a function', prompt: 'Write a function that' },
-  { id: 3, title: 'Explain this code', prompt: 'Explain what this code does step by step:' },
+  { id: 1, title: 'Debug my code', description: 'Find and fix issues in your code' },
+  { id: 2, title: 'Write a function', description: 'Generate code for specific tasks' },
+  { id: 3, title: 'Explain this code', description: 'Get step-by-step explanations' },
+  { id: 4, title: 'Optimize performance', description: 'Improve code efficiency' },
+  { id: 5, title: 'Convert code', description: 'Transform between languages' },
 ]
 
 const writePrompts = [
-  { id: 1, title: 'Write an email', prompt: 'Write a professional email about' },
-  { id: 2, title: 'Summarize text', prompt: 'Summarize the following text:' },
-  { id: 3, title: 'Create content', prompt: 'Create engaging content about' },
+  { id: 1, title: 'Draft an email', description: 'Professional communication' },
+  { id: 2, title: 'Summarize content', description: 'Condense long text' },
+  { id: 3, title: 'Create marketing copy', description: 'Engaging promotional content' },
+  { id: 4, title: 'Write documentation', description: 'Technical guides and docs' },
+  { id: 5, title: 'Edit and refine', description: 'Polish your writing' },
 ]
 
 export default function MainContent() {
@@ -42,6 +46,17 @@ export default function MainContent() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Close dropdown on escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setActiveDropdown(null)
+      }
+    }
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
+
   const handleInputChange = (e) => {
     dispatch(setInputValue(e.target.value))
   }
@@ -49,7 +64,6 @@ export default function MainContent() {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!inputValue.trim()) return
-    // Handle submission - will call backend API
     console.log('Submitting:', inputValue, 'Mode:', mode)
     dispatch(setInputValue(''))
   }
@@ -63,13 +77,16 @@ export default function MainContent() {
     }
   }
 
-  const handlePromptSelect = (prompt) => {
-    dispatch(setInputValue(prompt))
+  const handlePromptSelect = (title) => {
+    dispatch(setInputValue(title + ' '))
     setActiveDropdown(null)
-    // Focus the textarea
     if (textareaRef.current) {
       textareaRef.current.focus()
     }
+  }
+
+  const handleCloseDropdown = () => {
+    setActiveDropdown(null)
   }
 
   const handleKeyDown = (e) => {
@@ -80,6 +97,8 @@ export default function MainContent() {
   }
 
   const currentPrompts = activeDropdown === 'code' ? codePrompts : writePrompts
+  const dropdownTitle = activeDropdown === 'code' ? 'Code' : 'Write'
+  const DropdownIcon = activeDropdown === 'code' ? CodeIcon : PenIcon
 
   return (
     <main className={styles.main}>
@@ -116,14 +135,14 @@ export default function MainContent() {
         <div className={styles.actionButtonsWrapper} ref={dropdownRef}>
           <div className={styles.actionButtons}>
             <button
-              className={`${styles.actionBtn} ${mode === 'code' || activeDropdown === 'code' ? styles.activeAction : ''}`}
+              className={`${styles.actionBtn} ${activeDropdown === 'code' ? styles.activeAction : ''}`}
               onClick={() => handleModeClick('code')}
             >
               <CodeIcon />
               <span>Code</span>
             </button>
             <button
-              className={`${styles.actionBtn} ${mode === 'write' || activeDropdown === 'write' ? styles.activeAction : ''}`}
+              className={`${styles.actionBtn} ${activeDropdown === 'write' ? styles.activeAction : ''}`}
               onClick={() => handleModeClick('write')}
             >
               <PenIcon />
@@ -133,15 +152,28 @@ export default function MainContent() {
 
           {activeDropdown && (
             <div className={styles.promptsDropdown}>
+              <div className={styles.dropdownHeader}>
+                <div className={styles.dropdownTitleWrapper}>
+                  <span className={styles.dropdownIcon}><DropdownIcon /></span>
+                  <span className={styles.dropdownTitle}>{dropdownTitle}</span>
+                </div>
+                <button
+                  className={styles.dropdownClose}
+                  onClick={handleCloseDropdown}
+                  aria-label="Close"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
               <div className={styles.promptsList}>
                 {currentPrompts.map((item) => (
                   <button
                     key={item.id}
                     className={styles.promptItem}
-                    onClick={() => handlePromptSelect(item.prompt)}
+                    onClick={() => handlePromptSelect(item.title)}
                   >
                     <span className={styles.promptTitle}>{item.title}</span>
-                    <span className={styles.promptPreview}>{item.prompt}</span>
+                    <span className={styles.promptDescription}>{item.description}</span>
                   </button>
                 ))}
               </div>
