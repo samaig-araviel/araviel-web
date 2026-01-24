@@ -58,7 +58,7 @@
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 16px 12px;
   transition: width 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   position: relative;
   z-index: 1000;
@@ -100,8 +100,8 @@
 .header {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
-  padding: 0 4px;
+  margin-bottom: 24px;
+  padding: 4px;
 }
 
 .collapsed .header {
@@ -151,7 +151,7 @@
   color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
@@ -168,7 +168,7 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .navItem {
@@ -176,7 +176,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 14px;
@@ -200,7 +200,7 @@
 }
 
 .recents {
-  margin-top: 24px;
+  margin-top: 32px;
   flex: 1;
   overflow-y: auto;
 }
@@ -219,7 +219,7 @@
 .recentsList {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .recentItem {
@@ -227,7 +227,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 14px;
@@ -247,10 +247,10 @@
 }
 
 .recentsCollapsed {
-  margin-top: 24px;
+  margin-top: 32px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
 }
 
@@ -347,7 +347,7 @@
     height: 100vh;
     height: 100dvh;
     width: 280px;
-    padding: 12px;
+    padding: 16px 12px;
     transform: translateX(-100%);
     box-shadow: var(--shadow-lg);
   }
@@ -358,7 +358,7 @@
 
   .sidebar.collapsed {
     width: 280px;
-    padding: 12px;
+    padding: 16px 12px;
     transform: translateX(-100%);
   }
 
@@ -384,12 +384,12 @@
 
   .collapsed .navItem {
     justify-content: flex-start;
-    padding: 10px 12px;
+    padding: 12px;
   }
 
   .collapsed .userSection {
     justify-content: flex-start;
-    padding: 10px 12px;
+    padding: 12px;
   }
 
   .collapsed .themeToggle {

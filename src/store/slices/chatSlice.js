@@ -4,10 +4,7 @@ const initialState = {
   messages: [],
   inputValue: '',
   mode: 'auto', // 'auto', 'code', 'write'
-  recentChats: [
-    { id: '1', title: 'Project Titan Strategy' },
-    { id: '2', title: 'React Performance' },
-  ],
+  recentChats: [],
   currentChatId: null,
 }
 
