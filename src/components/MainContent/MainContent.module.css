@@ -92,8 +92,9 @@
   background: transparent;
   resize: none;
   min-height: 24px;
-  max-height: 200px;
+  max-height: 360px;
   line-height: 1.5;
+  overflow-y: auto;
 }
 
 .input::placeholder {
@@ -137,14 +138,16 @@
   left: 0;
   margin-bottom: 8px;
   display: flex;
+  flex-direction: column;
   background-color: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: var(--shadow-lg);
-  padding: 8px;
-  gap: 4px;
+  padding: 6px;
+  gap: 2px;
   animation: attachDropdownSlide 0.15s ease;
   z-index: 100;
+  min-width: 180px;
 }
 
 @keyframes attachDropdownSlide {
@@ -160,14 +163,14 @@
 
 .attachOption {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 10px 12px;
   border-radius: 8px;
   color: var(--text-secondary);
   transition: all 0.15s ease;
-  min-width: 64px;
+  text-align: left;
 }
 
 .attachOption:hover {
@@ -176,13 +179,14 @@
 }
 
 .attachOption svg {
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   stroke-width: 1.5;
+  flex-shrink: 0;
 }
 
 .attachOption span {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
 }
 
