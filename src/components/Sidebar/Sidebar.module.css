@@ -56,14 +56,12 @@
   flex-shrink: 0;
 }
 
-/* Premium sleek collapsed sidebar */
 .sidebar.collapsed {
-  width: 52px;
-  padding: 16px 8px;
-  border-right-color: transparent;
+  width: 56px;
+  padding: 16px 10px;
+  border-right: 1px solid var(--border-color);
 }
 
-/* Collapse button positioned on the right edge */
 .collapseBtn {
   position: absolute;
   top: 22px;
@@ -77,13 +75,8 @@
   background-color: var(--bg-sidebar);
   border: 1px solid var(--border-color);
   border-radius: 50%;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.2s ease, opacity 0.2s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
   z-index: 10;
-  opacity: 0;
-}
-
-.sidebar:hover .collapseBtn {
-  opacity: 1;
 }
 
 .collapseBtn:hover {
@@ -93,12 +86,6 @@
 
 .collapsed .collapseBtn {
   transform: rotate(180deg);
-  right: -12px;
-  opacity: 0;
-}
-
-.collapsed:hover .collapseBtn {
-  opacity: 1;
 }
 
 .header {
@@ -197,7 +184,7 @@
   padding: 0;
   width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .nav {
@@ -231,9 +218,10 @@
 
 .collapsed .navItem {
   justify-content: center;
-  padding: 10px;
+  padding: 0;
   width: 36px;
   height: 36px;
+  border-radius: 8px;
 }
 
 .recents {
@@ -315,7 +303,7 @@
 }
 
 .collapsed .footer {
-  border-top-color: transparent;
+  border-top: 1px solid var(--border-color);
 }
 
 .userSection {

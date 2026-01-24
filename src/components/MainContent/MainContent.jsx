@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectInputValue, selectMode, setInputValue, setMode } from '../../store/slices/chatSlice'
-import { SendIcon, CodeIcon, PenIcon, CloseIcon } from '../Icons'
+import { SendIcon, CodeIcon, PenIcon, CloseIcon, SearchIcon, ChartIcon, SparkleIcon, BookIcon } from '../Icons'
 import styles from './MainContent.module.css'
 
 const getGreeting = () => {
@@ -11,21 +11,70 @@ const getGreeting = () => {
   return 'Good evening.'
 }
 
-const codePrompts = [
-  { id: 1, title: 'Debug my code', description: 'Find and fix issues in your code' },
-  { id: 2, title: 'Write a function', description: 'Generate code for specific tasks' },
-  { id: 3, title: 'Explain this code', description: 'Get step-by-step explanations' },
-  { id: 4, title: 'Optimize performance', description: 'Improve code efficiency' },
-  { id: 5, title: 'Convert code', description: 'Transform between languages' },
-]
+const promptsData = {
+  code: {
+    title: 'Code',
+    icon: CodeIcon,
+    items: [
+      'Debug my code',
+      'Write a function',
+      'Explain this code',
+      'Optimize performance',
+    ],
+  },
+  write: {
+    title: 'Write',
+    icon: PenIcon,
+    items: [
+      'Draft an email',
+      'Summarize content',
+      'Create marketing copy',
+      'Write documentation',
+    ],
+  },
+  research: {
+    title: 'Research',
+    icon: SearchIcon,
+    items: [
+      'Find information on a topic',
+      'Compare alternatives',
+      'Analyze market trends',
+      'Summarize findings',
+    ],
+  },
+  analyze: {
+    title: 'Analyze',
+    icon: ChartIcon,
+    items: [
+      'Review this data',
+      'Find patterns',
+      'Generate insights',
+      'Create a report',
+    ],
+  },
+  create: {
+    title: 'Create',
+    icon: SparkleIcon,
+    items: [
+      'Generate ideas',
+      'Design a solution',
+      'Build a prototype',
+      'Create content',
+    ],
+  },
+  learn: {
+    title: 'Learn',
+    icon: BookIcon,
+    items: [
+      'Explain a concept',
+      'Teach me about this',
+      'Break down this topic',
+      'Quiz me on this',
+    ],
+  },
+}
 
-const writePrompts = [
-  { id: 1, title: 'Draft an email', description: 'Professional communication' },
-  { id: 2, title: 'Summarize content', description: 'Condense long text' },
-  { id: 3, title: 'Create marketing copy', description: 'Engaging promotional content' },
-  { id: 4, title: 'Write documentation', description: 'Technical guides and docs' },
-  { id: 5, title: 'Edit and refine', description: 'Polish your writing' },
-]
+const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn']
 
 export default function MainContent() {
   const dispatch = useDispatch()
@@ -34,19 +83,21 @@ export default function MainContent() {
   const [activeDropdown, setActiveDropdown] = useState(null)
   const dropdownRef = useRef(null)
   const textareaRef = useRef(null)
+  const inputContainerRef = useRef(null)
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setActiveDropdown(null)
+        const clickedOnQuickPrompt = e.target.closest(`.${styles.actionBtn}`)
+        if (!clickedOnQuickPrompt) {
+          setActiveDropdown(null)
+        }
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Close dropdown on escape key
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -96,9 +147,7 @@ export default function MainContent() {
     }
   }
 
-  const currentPrompts = activeDropdown === 'code' ? codePrompts : writePrompts
-  const dropdownTitle = activeDropdown === 'code' ? 'Code' : 'Write'
-  const DropdownIcon = activeDropdown === 'code' ? CodeIcon : PenIcon
+  const currentPromptData = activeDropdown ? promptsData[activeDropdown] : null
 
   return (
     <main className={styles.main}>
@@ -106,56 +155,39 @@ export default function MainContent() {
         <h1 className={styles.greeting}>{getGreeting()}</h1>
         <p className={styles.subtitle}>What can I help you orchestrate today?</p>
 
-        <form className={styles.inputContainer} onSubmit={handleSubmit}>
-          <div className={styles.inputWrapper}>
-            <textarea
-              ref={textareaRef}
-              className={styles.input}
-              placeholder="Ask anything..."
-              value={inputValue}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              rows={1}
-            />
-            <div className={styles.inputActions}>
-              <button type="button" className={styles.modeSelector}>
-                Auto
-              </button>
-              <button
-                type="submit"
-                className={`${styles.submitBtn} ${inputValue.trim() ? styles.active : ''}`}
-                disabled={!inputValue.trim()}
-              >
-                <SendIcon />
-              </button>
+        <div className={styles.inputSection} ref={inputContainerRef}>
+          <form className={styles.inputContainer} onSubmit={handleSubmit}>
+            <div className={styles.inputWrapper}>
+              <textarea
+                ref={textareaRef}
+                className={styles.input}
+                placeholder="Ask anything..."
+                value={inputValue}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                rows={1}
+              />
+              <div className={styles.inputActions}>
+                <button type="button" className={styles.modeSelector}>
+                  Auto
+                </button>
+                <button
+                  type="submit"
+                  className={`${styles.submitBtn} ${inputValue.trim() ? styles.active : ''}`}
+                  disabled={!inputValue.trim()}
+                >
+                  <SendIcon />
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
 
-        <div className={styles.actionButtonsWrapper} ref={dropdownRef}>
-          <div className={styles.actionButtons}>
-            <button
-              className={`${styles.actionBtn} ${activeDropdown === 'code' ? styles.activeAction : ''}`}
-              onClick={() => handleModeClick('code')}
-            >
-              <CodeIcon />
-              <span>Code</span>
-            </button>
-            <button
-              className={`${styles.actionBtn} ${activeDropdown === 'write' ? styles.activeAction : ''}`}
-              onClick={() => handleModeClick('write')}
-            >
-              <PenIcon />
-              <span>Write</span>
-            </button>
-          </div>
-
-          {activeDropdown && (
-            <div className={styles.promptsDropdown}>
+          {activeDropdown && currentPromptData && (
+            <div className={styles.promptsDropdown} ref={dropdownRef}>
               <div className={styles.dropdownHeader}>
                 <div className={styles.dropdownTitleWrapper}>
-                  <span className={styles.dropdownIcon}><DropdownIcon /></span>
-                  <span className={styles.dropdownTitle}>{dropdownTitle}</span>
+                  <currentPromptData.icon />
+                  <span className={styles.dropdownTitle}>{currentPromptData.title}</span>
                 </div>
                 <button
                   className={styles.dropdownClose}
@@ -166,19 +198,35 @@ export default function MainContent() {
                 </button>
               </div>
               <div className={styles.promptsList}>
-                {currentPrompts.map((item) => (
+                {currentPromptData.items.map((item, index) => (
                   <button
-                    key={item.id}
+                    key={index}
                     className={styles.promptItem}
-                    onClick={() => handlePromptSelect(item.title)}
+                    onClick={() => handlePromptSelect(item)}
                   >
-                    <span className={styles.promptTitle}>{item.title}</span>
-                    <span className={styles.promptDescription}>{item.description}</span>
+                    {item}
                   </button>
                 ))}
               </div>
             </div>
           )}
+        </div>
+
+        <div className={styles.actionButtons}>
+          {quickPromptKeys.map((key) => {
+            const data = promptsData[key]
+            const Icon = data.icon
+            return (
+              <button
+                key={key}
+                className={`${styles.actionBtn} ${activeDropdown === key ? styles.activeAction : ''}`}
+                onClick={() => handleModeClick(key)}
+              >
+                <Icon />
+                <span>{data.title}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
     </main>
