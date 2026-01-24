@@ -1,3 +1,45 @@
+/* Mobile menu button - only visible on mobile */
+.mobileMenuBtn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1001;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  transition: background-color 0.15s ease;
+}
+
+.mobileMenuBtn:hover {
+  background-color: var(--bg-button-hover);
+}
+
+/* Overlay for mobile */
+.overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.overlayVisible {
+  opacity: 1;
+  visibility: visible;
+}
+
 .sidebar {
   width: 240px;
   height: 100%;
@@ -6,8 +48,10 @@
   display: flex;
   flex-direction: column;
   padding: 12px;
-  transition: width 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  transition: width 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
   position: relative;
+  z-index: 1000;
+  flex-shrink: 0;
 }
 
 .sidebar.collapsed {
@@ -15,18 +59,52 @@
   padding: 12px 8px;
 }
 
+/* Collapse button positioned on the right edge */
+.collapseBtn {
+  position: absolute;
+  top: 24px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  background-color: var(--bg-sidebar);
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.collapseBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.collapsed .collapseBtn {
+  transform: rotate(180deg);
+}
+
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin-bottom: 12px;
   padding: 0 4px;
+}
+
+.collapsed .header {
+  justify-content: center;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.collapsed .logo {
+  justify-content: center;
 }
 
 .logoIcon {
@@ -47,34 +125,6 @@
   font-weight: 600;
   font-size: 16px;
   color: var(--text-primary);
-}
-
-.collapseBtn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  border-radius: 4px;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.collapseBtn:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.collapsed .collapseBtn {
-  transform: rotate(180deg);
-}
-
-.collapsed .header {
-  justify-content: center;
-}
-
-.collapsed .logo {
-  justify-content: center;
 }
 
 .newChatBtn {
@@ -102,10 +152,6 @@
   padding: 10px;
   width: 44px;
   height: 44px;
-}
-
-.collapsed .newChatBtn span {
-  display: none;
 }
 
 .nav {
@@ -140,10 +186,6 @@
 .collapsed .navItem {
   justify-content: center;
   padding: 10px;
-}
-
-.collapsed .navItem span {
-  display: none;
 }
 
 .recents {
@@ -238,10 +280,6 @@
   padding: 10px;
 }
 
-.collapsed .userSection span {
-  display: none;
-}
-
 .themeToggle {
   display: flex;
   align-items: center;
@@ -279,4 +317,75 @@
 
 .collapsed .themeBtn {
   padding: 6px;
+}
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .mobileMenuBtn {
+    display: flex;
+  }
+
+  .overlay {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    height: 100dvh;
+    width: 280px;
+    padding: 12px;
+    transform: translateX(-100%);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar:not(.collapsed) {
+    transform: translateX(0);
+  }
+
+  .sidebar.collapsed {
+    width: 280px;
+    padding: 12px;
+    transform: translateX(-100%);
+  }
+
+  /* Hide collapse button on mobile */
+  .collapseBtn {
+    display: none;
+  }
+
+  /* Reset collapsed styles on mobile since sidebar shows full content */
+  .collapsed .header {
+    justify-content: flex-start;
+  }
+
+  .collapsed .logo {
+    justify-content: flex-start;
+  }
+
+  .collapsed .newChatBtn {
+    padding: 10px 12px;
+    width: 100%;
+    height: auto;
+  }
+
+  .collapsed .navItem {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .collapsed .userSection {
+    justify-content: flex-start;
+    padding: 10px 12px;
+  }
+
+  .collapsed .themeToggle {
+    flex-direction: row;
+  }
+
+  .collapsed .themeBtn {
+    padding: 8px;
+  }
 }
