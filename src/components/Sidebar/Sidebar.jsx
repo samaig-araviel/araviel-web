@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux'
-import { selectSidebarCollapsed, selectActiveItem, toggleSidebar, setActiveItem } from '../../store/slices/sidebarSlice'
+import { useState, useEffect } from 'react'
+import { selectSidebarCollapsed, selectActiveItem, toggleSidebar, setActiveItem, setCollapsed } from '../../store/slices/sidebarSlice'
 import { selectRecentChats, createNewChat, setCurrentChat } from '../../store/slices/chatSlice'
 import { selectTheme, setTheme } from '../../store/slices/themeSlice'
 import {
@@ -14,6 +15,7 @@ import {
   SunIcon,
   MoonIcon,
   MonitorIcon,
+  MenuIcon,
 } from '../Icons'
 import styles from './Sidebar.module.css'
 
@@ -30,6 +32,20 @@ export default function Sidebar() {
   const activeItem = useSelector(selectActiveItem)
   const recentChats = useSelector(selectRecentChats)
   const themeMode = useSelector(selectTheme)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // On mobile, collapsed means hidden. On desktop, collapsed means narrow.
+  // For rendering content, on mobile we always show full content when visible
+  const showFullContent = isMobile || !collapsed
 
   const handleNewChat = () => {
     dispatch(createNewChat())
@@ -38,23 +54,47 @@ export default function Sidebar() {
 
   const handleNavClick = (id) => {
     dispatch(setActiveItem(id))
+    // Close sidebar on mobile after navigation
+    if (isMobile) {
+      dispatch(setCollapsed(true))
+    }
   }
 
   const handleChatClick = (chatId) => {
     dispatch(setCurrentChat(chatId))
+    // Close sidebar on mobile after selecting chat
+    if (isMobile) {
+      dispatch(setCollapsed(true))
+    }
   }
 
   const handleThemeChange = (mode) => {
     dispatch(setTheme(mode))
   }
 
+  const handleOverlayClick = () => {
+    dispatch(setCollapsed(true))
+  }
+
   return (
-    <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
-      <div className={styles.header}>
-        <div className={styles.logo}>
-          <div className={styles.logoIcon}>A</div>
-          {!collapsed && <span className={styles.logoText}>Araviel</span>}
-        </div>
+    <>
+      {/* Mobile menu button */}
+      <button
+        className={styles.mobileMenuBtn}
+        onClick={() => dispatch(toggleSidebar())}
+        aria-label="Open menu"
+      >
+        <MenuIcon />
+      </button>
+
+      {/* Overlay for mobile */}
+      <div
+        className={`${styles.overlay} ${!collapsed ? styles.overlayVisible : ''}`}
+        onClick={handleOverlayClick}
+      />
+
+      <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
+        {/* Collapse button on the edge - desktop only */}
         <button
           className={styles.collapseBtn}
           onClick={() => dispatch(toggleSidebar())}
@@ -62,92 +102,99 @@ export default function Sidebar() {
         >
           <ChevronLeftIcon />
         </button>
-      </div>
 
-      <button className={styles.newChatBtn} onClick={handleNewChat}>
-        <PlusIcon />
-        {!collapsed && <span>New Chat</span>}
-      </button>
+        <div className={styles.header}>
+          <div className={styles.logo}>
+            <div className={styles.logoIcon}>A</div>
+            {showFullContent && <span className={styles.logoText}>Araviel</span>}
+          </div>
+        </div>
 
-      <nav className={styles.nav}>
-        {navItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <button
-              key={item.id}
-              className={`${styles.navItem} ${activeItem === item.id ? styles.active : ''}`}
-              onClick={() => handleNavClick(item.id)}
-            >
-              <Icon />
-              {!collapsed && <span>{item.label}</span>}
-            </button>
-          )
-        })}
-      </nav>
+        <button className={styles.newChatBtn} onClick={handleNewChat}>
+          <PlusIcon />
+          {showFullContent && <span>New Chat</span>}
+        </button>
 
-      {!collapsed && (
-        <div className={styles.recents}>
-          <span className={styles.recentsLabel}>RECENTS</span>
-          <ul className={styles.recentsList}>
+        <nav className={styles.nav}>
+          {navItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <button
+                key={item.id}
+                className={`${styles.navItem} ${activeItem === item.id ? styles.active : ''}`}
+                onClick={() => handleNavClick(item.id)}
+              >
+                <Icon />
+                {showFullContent && <span>{item.label}</span>}
+              </button>
+            )
+          })}
+        </nav>
+
+        {showFullContent && (
+          <div className={styles.recents}>
+            <span className={styles.recentsLabel}>RECENTS</span>
+            <ul className={styles.recentsList}>
+              {recentChats.map((chat) => (
+                <li key={chat.id}>
+                  <button
+                    className={styles.recentItem}
+                    onClick={() => handleChatClick(chat.id)}
+                  >
+                    <ChatIcon />
+                    <span>{chat.title}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {!showFullContent && (
+          <div className={styles.recentsCollapsed}>
             {recentChats.map((chat) => (
-              <li key={chat.id}>
-                <button
-                  className={styles.recentItem}
-                  onClick={() => handleChatClick(chat.id)}
-                >
-                  <ChatIcon />
-                  <span>{chat.title}</span>
-                </button>
-              </li>
+              <button
+                key={chat.id}
+                className={styles.recentItemCollapsed}
+                onClick={() => handleChatClick(chat.id)}
+                title={chat.title}
+              >
+                <ChatIcon />
+              </button>
             ))}
-          </ul>
-        </div>
-      )}
+          </div>
+        )}
 
-      {collapsed && (
-        <div className={styles.recentsCollapsed}>
-          {recentChats.map((chat) => (
+        <div className={styles.footer}>
+          <div className={styles.userSection}>
+            <UserIcon />
+            {showFullContent && <span>Pro User</span>}
+          </div>
+          <div className={styles.themeToggle}>
             <button
-              key={chat.id}
-              className={styles.recentItemCollapsed}
-              onClick={() => handleChatClick(chat.id)}
-              title={chat.title}
+              className={`${styles.themeBtn} ${themeMode === 'system' ? styles.activeTheme : ''}`}
+              onClick={() => handleThemeChange('system')}
+              title="System theme"
             >
-              <ChatIcon />
+              <MonitorIcon />
             </button>
-          ))}
+            <button
+              className={`${styles.themeBtn} ${themeMode === 'light' ? styles.activeTheme : ''}`}
+              onClick={() => handleThemeChange('light')}
+              title="Light theme"
+            >
+              <SunIcon />
+            </button>
+            <button
+              className={`${styles.themeBtn} ${themeMode === 'dark' ? styles.activeTheme : ''}`}
+              onClick={() => handleThemeChange('dark')}
+              title="Dark theme"
+            >
+              <MoonIcon />
+            </button>
+          </div>
         </div>
-      )}
-
-      <div className={styles.footer}>
-        <div className={styles.userSection}>
-          <UserIcon />
-          {!collapsed && <span>Pro User</span>}
-        </div>
-        <div className={styles.themeToggle}>
-          <button
-            className={`${styles.themeBtn} ${themeMode === 'system' ? styles.activeTheme : ''}`}
-            onClick={() => handleThemeChange('system')}
-            title="System theme"
-          >
-            <MonitorIcon />
-          </button>
-          <button
-            className={`${styles.themeBtn} ${themeMode === 'light' ? styles.activeTheme : ''}`}
-            onClick={() => handleThemeChange('light')}
-            title="Light theme"
-          >
-            <SunIcon />
-          </button>
-          <button
-            className={`${styles.themeBtn} ${themeMode === 'dark' ? styles.activeTheme : ''}`}
-            onClick={() => handleThemeChange('dark')}
-            title="Dark theme"
-          >
-            <MoonIcon />
-          </button>
-        </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   )
 }
