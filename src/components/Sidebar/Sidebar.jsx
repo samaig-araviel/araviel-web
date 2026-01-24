@@ -16,6 +16,7 @@ import {
   MoonIcon,
   MonitorIcon,
   MenuIcon,
+  CloseIcon,
 } from '../Icons'
 import styles from './Sidebar.module.css'
 
@@ -78,13 +79,13 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
+      {/* Mobile menu button - shows X when open, hamburger when closed */}
       <button
-        className={styles.mobileMenuBtn}
+        className={`${styles.mobileMenuBtn} ${!collapsed ? styles.mobileMenuBtnOpen : ''}`}
         onClick={() => dispatch(toggleSidebar())}
-        aria-label="Open menu"
+        aria-label={collapsed ? 'Open menu' : 'Close menu'}
       >
-        <MenuIcon />
+        {collapsed ? <MenuIcon /> : <CloseIcon />}
       </button>
 
       {/* Overlay for mobile */}
