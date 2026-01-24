@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { selectInputValue, selectMode, setInputValue, setMode } from '../../store/slices/chatSlice'
 import { SendIcon, CodeIcon, PenIcon } from '../Icons'
@@ -10,10 +11,36 @@ const getGreeting = () => {
   return 'Good evening.'
 }
 
+const codePrompts = [
+  { id: 1, title: 'Debug my code', prompt: 'Help me debug this code and find the issue:' },
+  { id: 2, title: 'Write a function', prompt: 'Write a function that' },
+  { id: 3, title: 'Explain this code', prompt: 'Explain what this code does step by step:' },
+]
+
+const writePrompts = [
+  { id: 1, title: 'Write an email', prompt: 'Write a professional email about' },
+  { id: 2, title: 'Summarize text', prompt: 'Summarize the following text:' },
+  { id: 3, title: 'Create content', prompt: 'Create engaging content about' },
+]
+
 export default function MainContent() {
   const dispatch = useDispatch()
   const inputValue = useSelector(selectInputValue)
   const mode = useSelector(selectMode)
+  const [activeDropdown, setActiveDropdown] = useState(null)
+  const dropdownRef = useRef(null)
+  const textareaRef = useRef(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setActiveDropdown(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const handleInputChange = (e) => {
     dispatch(setInputValue(e.target.value))
@@ -27,8 +54,22 @@ export default function MainContent() {
     dispatch(setInputValue(''))
   }
 
-  const handleModeChange = (newMode) => {
-    dispatch(setMode(newMode))
+  const handleModeClick = (newMode) => {
+    if (activeDropdown === newMode) {
+      setActiveDropdown(null)
+    } else {
+      setActiveDropdown(newMode)
+      dispatch(setMode(newMode))
+    }
+  }
+
+  const handlePromptSelect = (prompt) => {
+    dispatch(setInputValue(prompt))
+    setActiveDropdown(null)
+    // Focus the textarea
+    if (textareaRef.current) {
+      textareaRef.current.focus()
+    }
   }
 
   const handleKeyDown = (e) => {
@@ -37,6 +78,8 @@ export default function MainContent() {
       handleSubmit(e)
     }
   }
+
+  const currentPrompts = activeDropdown === 'code' ? codePrompts : writePrompts
 
   return (
     <main className={styles.main}>
@@ -47,6 +90,7 @@ export default function MainContent() {
         <form className={styles.inputContainer} onSubmit={handleSubmit}>
           <div className={styles.inputWrapper}>
             <textarea
+              ref={textareaRef}
               className={styles.input}
               placeholder="Ask anything..."
               value={inputValue}
@@ -69,21 +113,40 @@ export default function MainContent() {
           </div>
         </form>
 
-        <div className={styles.actionButtons}>
-          <button
-            className={`${styles.actionBtn} ${mode === 'code' ? styles.activeAction : ''}`}
-            onClick={() => handleModeChange('code')}
-          >
-            <CodeIcon />
-            <span>Code</span>
-          </button>
-          <button
-            className={`${styles.actionBtn} ${mode === 'write' ? styles.activeAction : ''}`}
-            onClick={() => handleModeChange('write')}
-          >
-            <PenIcon />
-            <span>Write</span>
-          </button>
+        <div className={styles.actionButtonsWrapper} ref={dropdownRef}>
+          <div className={styles.actionButtons}>
+            <button
+              className={`${styles.actionBtn} ${mode === 'code' || activeDropdown === 'code' ? styles.activeAction : ''}`}
+              onClick={() => handleModeClick('code')}
+            >
+              <CodeIcon />
+              <span>Code</span>
+            </button>
+            <button
+              className={`${styles.actionBtn} ${mode === 'write' || activeDropdown === 'write' ? styles.activeAction : ''}`}
+              onClick={() => handleModeClick('write')}
+            >
+              <PenIcon />
+              <span>Write</span>
+            </button>
+          </div>
+
+          {activeDropdown && (
+            <div className={styles.promptsDropdown}>
+              <div className={styles.promptsList}>
+                {currentPrompts.map((item) => (
+                  <button
+                    key={item.id}
+                    className={styles.promptItem}
+                    onClick={() => handlePromptSelect(item.prompt)}
+                  >
+                    <span className={styles.promptTitle}>{item.title}</span>
+                    <span className={styles.promptPreview}>{item.prompt}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>

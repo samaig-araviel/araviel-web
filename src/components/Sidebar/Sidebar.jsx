@@ -51,6 +51,10 @@ export default function Sidebar() {
   const handleNewChat = () => {
     dispatch(createNewChat())
     dispatch(setActiveItem('home'))
+    // Close sidebar on mobile
+    if (isMobile) {
+      dispatch(setCollapsed(true))
+    }
   }
 
   const handleNavClick = (id) => {
@@ -77,15 +81,20 @@ export default function Sidebar() {
     dispatch(setCollapsed(true))
   }
 
+  const handleCloseSidebar = () => {
+    dispatch(setCollapsed(true))
+  }
+
   return (
     <>
-      {/* Mobile menu button - shows X when open, hamburger when closed */}
+      {/* Mobile menu button - only shows hamburger when sidebar is closed */}
       <button
-        className={`${styles.mobileMenuBtn} ${!collapsed ? styles.mobileMenuBtnOpen : ''}`}
+        className={styles.mobileMenuBtn}
         onClick={() => dispatch(toggleSidebar())}
-        aria-label={collapsed ? 'Open menu' : 'Close menu'}
+        aria-label="Open menu"
+        style={{ display: isMobile && collapsed ? 'flex' : 'none' }}
       >
-        {collapsed ? <MenuIcon /> : <CloseIcon />}
+        <MenuIcon />
       </button>
 
       {/* Overlay for mobile */}
@@ -109,6 +118,16 @@ export default function Sidebar() {
             <div className={styles.logoIcon}>A</div>
             {showFullContent && <span className={styles.logoText}>Araviel</span>}
           </div>
+          {/* Close button inside header - mobile only */}
+          {isMobile && (
+            <button
+              className={styles.mobileCloseBtn}
+              onClick={handleCloseSidebar}
+              aria-label="Close menu"
+            >
+              <CloseIcon />
+            </button>
+          )}
         </div>
 
         <button className={styles.newChatBtn} onClick={handleNewChat}>
@@ -132,7 +151,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {showFullContent && (
+        {showFullContent && recentChats.length > 0 && (
           <div className={styles.recents}>
             <span className={styles.recentsLabel}>RECENTS</span>
             <ul className={styles.recentsList}>
@@ -151,7 +170,7 @@ export default function Sidebar() {
           </div>
         )}
 
-        {!showFullContent && (
+        {!showFullContent && recentChats.length > 0 && (
           <div className={styles.recentsCollapsed}>
             {recentChats.map((chat) => (
               <button
