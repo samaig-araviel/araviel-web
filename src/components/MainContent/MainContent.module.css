@@ -8,6 +8,34 @@
   background-color: var(--bg-primary);
   transition: background-color 0.2s ease;
   min-height: 100%;
+  position: relative;
+}
+
+.newChatBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+  z-index: 10;
+}
+
+.newChatBtn:hover {
+  background-color: var(--bg-button-hover);
+  color: var(--text-primary);
+  transform: scale(1.02);
+}
+
+.newChatBtn:active {
+  transform: scale(0.98);
 }
 
 .container {

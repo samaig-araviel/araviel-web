@@ -1,13 +1,9 @@
 import { useSelector, useDispatch } from 'react-redux'
 import { useState, useEffect } from 'react'
-import { selectSidebarCollapsed, selectActiveItem, toggleSidebar, setActiveItem, setCollapsed } from '../../store/slices/sidebarSlice'
+import { selectSidebarCollapsed, toggleSidebar, setCollapsed } from '../../store/slices/sidebarSlice'
 import { selectRecentChats, createNewChat, setCurrentChat } from '../../store/slices/chatSlice'
 import { selectTheme, setTheme } from '../../store/slices/themeSlice'
 import {
-  HomeIcon,
-  ProjectsIcon,
-  LibraryIcon,
-  SettingsIcon,
   PlusIcon,
   ChevronLeftIcon,
   ChatIcon,
@@ -20,17 +16,9 @@ import {
 } from '../Icons'
 import styles from './Sidebar.module.css'
 
-const navItems = [
-  { id: 'home', label: 'Home', icon: HomeIcon },
-  { id: 'projects', label: 'Projects', icon: ProjectsIcon },
-  { id: 'library', label: 'Library', icon: LibraryIcon },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
-]
-
 export default function Sidebar() {
   const dispatch = useDispatch()
   const collapsed = useSelector(selectSidebarCollapsed)
-  const activeItem = useSelector(selectActiveItem)
   const recentChats = useSelector(selectRecentChats)
   const themeMode = useSelector(selectTheme)
   const [isMobile, setIsMobile] = useState(false)
@@ -44,22 +32,10 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // On mobile, collapsed means hidden. On desktop, collapsed means narrow.
-  // For rendering content, on mobile we always show full content when visible
   const showFullContent = isMobile || !collapsed
 
   const handleNewChat = () => {
     dispatch(createNewChat())
-    dispatch(setActiveItem('home'))
-    // Close sidebar on mobile
-    if (isMobile) {
-      dispatch(setCollapsed(true))
-    }
-  }
-
-  const handleNavClick = (id) => {
-    dispatch(setActiveItem(id))
-    // Close sidebar on mobile after navigation
     if (isMobile) {
       dispatch(setCollapsed(true))
     }
@@ -67,7 +43,6 @@ export default function Sidebar() {
 
   const handleChatClick = (chatId) => {
     dispatch(setCurrentChat(chatId))
-    // Close sidebar on mobile after selecting chat
     if (isMobile) {
       dispatch(setCollapsed(true))
     }
@@ -87,7 +62,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button - only shows hamburger when sidebar is closed */}
       <button
         className={styles.mobileMenuBtn}
         onClick={() => dispatch(toggleSidebar())}
@@ -97,14 +71,12 @@ export default function Sidebar() {
         <MenuIcon />
       </button>
 
-      {/* Overlay for mobile */}
       <div
         className={`${styles.overlay} ${!collapsed ? styles.overlayVisible : ''}`}
         onClick={handleOverlayClick}
       />
 
       <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
-        {/* Collapse button on the edge - desktop only */}
         <button
           className={styles.collapseBtn}
           onClick={() => dispatch(toggleSidebar())}
@@ -118,7 +90,6 @@ export default function Sidebar() {
             <div className={styles.logoIcon}>A</div>
             {showFullContent && <span className={styles.logoText}>Araviel</span>}
           </div>
-          {/* Close button inside header - mobile only */}
           {isMobile && (
             <button
               className={styles.mobileCloseBtn}
@@ -134,22 +105,6 @@ export default function Sidebar() {
           <PlusIcon />
           {showFullContent && <span>New Chat</span>}
         </button>
-
-        <nav className={styles.nav}>
-          {navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <button
-                key={item.id}
-                className={`${styles.navItem} ${activeItem === item.id ? styles.active : ''}`}
-                onClick={() => handleNavClick(item.id)}
-              >
-                <Icon />
-                {showFullContent && <span>{item.label}</span>}
-              </button>
-            )
-          })}
-        </nav>
 
         {showFullContent && recentChats.length > 0 && (
           <div className={styles.recents}>

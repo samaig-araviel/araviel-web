@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { selectInputValue, selectMode, setInputValue, setMode } from '../../store/slices/chatSlice'
-import { SendIcon, CodeIcon, PenIcon, CloseIcon, SearchIcon, ChartIcon, SparkleIcon, BookIcon } from '../Icons'
+import { selectInputValue, selectMode, setInputValue, setMode, createNewChat } from '../../store/slices/chatSlice'
+import { SendIcon, CodeIcon, PenIcon, CloseIcon, SearchIcon, ChartIcon, SparkleIcon, BookIcon, NewChatIcon } from '../Icons'
 import styles from './MainContent.module.css'
 
 const getGreeting = () => {
@@ -149,8 +149,22 @@ export default function MainContent() {
 
   const currentPromptData = activeDropdown ? promptsData[activeDropdown] : null
 
+  const handleNewChat = () => {
+    dispatch(createNewChat())
+    dispatch(setInputValue(''))
+    setActiveDropdown(null)
+  }
+
   return (
     <main className={styles.main}>
+      <button
+        className={styles.newChatBtn}
+        onClick={handleNewChat}
+        title="New Chat"
+        aria-label="Start new chat"
+      >
+        <NewChatIcon />
+      </button>
       <div className={styles.container}>
         <h1 className={styles.greeting}>{getGreeting()}</h1>
         <p className={styles.subtitle}>What can I help you orchestrate today?</p>
