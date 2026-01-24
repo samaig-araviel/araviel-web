@@ -117,6 +117,13 @@
   opacity: 0.5;
 }
 
+.actionButtonsWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .actionButtons {
   display: flex;
   align-items: center;
@@ -144,4 +151,78 @@
 .actionBtn.activeAction {
   background-color: var(--bg-active);
   border-color: var(--text-muted);
+}
+
+/* Prompts Dropdown */
+.promptsDropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 12px;
+  width: 320px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: dropdownFadeIn 0.15s ease;
+  z-index: 100;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.promptsList {
+  display: flex;
+  flex-direction: column;
+}
+
+.promptItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 14px 16px;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.promptItem:last-child {
+  border-bottom: none;
+}
+
+.promptItem:hover {
+  background-color: var(--bg-hover);
+}
+
+.promptTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.promptPreview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .promptsDropdown {
+    width: calc(100vw - 48px);
+    max-width: 320px;
+  }
 }
