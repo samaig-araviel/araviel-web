@@ -146,3 +146,10 @@ export const BookIcon = () => (
     <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
   </svg>
 )
+
+export const NewChatIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 3L14 7L18 8L15 11L16 15L12 13L8 15L9 11L6 8L10 7L12 3Z"></path>
+    <path d="M19 14V19C19 20.1046 18.1046 21 17 21H7C5.89543 21 5 20.1046 5 19V9C5 7.89543 5.89543 7 7 7H12"></path>
+  </svg>
+)
