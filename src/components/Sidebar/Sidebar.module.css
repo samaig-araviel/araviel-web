@@ -20,6 +20,17 @@
   background-color: var(--bg-button-hover);
 }
 
+/* When menu is open, position button above sidebar */
+.mobileMenuBtnOpen {
+  background-color: transparent;
+  border-color: transparent;
+  z-index: 1002;
+}
+
+.mobileMenuBtnOpen:hover {
+  background-color: var(--bg-hover);
+}
+
 /* Overlay for mobile */
 .overlay {
   display: none;
@@ -89,7 +100,7 @@
 .header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
   padding: 0 4px;
 }
 
