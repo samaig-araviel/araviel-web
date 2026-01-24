@@ -11,10 +11,11 @@ import {
   SparkleIcon,
   BookIcon,
   NewChatIcon,
-  AttachIcon,
+  PlusIcon,
   CameraIcon,
-  PhotoIcon,
-  FileIcon,
+  FilePlusIcon,
+  GlobeIcon,
+  MicIcon,
   BugIcon,
   LightbulbIcon,
   ZapIcon,
@@ -103,9 +104,11 @@ const promptsData = {
 }
 
 const attachOptions = [
+  { id: 'files', label: 'Add files or Photos', icon: FilePlusIcon },
   { id: 'camera', label: 'Camera', icon: CameraIcon },
-  { id: 'photo', label: 'Photo', icon: PhotoIcon },
-  { id: 'file', label: 'File', icon: FileIcon },
+  { id: 'websearch', label: 'Web Search', icon: GlobeIcon },
+  { id: 'research', label: 'Research', icon: BookIcon },
+  { id: 'tone', label: 'Tone', icon: MicIcon },
 ]
 
 const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn']
@@ -152,7 +155,22 @@ export default function MainContent() {
 
   const handleInputChange = (e) => {
     dispatch(setInputValue(e.target.value))
+    autoResizeTextarea()
   }
+
+  const autoResizeTextarea = () => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      const lineHeight = 24 // ~1.5 line-height * 16px font
+      const maxHeight = lineHeight * 15 // 15 lines max
+      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px'
+    }
+  }
+
+  useEffect(() => {
+    autoResizeTextarea()
+  }, [inputValue])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -240,9 +258,9 @@ export default function MainContent() {
                     type="button"
                     className={`${styles.attachBtn} ${showAttachDropdown ? styles.active : ''}`}
                     onClick={handleAttachClick}
-                    aria-label="Attach file"
+                    aria-label="Add content"
                   >
-                    <AttachIcon />
+                    <PlusIcon />
                   </button>
                   {showAttachDropdown && (
                     <div className={styles.attachDropdown} ref={attachDropdownRef}>
