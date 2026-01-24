@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { selectEffectiveTheme } from './store/slices/themeSlice'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import Sidebar from './components/Sidebar'
 import MainContent from './components/MainContent'
 import './App.css'
@@ -30,6 +31,7 @@ export default function App() {
     <div className="app">
       <Sidebar />
       <MainContent />
+      <SpeedInsights />
     </div>
   )
 }
