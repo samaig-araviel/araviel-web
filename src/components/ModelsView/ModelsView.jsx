@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { MODELS, PROVIDERS, PROVIDER_ORDER, SPEED_TIERS, formatTokens } from '../../data/models';
 import { StarIcon, CheckCircleIcon, ChevronDownIcon } from '../Icons';
+import { setSelectedModel } from '../../store/slices/chatSlice';
 import styles from './ModelsView.module.css';
 
 const PROVIDER_FILTER_ALL = 'all';
@@ -243,6 +245,7 @@ function ProviderSection({ providerId, models, defaultModelId, onSetDefault }) {
 }
 
 export default function ModelsView() {
+  const dispatch = useDispatch();
   const [activeFilter, setActiveFilter] = useState(PROVIDER_FILTER_ALL);
   const [defaultModelId, setDefaultModelId] = useState(getDefaultModel);
 
@@ -250,8 +253,11 @@ export default function ModelsView() {
     setDefaultModelId(modelId);
     if (modelId) {
       saveDefaultModel(modelId);
+      // Also update the selected model in Redux so chat screen reflects it immediately
+      dispatch(setSelectedModel(modelId));
     } else {
       localStorage.removeItem('araviel-default-model');
+      dispatch(setSelectedModel(null));
     }
   };
 

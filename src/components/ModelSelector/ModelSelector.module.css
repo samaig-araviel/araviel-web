@@ -1,0 +1,435 @@
+/* ───────────────────────────────
+   Wrapper
+   ─────────────────────────────── */
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ───────────────────────────────
+   Trigger Button
+   ─────────────────────────────── */
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px 5px 6px;
+  background-color: var(--bg-secondary);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.trigger:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-color);
+}
+
+.triggerOpen {
+  background-color: var(--bg-hover);
+  border-color: var(--border-color);
+  box-shadow: 0 0 0 2px var(--bg-active);
+}
+
+.triggerWithMode {
+  border-color: var(--border-color);
+}
+
+.triggerProviderChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  background-color: var(--chip-bg);
+  color: var(--chip-text);
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .triggerProviderChip {
+  background-color: var(--chip-bg-dark);
+}
+
+.triggerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 140px;
+}
+
+.modeTag {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.modeTag svg {
+  width: 13px;
+  height: 13px;
+}
+
+.triggerChevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.triggerChevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+.triggerChevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ───────────────────────────────
+   Dropdown Panel
+   ─────────────────────────────── */
+.dropdown {
+  position: absolute;
+  left: 0;
+  z-index: 200;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  width: 280px;
+  overflow: hidden;
+  animation: dropdownAppear 0.15s ease;
+}
+
+@keyframes dropdownAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.dropdownDown {
+  top: calc(100% + 6px);
+  transform-origin: top left;
+}
+
+.dropdownUp {
+  bottom: calc(100% + 6px);
+  transform-origin: bottom left;
+}
+
+@keyframes dropdownAppearUp {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ───────────────────────────────
+   Section Labels & Dividers
+   ─────────────────────────────── */
+.sectionLabel {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.divider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
+}
+
+/* ───────────────────────────────
+   Auto Chip
+   ─────────────────────────────── */
+.autoChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #f59e0b, #8b5cf6);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ───────────────────────────────
+   Provider Chip (in dropdown)
+   ─────────────────────────────── */
+.providerChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background-color: var(--chip-bg);
+  color: var(--chip-text);
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+}
+
+[data-theme='dark'] .providerChip {
+  background-color: var(--chip-bg-dark);
+}
+
+/* ───────────────────────────────
+   Model Option Row
+   ─────────────────────────────── */
+.modelOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 0;
+  text-align: left;
+  transition: background-color 0.12s ease;
+  position: relative;
+}
+
+.modelOption:hover {
+  background-color: var(--bg-hover);
+}
+
+.modelOption:hover .providerChip {
+  transform: scale(1.08);
+}
+
+.modelOptionSelected {
+  background-color: var(--bg-active);
+}
+
+.modelOptionContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.modelOptionRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.modelOptionName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modelOptionTagline {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modelBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .modelBadge {
+  background-color: var(--badge-bg-dark);
+}
+
+.checkmark {
+  display: flex;
+  align-items: center;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ───────────────────────────────
+   Mode Toggles
+   ─────────────────────────────── */
+.modeOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  transition: background-color 0.12s ease, opacity 0.15s ease;
+  cursor: pointer;
+}
+
+.modeOption:hover:not(.modeOptionDisabled) {
+  background-color: var(--bg-hover);
+}
+
+.modeOptionActive {
+  background-color: var(--bg-active);
+}
+
+.modeOptionDisabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.modeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.modeIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.modeIconActive {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+}
+
+.modeContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.modeName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modeProvider {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.toggleOn {
+  background-color: var(--bg-icon-button);
+  border-color: var(--bg-icon-button);
+}
+
+.toggleDisabled {
+  opacity: 0.5;
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.toggleOn .toggleThumb {
+  transform: translateX(14px);
+  background-color: var(--text-icon-button);
+}
+
+/* ───────────────────────────────
+   More Models Row
+   ─────────────────────────────── */
+.moreModels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background-color 0.12s ease, color 0.12s ease;
+  text-align: left;
+}
+
+.moreModels:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.moreModelsChevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+}
+
+/* ───────────────────────────────
+   Responsive
+   ─────────────────────────────── */
+@media (max-width: 480px) {
+  .dropdown {
+    width: calc(100vw - 32px);
+    max-width: 320px;
+    left: 0;
+  }
+
+  .triggerLabel {
+    max-width: 100px;
+  }
+}
