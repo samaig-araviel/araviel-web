@@ -1,6 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { selectInputValue, selectMode, setInputValue, setMode, createNewChat } from '../../store/slices/chatSlice'
+import { useState, useRef, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  selectInputValue,
+  selectMode,
+  setInputValue,
+  setMode,
+  createNewChat,
+} from '../../store/slices/chatSlice';
 import {
   SendIcon,
   CodeIcon,
@@ -30,15 +36,16 @@ import {
   PuzzleIcon,
   LayersIcon,
   HelpCircleIcon,
-} from '../Icons'
-import styles from './MainContent.module.css'
+} from '../Icons';
+import ModelSelector from '../ModelSelector/ModelSelector';
+import styles from './MainContent.module.css';
 
 const getGreeting = () => {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning.'
-  if (hour < 18) return 'Good afternoon.'
-  return 'Good evening.'
-}
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning.';
+  if (hour < 18) return 'Good afternoon.';
+  return 'Good evening.';
+};
 
 const promptsData = {
   code: {
@@ -101,7 +108,7 @@ const promptsData = {
       { text: 'Quiz me on this', icon: HelpCircleIcon },
     ],
   },
-}
+};
 
 const attachOptions = [
   { id: 'files', label: 'Add files or Photos', icon: FilePlusIcon },
@@ -109,122 +116,122 @@ const attachOptions = [
   { id: 'websearch', label: 'Web Search', icon: GlobeIcon },
   { id: 'research', label: 'Research', icon: BookIcon },
   { id: 'tone', label: 'Tone', icon: MicIcon },
-]
+];
 
-const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn']
+const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn'];
 
 export default function MainContent() {
-  const dispatch = useDispatch()
-  const inputValue = useSelector(selectInputValue)
-  const mode = useSelector(selectMode)
-  const [activeDropdown, setActiveDropdown] = useState(null)
-  const [showAttachDropdown, setShowAttachDropdown] = useState(false)
-  const dropdownRef = useRef(null)
-  const attachDropdownRef = useRef(null)
-  const textareaRef = useRef(null)
+  const dispatch = useDispatch();
+  const inputValue = useSelector(selectInputValue);
+  const mode = useSelector(selectMode);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [showAttachDropdown, setShowAttachDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+  const attachDropdownRef = useRef(null);
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        const clickedOnQuickPrompt = e.target.closest(`.${styles.actionBtn}`)
+        const clickedOnQuickPrompt = e.target.closest(`.${styles.actionBtn}`);
         if (!clickedOnQuickPrompt) {
-          setActiveDropdown(null)
+          setActiveDropdown(null);
         }
       }
       if (attachDropdownRef.current && !attachDropdownRef.current.contains(e.target)) {
-        const clickedOnAttach = e.target.closest(`.${styles.attachBtn}`)
+        const clickedOnAttach = e.target.closest(`.${styles.attachBtn}`);
         if (!clickedOnAttach) {
-          setShowAttachDropdown(false)
+          setShowAttachDropdown(false);
         }
       }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        setActiveDropdown(null)
-        setShowAttachDropdown(false)
+        setActiveDropdown(null);
+        setShowAttachDropdown(false);
       }
-    }
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [])
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
 
   const handleInputChange = (e) => {
-    dispatch(setInputValue(e.target.value))
-    autoResizeTextarea()
-  }
+    dispatch(setInputValue(e.target.value));
+    autoResizeTextarea();
+  };
 
   const autoResizeTextarea = () => {
-    const textarea = textareaRef.current
+    const textarea = textareaRef.current;
     if (textarea) {
-      textarea.style.height = 'auto'
-      const lineHeight = 24 // ~1.5 line-height * 16px font
-      const maxHeight = lineHeight * 15 // 15 lines max
-      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px'
+      textarea.style.height = 'auto';
+      const lineHeight = 24; // ~1.5 line-height * 16px font
+      const maxHeight = lineHeight * 15; // 15 lines max
+      textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
     }
-  }
+  };
 
   useEffect(() => {
-    autoResizeTextarea()
-  }, [inputValue])
+    autoResizeTextarea();
+  }, [inputValue]);
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    if (!inputValue.trim()) return
-    console.log('Submitting:', inputValue, 'Mode:', mode)
-    dispatch(setInputValue(''))
-  }
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+    console.log('Submitting:', inputValue, 'Mode:', mode);
+    dispatch(setInputValue(''));
+  };
 
   const handleModeClick = (newMode) => {
     if (activeDropdown === newMode) {
-      setActiveDropdown(null)
+      setActiveDropdown(null);
     } else {
-      setActiveDropdown(newMode)
-      setShowAttachDropdown(false)
-      dispatch(setMode(newMode))
+      setActiveDropdown(newMode);
+      setShowAttachDropdown(false);
+      dispatch(setMode(newMode));
     }
-  }
+  };
 
   const handlePromptSelect = (text) => {
-    dispatch(setInputValue(text + ' '))
-    setActiveDropdown(null)
+    dispatch(setInputValue(text + ' '));
+    setActiveDropdown(null);
     if (textareaRef.current) {
-      textareaRef.current.focus()
+      textareaRef.current.focus();
     }
-  }
+  };
 
   const handleCloseDropdown = () => {
-    setActiveDropdown(null)
-  }
+    setActiveDropdown(null);
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit(e)
+      e.preventDefault();
+      handleSubmit(e);
     }
-  }
+  };
 
   const handleNewChat = () => {
-    dispatch(createNewChat())
-    dispatch(setInputValue(''))
-    setActiveDropdown(null)
-  }
+    dispatch(createNewChat());
+    dispatch(setInputValue(''));
+    setActiveDropdown(null);
+  };
 
   const handleAttachClick = () => {
-    setShowAttachDropdown(!showAttachDropdown)
-    setActiveDropdown(null)
-  }
+    setShowAttachDropdown(!showAttachDropdown);
+    setActiveDropdown(null);
+  };
 
   const handleAttachOptionClick = (optionId) => {
-    console.log('Attach option selected:', optionId)
-    setShowAttachDropdown(false)
-  }
+    console.log('Attach option selected:', optionId);
+    setShowAttachDropdown(false);
+  };
 
-  const currentPromptData = activeDropdown ? promptsData[activeDropdown] : null
+  const currentPromptData = activeDropdown ? promptsData[activeDropdown] : null;
 
   return (
     <main className={styles.main}>
@@ -265,7 +272,7 @@ export default function MainContent() {
                   {showAttachDropdown && (
                     <div className={styles.attachDropdown} ref={attachDropdownRef}>
                       {attachOptions.map((option) => {
-                        const Icon = option.icon
+                        const Icon = option.icon;
                         return (
                           <button
                             key={option.id}
@@ -275,13 +282,11 @@ export default function MainContent() {
                             <Icon />
                             <span>{option.label}</span>
                           </button>
-                        )
+                        );
                       })}
                     </div>
                   )}
-                  <button type="button" className={styles.modeSelector}>
-                    Auto
-                  </button>
+                  <ModelSelector />
                 </div>
                 <button
                   type="submit"
@@ -311,7 +316,7 @@ export default function MainContent() {
               </div>
               <div className={styles.promptsList}>
                 {currentPromptData.items.map((item, index) => {
-                  const ItemIcon = item.icon
+                  const ItemIcon = item.icon;
                   return (
                     <button
                       key={index}
@@ -323,7 +328,7 @@ export default function MainContent() {
                       </span>
                       <span>{item.text}</span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -332,21 +337,23 @@ export default function MainContent() {
 
         <div className={styles.actionButtons}>
           {quickPromptKeys.map((key) => {
-            const data = promptsData[key]
-            const Icon = data.icon
+            const data = promptsData[key];
+            const Icon = data.icon;
             return (
               <button
                 key={key}
-                className={`${styles.actionBtn} ${activeDropdown === key ? styles.activeAction : ''}`}
+                className={`${styles.actionBtn} ${
+                  activeDropdown === key ? styles.activeAction : ''
+                }`}
                 onClick={() => handleModeClick(key)}
               >
                 <Icon />
                 <span>{data.title}</span>
               </button>
-            )
+            );
           })}
         </div>
       </div>
     </main>
-  )
+  );
 }
