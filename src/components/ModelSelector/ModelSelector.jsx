@@ -10,11 +10,10 @@ import {
   setDeepResearch,
   setGoogleThinking,
 } from '../../store/slices/chatSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { MODELS, PROVIDERS } from '../../data/models';
+import { MODELS, PROVIDERS, PROVIDER_ORDER, getModelsByProvider } from '../../data/models';
 import {
   ChevronDownIcon,
-  ChevronRightIcon,
+  ChevronLeftIcon,
   CheckIcon,
   BrainIcon,
   BeakerIcon,
@@ -73,6 +72,7 @@ export default function ModelSelector() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownDir, setDropdownDir] = useState('down');
+  const [showAllModels, setShowAllModels] = useState(false);
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
 
@@ -80,10 +80,13 @@ export default function ModelSelector() {
   const selectedProvider = selectedModel ? selectedModel.provider : null;
   const isAutoMode = !selectedModelId;
 
-  // For Auto mode: check if there's a saved default model to display
+  // For Auto mode tagline: check if there's a saved default model to show in subtitle
   const savedDefaultId = localStorage.getItem('araviel-default-model');
   const savedDefaultModel =
     isAutoMode && savedDefaultId ? MODELS.find((m) => m.id === savedDefaultId) : null;
+
+  // Grouped models for "all models" view
+  const modelsByProvider = getModelsByProvider();
 
   const featuredModels = FEATURED_MODEL_IDS.map((id) => MODELS.find((m) => m.id === id)).filter(
     Boolean
@@ -102,6 +105,7 @@ export default function ModelSelector() {
         !triggerRef.current.contains(e.target)
       ) {
         setIsOpen(false);
+        setShowAllModels(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -111,11 +115,17 @@ export default function ModelSelector() {
   // Close on Escape
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') {
+        if (showAllModels) {
+          setShowAllModels(false);
+        } else {
+          setIsOpen(false);
+        }
+      }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [showAllModels]);
 
   // Calculate dropdown direction before opening
   const handleTriggerClick = () => {
@@ -123,6 +133,7 @@ export default function ModelSelector() {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
       setDropdownDir(spaceBelow < 380 ? 'up' : 'down');
+      setShowAllModels(false);
     }
     setIsOpen((prev) => !prev);
   };
@@ -143,14 +154,17 @@ export default function ModelSelector() {
   };
 
   const handleMoreModels = () => {
-    dispatch(setActiveItem('models'));
-    setIsOpen(false);
+    setShowAllModels(true);
   };
 
-  // Trigger label and provider accent
-  const displayModel = selectedModel || savedDefaultModel;
-  const displayProvider = displayModel ? PROVIDERS[displayModel.provider] : null;
-  const triggerLabel = displayModel ? displayModel.name : 'Auto';
+  const handleBackToFeatured = () => {
+    setShowAllModels(false);
+  };
+
+  // Trigger label and provider accent — only reflect the explicitly selected model, not the
+  // saved default. When in Auto mode the trigger always shows "Auto".
+  const displayProvider = !isAutoMode && selectedModel ? PROVIDERS[selectedModel.provider] : null;
+  const triggerLabel = isAutoMode ? 'Auto' : (selectedModel?.name ?? 'Auto');
 
   return (
     <div className={styles.wrapper}>
@@ -199,132 +213,208 @@ export default function ModelSelector() {
           role="listbox"
           aria-label="Model selection"
         >
-          {/* ── Auto ── */}
-          <button
-            className={`${styles.modelOption} ${isAutoMode ? styles.modelOptionSelected : ''}`}
-            onClick={handleAutoSelect}
-            role="option"
-            aria-selected={isAutoMode}
-          >
-            <span className={styles.autoChip}>✦</span>
-            <div className={styles.modelOptionContent}>
-              <span className={styles.modelOptionName}>Auto</span>
-              <span className={styles.modelOptionTagline}>
-                {savedDefaultModel
-                  ? `Using ${savedDefaultModel.name} by default`
-                  : 'Best model selected for each task'}
-              </span>
-            </div>
-            {isAutoMode && (
-              <span className={styles.checkmark}>
-                <CheckIcon />
-              </span>
-            )}
-          </button>
-
-          <div className={styles.divider} />
-          <div className={styles.sectionLabel}>Featured Models</div>
-
-          {/* ── 3 featured models ── */}
-          {featuredModels.map((model) => {
-            const provider = PROVIDERS[model.provider];
-            const isSelected = selectedModelId === model.id;
-            return (
-              <button
-                key={model.id}
-                className={`${styles.modelOption} ${isSelected ? styles.modelOptionSelected : ''}`}
-                onClick={() => handleModelSelect(model.id)}
-                role="option"
-                aria-selected={isSelected}
-              >
-                <span
-                  className={styles.providerChip}
-                  style={{
-                    '--chip-bg': provider.accentBg,
-                    '--chip-text': provider.accentText,
-                    '--chip-bg-dark': provider.accentBgDark,
-                  }}
+          {showAllModels ? (
+            /* ── All Models view ── */
+            <>
+              <div className={styles.allModelsHeader}>
+                <button
+                  className={styles.backButton}
+                  onClick={handleBackToFeatured}
+                  aria-label="Back to featured models"
                 >
-                  {provider.logoChar}
-                </span>
+                  <ChevronLeftIcon />
+                  <span>All Models</span>
+                </button>
+              </div>
+              <div className={styles.allModelsList}>
+                {PROVIDER_ORDER.map((providerId) => {
+                  const provider = PROVIDERS[providerId];
+                  const providerModels = modelsByProvider[providerId];
+                  if (!providerModels || providerModels.length === 0) return null;
+                  return (
+                    <div key={providerId}>
+                      <div className={styles.providerGroupLabel}>
+                        <span
+                          className={styles.providerGroupChip}
+                          style={{
+                            '--chip-bg': provider.accentBg,
+                            '--chip-text': provider.accentText,
+                            '--chip-bg-dark': provider.accentBgDark,
+                          }}
+                        >
+                          {provider.logoChar}
+                        </span>
+                        {provider.name}
+                      </div>
+                      {providerModels.map((model) => {
+                        const isSelected = selectedModelId === model.id;
+                        return (
+                          <button
+                            key={model.id}
+                            className={`${styles.modelOption} ${isSelected ? styles.modelOptionSelected : ''}`}
+                            onClick={() => handleModelSelect(model.id)}
+                            role="option"
+                            aria-selected={isSelected}
+                          >
+                            <div className={styles.modelOptionContent}>
+                              <div className={styles.modelOptionRow}>
+                                <span className={styles.modelOptionName}>{model.name}</span>
+                                {model.badge && (
+                                  <span
+                                    className={styles.modelBadge}
+                                    style={{
+                                      '--badge-bg': provider.accentBg,
+                                      '--badge-text': provider.accentText,
+                                      '--badge-bg-dark': provider.accentBgDark,
+                                    }}
+                                  >
+                                    {model.badge}
+                                  </span>
+                                )}
+                              </div>
+                              <span className={styles.modelOptionTagline}>{model.tagline}</span>
+                            </div>
+                            {isSelected && (
+                              <span className={styles.checkmark}>
+                                <CheckIcon />
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            /* ── Featured / default view ── */
+            <>
+              {/* ── Auto ── */}
+              <button
+                className={`${styles.modelOption} ${isAutoMode ? styles.modelOptionSelected : ''}`}
+                onClick={handleAutoSelect}
+                role="option"
+                aria-selected={isAutoMode}
+              >
+                <span className={styles.autoChip}>✦</span>
                 <div className={styles.modelOptionContent}>
-                  <div className={styles.modelOptionRow}>
-                    <span className={styles.modelOptionName}>{model.name}</span>
-                    {model.badge && (
-                      <span
-                        className={styles.modelBadge}
-                        style={{
-                          '--badge-bg': provider.accentBg,
-                          '--badge-text': provider.accentText,
-                          '--badge-bg-dark': provider.accentBgDark,
-                        }}
-                      >
-                        {model.badge}
-                      </span>
-                    )}
-                  </div>
-                  <span className={styles.modelOptionTagline}>{model.tagline}</span>
+                  <span className={styles.modelOptionName}>Auto</span>
+                  <span className={styles.modelOptionTagline}>
+                    {savedDefaultModel
+                      ? `Using ${savedDefaultModel.name} by default`
+                      : 'Best model selected for each task'}
+                  </span>
                 </div>
-                {isSelected && (
+                {isAutoMode && (
                   <span className={styles.checkmark}>
                     <CheckIcon />
                   </span>
                 )}
               </button>
-            );
-          })}
 
-          <div className={styles.divider} />
-          <div className={styles.sectionLabel}>Modes</div>
+              <div className={styles.divider} />
+              <div className={styles.sectionLabel}>Featured Models</div>
 
-          {/* ── Mode toggles ── */}
-          {MODE_CONFIG.map((modeConf) => {
-            const active = modeValues[modeConf.key];
-            // Available when: auto mode (no specific provider locked) OR provider matches
-            const available = isAutoMode || selectedProvider === modeConf.provider;
-            const Icon = modeConf.Icon;
-            return (
-              <button
-                key={modeConf.key}
-                className={`${styles.modeOption} ${active ? styles.modeOptionActive : ''} ${
-                  !available ? styles.modeOptionDisabled : ''
-                }`}
-                onClick={() => available && handleModeToggle(modeConf)}
-                disabled={!available}
-                aria-pressed={active}
-                title={
-                  !available
-                    ? `Only available with ${modeConf.providerLabel} models`
-                    : modeConf.description
-                }
-              >
-                <span className={`${styles.modeIcon} ${active ? styles.modeIconActive : ''}`}>
-                  <Icon />
-                </span>
-                <div className={styles.modeContent}>
-                  <span className={styles.modeName}>{modeConf.label}</span>
-                  <span className={styles.modeProvider}>{modeConf.providerLabel}</span>
-                </div>
-                <div
-                  className={`${styles.toggle} ${active ? styles.toggleOn : ''} ${
-                    !available ? styles.toggleDisabled : ''
-                  }`}
-                >
-                  <div className={styles.toggleThumb} />
-                </div>
+              {/* ── 3 featured models ── */}
+              {featuredModels.map((model) => {
+                const provider = PROVIDERS[model.provider];
+                const isSelected = selectedModelId === model.id;
+                return (
+                  <button
+                    key={model.id}
+                    className={`${styles.modelOption} ${isSelected ? styles.modelOptionSelected : ''}`}
+                    onClick={() => handleModelSelect(model.id)}
+                    role="option"
+                    aria-selected={isSelected}
+                  >
+                    <span
+                      className={styles.providerChip}
+                      style={{
+                        '--chip-bg': provider.accentBg,
+                        '--chip-text': provider.accentText,
+                        '--chip-bg-dark': provider.accentBgDark,
+                      }}
+                    >
+                      {provider.logoChar}
+                    </span>
+                    <div className={styles.modelOptionContent}>
+                      <div className={styles.modelOptionRow}>
+                        <span className={styles.modelOptionName}>{model.name}</span>
+                        {model.badge && (
+                          <span
+                            className={styles.modelBadge}
+                            style={{
+                              '--badge-bg': provider.accentBg,
+                              '--badge-text': provider.accentText,
+                              '--badge-bg-dark': provider.accentBgDark,
+                            }}
+                          >
+                            {model.badge}
+                          </span>
+                        )}
+                      </div>
+                      <span className={styles.modelOptionTagline}>{model.tagline}</span>
+                    </div>
+                    {isSelected && (
+                      <span className={styles.checkmark}>
+                        <CheckIcon />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              <div className={styles.divider} />
+              <div className={styles.sectionLabel}>Modes</div>
+
+              {/* ── Mode toggles ── */}
+              {MODE_CONFIG.map((modeConf) => {
+                const active = modeValues[modeConf.key];
+                // Available when: auto mode (no specific provider locked) OR provider matches
+                const available = isAutoMode || selectedProvider === modeConf.provider;
+                const Icon = modeConf.Icon;
+                return (
+                  <button
+                    key={modeConf.key}
+                    className={`${styles.modeOption} ${active ? styles.modeOptionActive : ''} ${
+                      !available ? styles.modeOptionDisabled : ''
+                    }`}
+                    onClick={() => available && handleModeToggle(modeConf)}
+                    disabled={!available}
+                    aria-pressed={active}
+                    title={
+                      !available
+                        ? `Only available with ${modeConf.providerLabel} models`
+                        : modeConf.description
+                    }
+                  >
+                    <span className={`${styles.modeIcon} ${active ? styles.modeIconActive : ''}`}>
+                      <Icon />
+                    </span>
+                    <div className={styles.modeContent}>
+                      <span className={styles.modeName}>{modeConf.label}</span>
+                      <span className={styles.modeProvider}>{modeConf.providerLabel}</span>
+                    </div>
+                    <div
+                      className={`${styles.toggle} ${active ? styles.toggleOn : ''} ${
+                        !available ? styles.toggleDisabled : ''
+                      }`}
+                    >
+                      <div className={styles.toggleThumb} />
+                    </div>
+                  </button>
+                );
+              })}
+
+              <div className={styles.divider} />
+
+              {/* ── More models ── */}
+              <button className={styles.moreModels} onClick={handleMoreModels}>
+                <span>More models</span>
               </button>
-            );
-          })}
-
-          <div className={styles.divider} />
-
-          {/* ── More models ── */}
-          <button className={styles.moreModels} onClick={handleMoreModels}>
-            <span>More models</span>
-            <span className={styles.moreModelsChevron}>
-              <ChevronRightIcon />
-            </span>
-          </button>
+            </>
+          )}
         </div>
       )}
     </div>
