@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { MODELS, PROVIDERS, PROVIDER_ORDER, SPEED_TIERS, formatTokens } from '../../data/models';
 import { StarIcon, CheckCircleIcon, ChevronDownIcon } from '../Icons';
 import styles from './ModelsView.module.css';
@@ -29,8 +29,160 @@ function CapabilityPill({ supported, label }) {
         supported ? styles.capSupported : styles.capUnsupported
       }`}
     >
-      {supported ? '✓' : '✗'} {label}
+      {supported ? '\u2713' : '\u2717'} {label}
     </span>
+  );
+}
+
+function DefaultModelCard({ model, onSetDefault }) {
+  if (!model) {
+    return (
+      <div className={styles.defaultCard}>
+        <div className={styles.defaultCardInner}>
+          <div className={styles.defaultCardHeader}>
+            <span className={styles.defaultLabel}>Default Model</span>
+          </div>
+          <div className={styles.defaultCardBody}>
+            <span className={styles.autoGlyph}>{'\u2726'}</span>
+            <div className={styles.defaultCardInfo}>
+              <span className={styles.defaultCardName}>Auto</span>
+              <span className={styles.defaultCardDesc}>Best model selected for each task</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const provider = PROVIDERS[model.provider];
+
+  return (
+    <div className={styles.defaultCard}>
+      <div className={styles.defaultCardInner}>
+        <div className={styles.defaultCardHeader}>
+          <span className={styles.defaultLabel}>Default Model</span>
+          <button
+            className={styles.defaultRemoveBtn}
+            onClick={() => onSetDefault(null)}
+            title="Remove default and revert to Auto"
+          >
+            Remove
+          </button>
+        </div>
+        <div className={styles.defaultCardBody}>
+          <div
+            className={styles.defaultProviderLogo}
+            style={{
+              '--chip-bg': provider.accentBg,
+              '--chip-text': provider.accentText,
+              '--chip-bg-dark': provider.accentBgDark,
+            }}
+          >
+            <span>{provider.logoChar}</span>
+          </div>
+          <div className={styles.defaultCardInfo}>
+            <div className={styles.defaultCardNameRow}>
+              <span className={styles.defaultCardName}>{model.name}</span>
+              <StarIcon filled={true} />
+            </div>
+            <span className={styles.defaultCardDesc}>{model.tagline}</span>
+          </div>
+        </div>
+        <div className={styles.defaultCardMeta}>
+          <SpeedBadge tier={model.speedTier} />
+          <span className={styles.metaChip}>{formatTokens(model.context.inputTokens)} ctx</span>
+          <span className={styles.priceMeta}>
+            $
+            {model.pricing.inputPerM < 1
+              ? model.pricing.inputPerM.toFixed(3)
+              : model.pricing.inputPerM.toFixed(2)}
+            <span className={styles.priceUnit}>/M in</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterDropdown({ activeFilter, onFilterChange, providerModelMap }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [open]);
+
+  const totalModels = MODELS.length;
+  const activeLabel =
+    activeFilter === PROVIDER_FILTER_ALL ? 'All Providers' : PROVIDERS[activeFilter].name;
+  const activeCount =
+    activeFilter === PROVIDER_FILTER_ALL ? totalModels : providerModelMap[activeFilter].length;
+
+  return (
+    <div className={styles.filterDropdownWrap} ref={ref}>
+      <button
+        className={styles.filterDropdownTrigger}
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+      >
+        <span className={styles.filterTriggerLabel}>
+          {activeLabel}
+          <span className={styles.filterTriggerCount}>{activeCount}</span>
+        </span>
+        <span className={`${styles.filterChevron} ${open ? styles.filterChevronOpen : ''}`}>
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {open && (
+        <div className={styles.filterDropdownMenu}>
+          <button
+            className={`${styles.filterOption} ${
+              activeFilter === PROVIDER_FILTER_ALL ? styles.filterOptionActive : ''
+            }`}
+            onClick={() => {
+              onFilterChange(PROVIDER_FILTER_ALL);
+              setOpen(false);
+            }}
+          >
+            <span className={styles.filterOptionLabel}>All Providers</span>
+            <span className={styles.filterOptionCount}>{totalModels}</span>
+          </button>
+          {PROVIDER_ORDER.map((pid) => {
+            const provider = PROVIDERS[pid];
+            const count = providerModelMap[pid].length;
+            return (
+              <button
+                key={pid}
+                className={`${styles.filterOption} ${
+                  activeFilter === pid ? styles.filterOptionActive : ''
+                }`}
+                onClick={() => {
+                  onFilterChange(pid);
+                  setOpen(false);
+                }}
+              >
+                <span className={styles.filterOptionLeft}>
+                  <span
+                    className={styles.filterOptionDot}
+                    style={{ backgroundColor: provider.accentColor }}
+                  />
+                  <span className={styles.filterOptionLabel}>{provider.name}</span>
+                </span>
+                <span className={styles.filterOptionCount}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -49,7 +201,7 @@ function ModelCard({ model, isDefault, onSetDefault }) {
         isDefault ? styles.cardDefault : ''
       }`}
     >
-      {/* Card Header — always visible */}
+      {/* Card Header -- always visible */}
       <button
         className={styles.cardHeader}
         onClick={() => setExpanded(!expanded)}
@@ -199,7 +351,7 @@ function ModelCard({ model, isDefault, onSetDefault }) {
               onClick={() => onSetDefault(isDefault ? null : model.id)}
             >
               <StarIcon filled={isDefault} />
-              {isDefault ? 'Default model — click to remove' : 'Set as default model'}
+              {isDefault ? 'Default model \u2014 click to remove' : 'Set as default model'}
             </button>
           </div>
         </div>
@@ -208,27 +360,34 @@ function ModelCard({ model, isDefault, onSetDefault }) {
   );
 }
 
-function ProviderSection({ providerId, models, defaultModelId, onSetDefault }) {
+function ProviderSection({ providerId, models, defaultModelId, onSetDefault, startOpen }) {
+  const [open, setOpen] = useState(startOpen);
   const provider = PROVIDERS[providerId];
+
   return (
     <div className={styles.providerSection}>
-      <div className={styles.providerHeader}>
-        <div
-          className={styles.providerLogoWrap}
-          style={{
-            '--chip-bg': provider.accentBg,
-            '--chip-text': provider.accentText,
-            '--chip-bg-dark': provider.accentBgDark,
-          }}
-        >
-          <span className={styles.providerLogo}>{provider.logoChar}</span>
+      <button className={styles.providerHeader} onClick={() => setOpen(!open)} aria-expanded={open}>
+        <div className={styles.providerHeaderLeft}>
+          <div
+            className={styles.providerLogoWrap}
+            style={{
+              '--chip-bg': provider.accentBg,
+              '--chip-text': provider.accentText,
+              '--chip-bg-dark': provider.accentBgDark,
+            }}
+          >
+            <span className={styles.providerLogo}>{provider.logoChar}</span>
+          </div>
+          <span className={styles.providerName}>{provider.name}</span>
+          <span className={styles.providerCount}>
+            {models.length} model{models.length !== 1 ? 's' : ''}
+          </span>
         </div>
-        <span className={styles.providerName}>{provider.name}</span>
-        <span className={styles.providerCount}>
-          {models.length} model{models.length !== 1 ? 's' : ''}
+        <span className={`${styles.providerChevron} ${open ? styles.providerChevronOpen : ''}`}>
+          <ChevronDownIcon />
         </span>
-      </div>
-      <div className={styles.modelList}>
+      </button>
+      <div className={`${styles.modelList} ${open ? styles.modelListOpen : ''}`}>
         {models.map((model) => (
           <ModelCard
             key={model.id}
@@ -270,90 +429,36 @@ export default function ModelsView() {
     <div className={styles.container}>
       {/* Page header */}
       <div className={styles.pageHeader}>
-        <div className={styles.pageHeaderText}>
-          <h1 className={styles.pageTitle}>Models</h1>
-          <p className={styles.pageSubtitle}>
-            {totalModels} AI models across {PROVIDER_ORDER.length} providers
-          </p>
-        </div>
-        <div className={styles.currentDefault}>
-          <span className={styles.currentDefaultLabel}>Current default</span>
-          {defaultModel ? (
-            <div className={styles.currentDefaultModel}>
-              <span
-                className={styles.providerChipSmall}
-                style={{
-                  '--chip-bg': PROVIDERS[defaultModel.provider].accentBg,
-                  '--chip-text': PROVIDERS[defaultModel.provider].accentText,
-                  '--chip-bg-dark': PROVIDERS[defaultModel.provider].accentBgDark,
-                }}
-              >
-                {PROVIDERS[defaultModel.provider].shortName}
-              </span>
-              <span className={styles.currentDefaultName}>{defaultModel.name}</span>
-              <StarIcon filled={true} />
-            </div>
-          ) : (
-            <div className={styles.currentDefaultModel}>
-              <span className={styles.autoGlyph}>✦</span>
-              <span className={styles.currentDefaultName}>Auto</span>
-            </div>
-          )}
-          <span className={styles.currentDefaultSubtext}>
-            {defaultModel
-              ? `Star another model to change, or unstar to revert to Auto`
-              : 'Best model selected for each task'}
-          </span>
-        </div>
+        <h1 className={styles.pageTitle}>Models</h1>
+        <p className={styles.pageSubtitle}>
+          {totalModels} AI models across {PROVIDER_ORDER.length} providers
+        </p>
       </div>
 
-      {/* Provider filter tabs */}
+      {/* Default model featured card */}
+      <div className={styles.defaultSection}>
+        <DefaultModelCard model={defaultModel} onSetDefault={handleSetDefault} />
+      </div>
+
+      {/* Filter dropdown + provider count */}
       <div className={styles.filterBar}>
-        <button
-          className={`${styles.filterTab} ${
-            activeFilter === PROVIDER_FILTER_ALL ? styles.filterTabActive : ''
-          }`}
-          onClick={() => setActiveFilter(PROVIDER_FILTER_ALL)}
-        >
-          All
-          <span className={styles.filterCount}>{totalModels}</span>
-        </button>
-        {PROVIDER_ORDER.map((pid) => {
-          const count = providerModelMap[pid].length;
-          const provider = PROVIDERS[pid];
-          return (
-            <button
-              key={pid}
-              className={`${styles.filterTab} ${
-                activeFilter === pid ? styles.filterTabActive : ''
-              }`}
-              onClick={() => setActiveFilter(pid)}
-              style={
-                activeFilter === pid
-                  ? {
-                      '--tab-active-color': provider.accentText,
-                      '--tab-active-bg': provider.accentBg,
-                      '--tab-active-bg-dark': provider.accentBgDark,
-                    }
-                  : {}
-              }
-            >
-              {provider.name}
-              <span className={styles.filterCount}>{count}</span>
-            </button>
-          );
-        })}
+        <FilterDropdown
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          providerModelMap={providerModelMap}
+        />
       </div>
 
       {/* Model sections */}
       <div className={styles.content}>
-        {filteredProviders.map((pid) => (
+        {filteredProviders.map((pid, idx) => (
           <ProviderSection
             key={pid}
             providerId={pid}
             models={providerModelMap[pid]}
             defaultModelId={defaultModelId}
             onSetDefault={handleSetDefault}
+            startOpen={idx === 0}
           />
         ))}
       </div>
