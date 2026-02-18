@@ -514,21 +514,19 @@
 /* ───────────────────────────────
    Responsive
    ─────────────────────────────── */
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   .dropdown {
-    /* Clamp to viewport width, aligned to left edge of trigger */
     width: 280px;
     max-width: calc(100vw - 24px);
-    left: 0;
-    /* If the dropdown would overflow the right edge, shift it left */
-    right: auto;
-  }
-
-  .triggerLabel {
-    max-width: 90px;
   }
 
   .allModelsList {
-    max-height: 280px;
+    max-height: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .triggerLabel {
+    max-width: 90px;
   }
 }
