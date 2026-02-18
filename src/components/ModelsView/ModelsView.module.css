@@ -41,164 +41,110 @@
 }
 
 /* ===================== */
-/* Default Model Card    */
+/* Toolbar (filter + default) */
 /* ===================== */
 
-.defaultSection {
-  padding: 20px 48px 0;
-}
-
-.defaultCard {
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  background-color: var(--bg-button);
-  overflow: hidden;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.defaultCardInner {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px;
-}
-
-.defaultCardHeader {
+.toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
+  padding: 24px 48px 0;
 }
 
-.defaultLabel {
+/* ===================== */
+/* Default Model Pill    */
+/* ===================== */
+
+.defaultPill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 13px;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.defaultPillActive {
+  background-color: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+:global([data-theme='dark']) .defaultPillActive {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-color: rgba(180, 83, 9, 0.35);
+}
+
+.defaultPillLabel {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   color: var(--text-muted);
 }
 
-.defaultRemoveBtn {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px 8px;
-  border-radius: 6px;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.defaultRemoveBtn:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.defaultCardBody {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.defaultProviderLogo {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background-color: var(--chip-bg);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 15px;
+.defaultPillAutoIcon {
+  font-size: 14px;
   font-weight: 700;
-  color: var(--chip-text);
-}
-
-:global([data-theme='dark']) .defaultProviderLogo {
-  background-color: var(--chip-bg-dark);
-}
-
-.autoGlyph {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 20px;
-  font-weight: 700;
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(99, 102, 241, 0.15));
-  background-clip: padding-box;
-  color: transparent;
-  background-image: linear-gradient(135deg, #a78bfa, #818cf8, #6366f1);
+  background: linear-gradient(135deg, #a78bfa, #6366f1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   line-height: 1;
-  position: relative;
 }
 
-.autoGlyph::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.12), rgba(99, 102, 241, 0.12));
-  z-index: -1;
-}
-
-:global([data-theme='dark']) .autoGlyph::before {
-  background: linear-gradient(135deg, rgba(167, 139, 250, 0.2), rgba(99, 102, 241, 0.2));
-}
-
-.defaultCardInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.defaultCardNameRow {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.defaultCardNameRow svg {
-  color: #f59e0b;
+.defaultPillDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
-.defaultCardName {
-  font-size: 15px;
+.defaultPillName {
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.defaultCardDesc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.4;
+.defaultPill svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
 }
 
-.defaultCardMeta {
+.defaultPillClear {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding-top: 4px;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 10px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-left: -2px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.defaultPillClear:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: var(--text-primary);
+}
+
+:global([data-theme='dark']) .defaultPillClear:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* ===================== */
 /* Filter Dropdown       */
 /* ===================== */
-
-.filterBar {
-  display: flex;
-  align-items: center;
-  padding: 20px 48px 0;
-}
 
 .filterDropdownWrap {
   position: relative;
@@ -986,11 +932,7 @@
     padding: 28px 24px 0;
   }
 
-  .defaultSection {
-    padding: 16px 24px 0;
-  }
-
-  .filterBar {
+  .toolbar {
     padding: 16px 24px 0;
   }
 
@@ -1020,21 +962,24 @@
     padding: 60px 16px 0;
   }
 
-  .defaultSection {
+  .toolbar {
     padding: 14px 16px 0;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .defaultCardInner {
-    padding: 14px 16px;
-    gap: 10px;
-  }
-
-  .defaultCardMeta {
+  .defaultPill {
     gap: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
   }
 
-  .filterBar {
-    padding: 14px 16px 0;
+  .defaultPillLabel {
+    font-size: 10px;
+  }
+
+  .defaultPillName {
+    font-size: 12px;
   }
 
   .content {

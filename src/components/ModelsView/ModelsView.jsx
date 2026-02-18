@@ -34,22 +34,13 @@ function CapabilityPill({ supported, label }) {
   );
 }
 
-function DefaultModelCard({ model, onSetDefault }) {
+function DefaultModelPill({ model, onClear }) {
   if (!model) {
     return (
-      <div className={styles.defaultCard}>
-        <div className={styles.defaultCardInner}>
-          <div className={styles.defaultCardHeader}>
-            <span className={styles.defaultLabel}>Default Model</span>
-          </div>
-          <div className={styles.defaultCardBody}>
-            <span className={styles.autoGlyph}>{'\u2726'}</span>
-            <div className={styles.defaultCardInfo}>
-              <span className={styles.defaultCardName}>Auto</span>
-              <span className={styles.defaultCardDesc}>Best model selected for each task</span>
-            </div>
-          </div>
-        </div>
+      <div className={styles.defaultPill}>
+        <span className={styles.defaultPillLabel}>Default</span>
+        <span className={styles.defaultPillAutoIcon}>{'\u2726'}</span>
+        <span className={styles.defaultPillName}>Auto</span>
       </div>
     );
   }
@@ -57,49 +48,19 @@ function DefaultModelCard({ model, onSetDefault }) {
   const provider = PROVIDERS[model.provider];
 
   return (
-    <div className={styles.defaultCard}>
-      <div className={styles.defaultCardInner}>
-        <div className={styles.defaultCardHeader}>
-          <span className={styles.defaultLabel}>Default Model</span>
-          <button
-            className={styles.defaultRemoveBtn}
-            onClick={() => onSetDefault(null)}
-            title="Remove default and revert to Auto"
-          >
-            Remove
-          </button>
-        </div>
-        <div className={styles.defaultCardBody}>
-          <div
-            className={styles.defaultProviderLogo}
-            style={{
-              '--chip-bg': provider.accentBg,
-              '--chip-text': provider.accentText,
-              '--chip-bg-dark': provider.accentBgDark,
-            }}
-          >
-            <span>{provider.logoChar}</span>
-          </div>
-          <div className={styles.defaultCardInfo}>
-            <div className={styles.defaultCardNameRow}>
-              <span className={styles.defaultCardName}>{model.name}</span>
-              <StarIcon filled={true} />
-            </div>
-            <span className={styles.defaultCardDesc}>{model.tagline}</span>
-          </div>
-        </div>
-        <div className={styles.defaultCardMeta}>
-          <SpeedBadge tier={model.speedTier} />
-          <span className={styles.metaChip}>{formatTokens(model.context.inputTokens)} ctx</span>
-          <span className={styles.priceMeta}>
-            $
-            {model.pricing.inputPerM < 1
-              ? model.pricing.inputPerM.toFixed(3)
-              : model.pricing.inputPerM.toFixed(2)}
-            <span className={styles.priceUnit}>/M in</span>
-          </span>
-        </div>
-      </div>
+    <div className={`${styles.defaultPill} ${styles.defaultPillActive}`}>
+      <span className={styles.defaultPillLabel}>Default</span>
+      <span className={styles.defaultPillDot} style={{ backgroundColor: provider.accentColor }} />
+      <span className={styles.defaultPillName}>{model.name}</span>
+      <StarIcon filled={true} />
+      <button
+        className={styles.defaultPillClear}
+        onClick={onClear}
+        title="Revert to Auto"
+        aria-label="Remove default model"
+      >
+        {'\u2715'}
+      </button>
     </div>
   );
 }
@@ -435,18 +396,14 @@ export default function ModelsView() {
         </p>
       </div>
 
-      {/* Default model featured card */}
-      <div className={styles.defaultSection}>
-        <DefaultModelCard model={defaultModel} onSetDefault={handleSetDefault} />
-      </div>
-
-      {/* Filter dropdown + provider count */}
-      <div className={styles.filterBar}>
+      {/* Toolbar: filter + default model pill */}
+      <div className={styles.toolbar}>
         <FilterDropdown
           activeFilter={activeFilter}
           onFilterChange={setActiveFilter}
           providerModelMap={providerModelMap}
         />
+        <DefaultModelPill model={defaultModel} onClear={() => handleSetDefault(null)} />
       </div>
 
       {/* Model sections */}
