@@ -1,8 +1,14 @@
-import { useSelector, useDispatch } from 'react-redux'
-import { useState, useEffect } from 'react'
-import { selectSidebarCollapsed, toggleSidebar, setCollapsed } from '../../store/slices/sidebarSlice'
-import { selectRecentChats, createNewChat, setCurrentChat } from '../../store/slices/chatSlice'
-import { selectTheme, setTheme } from '../../store/slices/themeSlice'
+import { useSelector, useDispatch } from 'react-redux';
+import { useState, useEffect } from 'react';
+import {
+  selectSidebarCollapsed,
+  toggleSidebar,
+  setCollapsed,
+  selectActiveItem,
+  setActiveItem,
+} from '../../store/slices/sidebarSlice';
+import { selectRecentChats, createNewChat, setCurrentChat } from '../../store/slices/chatSlice';
+import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -14,57 +20,68 @@ import {
   MonitorIcon,
   MenuIcon,
   CloseIcon,
-} from '../Icons'
-import styles from './Sidebar.module.css'
+  ModelsIcon,
+} from '../Icons';
+import styles from './Sidebar.module.css';
 
 export default function Sidebar() {
-  const dispatch = useDispatch()
-  const collapsed = useSelector(selectSidebarCollapsed)
-  const recentChats = useSelector(selectRecentChats)
-  const themeMode = useSelector(selectTheme)
-  const [isMobile, setIsMobile] = useState(false)
-  const [recentsExpanded, setRecentsExpanded] = useState(true)
+  const dispatch = useDispatch();
+  const collapsed = useSelector(selectSidebarCollapsed);
+  const recentChats = useSelector(selectRecentChats);
+  const themeMode = useSelector(selectTheme);
+  const activeItem = useSelector(selectActiveItem);
+  const [isMobile, setIsMobile] = useState(false);
+  const [recentsExpanded, setRecentsExpanded] = useState(true);
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
-  const showFullContent = isMobile || !collapsed
+  const showFullContent = isMobile || !collapsed;
 
   const handleNewChat = () => {
-    dispatch(createNewChat())
+    dispatch(createNewChat());
+    dispatch(setActiveItem('home'));
     if (isMobile) {
-      dispatch(setCollapsed(true))
+      dispatch(setCollapsed(true));
     }
-  }
+  };
 
   const handleChatClick = (chatId) => {
-    dispatch(setCurrentChat(chatId))
+    dispatch(setCurrentChat(chatId));
+    dispatch(setActiveItem('home'));
     if (isMobile) {
-      dispatch(setCollapsed(true))
+      dispatch(setCollapsed(true));
     }
-  }
+  };
+
+  const handleModelsClick = () => {
+    dispatch(setActiveItem(activeItem === 'models' ? 'home' : 'models'));
+    if (isMobile) {
+      dispatch(setCollapsed(true));
+    }
+  };
 
   const handleThemeChange = (mode) => {
-    dispatch(setTheme(mode))
-  }
+    dispatch(setTheme(mode));
+  };
 
   const handleOverlayClick = () => {
-    dispatch(setCollapsed(true))
-  }
+    dispatch(setCollapsed(true));
+  };
 
   const handleCloseSidebar = () => {
-    dispatch(setCollapsed(true))
-  }
+    dispatch(setCollapsed(true));
+  };
 
   const toggleRecents = () => {
-    setRecentsExpanded(!recentsExpanded)
-  }
+    setRecentsExpanded(!recentsExpanded);
+  };
 
   return (
     <>
@@ -124,6 +141,18 @@ export default function Sidebar() {
           {showFullContent && <span>New Chat</span>}
         </button>
 
+        <nav className={styles.nav}>
+          <button
+            className={`${styles.navItem} ${activeItem === 'models' ? styles.active : ''}`}
+            onClick={handleModelsClick}
+            title="Models"
+            aria-label="Models"
+          >
+            <ModelsIcon />
+            {showFullContent && <span>Models</span>}
+          </button>
+        </nav>
+
         {showFullContent && (
           <div className={styles.recents}>
             <button
@@ -132,11 +161,15 @@ export default function Sidebar() {
               aria-expanded={recentsExpanded}
             >
               <span className={styles.recentsLabel}>Recents</span>
-              <span className={`${styles.recentsChevron} ${recentsExpanded ? styles.expanded : ''}`}>
+              <span
+                className={`${styles.recentsChevron} ${recentsExpanded ? styles.expanded : ''}`}
+              >
                 <ChevronDownIcon />
               </span>
             </button>
-            <div className={`${styles.recentsContent} ${recentsExpanded ? styles.recentsOpen : ''}`}>
+            <div
+              className={`${styles.recentsContent} ${recentsExpanded ? styles.recentsOpen : ''}`}
+            >
               {recentChats.length > 0 ? (
                 <ul className={styles.recentsList}>
                   {recentChats.map((chat) => (
@@ -197,5 +230,5 @@ export default function Sidebar() {
         </div>
       </aside>
     </>
-  )
+  );
 }
