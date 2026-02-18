@@ -1,8 +1,6 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
 import { MODELS, PROVIDERS, PROVIDER_ORDER, SPEED_TIERS, formatTokens } from '../../data/models';
 import { StarIcon, CheckCircleIcon, ChevronDownIcon } from '../Icons';
-import { setSelectedModel } from '../../store/slices/chatSlice';
 import styles from './ModelsView.module.css';
 
 const PROVIDER_FILTER_ALL = 'all';
@@ -245,7 +243,6 @@ function ProviderSection({ providerId, models, defaultModelId, onSetDefault }) {
 }
 
 export default function ModelsView() {
-  const dispatch = useDispatch();
   const [activeFilter, setActiveFilter] = useState(PROVIDER_FILTER_ALL);
   const [defaultModelId, setDefaultModelId] = useState(getDefaultModel);
 
@@ -253,11 +250,8 @@ export default function ModelsView() {
     setDefaultModelId(modelId);
     if (modelId) {
       saveDefaultModel(modelId);
-      // Also update the selected model in Redux so chat screen reflects it immediately
-      dispatch(setSelectedModel(modelId));
     } else {
       localStorage.removeItem('araviel-default-model');
-      dispatch(setSelectedModel(null));
     }
   };
 
@@ -282,9 +276,9 @@ export default function ModelsView() {
             {totalModels} AI models across {PROVIDER_ORDER.length} providers
           </p>
         </div>
-        {defaultModel && (
-          <div className={styles.currentDefault}>
-            <span className={styles.currentDefaultLabel}>Current default</span>
+        <div className={styles.currentDefault}>
+          <span className={styles.currentDefaultLabel}>Current default</span>
+          {defaultModel ? (
             <div className={styles.currentDefaultModel}>
               <span
                 className={styles.providerChipSmall}
@@ -299,8 +293,18 @@ export default function ModelsView() {
               <span className={styles.currentDefaultName}>{defaultModel.name}</span>
               <StarIcon filled={true} />
             </div>
-          </div>
-        )}
+          ) : (
+            <div className={styles.currentDefaultModel}>
+              <span className={styles.autoGlyph}>✦</span>
+              <span className={styles.currentDefaultName}>Auto</span>
+            </div>
+          )}
+          <span className={styles.currentDefaultSubtext}>
+            {defaultModel
+              ? `Star another model to change, or unstar to revert to Auto`
+              : 'Best model selected for each task'}
+          </span>
+        </div>
       </div>
 
       {/* Provider filter tabs */}
