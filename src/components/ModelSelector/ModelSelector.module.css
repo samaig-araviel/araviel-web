@@ -163,6 +163,23 @@
 }
 
 /* ───────────────────────────────
+   Auto Glyph (trigger button)
+   ─────────────────────────────── */
+.autoGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #f59e0b, #8b5cf6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ───────────────────────────────
    Auto Chip
    ─────────────────────────────── */
 .autoChip {
@@ -398,7 +415,6 @@
 .moreModels {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   width: 100%;
   padding: 9px 12px;
   font-size: 13px;
@@ -413,10 +429,86 @@
   color: var(--text-primary);
 }
 
-.moreModelsChevron {
+/* ───────────────────────────────
+   All Models View
+   ─────────────────────────────── */
+.allModelsHeader {
   display: flex;
   align-items: center;
+  padding: 6px 8px 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: background-color 0.12s ease;
+}
+
+.backButton:hover {
+  background-color: var(--bg-hover);
+}
+
+.backButton svg {
+  width: 14px;
+  height: 14px;
   color: var(--text-muted);
+}
+
+.allModelsList {
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.allModelsList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.allModelsList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.allModelsList::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 2px;
+}
+
+.providerGroupLabel {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.providerGroupChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  background-color: var(--chip-bg);
+  color: var(--chip-text);
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .providerGroupChip {
+  background-color: var(--chip-bg-dark);
 }
 
 /* ───────────────────────────────
@@ -424,12 +516,19 @@
    ─────────────────────────────── */
 @media (max-width: 480px) {
   .dropdown {
-    width: calc(100vw - 32px);
-    max-width: 320px;
+    /* Clamp to viewport width, aligned to left edge of trigger */
+    width: 280px;
+    max-width: calc(100vw - 24px);
     left: 0;
+    /* If the dropdown would overflow the right edge, shift it left */
+    right: auto;
   }
 
   .triggerLabel {
-    max-width: 100px;
+    max-width: 90px;
+  }
+
+  .allModelsList {
+    max-height: 280px;
   }
 }
