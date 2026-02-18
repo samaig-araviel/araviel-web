@@ -73,6 +73,7 @@ export default function ModelSelector() {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownDir, setDropdownDir] = useState('down');
   const [showAllModels, setShowAllModels] = useState(false);
+  const [mobileDropdownStyle, setMobileDropdownStyle] = useState({});
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
 
@@ -132,7 +133,24 @@ export default function ModelSelector() {
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      setDropdownDir(spaceBelow < 380 ? 'up' : 'down');
+      const isMobile = window.innerWidth <= 768;
+
+      if (isMobile) {
+        // Use fixed positioning on mobile to escape overflow: hidden on .app
+        const availableAbove = rect.top - 12;
+        const maxHeight = Math.min(availableAbove, window.innerHeight * 0.6);
+        setDropdownDir('up');
+        setMobileDropdownStyle({
+          position: 'fixed',
+          bottom: window.innerHeight - rect.top + 6 + 'px',
+          left: Math.max(12, Math.min(rect.left, window.innerWidth - 292)) + 'px',
+          maxHeight: maxHeight + 'px',
+          overflowY: 'auto',
+        });
+      } else {
+        setDropdownDir(spaceBelow < 380 ? 'up' : 'down');
+        setMobileDropdownStyle({});
+      }
       setShowAllModels(false);
     }
     setIsOpen((prev) => !prev);
@@ -164,7 +182,7 @@ export default function ModelSelector() {
   // Trigger label and provider accent — only reflect the explicitly selected model, not the
   // saved default. When in Auto mode the trigger always shows "Auto".
   const displayProvider = !isAutoMode && selectedModel ? PROVIDERS[selectedModel.provider] : null;
-  const triggerLabel = isAutoMode ? 'Auto' : (selectedModel?.name ?? 'Auto');
+  const triggerLabel = isAutoMode ? 'Auto' : selectedModel?.name ?? 'Auto';
 
   return (
     <div className={styles.wrapper}>
@@ -210,6 +228,7 @@ export default function ModelSelector() {
           className={`${styles.dropdown} ${
             dropdownDir === 'up' ? styles.dropdownUp : styles.dropdownDown
           }`}
+          style={mobileDropdownStyle}
           role="listbox"
           aria-label="Model selection"
         >
@@ -251,7 +270,9 @@ export default function ModelSelector() {
                         return (
                           <button
                             key={model.id}
-                            className={`${styles.modelOption} ${isSelected ? styles.modelOptionSelected : ''}`}
+                            className={`${styles.modelOption} ${
+                              isSelected ? styles.modelOptionSelected : ''
+                            }`}
                             onClick={() => handleModelSelect(model.id)}
                             role="option"
                             aria-selected={isSelected}
@@ -323,7 +344,9 @@ export default function ModelSelector() {
                 return (
                   <button
                     key={model.id}
-                    className={`${styles.modelOption} ${isSelected ? styles.modelOptionSelected : ''}`}
+                    className={`${styles.modelOption} ${
+                      isSelected ? styles.modelOptionSelected : ''
+                    }`}
                     onClick={() => handleModelSelect(model.id)}
                     role="option"
                     aria-selected={isSelected}

@@ -776,9 +776,15 @@
   }
 }
 
+@media (max-width: 768px) {
+  .pageHeader {
+    padding-top: 60px;
+  }
+}
+
 @media (max-width: 600px) {
   .pageHeader {
-    padding: 20px 16px 0;
+    padding: 60px 16px 0;
   }
 
   .filterBar {
