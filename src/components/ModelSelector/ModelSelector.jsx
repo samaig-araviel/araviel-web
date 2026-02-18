@@ -23,7 +23,7 @@ import styles from './ModelSelector.module.css';
 
 // The 3 featured models shown in the dropdown — one per major provider
 const FEATURED_MODEL_IDS = [
-  'claude-opus-4-5-20251101', // Anthropic flagship
+  'claude-opus-4-6', // Anthropic flagship
   'gpt-5.2', // OpenAI flagship
   'gemini-2.5-pro', // Google flagship
 ];

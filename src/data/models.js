@@ -69,12 +69,54 @@ export function formatPricePerM(pricePerK) {
 export const MODELS = [
   // ===== ANTHROPIC =====
   {
+    id: 'claude-opus-4-6',
+    name: 'Claude Opus 4.6',
+    provider: 'anthropic',
+    tagline: 'Latest flagship with agent teams and adaptive thinking',
+    description:
+      'Latest flagship model with agent teams, adaptive thinking, and compaction. 1M context window. Released Feb 5, 2026.',
+    speedTier: getSpeedTier(2000),
+    pricing: { inputPerM: 5.0, outputPerM: 25.0 },
+    context: { inputTokens: 200000, outputTokens: 64000 },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: true,
+      webSearch: false,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Complex reasoning', 'Coding', 'Agentic workflows', 'Research & analysis'],
+    badge: 'Flagship',
+  },
+  {
+    id: 'claude-sonnet-4-6',
+    name: 'Claude Sonnet 4.6',
+    provider: 'anthropic',
+    tagline: 'Near-Opus performance at a fraction of the cost',
+    description:
+      'Latest Sonnet with near-Opus performance at 1/5 the cost. New default model. 79.6% SWE-bench. Released Feb 17, 2026.',
+    speedTier: getSpeedTier(950),
+    pricing: { inputPerM: 3.0, outputPerM: 15.0 },
+    context: { inputTokens: 200000, outputTokens: 64000 },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: true,
+      webSearch: false,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Coding', 'Agentic tasks', 'Default model', 'Balanced workloads'],
+    badge: 'New Default',
+  },
+  {
     id: 'claude-opus-4-5-20251101',
     name: 'Claude Opus 4.5',
     provider: 'anthropic',
     tagline: 'Flagship intelligence for the hardest tasks',
     description:
-      'The most capable Claude model yet. Leads on coding (80.9% SWE-bench), reasoning, and long-horizon agentic tasks. Extended thinking mode for deep analysis. 67% more cost-efficient than its predecessor.',
+      'Flagship model with state-of-the-art coding (80.9% SWE-bench), reasoning, and agentic capabilities. 67% cheaper than Opus 4.1.',
     speedTier: getSpeedTier(2000),
     pricing: { inputPerM: 5.0, outputPerM: 25.0 },
     context: { inputTokens: 200000, outputTokens: 64000 },
@@ -87,7 +129,7 @@ export const MODELS = [
       streaming: true,
     },
     bestFor: ['Complex reasoning', 'Long-form coding', 'Agentic workflows', 'Research & analysis'],
-    badge: 'Flagship',
+    badge: null,
   },
   {
     id: 'claude-sonnet-4-5-20250929',
