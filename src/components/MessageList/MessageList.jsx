@@ -737,34 +737,31 @@ function UserPrompt({ content }) {
 
   return (
     <div className={styles.userPromptCard}>
-      <div className={styles.userPromptAccent} />
-      <div className={styles.userPromptBody}>
-        <div
-          ref={contentRef}
-          className={`${styles.userPromptText} ${
-            !isExpanded && isLong ? styles.userPromptCollapsed : ''
-          }`}
-          style={collapsedStyle}
-        >
-          {content}
-        </div>
-        {isLong && (
-          <button
-            className={styles.userPromptToggle}
-            onClick={() => setIsExpanded(!isExpanded)}
-            aria-expanded={isExpanded}
-          >
-            <span>{isExpanded ? 'See less' : 'See more'}</span>
-            <span
-              className={`${styles.userPromptToggleIcon} ${
-                isExpanded ? styles.userPromptToggleIconFlipped : ''
-              }`}
-            >
-              <ChevronDownIcon />
-            </span>
-          </button>
-        )}
+      <div
+        ref={contentRef}
+        className={`${styles.userPromptText} ${
+          !isExpanded && isLong ? styles.userPromptCollapsed : ''
+        }`}
+        style={collapsedStyle}
+      >
+        {content}
       </div>
+      {isLong && (
+        <button
+          className={styles.userPromptToggle}
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+        >
+          <span>{isExpanded ? 'See less' : 'See more'}</span>
+          <span
+            className={`${styles.userPromptToggleIcon} ${
+              isExpanded ? styles.userPromptToggleIconFlipped : ''
+            }`}
+          >
+            <ChevronDownIcon />
+          </span>
+        </button>
+      )}
     </div>
   );
 }
