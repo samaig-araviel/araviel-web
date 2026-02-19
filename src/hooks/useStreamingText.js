@@ -154,7 +154,16 @@ export default function useStreamingText(fullText, shouldStream, options = {}) {
     };
   }, []);
 
+  // Imperatively stop streaming, preserving current progress
+  const stop = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setIsStreaming(false);
+  }, []);
+
   const progress = wordsRef.current.length > 0 ? indexRef.current / wordsRef.current.length : 0;
 
-  return { streamedText, isStreaming, progress };
+  return { streamedText, isStreaming, progress, stop };
 }
