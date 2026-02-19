@@ -14,6 +14,8 @@ import {
   RefreshIcon,
   ShareIcon,
   SourcesIcon,
+  FileDownIcon,
+  FileTextIcon,
 } from '../Icons';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
@@ -338,20 +340,139 @@ function PreviewPill({ modelName, score }) {
 }
 
 /**
- * Response actions bar shown below each assistant message.
- * Left: model pill + preview pill
- * Right: like, dislike, copy, retry, share, sources
+ * Sources pill shown when the response has sources.
  */
-function ResponseActions({ message, isDark }) {
+function SourcesPill({ sources }) {
+  if (!sources || sources.length === 0) return null;
+
+  return (
+    <span className={styles.sourcesPill}>
+      <SourcesIcon />
+      <span>Sources</span>
+    </span>
+  );
+}
+
+/**
+ * Share dropdown with PDF and TXT export options.
+ */
+function ShareDropdown({ message, onClose }) {
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
+
+  const downloadAsTxt = () => {
+    const content = `${message.modelName || 'Assistant'} Response\n${'='.repeat(40)}\n\n${
+      message.content
+    }`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `response-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    onClose();
+  };
+
+  const downloadAsPdf = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    const htmlContent = message.content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br/>');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Response - ${message.modelName || 'Assistant'}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; line-height: 1.7; color: #1a1a1a; max-width: 720px; margin: 0 auto; }
+          h1 { font-size: 18px; color: #666; border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 24px; }
+          .meta { font-size: 12px; color: #999; margin-bottom: 24px; }
+          .content { font-size: 15px; }
+        </style>
+      </head>
+      <body>
+        <h1>${message.modelName || 'Assistant'} Response</h1>
+        <div class="meta">Generated via Araviel</div>
+        <div class="content">${htmlContent}</div>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => printWindow.print(), 300);
+    onClose();
+  };
+
+  return (
+    <div className={styles.shareDropdown} ref={dropdownRef}>
+      <button className={styles.shareDropdownItem} onClick={downloadAsPdf}>
+        <FileDownIcon />
+        <span>Export as PDF</span>
+      </button>
+      <button className={styles.shareDropdownItem} onClick={downloadAsTxt}>
+        <FileTextIcon />
+        <span>Export as TXT</span>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Model reasoning tooltip shown on hover/click of the model pill header.
+ */
+function ModelReasoningTooltip({ reasoning, modelName, score }) {
+  const scoreDisplay = score ? (score * 100).toFixed(1) : null;
+
+  return (
+    <div className={styles.reasoningTooltip}>
+      <div className={styles.reasoningTooltipContent}>
+        <div className={styles.reasoningTooltipHeader}>
+          <span className={styles.reasoningTooltipLabel}>Why {modelName}?</span>
+          {scoreDisplay && <span className={styles.reasoningTooltipScore}>{scoreDisplay}%</span>}
+        </div>
+        <p className={styles.reasoningTooltipText}>{reasoning}</p>
+        <span className={styles.reasoningTooltipFooter}>Powered by ADE</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Response actions bar shown below each assistant message.
+ * Left: model pill + preview pill + sources pill
+ * Right: like, dislike, copy, retry, share
+ */
+function ResponseActions({ message, isDark, onRetry, userPrompt }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
 
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
 
-  // Determine the display name for the provider
   const getProviderDisplayName = () => {
     if (!provider) return null;
     if (provider === 'anthropic') return 'Claude';
@@ -367,6 +488,12 @@ function ResponseActions({ message, isDark }) {
       setTimeout(() => setCopied(false), 2000);
     });
   }, [message.content]);
+
+  const handleRetryClick = useCallback(() => {
+    if (onRetry && userPrompt) {
+      onRetry(userPrompt);
+    }
+  }, [onRetry, userPrompt]);
 
   const handleLike = () => {
     setLiked(!liked);
@@ -398,6 +525,7 @@ function ResponseActions({ message, isDark }) {
           </div>
         )}
         <PreviewPill modelName={message.modelName} score={message.score} />
+        <SourcesPill sources={message.sources} />
       </div>
 
       <div className={styles.responseActionsRight}>
@@ -425,15 +553,27 @@ function ResponseActions({ message, isDark }) {
         >
           {copied ? <CheckIcon /> : <CopyIcon />}
         </button>
-        <button className={styles.actionIcon} title="Retry" aria-label="Retry response">
+        <button
+          className={styles.actionIcon}
+          onClick={handleRetryClick}
+          title="Retry"
+          aria-label="Retry response"
+        >
           <RefreshIcon />
         </button>
-        <button className={styles.actionIcon} title="Share" aria-label="Share response">
-          <ShareIcon />
-        </button>
-        <button className={styles.actionIcon} title="Sources" aria-label="View sources">
-          <SourcesIcon />
-        </button>
+        <div className={styles.shareActionWrapper}>
+          <button
+            className={styles.actionIcon}
+            onClick={() => setShowShareDropdown(!showShareDropdown)}
+            title="Share"
+            aria-label="Share response"
+          >
+            <ShareIcon />
+          </button>
+          {showShareDropdown && (
+            <ShareDropdown message={message} onClose={() => setShowShareDropdown(false)} />
+          )}
+        </div>
       </div>
     </div>
   );
@@ -473,12 +613,15 @@ function Message({
   isDark,
   isLastAssistant,
   onFollowUpSelect,
+  onRetry,
+  userPrompt,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
+  const [showReasoning, setShowReasoning] = useState(false);
 
   const followUps =
     !isUser && isLastAssistant && !isStreaming && message.content
@@ -490,21 +633,37 @@ function Message({
       {!isUser && providerData && (
         <div className={styles.assistantHeader}>
           <div
-            className={styles.providerPill}
-            style={{
-              backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
-              color: isDark
-                ? providerData.accentTextDark || providerData.accentColor
-                : providerData.accentText,
-            }}
+            className={styles.providerPillWrapper}
+            onMouseEnter={() => setShowReasoning(true)}
+            onMouseLeave={() => setShowReasoning(false)}
+            onClick={() => setShowReasoning(!showReasoning)}
           >
-            <LogoComponent size={14} />
-            <span>{message.modelName || providerData.name}</span>
-            {message.score && (
-              <>
-                <span className={styles.pillDivider}>&#183;</span>
-                <span className={styles.scoreText}>Score: {(message.score * 100).toFixed(1)}</span>
-              </>
+            <div
+              className={styles.providerPill}
+              style={{
+                backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
+                color: isDark
+                  ? providerData.accentTextDark || providerData.accentColor
+                  : providerData.accentText,
+              }}
+            >
+              <LogoComponent size={14} />
+              <span>{message.modelName || providerData.name}</span>
+              {message.score && (
+                <>
+                  <span className={styles.pillDivider}>&#183;</span>
+                  <span className={styles.scoreText}>
+                    Score: {(message.score * 100).toFixed(1)}
+                  </span>
+                </>
+              )}
+            </div>
+            {showReasoning && message.reasoning && (
+              <ModelReasoningTooltip
+                reasoning={message.reasoning}
+                modelName={message.modelName}
+                score={message.score}
+              />
             )}
           </div>
         </div>
@@ -522,7 +681,12 @@ function Message({
       </div>
 
       {!isUser && !isStreaming && message.content && (
-        <ResponseActions message={message} isDark={isDark} />
+        <ResponseActions
+          message={message}
+          isDark={isDark}
+          onRetry={onRetry}
+          userPrompt={userPrompt}
+        />
       )}
 
       {followUps.length > 0 && (
@@ -544,6 +708,7 @@ export default function MessageList({
   provider,
   isStreaming,
   streamedText,
+  onRetry,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -610,6 +775,17 @@ export default function MessageList({
           const shouldStream = isLast && isLastAssistantStreaming;
           const isLastAssistant = index === lastAssistantIdx && !isProcessing;
 
+          // Find the user prompt that preceded this assistant message
+          let userPrompt = null;
+          if (msg.role === 'assistant') {
+            for (let j = index - 1; j >= 0; j--) {
+              if (messages[j].role === 'user') {
+                userPrompt = messages[j].content;
+                break;
+              }
+            }
+          }
+
           return (
             <div key={msg.id || index}>
               {/* Insert timeline before the streaming assistant message */}
@@ -630,6 +806,8 @@ export default function MessageList({
                 isDark={isDark}
                 isLastAssistant={isLastAssistant}
                 onFollowUpSelect={handleFollowUpSelect}
+                onRetry={onRetry}
+                userPrompt={userPrompt}
               />
             </div>
           );

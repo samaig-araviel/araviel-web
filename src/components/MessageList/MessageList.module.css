@@ -78,6 +78,12 @@
   margin-bottom: 12px;
 }
 
+.providerPillWrapper {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
 .providerPill {
   display: inline-flex;
   align-items: center;
@@ -87,6 +93,12 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.3;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.providerPillWrapper:hover .providerPill {
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .pillDivider {
@@ -475,6 +487,169 @@
   font-weight: 400;
 }
 
+/* ===== Model Reasoning Tooltip ===== */
+.reasoningTooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  animation: tooltipFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reasoningTooltipContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  min-width: 240px;
+  max-width: 340px;
+}
+
+[data-theme='dark'] .reasoningTooltipContent {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.reasoningTooltipHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reasoningTooltipLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.reasoningTooltipScore {
+  font-size: 11px;
+  font-weight: 600;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.reasoningTooltipText {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.reasoningTooltipFooter {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ===== Sources Pill ===== */
+.sourcesPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.sourcesPill:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--text-muted);
+}
+
+.sourcesPill svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* ===== Share Dropdown ===== */
+.shareActionWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.shareDropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  min-width: 170px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  animation: shareDropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+}
+
+[data-theme='dark'] .shareDropdown {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes shareDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.shareDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.shareDropdownItem:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.shareDropdownItem:active {
+  transform: scale(0.98);
+}
+
+.shareDropdownItem svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
 /* Follow-up suggestions */
 .followUps {
   margin-top: 16px;
@@ -616,5 +791,19 @@
   .previewPill {
     font-size: 10px;
     padding: 2px 7px;
+  }
+
+  .sourcesPill {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+
+  .reasoningTooltipContent {
+    min-width: 200px;
+    max-width: 280px;
+  }
+
+  .shareDropdown {
+    min-width: 150px;
   }
 }
