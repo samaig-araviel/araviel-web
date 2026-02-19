@@ -16,19 +16,29 @@ export function getTimeOfDay() {
 
 /**
  * Call ADE route endpoint to determine the optimal model for a given prompt.
- * Returns { model, provider, score, reasoning } or a fallback on error.
+ *
+ * @param {string} prompt - The user prompt
+ * @param {object} [options] - Optional routing options
+ * @param {string} [options.preferModel] - Preferred model ID (when user manually selected)
+ * @returns {{ modelId, modelName, provider, score, reasoning, alternateModels }}
  */
-export async function routePrompt(prompt) {
+export async function routePrompt(prompt, options = {}) {
   const timeOfDay = getTimeOfDay();
+  const { preferModel } = options;
 
   try {
+    const body = {
+      prompt,
+      humanContext: { timeOfDay },
+    };
+    if (preferModel) {
+      body.options = { preferModel };
+    }
+
     const response = await fetch(`${ADE_BASE_URL}/route`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        humanContext: { timeOfDay },
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
@@ -37,92 +47,159 @@ export async function routePrompt(prompt) {
 
     const data = await response.json();
 
-    // Normalize the response shape
+    // Normalize alternate models from the response
+    const alternateModels = normalizeAlternateModels(data);
+
     return {
       modelId: data.selectedModel || data.model || data.modelId || 'claude-sonnet-4-5-20250929',
       modelName: data.modelName || data.selectedModelName || null,
       provider: data.provider || null,
       score: data.score || data.confidence || 0.92,
       reasoning: data.reasoning || data.explanation || 'Best match for your request',
+      alternateModels,
     };
   } catch (err) {
     console.warn('ADE routing failed, using fallback:', err.message);
-    return getFallbackRouting(prompt);
+    return getFallbackRouting(prompt, preferModel);
   }
+}
+
+/**
+ * Normalize alternate models from ADE response into a consistent shape.
+ */
+function normalizeAlternateModels(data) {
+  if (data.alternativeModels && Array.isArray(data.alternativeModels)) {
+    return data.alternativeModels.map((m) => ({
+      modelId: m.id || m.modelId,
+      modelName: m.name || m.modelName,
+      provider: m.provider,
+      score: m.score != null ? m.score / 100 : null,
+      reasoning: m.reasoning || null,
+    }));
+  }
+  if (data.alternateModels && Array.isArray(data.alternateModels)) {
+    return data.alternateModels;
+  }
+  return [];
 }
 
 /**
  * Fallback routing logic when ADE API is unavailable.
  * Uses simple heuristics based on prompt content.
+ * Also generates fallback alternate models.
  */
-function getFallbackRouting(prompt) {
+function getFallbackRouting(prompt, preferModel) {
   const lower = prompt.toLowerCase();
 
-  // Coding patterns
-  if (
-    /\b(code|function|debug|program|script|api|sql|html|css|javascript|python|react|algorithm|compile|error|bug|import|class|const|let|var)\b/.test(
-      lower
-    )
-  ) {
-    return {
+  // All candidate routes
+  const candidates = [
+    {
       modelId: 'claude-sonnet-4-5-20250929',
       modelName: 'Claude Sonnet 4.5',
       provider: 'anthropic',
       score: 0.94,
-      reasoning: 'Coding task detected — routed to best coding model',
-    };
-  }
-
-  // Research / explanation patterns
-  if (/\b(explain|research|what is|how does|why|history|science|quantum|theory)\b/.test(lower)) {
-    return {
+      reasoning: 'Strong coding performance with great balance of speed and capability',
+      patterns:
+        /\b(code|function|debug|program|script|api|sql|html|css|javascript|python|react|algorithm|compile|error|bug|import|class|const|let|var)\b/,
+    },
+    {
       modelId: 'sonar-pro',
       modelName: 'Perplexity Sonar Pro',
       provider: 'perplexity',
       score: 0.91,
-      reasoning: 'Research query detected — routed to search-augmented model',
-    };
-  }
-
-  // Creative patterns
-  if (/\b(write|poem|haiku|story|creative|imagine|compose|draft)\b/.test(lower)) {
-    return {
+      reasoning: 'Real-time web search for up-to-date research and fact-checking',
+      patterns: /\b(explain|research|what is|how does|why|history|science|quantum|theory)\b/,
+    },
+    {
       modelId: 'claude-opus-4-5-20251101',
       modelName: 'Claude Opus 4.5',
       provider: 'anthropic',
       score: 0.93,
-      reasoning: 'Creative task detected — routed to flagship model',
-    };
-  }
-
-  // Quick math / simple questions
-  if (/\b(\d+\s*[\+\-\*\/x]\s*\d+|calculate|math|sum|multiply|divide)\b/.test(lower)) {
-    return {
+      reasoning: 'Flagship intelligence for nuanced creative and reasoning tasks',
+      patterns: /\b(write|poem|haiku|story|creative|imagine|compose|draft)\b/,
+    },
+    {
       modelId: 'gemini-2.5-flash',
       modelName: 'Gemini 2.5 Flash',
       provider: 'google',
       score: 0.96,
-      reasoning: 'Quick calculation — routed to fastest model',
-    };
-  }
-
-  // Analytical patterns
-  if (/\b(analyze|data|compare|trend|insight|chart|metric|report)\b/.test(lower)) {
-    return {
+      reasoning: 'Ultra-fast responses ideal for quick calculations and simple tasks',
+      patterns: /\b(\d+\s*[\+\-\*\/x]\s*\d+|calculate|math|sum|multiply|divide)\b/,
+    },
+    {
       modelId: 'gemini-2.5-pro',
       modelName: 'Gemini 2.5 Pro',
       provider: 'google',
       score: 0.9,
-      reasoning: 'Analytical task detected — routed to data-focused model',
-    };
+      reasoning: 'Excellent for data analysis with massive context window',
+      patterns: /\b(analyze|data|compare|trend|insight|chart|metric|report)\b/,
+    },
+    {
+      modelId: 'gpt-5.2',
+      modelName: 'GPT-5.2',
+      provider: 'openai',
+      score: 0.89,
+      reasoning: 'Versatile flagship model great for a wide range of tasks',
+      patterns: null, // default
+    },
+    {
+      modelId: 'claude-sonnet-4-6',
+      modelName: 'Claude Sonnet 4.6',
+      provider: 'anthropic',
+      score: 0.92,
+      reasoning: 'Latest Sonnet with near-Opus performance at a fraction of the cost',
+      patterns: null,
+    },
+    {
+      modelId: 'claude-opus-4-6',
+      modelName: 'Claude Opus 4.6',
+      provider: 'anthropic',
+      score: 0.91,
+      reasoning: 'Latest flagship model with advanced reasoning and agentic capabilities',
+      patterns: null,
+    },
+  ];
+
+  // Determine primary model by pattern matching
+  let primary = null;
+
+  // If user specified a preferred model, use it as primary
+  if (preferModel) {
+    primary = candidates.find((c) => c.modelId === preferModel);
+    if (!primary) {
+      // Not in candidates — build a stub primary
+      primary = {
+        modelId: preferModel,
+        modelName: null,
+        provider: null,
+        score: null,
+        reasoning: 'Selected by user',
+      };
+    }
   }
 
-  // Default: balanced choice
+  if (!primary) {
+    for (const c of candidates) {
+      if (c.patterns && c.patterns.test(lower)) {
+        primary = c;
+        break;
+      }
+    }
+    if (!primary) {
+      primary = candidates.find((c) => c.modelId === 'gpt-5.2');
+    }
+  }
+
+  // Pick alternate models: different from primary, sorted by score, take top 3
+  const alternateModels = candidates
+    .filter((c) => c.modelId !== primary.modelId)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 3)
+    .map(({ patterns, ...rest }) => rest);
+
+  const { patterns, ...result } = primary;
   return {
-    modelId: 'gpt-5.2',
-    modelName: 'GPT-5.2',
-    provider: 'openai',
-    score: 0.89,
-    reasoning: 'General query — routed to versatile flagship model',
+    ...result,
+    alternateModels,
   };
 }

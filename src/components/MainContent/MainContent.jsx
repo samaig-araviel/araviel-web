@@ -421,24 +421,40 @@ export default function MainContent() {
     setActiveDropdown(null);
     setShowAttachDropdown(false);
 
-    // 2. Stage 1: Routing
+    // 2. Stage 1: Routing — always call ADE (even for manual selection)
     setPipelineStatus('routing');
 
     let routing;
     const routingStart = Date.now();
 
     if (isManual) {
-      // Manual selection — skip ADE routing, use selected model directly
+      // Manual selection — call ADE with preferModel so we still get alternates
       const model = MODELS.find((m) => m.id === manualModelId);
-      routing = {
-        modelId: manualModelId,
-        modelName: model ? model.name : manualModelId,
-        provider: model ? model.provider : 'anthropic',
-        score: null,
-        reasoning: 'Manual selection',
-      };
-      // Brief visual pause
-      await pipelineDelay(300);
+      try {
+        const [adeResult] = await Promise.all([
+          routePrompt(prompt, { preferModel: manualModelId }),
+          pipelineDelay(300),
+        ]);
+        routing = {
+          modelId: manualModelId,
+          modelName: model ? model.name : manualModelId,
+          provider: model ? model.provider : 'anthropic',
+          score: null,
+          reasoning: 'Selected by you',
+          alternateModels: (adeResult.alternateModels || []).filter(
+            (m) => m.modelId !== manualModelId
+          ),
+        };
+      } catch {
+        routing = {
+          modelId: manualModelId,
+          modelName: model ? model.name : manualModelId,
+          provider: model ? model.provider : 'anthropic',
+          score: null,
+          reasoning: 'Selected by you',
+          alternateModels: [],
+        };
+      }
     } else {
       // Auto mode — route through ADE
       try {
@@ -454,6 +470,7 @@ export default function MainContent() {
           provider: 'anthropic',
           score: 0.88,
           reasoning: 'Fallback routing',
+          alternateModels: [],
         };
       }
     }
@@ -497,6 +514,20 @@ export default function MainContent() {
     // 4. Stage 3: Writing (streaming)
     setPipelineStatus('writing');
 
+    // Resolve alternate model names from registry
+    const resolvedAlternates = (routing.alternateModels || [])
+      .filter((alt) => alt.modelId !== routing.modelId)
+      .map((alt) => {
+        const altModel = MODELS.find((m) => m.id === alt.modelId);
+        return {
+          ...alt,
+          modelName: alt.modelName || (altModel ? altModel.name : alt.modelId),
+          provider: alt.provider || (altModel ? altModel.provider : 'unknown'),
+        };
+      })
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, 3);
+
     // Add empty assistant message that will be filled by streaming
     const assistantMsg = {
       id: `assistant-${Date.now()}`,
@@ -509,6 +540,7 @@ export default function MainContent() {
       score: routing.score,
       reasoning: routing.reasoning || 'Best match for your request',
       isManualSelection: isManual,
+      alternateModels: resolvedAlternates,
       thinkingData: {
         routingDuration,
         thinkingDuration,
@@ -641,14 +673,31 @@ export default function MainContent() {
 
       if (isManual) {
         const model = MODELS.find((m) => m.id === manualModelId);
-        routing = {
-          modelId: manualModelId,
-          modelName: model ? model.name : manualModelId,
-          provider: model ? model.provider : 'anthropic',
-          score: null,
-          reasoning: 'Manual selection',
-        };
-        await pipelineDelay(300);
+        try {
+          const [adeResult] = await Promise.all([
+            routePrompt(userPrompt, { preferModel: manualModelId }),
+            pipelineDelay(300),
+          ]);
+          routing = {
+            modelId: manualModelId,
+            modelName: model ? model.name : manualModelId,
+            provider: model ? model.provider : 'anthropic',
+            score: null,
+            reasoning: 'Selected by you',
+            alternateModels: (adeResult.alternateModels || []).filter(
+              (m) => m.modelId !== manualModelId
+            ),
+          };
+        } catch {
+          routing = {
+            modelId: manualModelId,
+            modelName: model ? model.name : manualModelId,
+            provider: model ? model.provider : 'anthropic',
+            score: null,
+            reasoning: 'Selected by you',
+            alternateModels: [],
+          };
+        }
       } else {
         try {
           const [result] = await Promise.all([
@@ -663,6 +712,7 @@ export default function MainContent() {
             provider: 'anthropic',
             score: 0.88,
             reasoning: 'Fallback routing',
+            alternateModels: [],
           };
         }
       }
@@ -700,6 +750,20 @@ export default function MainContent() {
 
       setPipelineStatus('writing');
 
+      // Resolve alternate model names from registry
+      const resolvedAlternates = (routing.alternateModels || [])
+        .filter((alt) => alt.modelId !== routing.modelId)
+        .map((alt) => {
+          const altModel = MODELS.find((m) => m.id === alt.modelId);
+          return {
+            ...alt,
+            modelName: alt.modelName || (altModel ? altModel.name : alt.modelId),
+            provider: alt.provider || (altModel ? altModel.provider : 'unknown'),
+          };
+        })
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .slice(0, 3);
+
       const assistantMsg = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
@@ -711,6 +775,7 @@ export default function MainContent() {
         score: routing.score,
         reasoning: routing.reasoning || 'Best match for your request',
         isManualSelection: isManual,
+        alternateModels: resolvedAlternates,
         thinkingData: {
           routingDuration: retryRoutingDuration,
           thinkingDuration: retryThinkingDuration,
@@ -725,6 +790,125 @@ export default function MainContent() {
       setShouldStream(true);
     },
     [dispatch, isProcessing, selectedModelId, pipelineDelay]
+  );
+
+  /**
+   * Alternate model request handler: runs a new pipeline with a specific alternate model
+   * for the given user prompt. Called when user confirms switching to an alternate model.
+   */
+  const handleAlternateModelRequest = useCallback(
+    async (userPrompt, alternateModel) => {
+      if (isProcessing) return;
+
+      // Remove the last assistant message (we're replacing it)
+      dispatch(removeLastAssistantMessage());
+
+      const myRequestId = ++requestIdRef.current;
+
+      // Reset pipeline state
+      setPipelineStatus('idle');
+      setShouldStream(false);
+      setFullResponseText('');
+      setRouteResult(null);
+      setIsManualRequest(true);
+      setLastPrompt(userPrompt);
+
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      if (requestIdRef.current !== myRequestId) return;
+
+      dispatch(setIsProcessing(true));
+      setPipelineStatus('routing');
+
+      const altModelData = MODELS.find((m) => m.id === alternateModel.modelId);
+      const altModelName =
+        alternateModel.modelName || (altModelData ? altModelData.name : alternateModel.modelId);
+      const altProvider =
+        alternateModel.provider || (altModelData ? altModelData.provider : 'anthropic');
+
+      // Call ADE for this model to get fresh alternates
+      let alternateModels = [];
+      const altRoutingStart = Date.now();
+      try {
+        const [adeResult] = await Promise.all([
+          routePrompt(userPrompt, { preferModel: alternateModel.modelId }),
+          pipelineDelay(300),
+        ]);
+        alternateModels = (adeResult.alternateModels || []).filter(
+          (m) => m.modelId !== alternateModel.modelId
+        );
+      } catch {
+        await pipelineDelay(300);
+      }
+
+      if (requestIdRef.current !== myRequestId) return;
+      const altRoutingDuration = ((Date.now() - altRoutingStart) / 1000).toFixed(1);
+
+      setRouteResult({
+        modelId: alternateModel.modelId,
+        modelName: altModelName,
+        provider: altProvider,
+        score: alternateModel.score,
+        reasoning: alternateModel.reasoning || 'Selected as alternate model',
+      });
+
+      setPipelineStatus('thinking');
+
+      const responseText = generateMockResponse(
+        userPrompt,
+        altProvider,
+        altModelName,
+        alternateModel.score
+      );
+
+      const altThinkingStart = Date.now();
+      const thinkingTime = 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400;
+      await pipelineDelay(thinkingTime);
+
+      if (requestIdRef.current !== myRequestId) return;
+      const altThinkingDuration = ((Date.now() - altThinkingStart) / 1000).toFixed(1);
+
+      setPipelineStatus('writing');
+
+      // Resolve alternate model names
+      const resolvedAlternates = alternateModels
+        .filter((alt) => alt.modelId !== alternateModel.modelId)
+        .map((alt) => {
+          const m = MODELS.find((mod) => mod.id === alt.modelId);
+          return {
+            ...alt,
+            modelName: alt.modelName || (m ? m.name : alt.modelId),
+            provider: alt.provider || (m ? m.provider : 'unknown'),
+          };
+        })
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .slice(0, 3);
+
+      const assistantMsg = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        modelId: alternateModel.modelId,
+        modelName: altModelName,
+        provider: altProvider,
+        score: alternateModel.score,
+        reasoning: alternateModel.reasoning || 'Selected as alternate model',
+        isManualSelection: true,
+        alternateModels: resolvedAlternates,
+        thinkingData: {
+          routingDuration: altRoutingDuration,
+          thinkingDuration: altThinkingDuration,
+          totalDuration: (parseFloat(altRoutingDuration) + parseFloat(altThinkingDuration)).toFixed(
+            1
+          ),
+        },
+      };
+      dispatch(addMessage(assistantMsg));
+
+      setFullResponseText(responseText);
+      setShouldStream(true);
+    },
+    [dispatch, isProcessing, pipelineDelay]
   );
 
   const handleAttachClick = () => {
@@ -784,6 +968,7 @@ export default function MainContent() {
           isStreaming={isStreaming}
           streamedText={streamedText}
           onRetry={handleRetry}
+          onAlternateModelRequest={handleAlternateModelRequest}
         />
       )}
 

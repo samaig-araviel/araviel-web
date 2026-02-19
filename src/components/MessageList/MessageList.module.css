@@ -1616,6 +1616,425 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* ===== Provider Pill Clickable State ===== */
+.providerPillClickable {
+  cursor: pointer;
+}
+
+.providerPillChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.providerPillChevron svg {
+  width: 10px;
+  height: 10px;
+}
+
+.providerPillWrapper:hover .providerPillChevron {
+  opacity: 1;
+}
+
+/* ===== Model Pill Small Clickable State ===== */
+.modelPillSmallClickable {
+  cursor: pointer;
+}
+
+.modelPillChevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.modelPillChevron svg {
+  width: 9px;
+  height: 9px;
+}
+
+.modelPillSmallWrapper:hover .modelPillChevron {
+  opacity: 1;
+}
+
+/* ===== Model Pill Dropdown ===== */
+.modelDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 200;
+  min-width: 300px;
+  max-width: 380px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  animation: modelDropdownIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.modelDropdownAbove {
+  top: auto;
+  bottom: calc(100% + 8px);
+  animation: modelDropdownInAbove 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='dark'] .modelDropdown {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+@keyframes modelDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modelDropdownInAbove {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modelDropdownSection {
+  padding: 10px 12px 8px;
+}
+
+.modelDropdownSection + .modelDropdownSection {
+  border-top: 1px solid var(--border-color);
+}
+
+.modelDropdownSectionLabel {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0 6px;
+  margin-bottom: 6px;
+}
+
+.modelDropdownItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  transition: background-color 0.15s ease;
+  text-align: left;
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  cursor: default;
+}
+
+.modelDropdownItemCurrent {
+  background-color: var(--bg-secondary);
+}
+
+.modelDropdownItemAlt {
+  cursor: pointer;
+}
+
+.modelDropdownItemAlt:hover {
+  background-color: var(--bg-hover);
+}
+
+.modelDropdownItemAlt:active {
+  transform: scale(0.99);
+}
+
+.modelDropdownItemLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modelDropdownItemRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.modelDropdownLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.modelDropdownItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.modelDropdownItemName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.modelDropdownItemReason {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.modelDropdownFit {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.modelDropdownFitCurrent {
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.1);
+}
+
+.modelDropdownCost {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ===== Alternate Model Confirmation Dialog ===== */
+.altConfirmOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  animation: altConfirmOverlayIn 0.2s ease;
+}
+
+@keyframes altConfirmOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.altConfirmDialog {
+  width: 420px;
+  max-width: 92vw;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+  animation: altConfirmDialogIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+[data-theme='dark'] .altConfirmDialog {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+@keyframes altConfirmDialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.altConfirmHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 20px 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-primary);
+}
+
+.altConfirmHeader svg {
+  width: 18px;
+  height: 18px;
+  color: #d97706;
+}
+
+.altConfirmDesc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  padding: 8px 20px 0;
+  margin: 0;
+}
+
+.altConfirmModelCard {
+  margin: 14px 20px;
+  padding: 14px 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.altConfirmModelCardLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.altConfirmModelLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.altConfirmModelInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.altConfirmModelName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.altConfirmModelReason {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.altConfirmModelMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 48px;
+}
+
+.altConfirmFit {
+  font-size: 11px;
+  font-weight: 600;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.altConfirmCost {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.altConfirmActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px 18px;
+}
+
+.altConfirmCancelBtn {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  font-weight: 550;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.altConfirmCancelBtn:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.altConfirmGoBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: none;
+  background-color: #d97706;
+  color: white;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.altConfirmGoBtn:hover {
+  background-color: #b45309;
+  transform: translateY(-1px);
+}
+
+.altConfirmGoBtn:active {
+  transform: scale(0.97);
+}
+
+.altConfirmGoBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .messagesInner {
@@ -1750,5 +2169,49 @@
   .selectionTooltipBtn {
     font-size: 12px;
     padding: 6px 12px;
+  }
+
+  /* Model dropdown mobile */
+  .modelDropdown {
+    min-width: 260px;
+    max-width: 340px;
+  }
+
+  .modelDropdownItemName {
+    font-size: 12.5px;
+  }
+
+  .modelDropdownItemReason {
+    font-size: 11px;
+  }
+
+  .modelDropdownLogo {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  /* Alt confirm mobile */
+  .altConfirmDialog {
+    width: 95vw;
+  }
+
+  .altConfirmHeader {
+    padding: 14px 16px 0;
+    font-size: 15px;
+  }
+
+  .altConfirmDesc {
+    padding: 6px 16px 0;
+    font-size: 13px;
+  }
+
+  .altConfirmModelCard {
+    margin: 12px 16px;
+    padding: 12px 14px;
+  }
+
+  .altConfirmActions {
+    padding: 12px 16px 16px;
   }
 }
