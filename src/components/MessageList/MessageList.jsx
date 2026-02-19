@@ -838,41 +838,78 @@ export default function MessageList({
   const isDark = effectiveTheme === 'dark';
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
-  const userScrolledAwayRef = useRef(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [shouldPulse, setShouldPulse] = useState(false);
+  const userScrolledDuringStreamRef = useRef(false);
+  const wasStreamingRef = useRef(false);
 
-  // Detect user-initiated scroll-away via wheel/touch (these never fire from programmatic scrolls).
-  // Once set, auto-scroll stops until the user scrolls back to the bottom themselves.
+  // Track scroll position → show/hide scroll-to-bottom button.
+  // Detect user-initiated scrolling during streaming via wheel/touch events only
+  // (these never fire from programmatic scrolls).
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const markScrolledAway = () => {
-      const distanceFromBottom =
-        container.scrollHeight - container.scrollTop - container.clientHeight;
-      if (distanceFromBottom > 150) {
-        userScrolledAwayRef.current = true;
-      }
-    };
-
-    // Re-enable auto-scroll when the user scrolls back near the bottom
     const handleScroll = () => {
-      if (!userScrolledAwayRef.current) return;
       const distanceFromBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight;
-      if (distanceFromBottom <= 50) {
-        userScrolledAwayRef.current = false;
-      }
+      const isNearBottom = distanceFromBottom <= 50;
+      setShowScrollToBottom(!isNearBottom);
+      if (isNearBottom) setShouldPulse(false);
     };
 
-    container.addEventListener('wheel', markScrolledAway, { passive: true });
-    container.addEventListener('touchmove', markScrolledAway, { passive: true });
+    const handleUserScroll = () => {
+      userScrolledDuringStreamRef.current = true;
+    };
+
     container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('wheel', handleUserScroll, { passive: true });
+    container.addEventListener('touchmove', handleUserScroll, { passive: true });
     return () => {
-      container.removeEventListener('wheel', markScrolledAway);
-      container.removeEventListener('touchmove', markScrolledAway);
       container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('wheel', handleUserScroll);
+      container.removeEventListener('touchmove', handleUserScroll);
     };
   }, []);
+
+  // Handle streaming start/end transitions for smart auto-scroll
+  useEffect(() => {
+    // Streaming just started → reset scroll tracking
+    if (isStreaming && !wasStreamingRef.current) {
+      userScrolledDuringStreamRef.current = false;
+    }
+
+    // Streaming just ended → conditionally scroll or pulse
+    if (!isStreaming && wasStreamingRef.current) {
+      const container = containerRef.current;
+      if (container) {
+        const distanceFromBottom =
+          container.scrollHeight - container.scrollTop - container.clientHeight;
+        const isNearBottom = distanceFromBottom <= 150;
+
+        if (!userScrolledDuringStreamRef.current || isNearBottom) {
+          // User didn't interact with scroll OR is still near bottom → smooth scroll
+          if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }
+        } else {
+          // User scrolled away during streaming → pulse the scroll-to-bottom button
+          setShouldPulse(true);
+        }
+      }
+    }
+
+    wasStreamingRef.current = isStreaming;
+  }, [isStreaming]);
+
+  // Scroll to bottom on new messages (user sends or assistant message added) and reset
+  useEffect(() => {
+    userScrolledDuringStreamRef.current = false;
+    setShouldPulse(false);
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages.length]);
 
   const handleFollowUpSelect = useCallback(
     (text) => {
@@ -881,21 +918,12 @@ export default function MessageList({
     [dispatch]
   );
 
-  // Auto-scroll during streaming — only if the user hasn't scrolled away.
-  useEffect(() => {
-    if (userScrolledAwayRef.current) return;
-    if (!bottomRef.current) return;
-
-    bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [streamedText, isProcessing, timelineStages]);
-
-  // Always scroll on new messages (user or assistant added) and reset the flag.
-  useEffect(() => {
-    userScrolledAwayRef.current = false;
+  const scrollToBottom = useCallback(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [messages.length]);
+    setShouldPulse(false);
+  }, []);
 
   if (messages.length === 0 && !isProcessing) return null;
 
@@ -978,6 +1006,19 @@ export default function MessageList({
         )}
 
         <div ref={bottomRef} className={styles.scrollAnchor} />
+      </div>
+
+      {/* Scroll-to-bottom floating button */}
+      <div className={styles.scrollToBottomAnchor}>
+        {showScrollToBottom && (
+          <button
+            className={`${styles.scrollToBottom} ${shouldPulse ? styles.scrollToBottomPulse : ''}`}
+            onClick={scrollToBottom}
+            aria-label="Scroll to bottom"
+          >
+            <ChevronDownIcon />
+          </button>
+        )}
       </div>
     </div>
   );
