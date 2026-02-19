@@ -1,22 +1,94 @@
-import { useEffect, useRef } from 'react';
-import { useSelector } from 'react-redux';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
+import { setInputValue } from '../../store/slices/chatSlice';
 import { getProviderLogo } from '../ProviderLogos';
 import { PROVIDERS } from '../../data/models';
+import { CopyIcon, CheckIcon, ArrowRightIcon, SparkleIcon } from '../Icons';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
+
+/**
+ * Generate 2 follow-up suggestion prompts based on the assistant's response content.
+ */
+function generateFollowUps(content) {
+  if (!content) return [];
+
+  const lower = content.toLowerCase();
+
+  // Coding responses
+  if (/```/.test(content) && /function|const|let|var|def |class /.test(content)) {
+    const suggestions = [
+      'Can you add error handling and edge case coverage to this?',
+      'How would I write unit tests for this implementation?',
+      'Can you explain the time and space complexity of this approach?',
+      'What are some alternative approaches to solve this?',
+      'How would this look refactored using TypeScript?',
+      'Can you add inline comments explaining each step?',
+    ];
+    return pickRandom(suggestions, 2);
+  }
+
+  // Analytical responses
+  if (/analysis|findings|methodology|recommendations|pattern/i.test(lower)) {
+    const suggestions = [
+      'Can you go deeper on the key findings with examples?',
+      'What data sources would strengthen this analysis?',
+      'How would you visualize these insights for a presentation?',
+      'What are the potential risks if we ignore these patterns?',
+    ];
+    return pickRandom(suggestions, 2);
+  }
+
+  // Research responses
+  if (/quantum|theory|research|history|science|overview/i.test(lower)) {
+    const suggestions = [
+      'What are the most recent breakthroughs in this area?',
+      'Can you explain this in simpler terms for a beginner?',
+      'What are the practical real-world applications?',
+      'Who are the leading researchers or companies in this space?',
+    ];
+    return pickRandom(suggestions, 2);
+  }
+
+  // Creative responses
+  if (/poem|haiku|verse|story|imagine|narrative/i.test(lower)) {
+    const suggestions = [
+      'Can you write another one with a different tone?',
+      'What inspired the imagery in this piece?',
+      'Can you create a longer version expanding on this theme?',
+      'How would this change if written in a different style?',
+    ];
+    return pickRandom(suggestions, 2);
+  }
+
+  // Default follow-ups
+  const defaults = [
+    'Can you elaborate on this with more specific examples?',
+    'What are the most common misconceptions about this?',
+    'How would you apply this in a real-world scenario?',
+    'What should I learn next to go deeper on this topic?',
+  ];
+  return pickRandom(defaults, 2);
+}
+
+function pickRandom(arr, n) {
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
 
 /**
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, paragraphs.
  */
-function renderMarkdown(text) {
+function renderMarkdown(text, onCopyCode) {
   if (!text) return null;
 
   const lines = text.split('\n');
   const elements = [];
   let i = 0;
   let key = 0;
+  let codeBlockIndex = 0;
 
   while (i < lines.length) {
     const line = lines[i];
@@ -31,14 +103,9 @@ function renderMarkdown(text) {
         i++;
       }
       i++; // skip closing ```
-      elements.push(
-        <div className={styles.codeBlock} key={key++}>
-          {lang && <div className={styles.codeLang}>{lang}</div>}
-          <pre>
-            <code>{codeLines.join('\n')}</code>
-          </pre>
-        </div>
-      );
+      const codeContent = codeLines.join('\n');
+      const blockIdx = codeBlockIndex++;
+      elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} index={blockIdx} />);
       continue;
     }
 
@@ -116,6 +183,50 @@ function renderMarkdown(text) {
 }
 
 /**
+ * Code block component with copy functionality.
+ */
+function CodeBlock({ lang, code, index }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [code]);
+
+  return (
+    <div className={styles.codeBlock}>
+      <div className={styles.codeHeader}>
+        {lang && <span className={styles.codeLang}>{lang}</span>}
+        {!lang && <span />}
+        <button
+          className={`${styles.copyBtn} ${copied ? styles.copied : ''}`}
+          onClick={handleCopy}
+          title={copied ? 'Copied!' : 'Copy code'}
+          aria-label="Copy code"
+        >
+          {copied ? (
+            <>
+              <CheckIcon />
+              <span>Copied</span>
+            </>
+          ) : (
+            <>
+              <CopyIcon />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      <pre>
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+}
+
+/**
  * Render inline markdown: bold, italic, inline code, links.
  */
 function renderInline(text) {
@@ -183,14 +294,50 @@ function renderInline(text) {
 }
 
 /**
+ * Follow-up suggestions component shown after assistant responses.
+ */
+function FollowUpSuggestions({ suggestions, onSelect }) {
+  if (!suggestions || suggestions.length === 0) return null;
+
+  return (
+    <div className={styles.followUps}>
+      <div className={styles.followUpsHeader}>
+        <SparkleIcon />
+        <span>Follow up</span>
+      </div>
+      <div className={styles.followUpsList}>
+        {suggestions.map((suggestion, idx) => (
+          <button key={idx} className={styles.followUpItem} onClick={() => onSelect(suggestion)}>
+            <span className={styles.followUpText}>{suggestion}</span>
+            <ArrowRightIcon />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
  * A single message in the chat.
  */
-function Message({ message, isStreaming, streamedText, isDark }) {
+function Message({
+  message,
+  isStreaming,
+  streamedText,
+  isDark,
+  isLastAssistant,
+  onFollowUpSelect,
+}) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
+
+  const followUps =
+    !isUser && isLastAssistant && !isStreaming && message.content
+      ? generateFollowUps(message.content)
+      : [];
 
   return (
     <div className={`${styles.message} ${isUser ? styles.userMessage : styles.assistantMessage}`}>
@@ -227,6 +374,10 @@ function Message({ message, isStreaming, streamedText, isDark }) {
           </div>
         )}
       </div>
+
+      {followUps.length > 0 && (
+        <FollowUpSuggestions suggestions={followUps} onSelect={onFollowUpSelect} />
+      )}
     </div>
   );
 }
@@ -244,10 +395,18 @@ export default function MessageList({
   isStreaming,
   streamedText,
 }) {
+  const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
+
+  const handleFollowUpSelect = useCallback(
+    (text) => {
+      dispatch(setInputValue(text));
+    },
+    [dispatch]
+  );
 
   // Auto-scroll to bottom only when user is near the bottom (within 200px).
   // Always scroll for new messages and timeline changes.
@@ -276,6 +435,15 @@ export default function MessageList({
   const lastMsg = messages[messages.length - 1];
   const isLastAssistantStreaming = isStreaming && lastMsg && lastMsg.role === 'assistant';
 
+  // Find the index of the last assistant message
+  let lastAssistantIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'assistant') {
+      lastAssistantIdx = i;
+      break;
+    }
+  }
+
   // Determine where to insert the timeline:
   // - If last message is a streaming assistant msg, timeline goes before it
   // - Otherwise, timeline goes after all messages
@@ -283,10 +451,14 @@ export default function MessageList({
 
   return (
     <div className={styles.messageList} ref={containerRef}>
+      {/* Top fade gradient */}
+      <div className={styles.topFade} />
+
       <div className={styles.messagesInner}>
         {messages.map((msg, index) => {
           const isLast = index === messages.length - 1;
           const shouldStream = isLast && isLastAssistantStreaming;
+          const isLastAssistant = index === lastAssistantIdx && !isProcessing;
 
           return (
             <div key={msg.id || index}>
@@ -306,6 +478,8 @@ export default function MessageList({
                 isStreaming={shouldStream}
                 streamedText={shouldStream ? streamedText : msg.content}
                 isDark={isDark}
+                isLastAssistant={isLastAssistant}
+                onFollowUpSelect={handleFollowUpSelect}
               />
             </div>
           );

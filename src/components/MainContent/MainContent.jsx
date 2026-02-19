@@ -39,6 +39,9 @@ import {
   PuzzleIcon,
   LayersIcon,
   HelpCircleIcon,
+  ShareIcon,
+  LinkIcon,
+  CheckIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -158,6 +161,79 @@ function createStages(status, modelName) {
   return stages;
 }
 
+/**
+ * Share modal component.
+ */
+function ShareModal({ onClose }) {
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const handleCopyLink = () => {
+    const shareUrl = window.location.href;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    });
+  };
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return (
+    <div className={styles.shareOverlay} onClick={onClose}>
+      <div className={styles.shareModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.shareModalHeader}>
+          <h3>Share conversation</h3>
+          <button className={styles.shareModalClose} onClick={onClose} aria-label="Close">
+            <CloseIcon />
+          </button>
+        </div>
+
+        <p className={styles.shareModalDesc}>
+          Create a public link to share this conversation. Anyone with the link will be able to view
+          it.
+        </p>
+
+        <div className={styles.shareModalPreview}>
+          <div className={styles.sharePreviewIcon}>
+            <SparkleIcon />
+          </div>
+          <div className={styles.sharePreviewInfo}>
+            <span className={styles.sharePreviewTitle}>Araviel Conversation</span>
+            <span className={styles.sharePreviewUrl}>araviel.com/share/...</span>
+          </div>
+        </div>
+
+        <div className={styles.shareModalActions}>
+          <button
+            className={`${styles.shareActionBtn} ${styles.shareCopyBtn} ${
+              linkCopied ? styles.copied : ''
+            }`}
+            onClick={handleCopyLink}
+          >
+            {linkCopied ? (
+              <>
+                <CheckIcon />
+                <span>Link copied</span>
+              </>
+            ) : (
+              <>
+                <LinkIcon />
+                <span>Copy link</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MainContent() {
   const dispatch = useDispatch();
   const inputValue = useSelector(selectInputValue);
@@ -167,6 +243,7 @@ export default function MainContent() {
 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const textareaRef = useRef(null);
@@ -421,14 +498,30 @@ export default function MainContent() {
 
   return (
     <main className={`${styles.main} ${hasMessages ? styles.hasMessages : ''}`}>
-      <button
-        className={styles.newChatBtn}
-        onClick={handleNewChat}
-        title="New Chat"
-        aria-label="Start new chat"
-      >
-        <NewChatIcon />
-      </button>
+      {/* Top nav bar with share + new chat buttons */}
+      <div className={styles.topNav}>
+        <div className={styles.topNavInner}>
+          <button
+            className={styles.shareBtn}
+            onClick={() => setShowShareModal(true)}
+            title="Share"
+            aria-label="Share conversation"
+          >
+            <ShareIcon />
+          </button>
+          <button
+            className={styles.newChatBtn}
+            onClick={handleNewChat}
+            title="New Chat"
+            aria-label="Start new chat"
+          >
+            <NewChatIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* Share modal */}
+      {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
 
       {/* Messages area — only shown when there are messages */}
       {hasMessages && (
