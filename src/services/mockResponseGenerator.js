@@ -381,11 +381,5 @@ export function generateMockResponse(prompt, provider, modelName, score) {
 
   const parts = [greeting, '', content, '', closing];
 
-  parts.push('');
-  parts.push('---');
-  parts.push(
-    `*Preview Mode: Response generated with ${modelName} (selected by ADE with ${scoreDisplay}% confidence)*`
-  );
-
   return parts.join('\n');
 }
