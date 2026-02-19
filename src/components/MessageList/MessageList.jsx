@@ -840,20 +840,38 @@ export default function MessageList({
   const containerRef = useRef(null);
   const userScrolledAwayRef = useRef(false);
 
-  // Track whether the user has manually scrolled away from the bottom.
-  // If they have, stop auto-scrolling so streaming doesn't fight their scroll.
+  // Detect user-initiated scroll-away via wheel/touch (these never fire from programmatic scrolls).
+  // Once set, auto-scroll stops until the user scrolls back to the bottom themselves.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const handleScroll = () => {
+    const markScrolledAway = () => {
       const distanceFromBottom =
         container.scrollHeight - container.scrollTop - container.clientHeight;
-      userScrolledAwayRef.current = distanceFromBottom > 200;
+      if (distanceFromBottom > 150) {
+        userScrolledAwayRef.current = true;
+      }
     };
 
+    // Re-enable auto-scroll when the user scrolls back near the bottom
+    const handleScroll = () => {
+      if (!userScrolledAwayRef.current) return;
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      if (distanceFromBottom <= 50) {
+        userScrolledAwayRef.current = false;
+      }
+    };
+
+    container.addEventListener('wheel', markScrolledAway, { passive: true });
+    container.addEventListener('touchmove', markScrolledAway, { passive: true });
     container.addEventListener('scroll', handleScroll, { passive: true });
-    return () => container.removeEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('wheel', markScrolledAway);
+      container.removeEventListener('touchmove', markScrolledAway);
+      container.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const handleFollowUpSelect = useCallback(
