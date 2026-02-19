@@ -659,7 +659,9 @@ function AlternateModelConfirmDialog({
           <span>Switch model</span>
         </div>
 
-        <p className={styles.altConfirmDesc}>Re-generate this response using a different model?</p>
+        <p className={styles.altConfirmDesc}>
+          Generate a new response with a different model so you can compare?
+        </p>
 
         <div className={styles.altConfirmModelCard}>
           <div className={styles.altConfirmModelCardLeft}>
@@ -695,7 +697,7 @@ function AlternateModelConfirmDialog({
           </button>
           <button className={styles.altConfirmGoBtn} onClick={onConfirm}>
             <ZapIcon />
-            Switch & regenerate
+            Switch & generate
           </button>
         </div>
       </div>
