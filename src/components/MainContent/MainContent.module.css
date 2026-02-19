@@ -468,15 +468,38 @@
   opacity: 0.5;
 }
 
-/* Spinner for processing state */
-.sendSpinner {
-  display: block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--text-muted);
-  border-top-color: transparent;
+/* Stop button with spinning ring */
+.stopBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
   border-radius: 50%;
-  animation: spinnerRotate 0.7s linear infinite;
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.stopBtn:hover {
+  color: var(--text-primary);
+}
+
+.stopBtnRing {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--text-secondary);
+  border-radius: 50%;
+  animation: spinnerRotate 0.8s linear infinite;
+  pointer-events: none;
+}
+
+.stopBtn:hover .stopBtnRing {
+  border-top-color: var(--text-primary);
 }
 
 @keyframes spinnerRotate {

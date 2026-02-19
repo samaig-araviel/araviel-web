@@ -5,6 +5,7 @@ import {
   selectMode,
   selectMessages,
   selectIsProcessing,
+  selectSelectedModelId,
   setInputValue,
   setMode,
   addMessage,
@@ -43,6 +44,7 @@ import {
   ShareIcon,
   LinkIcon,
   CheckIcon,
+  StopIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -133,9 +135,13 @@ const attachOptions = [
 const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn'];
 
 // Timeline stage factory
-function createStages(status, modelName) {
+function createStages(status, modelName, isManualSelection) {
   const stages = [
-    { label: 'Routing to optimal model...', status: 'pending', showModel: false },
+    {
+      label: isManualSelection ? 'Using selected model...' : 'Routing to optimal model...',
+      status: 'pending',
+      showModel: false,
+    },
     {
       label: modelName ? `Thinking with` : 'Thinking...',
       status: 'pending',
@@ -241,6 +247,7 @@ export default function MainContent() {
   const mode = useSelector(selectMode);
   const messages = useSelector(selectMessages);
   const isProcessing = useSelector(selectIsProcessing);
+  const selectedModelId = useSelector(selectSelectedModelId);
 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
@@ -255,10 +262,19 @@ export default function MainContent() {
   const [fullResponseText, setFullResponseText] = useState('');
   const [shouldStream, setShouldStream] = useState(false);
 
+  // Stop-request state
+  const [lastPrompt, setLastPrompt] = useState('');
+  const [isManualRequest, setIsManualRequest] = useState(false);
+  const cancelledRef = useRef(false);
+
   const hasMessages = messages.length > 0;
 
   // Streaming hook
-  const { streamedText, isStreaming } = useStreamingText(fullResponseText, shouldStream, {
+  const {
+    streamedText,
+    isStreaming,
+    stop: stopStreaming,
+  } = useStreamingText(fullResponseText, shouldStream, {
     baseDelay: 25,
     variance: 18,
     punctuationPause: 70,
@@ -352,6 +368,15 @@ export default function MainContent() {
     const prompt = inputValue.trim();
     if (!prompt || isProcessing) return;
 
+    // Save prompt for stop functionality
+    setLastPrompt(prompt);
+    cancelledRef.current = false;
+
+    // Determine if user manually selected a model
+    const manualModelId = selectedModelId;
+    const isManual = !!manualModelId;
+    setIsManualRequest(isManual);
+
     // 1. Add user message
     const userMsg = {
       id: `user-${Date.now()}`,
@@ -377,22 +402,39 @@ export default function MainContent() {
 
     let routing;
     const routingStart = Date.now();
-    try {
-      // Simulate a minimum routing time for visual effect
-      const [result] = await Promise.all([
-        routePrompt(prompt),
-        new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
-      ]);
-      routing = result;
-    } catch {
+
+    if (isManual) {
+      // Manual selection — skip ADE routing, use selected model directly
+      const model = MODELS.find((m) => m.id === manualModelId);
       routing = {
-        modelId: 'claude-sonnet-4-5-20250929',
-        modelName: 'Claude Sonnet 4.5',
-        provider: 'anthropic',
-        score: 0.88,
-        reasoning: 'Fallback routing',
+        modelId: manualModelId,
+        modelName: model ? model.name : manualModelId,
+        provider: model ? model.provider : 'anthropic',
+        score: null,
+        reasoning: 'Manual selection',
       };
+      // Brief visual pause
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    } else {
+      // Auto mode — route through ADE
+      try {
+        const [result] = await Promise.all([
+          routePrompt(prompt),
+          new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
+        ]);
+        routing = result;
+      } catch {
+        routing = {
+          modelId: 'claude-sonnet-4-5-20250929',
+          modelName: 'Claude Sonnet 4.5',
+          provider: 'anthropic',
+          score: 0.88,
+          reasoning: 'Fallback routing',
+        };
+      }
     }
+
+    if (cancelledRef.current) return;
     const routingDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
 
     // Resolve model name from our registry if not provided
@@ -419,8 +461,12 @@ export default function MainContent() {
 
     // Simulate thinking time based on response complexity
     const thinkingStart = Date.now();
-    const thinkingTime = 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
+    const thinkingTime = isManual
+      ? 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400
+      : 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
     await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+
+    if (cancelledRef.current) return;
     const thinkingDuration = ((Date.now() - thinkingStart) / 1000).toFixed(1);
 
     // 4. Stage 3: Writing (streaming)
@@ -437,6 +483,7 @@ export default function MainContent() {
       provider: resolvedProvider,
       score: routing.score,
       reasoning: routing.reasoning || 'Best match for your request',
+      isManualSelection: isManual,
       thinkingData: {
         routingDuration,
         thinkingDuration,
@@ -449,6 +496,35 @@ export default function MainContent() {
     setFullResponseText(responseText);
     setShouldStream(true);
   };
+
+  /**
+   * Stop handler: cancels the current request, preserves partial output,
+   * and fills the input with the original prompt.
+   */
+  const handleStop = useCallback(() => {
+    cancelledRef.current = true;
+
+    // Stop streaming if in writing phase
+    if (shouldStream) {
+      stopStreaming();
+    }
+
+    // Preserve partial assistant content if we're in the writing stage
+    if (pipelineStatus === 'writing' && streamedText) {
+      dispatch(updateLastMessage({ content: streamedText }));
+    }
+
+    // Reset pipeline
+    setPipelineStatus('idle');
+    setShouldStream(false);
+    setFullResponseText('');
+    setRouteResult(null);
+    setIsManualRequest(false);
+    dispatch(setIsProcessing(false));
+
+    // Fill textbox with original prompt so user can edit and re-send
+    dispatch(setInputValue(lastPrompt));
+  }, [dispatch, lastPrompt, pipelineStatus, shouldStream, streamedText, stopStreaming]);
 
   const handleModeClick = (newMode) => {
     if (activeDropdown === newMode) {
@@ -480,6 +556,8 @@ export default function MainContent() {
   };
 
   const handleNewChat = () => {
+    cancelledRef.current = true;
+    if (shouldStream) stopStreaming();
     dispatch(createNewChat());
     dispatch(setInputValue(''));
     setActiveDropdown(null);
@@ -487,6 +565,8 @@ export default function MainContent() {
     setShouldStream(false);
     setFullResponseText('');
     setRouteResult(null);
+    setLastPrompt('');
+    setIsManualRequest(false);
   };
 
   /**
@@ -504,6 +584,12 @@ export default function MainContent() {
       setShouldStream(false);
       setFullResponseText('');
       setRouteResult(null);
+      cancelledRef.current = false;
+
+      const manualModelId = selectedModelId;
+      const isManual = !!manualModelId;
+      setIsManualRequest(isManual);
+      setLastPrompt(userPrompt);
 
       // Small delay for visual feedback before restarting
       await new Promise((resolve) => setTimeout(resolve, 150));
@@ -514,21 +600,36 @@ export default function MainContent() {
 
       let routing;
       const retryRoutingStart = Date.now();
-      try {
-        const [result] = await Promise.all([
-          routePrompt(userPrompt),
-          new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
-        ]);
-        routing = result;
-      } catch {
+
+      if (isManual) {
+        const model = MODELS.find((m) => m.id === manualModelId);
         routing = {
-          modelId: 'claude-sonnet-4-5-20250929',
-          modelName: 'Claude Sonnet 4.5',
-          provider: 'anthropic',
-          score: 0.88,
-          reasoning: 'Fallback routing',
+          modelId: manualModelId,
+          modelName: model ? model.name : manualModelId,
+          provider: model ? model.provider : 'anthropic',
+          score: null,
+          reasoning: 'Manual selection',
         };
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      } else {
+        try {
+          const [result] = await Promise.all([
+            routePrompt(userPrompt),
+            new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
+          ]);
+          routing = result;
+        } catch {
+          routing = {
+            modelId: 'claude-sonnet-4-5-20250929',
+            modelName: 'Claude Sonnet 4.5',
+            provider: 'anthropic',
+            score: 0.88,
+            reasoning: 'Fallback routing',
+          };
+        }
       }
+
+      if (cancelledRef.current) return;
       const retryRoutingDuration = ((Date.now() - retryRoutingStart) / 1000).toFixed(1);
 
       const model = MODELS.find((m) => m.id === routing.modelId);
@@ -551,8 +652,12 @@ export default function MainContent() {
       );
 
       const retryThinkingStart = Date.now();
-      const thinkingTime = 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
+      const thinkingTime = isManual
+        ? 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400
+        : 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
       await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+
+      if (cancelledRef.current) return;
       const retryThinkingDuration = ((Date.now() - retryThinkingStart) / 1000).toFixed(1);
 
       setPipelineStatus('writing');
@@ -567,6 +672,7 @@ export default function MainContent() {
         provider: resolvedProvider,
         score: routing.score,
         reasoning: routing.reasoning || 'Best match for your request',
+        isManualSelection: isManual,
         thinkingData: {
           routingDuration: retryRoutingDuration,
           thinkingDuration: retryThinkingDuration,
@@ -580,7 +686,7 @@ export default function MainContent() {
       setFullResponseText(responseText);
       setShouldStream(true);
     },
-    [dispatch, isProcessing]
+    [dispatch, isProcessing, selectedModelId]
   );
 
   const handleAttachClick = () => {
@@ -598,7 +704,7 @@ export default function MainContent() {
   // Build timeline stages
   const timelineStages =
     pipelineStatus !== 'idle'
-      ? createStages(pipelineStatus, routeResult ? routeResult.modelName : null)
+      ? createStages(pipelineStatus, routeResult ? routeResult.modelName : null, isManualRequest)
       : null;
 
   return (
@@ -696,16 +802,26 @@ export default function MainContent() {
                   )}
                   <ModelSelector />
                 </div>
-                <button
-                  type="submit"
-                  className={`${styles.submitBtn} ${
-                    inputValue.trim() && !isProcessing ? styles.active : ''
-                  }`}
-                  disabled={!inputValue.trim() || isProcessing}
-                  aria-label="Send message"
-                >
-                  {isProcessing ? <span className={styles.sendSpinner} /> : <SendIcon />}
-                </button>
+                {isProcessing ? (
+                  <button
+                    type="button"
+                    className={styles.stopBtn}
+                    onClick={handleStop}
+                    aria-label="Stop request"
+                  >
+                    <span className={styles.stopBtnRing} />
+                    <StopIcon />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className={`${styles.submitBtn} ${inputValue.trim() ? styles.active : ''}`}
+                    disabled={!inputValue.trim()}
+                    aria-label="Send message"
+                  >
+                    <SendIcon />
+                  </button>
+                )}
               </div>
             </div>
           </form>

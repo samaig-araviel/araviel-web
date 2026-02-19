@@ -443,7 +443,13 @@ function ShareDropdown({ message, onClose }) {
 /**
  * Model reasoning tooltip shown on hover/click of the model pill header.
  */
-function ModelReasoningTooltip({ reasoning, modelName, score, position = 'below' }) {
+function ModelReasoningTooltip({
+  reasoning,
+  modelName,
+  score,
+  isManualSelection,
+  position = 'below',
+}) {
   const scoreDisplay = score ? (score * 100).toFixed(1) : null;
 
   return (
@@ -458,7 +464,9 @@ function ModelReasoningTooltip({ reasoning, modelName, score, position = 'below'
           {scoreDisplay && <span className={styles.reasoningTooltipScore}>{scoreDisplay}%</span>}
         </div>
         <p className={styles.reasoningTooltipText}>{reasoning}</p>
-        <span className={styles.reasoningTooltipFooter}>Powered by ADE</span>
+        <span className={styles.reasoningTooltipFooter}>
+          {isManualSelection ? 'Manual selection' : 'Powered by ADE'}
+        </span>
       </div>
     </div>
   );
@@ -541,6 +549,7 @@ function ResponseActions({ message, isDark, onRetry, userPrompt }) {
                 reasoning={message.reasoning}
                 modelName={message.modelName}
                 score={message.score}
+                isManualSelection={message.isManualSelection}
                 position="above"
               />
             )}

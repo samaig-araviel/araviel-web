@@ -999,3 +999,9 @@ export const CpuIcon = () => (
     <line x1="1" y1="14" x2="4" y2="14"></line>
   </svg>
 );
+
+export const StopIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <rect x="6" y="6" width="12" height="12" rx="2" ry="2"></rect>
+  </svg>
+);
