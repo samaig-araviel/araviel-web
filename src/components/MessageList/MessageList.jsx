@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue } from '../../store/slices/chatSlice';
 import { getProviderLogo } from '../ProviderLogos';
-import { PROVIDERS } from '../../data/models';
+import { PROVIDERS, MODELS } from '../../data/models';
 import {
   CopyIcon,
   CheckIcon,
@@ -21,6 +21,7 @@ import {
   MessageCircleIcon,
   SendIcon,
   CloseIcon,
+  ZapIcon,
 } from '../Icons';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
@@ -476,6 +477,233 @@ function ModelReasoningTooltip({
 }
 
 /**
+ * Convert a 0-1 score into a user-friendly fit label.
+ */
+function getFitLabel(score) {
+  if (score == null) return null;
+  const pct = score > 1 ? score : score * 100;
+  if (pct >= 95) return 'Excellent fit';
+  if (pct >= 88) return 'Great fit';
+  if (pct >= 80) return 'Good fit';
+  if (pct >= 70) return 'Decent fit';
+  return 'Possible fit';
+}
+
+/**
+ * Get estimated cost display string from model pricing.
+ */
+function getEstimatedCost(modelId) {
+  const model = MODELS.find((m) => m.id === modelId);
+  if (!model || !model.pricing) return null;
+  // Estimate for a typical ~1K input / ~2K output response
+  const inputCost = (model.pricing.inputPerM * 1) / 1000;
+  const outputCost = (model.pricing.outputPerM * 2) / 1000;
+  const totalCent = (inputCost + outputCost) * 100;
+  if (totalCent < 0.1) return '< 0.1¢';
+  if (totalCent < 1) return `~${totalCent.toFixed(1)}¢`;
+  return `~${totalCent.toFixed(1)}¢`;
+}
+
+/**
+ * Dropdown shown when clicking a model pill — lists the current model and alternates.
+ */
+function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlternate }) {
+  const dropdownRef = useRef(null);
+  const providerData = message.provider ? PROVIDERS[message.provider] : null;
+  const LogoComponent = message.provider ? getProviderLogo(message.provider) : null;
+  const alternates = message.alternateModels || [];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    // Delay listener slightly to avoid closing immediately from the opening click
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEsc);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
+
+  const fitLabel = getFitLabel(message.score);
+
+  return (
+    <div
+      className={`${styles.modelDropdown} ${position === 'above' ? styles.modelDropdownAbove : ''}`}
+      ref={dropdownRef}
+    >
+      {/* Current / chosen model */}
+      <div className={styles.modelDropdownSection}>
+        <span className={styles.modelDropdownSectionLabel}>Responded with</span>
+        <div className={styles.modelDropdownItem + ' ' + styles.modelDropdownItemCurrent}>
+          <div className={styles.modelDropdownItemLeft}>
+            {providerData && LogoComponent && (
+              <span
+                className={styles.modelDropdownLogo}
+                style={{
+                  backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
+                  color: isDark
+                    ? providerData.accentTextDark || providerData.accentColor
+                    : providerData.accentText,
+                }}
+              >
+                <LogoComponent size={13} />
+              </span>
+            )}
+            <div className={styles.modelDropdownItemInfo}>
+              <span className={styles.modelDropdownItemName}>{message.modelName}</span>
+              {message.reasoning && (
+                <span className={styles.modelDropdownItemReason}>{message.reasoning}</span>
+              )}
+            </div>
+          </div>
+          {fitLabel && (
+            <span className={styles.modelDropdownFit + ' ' + styles.modelDropdownFitCurrent}>
+              {fitLabel}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Alternate models */}
+      {alternates.length > 0 && (
+        <div className={styles.modelDropdownSection}>
+          <span className={styles.modelDropdownSectionLabel}>Try another model</span>
+          {alternates.map((alt) => {
+            const altProviderData = alt.provider ? PROVIDERS[alt.provider] : null;
+            const AltLogo = alt.provider ? getProviderLogo(alt.provider) : null;
+            const altFit = getFitLabel(alt.score);
+            const altCost = getEstimatedCost(alt.modelId);
+            return (
+              <button
+                key={alt.modelId}
+                className={styles.modelDropdownItem + ' ' + styles.modelDropdownItemAlt}
+                onClick={() => {
+                  onClose();
+                  onSelectAlternate(alt);
+                }}
+              >
+                <div className={styles.modelDropdownItemLeft}>
+                  {altProviderData && AltLogo && (
+                    <span
+                      className={styles.modelDropdownLogo}
+                      style={{
+                        backgroundColor: isDark
+                          ? altProviderData.accentBgDark
+                          : altProviderData.accentBg,
+                        color: isDark
+                          ? altProviderData.accentTextDark || altProviderData.accentColor
+                          : altProviderData.accentText,
+                      }}
+                    >
+                      <AltLogo size={13} />
+                    </span>
+                  )}
+                  <div className={styles.modelDropdownItemInfo}>
+                    <span className={styles.modelDropdownItemName}>{alt.modelName}</span>
+                    {alt.reasoning && (
+                      <span className={styles.modelDropdownItemReason}>{alt.reasoning}</span>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.modelDropdownItemRight}>
+                  {altFit && <span className={styles.modelDropdownFit}>{altFit}</span>}
+                  {altCost && <span className={styles.modelDropdownCost}>{altCost}</span>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Confirmation dialog shown when user selects an alternate model.
+ */
+function AlternateModelConfirmDialog({
+  alternateModel,
+  currentModelName,
+  isDark,
+  onConfirm,
+  onCancel,
+}) {
+  const altProviderData = alternateModel.provider ? PROVIDERS[alternateModel.provider] : null;
+  const AltLogo = alternateModel.provider ? getProviderLogo(alternateModel.provider) : null;
+  const altCost = getEstimatedCost(alternateModel.modelId);
+  const altFit = getFitLabel(alternateModel.score);
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onCancel]);
+
+  return (
+    <div className={styles.altConfirmOverlay} onClick={onCancel}>
+      <div className={styles.altConfirmDialog} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.altConfirmHeader}>
+          <ZapIcon />
+          <span>Switch model</span>
+        </div>
+
+        <p className={styles.altConfirmDesc}>Re-generate this response using a different model?</p>
+
+        <div className={styles.altConfirmModelCard}>
+          <div className={styles.altConfirmModelCardLeft}>
+            {altProviderData && AltLogo && (
+              <span
+                className={styles.altConfirmModelLogo}
+                style={{
+                  backgroundColor: isDark ? altProviderData.accentBgDark : altProviderData.accentBg,
+                  color: isDark
+                    ? altProviderData.accentTextDark || altProviderData.accentColor
+                    : altProviderData.accentText,
+                }}
+              >
+                <AltLogo size={16} />
+              </span>
+            )}
+            <div className={styles.altConfirmModelInfo}>
+              <span className={styles.altConfirmModelName}>{alternateModel.modelName}</span>
+              {alternateModel.reasoning && (
+                <span className={styles.altConfirmModelReason}>{alternateModel.reasoning}</span>
+              )}
+            </div>
+          </div>
+          <div className={styles.altConfirmModelMeta}>
+            {altFit && <span className={styles.altConfirmFit}>{altFit}</span>}
+            {altCost && <span className={styles.altConfirmCost}>Est. {altCost} per response</span>}
+          </div>
+        </div>
+
+        <div className={styles.altConfirmActions}>
+          <button className={styles.altConfirmCancelBtn} onClick={onCancel}>
+            Cancel
+          </button>
+          <button className={styles.altConfirmGoBtn} onClick={onConfirm}>
+            <ZapIcon />
+            Switch & regenerate
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Generate a mock sub-conversation response based on highlighted text and user question.
  */
 function generateSubResponse(highlightedText, question) {
@@ -694,16 +922,18 @@ function SubConversationPills({ subConversations, onOpen }) {
  * Left: model pill + preview pill + sources pill
  * Right: like, dislike, copy, retry, share
  */
-function ResponseActions({ message, isDark, onRetry, userPrompt }) {
+function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlternate }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
-  const [showModelReasoning, setShowModelReasoning] = useState(false);
+  const [showModelDropdown, setShowModelDropdown] = useState(false);
 
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
+
+  const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
 
   const getProviderDisplayName = () => {
     if (!provider) return null;
@@ -745,12 +975,12 @@ function ResponseActions({ message, isDark, onRetry, userPrompt }) {
         {providerData && LogoComponent && (
           <div
             className={styles.modelPillSmallWrapper}
-            onMouseEnter={() => setShowModelReasoning(true)}
-            onMouseLeave={() => setShowModelReasoning(false)}
-            onClick={() => setShowModelReasoning(!showModelReasoning)}
+            onClick={() => setShowModelDropdown(!showModelDropdown)}
           >
             <div
-              className={styles.modelPillSmall}
+              className={`${styles.modelPillSmall} ${
+                hasAlternates ? styles.modelPillSmallClickable : ''
+              }`}
               style={{
                 backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
                 color: isDark
@@ -760,14 +990,19 @@ function ResponseActions({ message, isDark, onRetry, userPrompt }) {
             >
               <LogoComponent size={12} />
               <span>{displayName}</span>
+              {hasAlternates && (
+                <span className={styles.modelPillChevron}>
+                  <ChevronDownIcon />
+                </span>
+              )}
             </div>
-            {showModelReasoning && message.reasoning && (
-              <ModelReasoningTooltip
-                reasoning={message.reasoning}
-                modelName={message.modelName}
-                score={message.score}
-                isManualSelection={message.isManualSelection}
+            {showModelDropdown && (
+              <ModelPillDropdown
+                message={message}
+                isDark={isDark}
                 position="above"
+                onClose={() => setShowModelDropdown(false)}
+                onSelectAlternate={onSelectAlternate}
               />
             )}
           </div>
@@ -994,6 +1229,7 @@ function Message({
   isLastAssistant,
   onFollowUpSelect,
   onRetry,
+  onAlternateModelRequest,
   userPrompt,
 }) {
   const isUser = message.role === 'user';
@@ -1001,7 +1237,9 @@ function Message({
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
-  const [showReasoning, setShowReasoning] = useState(false);
+  const [showHeaderDropdown, setShowHeaderDropdown] = useState(false);
+  const [pendingAlternate, setPendingAlternate] = useState(null);
+  const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
 
   // Sub-conversation state
   const [subConversations, setSubConversations] = useState([]);
@@ -1178,12 +1416,12 @@ function Message({
         <div className={styles.assistantHeader}>
           <div
             className={styles.providerPillWrapper}
-            onMouseEnter={() => setShowReasoning(true)}
-            onMouseLeave={() => setShowReasoning(false)}
-            onClick={() => setShowReasoning(!showReasoning)}
+            onClick={() => setShowHeaderDropdown(!showHeaderDropdown)}
           >
             <div
-              className={styles.providerPill}
+              className={`${styles.providerPill} ${
+                hasAlternates ? styles.providerPillClickable : ''
+              }`}
               style={{
                 backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
                 color: isDark
@@ -1197,20 +1435,44 @@ function Message({
                 <>
                   <span className={styles.pillDivider}>&#183;</span>
                   <span className={styles.scoreText}>
-                    Score: {(message.score * 100).toFixed(1)}
+                    {getFitLabel(message.score) || 'Matched'}
                   </span>
                 </>
               )}
+              {hasAlternates && (
+                <span className={styles.providerPillChevron}>
+                  <ChevronDownIcon />
+                </span>
+              )}
             </div>
-            {showReasoning && message.reasoning && (
-              <ModelReasoningTooltip
-                reasoning={message.reasoning}
-                modelName={message.modelName}
-                score={message.score}
+            {showHeaderDropdown && (
+              <ModelPillDropdown
+                message={message}
+                isDark={isDark}
+                position="below"
+                onClose={() => setShowHeaderDropdown(false)}
+                onSelectAlternate={(alt) => setPendingAlternate(alt)}
               />
             )}
           </div>
         </div>
+      )}
+
+      {/* Alternate model confirmation dialog */}
+      {pendingAlternate && (
+        <AlternateModelConfirmDialog
+          alternateModel={pendingAlternate}
+          currentModelName={message.modelName}
+          isDark={isDark}
+          onConfirm={() => {
+            const alt = pendingAlternate;
+            setPendingAlternate(null);
+            if (onAlternateModelRequest && userPrompt) {
+              onAlternateModelRequest(userPrompt, alt);
+            }
+          }}
+          onCancel={() => setPendingAlternate(null)}
+        />
       )}
 
       {!isUser && !isStreaming && message.thinkingData && (
@@ -1243,6 +1505,7 @@ function Message({
           isDark={isDark}
           onRetry={onRetry}
           userPrompt={userPrompt}
+          onSelectAlternate={(alt) => setPendingAlternate(alt)}
         />
       )}
 
@@ -1282,6 +1545,7 @@ export default function MessageList({
   isStreaming,
   streamedText,
   onRetry,
+  onAlternateModelRequest,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -1437,6 +1701,7 @@ export default function MessageList({
                 isLastAssistant={isLastAssistant}
                 onFollowUpSelect={handleFollowUpSelect}
                 onRetry={onRetry}
+                onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}
               />
             </div>
