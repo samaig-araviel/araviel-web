@@ -262,10 +262,12 @@ export default function MainContent() {
   const [fullResponseText, setFullResponseText] = useState('');
   const [shouldStream, setShouldStream] = useState(false);
 
-  // Stop-request state
+  // Stop-request state: use a generation counter so stale async work is ignored
   const [lastPrompt, setLastPrompt] = useState('');
   const [isManualRequest, setIsManualRequest] = useState(false);
-  const cancelledRef = useRef(false);
+  const requestIdRef = useRef(0);
+  const pipelineTimeoutRef = useRef(null); // stores in-flight routing/thinking setTimeout
+  const completeTimeoutRef = useRef(null); // stores the onComplete cleanup setTimeout
 
   const hasMessages = messages.length > 0;
 
@@ -280,13 +282,18 @@ export default function MainContent() {
     punctuationPause: 70,
     paragraphPause: 120,
     onComplete: useCallback(() => {
+      // Guard: if request was cancelled, do nothing
+      const id = requestIdRef.current;
+
       // Ensure final content is persisted in Redux
       dispatch(updateLastMessage({ content: fullResponseText }));
       setPipelineStatus('complete');
       dispatch(setIsProcessing(false));
 
       // Brief delay then clear timeline
-      setTimeout(() => {
+      completeTimeoutRef.current = setTimeout(() => {
+        // Only clean up if no new request has started
+        if (requestIdRef.current !== id) return;
         setPipelineStatus('idle');
         setShouldStream(false);
         setFullResponseText('');
@@ -361,6 +368,21 @@ export default function MainContent() {
   }, [isProcessing, messages.length]);
 
   /**
+   * Cancellable delay that stores its timeout in the pipeline ref.
+   * Resolves to false if the timeout is cleared externally (via handleStop).
+   */
+  const pipelineDelay = useCallback(
+    (ms) =>
+      new Promise((resolve) => {
+        pipelineTimeoutRef.current = setTimeout(() => {
+          pipelineTimeoutRef.current = null;
+          resolve(true);
+        }, ms);
+      }),
+    []
+  );
+
+  /**
    * Main submit handler: orchestrates the full ADE pipeline.
    */
   const handleSubmit = async (e) => {
@@ -368,9 +390,11 @@ export default function MainContent() {
     const prompt = inputValue.trim();
     if (!prompt || isProcessing) return;
 
+    // Increment request generation — any previous in-flight request is now stale
+    const myRequestId = ++requestIdRef.current;
+
     // Save prompt for stop functionality
     setLastPrompt(prompt);
-    cancelledRef.current = false;
 
     // Determine if user manually selected a model
     const manualModelId = selectedModelId;
@@ -414,13 +438,13 @@ export default function MainContent() {
         reasoning: 'Manual selection',
       };
       // Brief visual pause
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await pipelineDelay(300);
     } else {
       // Auto mode — route through ADE
       try {
         const [result] = await Promise.all([
           routePrompt(prompt),
-          new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
+          pipelineDelay(600 + Math.random() * 400),
         ]);
         routing = result;
       } catch {
@@ -434,7 +458,8 @@ export default function MainContent() {
       }
     }
 
-    if (cancelledRef.current) return;
+    // Bail out if this request was cancelled (stop clicked or new request started)
+    if (requestIdRef.current !== myRequestId) return;
     const routingDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
 
     // Resolve model name from our registry if not provided
@@ -464,9 +489,9 @@ export default function MainContent() {
     const thinkingTime = isManual
       ? 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400
       : 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
-    await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+    await pipelineDelay(thinkingTime);
 
-    if (cancelledRef.current) return;
+    if (requestIdRef.current !== myRequestId) return;
     const thinkingDuration = ((Date.now() - thinkingStart) / 1000).toFixed(1);
 
     // 4. Stage 3: Writing (streaming)
@@ -500,21 +525,29 @@ export default function MainContent() {
   /**
    * Stop handler: cancels the current request, preserves partial output,
    * and fills the input with the original prompt.
+   *
+   * Uses refs (not state) for cancellation so there are no stale-closure issues.
    */
   const handleStop = useCallback(() => {
-    cancelledRef.current = true;
+    // 1. Invalidate the in-flight request immediately
+    requestIdRef.current++;
 
-    // Stop streaming if in writing phase
-    if (shouldStream) {
-      stopStreaming();
+    // 2. Clear any pending pipeline delay (routing/thinking setTimeout)
+    if (pipelineTimeoutRef.current) {
+      clearTimeout(pipelineTimeoutRef.current);
+      pipelineTimeoutRef.current = null;
     }
 
-    // Preserve partial assistant content if we're in the writing stage
-    if (pipelineStatus === 'writing' && streamedText) {
-      dispatch(updateLastMessage({ content: streamedText }));
+    // 3. Clear any pending onComplete cleanup timeout
+    if (completeTimeoutRef.current) {
+      clearTimeout(completeTimeoutRef.current);
+      completeTimeoutRef.current = null;
     }
 
-    // Reset pipeline
+    // 4. Stop word-by-word streaming unconditionally
+    stopStreaming();
+
+    // 5. Reset all pipeline state
     setPipelineStatus('idle');
     setShouldStream(false);
     setFullResponseText('');
@@ -522,9 +555,9 @@ export default function MainContent() {
     setIsManualRequest(false);
     dispatch(setIsProcessing(false));
 
-    // Fill textbox with original prompt so user can edit and re-send
+    // 6. Fill textbox with original prompt so user can edit and re-send
     dispatch(setInputValue(lastPrompt));
-  }, [dispatch, lastPrompt, pipelineStatus, shouldStream, streamedText, stopStreaming]);
+  }, [dispatch, lastPrompt, stopStreaming]);
 
   const handleModeClick = (newMode) => {
     if (activeDropdown === newMode) {
@@ -556,8 +589,18 @@ export default function MainContent() {
   };
 
   const handleNewChat = () => {
-    cancelledRef.current = true;
-    if (shouldStream) stopStreaming();
+    // Kill any in-flight request
+    requestIdRef.current++;
+    if (pipelineTimeoutRef.current) {
+      clearTimeout(pipelineTimeoutRef.current);
+      pipelineTimeoutRef.current = null;
+    }
+    if (completeTimeoutRef.current) {
+      clearTimeout(completeTimeoutRef.current);
+      completeTimeoutRef.current = null;
+    }
+    stopStreaming();
+
     dispatch(createNewChat());
     dispatch(setInputValue(''));
     setActiveDropdown(null);
@@ -579,12 +622,14 @@ export default function MainContent() {
       // Remove the last assistant message
       dispatch(removeLastAssistantMessage());
 
+      // New generation for this retry
+      const myRequestId = ++requestIdRef.current;
+
       // Reset pipeline state
       setPipelineStatus('idle');
       setShouldStream(false);
       setFullResponseText('');
       setRouteResult(null);
-      cancelledRef.current = false;
 
       const manualModelId = selectedModelId;
       const isManual = !!manualModelId;
@@ -593,6 +638,7 @@ export default function MainContent() {
 
       // Small delay for visual feedback before restarting
       await new Promise((resolve) => setTimeout(resolve, 150));
+      if (requestIdRef.current !== myRequestId) return;
 
       // Re-run the pipeline
       dispatch(setIsProcessing(true));
@@ -610,12 +656,12 @@ export default function MainContent() {
           score: null,
           reasoning: 'Manual selection',
         };
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        await pipelineDelay(300);
       } else {
         try {
           const [result] = await Promise.all([
             routePrompt(userPrompt),
-            new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
+            pipelineDelay(600 + Math.random() * 400),
           ]);
           routing = result;
         } catch {
@@ -629,7 +675,7 @@ export default function MainContent() {
         }
       }
 
-      if (cancelledRef.current) return;
+      if (requestIdRef.current !== myRequestId) return;
       const retryRoutingDuration = ((Date.now() - retryRoutingStart) / 1000).toFixed(1);
 
       const model = MODELS.find((m) => m.id === routing.modelId);
@@ -655,9 +701,9 @@ export default function MainContent() {
       const thinkingTime = isManual
         ? 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400
         : 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
-      await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+      await pipelineDelay(thinkingTime);
 
-      if (cancelledRef.current) return;
+      if (requestIdRef.current !== myRequestId) return;
       const retryThinkingDuration = ((Date.now() - retryThinkingStart) / 1000).toFixed(1);
 
       setPipelineStatus('writing');
@@ -686,7 +732,7 @@ export default function MainContent() {
       setFullResponseText(responseText);
       setShouldStream(true);
     },
-    [dispatch, isProcessing, selectedModelId]
+    [dispatch, isProcessing, selectedModelId, pipelineDelay]
   );
 
   const handleAttachClick = () => {
