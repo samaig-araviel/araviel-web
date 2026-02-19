@@ -11,6 +11,12 @@
   position: relative;
 }
 
+/* When there are messages, switch to column layout with input at bottom */
+.main.hasMessages {
+  justify-content: flex-end;
+  padding: 0;
+}
+
 .newChatBtn {
   position: absolute;
   top: 16px;
@@ -46,6 +52,13 @@
   align-items: center;
 }
 
+/* When in chat mode, input sticks to bottom */
+.containerBottom {
+  max-width: 720px;
+  padding: 0 24px 24px;
+  flex-shrink: 0;
+}
+
 .greeting {
   font-size: 36px;
   font-weight: 700;
@@ -65,6 +78,10 @@
   width: 100%;
   position: relative;
   margin-bottom: 16px;
+}
+
+.containerBottom .inputSection {
+  margin-bottom: 0;
 }
 
 .inputContainer {
@@ -101,6 +118,11 @@
   color: var(--text-muted);
 }
 
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .inputActions {
   display: flex;
   align-items: center;
@@ -130,6 +152,11 @@
 .attachBtn.active {
   background-color: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.attachBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .attachDropdown {
@@ -231,6 +258,23 @@
 .submitBtn:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+/* Spinner for processing state */
+.sendSpinner {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spinnerRotate 0.7s linear infinite;
+}
+
+@keyframes spinnerRotate {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .actionButtons {
@@ -387,6 +431,22 @@
 }
 
 @media (max-width: 768px) {
+  .main {
+    padding: 16px;
+  }
+
+  .main.hasMessages {
+    padding: 0;
+  }
+
+  .containerBottom {
+    padding: 0 16px 16px;
+  }
+
+  .greeting {
+    font-size: 28px;
+  }
+
   .actionButtons {
     gap: 6px;
   }

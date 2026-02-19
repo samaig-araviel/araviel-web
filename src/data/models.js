@@ -7,40 +7,44 @@ export const PROVIDERS = {
     name: 'Anthropic',
     shortName: 'Anthropic',
     logoChar: 'A',
-    accentColor: '#b45309', // warm amber
+    accentColor: '#d97706', // warm amber
     accentBg: '#fef3c7',
-    accentBgDark: '#292200',
+    accentBgDark: '#332b00',
     accentText: '#92400e',
+    accentTextDark: '#fbbf24',
   },
   openai: {
     id: 'openai',
     name: 'OpenAI',
     shortName: 'OpenAI',
     logoChar: 'O',
-    accentColor: '#0ea5e9', // sky blue
+    accentColor: '#38bdf8', // sky blue
     accentBg: '#e0f2fe',
-    accentBgDark: '#001e2f',
+    accentBgDark: '#0c2436',
     accentText: '#0369a1',
+    accentTextDark: '#7dd3fc',
   },
   google: {
     id: 'google',
     name: 'Google',
     shortName: 'Google',
     logoChar: 'G',
-    accentColor: '#16a34a', // green
+    accentColor: '#22c55e', // green
     accentBg: '#dcfce7',
-    accentBgDark: '#001e0f',
+    accentBgDark: '#0a2618',
     accentText: '#15803d',
+    accentTextDark: '#86efac',
   },
   perplexity: {
     id: 'perplexity',
     name: 'Perplexity',
     shortName: 'Perplexity',
     logoChar: 'P',
-    accentColor: '#7c3aed', // violet
+    accentColor: '#a78bfa', // violet
     accentBg: '#ede9fe',
-    accentBgDark: '#1a0035',
+    accentBgDark: '#1e1340',
     accentText: '#6d28d9',
+    accentTextDark: '#c4b5fd',
   },
 };
 

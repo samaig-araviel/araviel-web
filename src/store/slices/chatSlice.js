@@ -14,6 +14,7 @@ const initialState = {
   googleThinking: false,
   recentChats: [],
   currentChatId: null,
+  isProcessing: false, // true while ADE routing + response generation
 };
 
 const chatSlice = createSlice({
@@ -62,6 +63,15 @@ const chatSlice = createSlice({
     addMessage: (state, action) => {
       state.messages.push(action.payload);
     },
+    updateLastMessage: (state, action) => {
+      if (state.messages.length > 0) {
+        const last = state.messages[state.messages.length - 1];
+        Object.assign(last, action.payload);
+      }
+    },
+    setIsProcessing: (state, action) => {
+      state.isProcessing = action.payload;
+    },
     clearMessages: (state) => {
       state.messages = [];
     },
@@ -72,6 +82,7 @@ const chatSlice = createSlice({
       state.currentChatId = null;
       state.messages = [];
       state.inputValue = '';
+      state.isProcessing = false;
     },
   },
 });
@@ -84,6 +95,8 @@ export const {
   setDeepResearch,
   setGoogleThinking,
   addMessage,
+  updateLastMessage,
+  setIsProcessing,
   clearMessages,
   setCurrentChat,
   createNewChat,
@@ -96,6 +109,7 @@ export const selectExtendedThinking = (state) => state.chat.extendedThinking;
 export const selectDeepResearch = (state) => state.chat.deepResearch;
 export const selectGoogleThinking = (state) => state.chat.googleThinking;
 export const selectMessages = (state) => state.chat.messages;
+export const selectIsProcessing = (state) => state.chat.isProcessing;
 export const selectRecentChats = (state) => state.chat.recentChats;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
 
