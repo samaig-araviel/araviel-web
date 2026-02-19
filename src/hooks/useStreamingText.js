@@ -161,6 +161,8 @@ export default function useStreamingText(fullText, shouldStream, options = {}) {
       timeoutRef.current = null;
     }
     setIsStreaming(false);
+    // Prevent any in-flight onComplete from firing
+    onCompleteRef.current = null;
   }, []);
 
   const progress = wordsRef.current.length > 0 ? indexRef.current / wordsRef.current.length : 0;
