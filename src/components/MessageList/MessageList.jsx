@@ -719,6 +719,57 @@ function ThinkingBlock({ thinkingData, modelName, provider }) {
 }
 
 /**
+ * User prompt component with distinctive styling and collapse/expand for long messages.
+ */
+function UserPrompt({ content }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentRef = useRef(null);
+  const [isLong, setIsLong] = useState(false);
+  const LINE_LIMIT = 10;
+
+  useEffect(() => {
+    const lineCount = (content || '').split('\n').length;
+    setIsLong(lineCount > LINE_LIMIT);
+  }, [content]);
+
+  // Calculate collapsed height based on line count
+  const collapsedStyle = !isExpanded && isLong ? { maxHeight: `${LINE_LIMIT * 1.65}em` } : {};
+
+  return (
+    <div className={styles.userPromptCard}>
+      <div className={styles.userPromptAccent} />
+      <div className={styles.userPromptBody}>
+        <div
+          ref={contentRef}
+          className={`${styles.userPromptText} ${
+            !isExpanded && isLong ? styles.userPromptCollapsed : ''
+          }`}
+          style={collapsedStyle}
+        >
+          {content}
+        </div>
+        {isLong && (
+          <button
+            className={styles.userPromptToggle}
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
+          >
+            <span>{isExpanded ? 'See less' : 'See more'}</span>
+            <span
+              className={`${styles.userPromptToggleIcon} ${
+                isExpanded ? styles.userPromptToggleIconFlipped : ''
+              }`}
+            >
+              <ChevronDownIcon />
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
  * A single message in the chat.
  */
 function Message({
@@ -794,7 +845,7 @@ function Message({
 
       <div className={styles.messageContent}>
         {isUser ? (
-          <p>{message.content}</p>
+          <UserPrompt content={message.content} />
         ) : (
           <div className={styles.markdownContent}>
             {renderMarkdown(displayText)}
