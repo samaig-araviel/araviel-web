@@ -84,6 +84,15 @@ const chatSlice = createSlice({
       state.inputValue = '';
       state.isProcessing = false;
     },
+    removeLastAssistantMessage: (state) => {
+      // Remove the last assistant message and return the preceding user prompt
+      for (let i = state.messages.length - 1; i >= 0; i--) {
+        if (state.messages[i].role === 'assistant') {
+          state.messages.splice(i, 1);
+          break;
+        }
+      }
+    },
   },
 });
 
@@ -100,6 +109,7 @@ export const {
   clearMessages,
   setCurrentChat,
   createNewChat,
+  removeLastAssistantMessage,
 } = chatSlice.actions;
 
 export const selectInputValue = (state) => state.chat.inputValue;

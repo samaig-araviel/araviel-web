@@ -11,6 +11,7 @@ import {
   setIsProcessing,
   updateLastMessage,
   createNewChat,
+  removeLastAssistantMessage,
 } from '../../store/slices/chatSlice';
 import {
   SendIcon,
@@ -431,6 +432,7 @@ export default function MainContent() {
       modelName: resolvedModelName,
       provider: resolvedProvider,
       score: routing.score,
+      reasoning: routing.reasoning || 'Best match for your request',
     };
     dispatch(addMessage(assistantMsg));
 
@@ -477,6 +479,89 @@ export default function MainContent() {
     setFullResponseText('');
     setRouteResult(null);
   };
+
+  /**
+   * Retry handler: removes last assistant message and re-runs the pipeline.
+   */
+  const handleRetry = useCallback(
+    async (userPrompt) => {
+      if (isProcessing) return;
+
+      // Remove the last assistant message
+      dispatch(removeLastAssistantMessage());
+
+      // Reset pipeline state
+      setPipelineStatus('idle');
+      setShouldStream(false);
+      setFullResponseText('');
+      setRouteResult(null);
+
+      // Small delay for visual feedback before restarting
+      await new Promise((resolve) => setTimeout(resolve, 150));
+
+      // Re-run the pipeline
+      dispatch(setIsProcessing(true));
+      setPipelineStatus('routing');
+
+      let routing;
+      try {
+        const [result] = await Promise.all([
+          routePrompt(userPrompt),
+          new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
+        ]);
+        routing = result;
+      } catch {
+        routing = {
+          modelId: 'claude-sonnet-4-5-20250929',
+          modelName: 'Claude Sonnet 4.5',
+          provider: 'anthropic',
+          score: 0.88,
+          reasoning: 'Fallback routing',
+        };
+      }
+
+      const model = MODELS.find((m) => m.id === routing.modelId);
+      const resolvedModelName = routing.modelName || (model ? model.name : routing.modelId);
+      const resolvedProvider = routing.provider || (model ? model.provider : 'anthropic');
+
+      setRouteResult({
+        ...routing,
+        modelName: resolvedModelName,
+        provider: resolvedProvider,
+      });
+
+      setPipelineStatus('thinking');
+
+      const responseText = generateMockResponse(
+        userPrompt,
+        resolvedProvider,
+        resolvedModelName,
+        routing.score
+      );
+
+      const thinkingTime = 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
+      await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+
+      setPipelineStatus('writing');
+
+      const assistantMsg = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        modelId: routing.modelId,
+        modelName: resolvedModelName,
+        provider: resolvedProvider,
+        score: routing.score,
+        reasoning: routing.reasoning || 'Best match for your request',
+      };
+      dispatch(addMessage(assistantMsg));
+
+      setFullResponseText(responseText);
+      setShouldStream(true);
+    },
+    [dispatch, isProcessing]
+  );
 
   const handleAttachClick = () => {
     setShowAttachDropdown(!showAttachDropdown);
@@ -534,6 +619,7 @@ export default function MainContent() {
           provider={routeResult ? routeResult.provider : null}
           isStreaming={isStreaming}
           streamedText={streamedText}
+          onRetry={handleRetry}
         />
       )}
 
