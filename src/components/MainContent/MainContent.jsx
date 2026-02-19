@@ -523,41 +523,33 @@ export default function MainContent() {
   };
 
   /**
-   * Stop handler: cancels the current request, preserves partial output,
-   * and fills the input with the original prompt.
-   *
-   * Uses refs (not state) for cancellation so there are no stale-closure issues.
+   * Stop handler: kills all processing immediately and shows the send icon.
    */
   const handleStop = useCallback(() => {
-    // 1. Invalidate the in-flight request immediately
+    // Invalidate any in-flight async pipeline work
     requestIdRef.current++;
 
-    // 2. Clear any pending pipeline delay (routing/thinking setTimeout)
+    // Clear every pending timeout (routing/thinking delays + onComplete cleanup)
     if (pipelineTimeoutRef.current) {
       clearTimeout(pipelineTimeoutRef.current);
       pipelineTimeoutRef.current = null;
     }
-
-    // 3. Clear any pending onComplete cleanup timeout
     if (completeTimeoutRef.current) {
       clearTimeout(completeTimeoutRef.current);
       completeTimeoutRef.current = null;
     }
 
-    // 4. Stop word-by-word streaming unconditionally
+    // Kill streaming (also nulls out onComplete so it can never fire)
     stopStreaming();
 
-    // 5. Reset all pipeline state
-    setPipelineStatus('idle');
+    // Reset all state so nothing can restart
     setShouldStream(false);
     setFullResponseText('');
+    setPipelineStatus('idle');
     setRouteResult(null);
     setIsManualRequest(false);
     dispatch(setIsProcessing(false));
-
-    // 6. Fill textbox with original prompt so user can edit and re-send
-    dispatch(setInputValue(lastPrompt));
-  }, [dispatch, lastPrompt, stopStreaming]);
+  }, [dispatch, stopStreaming]);
 
   const handleModeClick = (newMode) => {
     if (activeDropdown === newMode) {
