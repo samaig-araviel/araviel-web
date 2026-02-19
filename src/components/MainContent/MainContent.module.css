@@ -262,6 +262,7 @@
 /* When in chat mode, input sticks to bottom */
 .containerBottom {
   max-width: 720px;
+  margin: 0 auto;
   padding: 0 24px 24px;
   flex-shrink: 0;
 }

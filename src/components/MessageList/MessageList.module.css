@@ -311,6 +311,13 @@
   gap: 2px;
 }
 
+/* Small model pill wrapper in action bar */
+.modelPillSmallWrapper {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+
 /* Small model pill in action bar */
 .modelPillSmall {
   display: inline-flex;
@@ -321,12 +328,13 @@
   font-size: 11px;
   font-weight: 600;
   line-height: 1.3;
-  cursor: default;
-  transition: opacity 0.15s ease;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.modelPillSmall:hover {
+.modelPillSmallWrapper:hover .modelPillSmall {
   opacity: 0.85;
+  transform: translateY(-1px);
 }
 
 /* Action icon buttons */
@@ -494,6 +502,23 @@
   left: 0;
   z-index: 100;
   animation: tooltipFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reasoningTooltipAbove {
+  top: auto;
+  bottom: calc(100% + 8px);
+  animation: tooltipFadeInAbove 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tooltipFadeInAbove {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .reasoningTooltipContent {
@@ -731,6 +756,164 @@
   flex: 1;
 }
 
+/* ===== Thinking Block (Claude-style collapsible) ===== */
+.thinkingBlock {
+  margin-bottom: 14px;
+  animation: thinkingBlockFadeIn 0.3s ease;
+}
+
+@keyframes thinkingBlockFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.thinkingToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.thinkingToggle:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.thinkingToggleIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.thinkingToggleIcon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.thinkingToggleLabel {
+  letter-spacing: 0.01em;
+}
+
+.thinkingDetails {
+  display: flex;
+  flex-direction: column;
+  margin-top: 6px;
+  margin-left: 9px;
+  padding-left: 0;
+  animation: thinkingDetailsSlide 0.25s ease;
+}
+
+@keyframes thinkingDetailsSlide {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 200px;
+  }
+}
+
+.thinkingStage {
+  display: flex;
+  gap: 10px;
+  min-height: 32px;
+}
+
+.thinkingDotLine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 12px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.thinkingStageDot {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.thinkingVerticalLine {
+  display: block;
+  width: 1px;
+  flex: 1;
+  min-height: 14px;
+  border-left: 2px dotted var(--border-color);
+}
+
+.thinkingStageLast .thinkingVerticalLine {
+  display: none;
+}
+
+.thinkingStageContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 8px;
+}
+
+.thinkingStageLast .thinkingStageContent {
+  padding-bottom: 0;
+}
+
+.thinkingStageLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 450;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.thinkingStageDuration {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.thinkingModelBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* Timeline wrapper */
 .timelineWrapper {
   padding: 4px 0;
@@ -805,5 +988,25 @@
 
   .shareDropdown {
     min-width: 150px;
+  }
+
+  .thinkingBlock {
+    margin-bottom: 10px;
+  }
+
+  .thinkingToggle {
+    font-size: 12px;
+  }
+
+  .thinkingStageLabel {
+    font-size: 12px;
+  }
+
+  .thinkingStageDuration {
+    font-size: 11px;
+  }
+
+  .thinkingModelBadge {
+    font-size: 11px;
   }
 }
