@@ -823,20 +823,9 @@ export default function MainContent() {
       const altProvider =
         alternateModel.provider || (altModelData ? altModelData.provider : 'anthropic');
 
-      // Call ADE for this model to get fresh alternates
-      let alternateModels = [];
+      // Skip ADE — the user already chose this model explicitly, no routing needed
       const altRoutingStart = Date.now();
-      try {
-        const [adeResult] = await Promise.all([
-          routePrompt(userPrompt, { preferModel: alternateModel.modelId }),
-          pipelineDelay(300),
-        ]);
-        alternateModels = (adeResult.alternateModels || []).filter(
-          (m) => m.modelId !== alternateModel.modelId
-        );
-      } catch {
-        await pipelineDelay(300);
-      }
+      await pipelineDelay(300);
 
       if (requestIdRef.current !== myRequestId) return;
       const altRoutingDuration = ((Date.now() - altRoutingStart) / 1000).toFixed(1);
@@ -867,20 +856,6 @@ export default function MainContent() {
 
       setPipelineStatus('writing');
 
-      // Resolve alternate model names
-      const resolvedAlternates = alternateModels
-        .filter((alt) => alt.modelId !== alternateModel.modelId)
-        .map((alt) => {
-          const m = MODELS.find((mod) => mod.id === alt.modelId);
-          return {
-            ...alt,
-            modelName: alt.modelName || (m ? m.name : alt.modelId),
-            provider: alt.provider || (m ? m.provider : 'unknown'),
-          };
-        })
-        .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 3);
-
       const assistantMsg = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
@@ -892,7 +867,7 @@ export default function MainContent() {
         score: alternateModel.score,
         reasoning: alternateModel.reasoning || 'Selected as alternate model',
         isManualSelection: true,
-        alternateModels: resolvedAlternates,
+        alternateModels: [],
         thinkingData: {
           routingDuration: altRoutingDuration,
           thinkingDuration: altThinkingDuration,
