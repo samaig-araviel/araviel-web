@@ -376,6 +376,7 @@ export default function MainContent() {
     setPipelineStatus('routing');
 
     let routing;
+    const routingStart = Date.now();
     try {
       // Simulate a minimum routing time for visual effect
       const [result] = await Promise.all([
@@ -392,6 +393,7 @@ export default function MainContent() {
         reasoning: 'Fallback routing',
       };
     }
+    const routingDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
 
     // Resolve model name from our registry if not provided
     const model = MODELS.find((m) => m.id === routing.modelId);
@@ -416,8 +418,10 @@ export default function MainContent() {
     );
 
     // Simulate thinking time based on response complexity
+    const thinkingStart = Date.now();
     const thinkingTime = 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
     await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+    const thinkingDuration = ((Date.now() - thinkingStart) / 1000).toFixed(1);
 
     // 4. Stage 3: Writing (streaming)
     setPipelineStatus('writing');
@@ -433,6 +437,11 @@ export default function MainContent() {
       provider: resolvedProvider,
       score: routing.score,
       reasoning: routing.reasoning || 'Best match for your request',
+      thinkingData: {
+        routingDuration,
+        thinkingDuration,
+        totalDuration: (parseFloat(routingDuration) + parseFloat(thinkingDuration)).toFixed(1),
+      },
     };
     dispatch(addMessage(assistantMsg));
 
@@ -504,6 +513,7 @@ export default function MainContent() {
       setPipelineStatus('routing');
 
       let routing;
+      const retryRoutingStart = Date.now();
       try {
         const [result] = await Promise.all([
           routePrompt(userPrompt),
@@ -519,6 +529,7 @@ export default function MainContent() {
           reasoning: 'Fallback routing',
         };
       }
+      const retryRoutingDuration = ((Date.now() - retryRoutingStart) / 1000).toFixed(1);
 
       const model = MODELS.find((m) => m.id === routing.modelId);
       const resolvedModelName = routing.modelName || (model ? model.name : routing.modelId);
@@ -539,8 +550,10 @@ export default function MainContent() {
         routing.score
       );
 
+      const retryThinkingStart = Date.now();
       const thinkingTime = 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
       await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+      const retryThinkingDuration = ((Date.now() - retryThinkingStart) / 1000).toFixed(1);
 
       setPipelineStatus('writing');
 
@@ -554,6 +567,13 @@ export default function MainContent() {
         provider: resolvedProvider,
         score: routing.score,
         reasoning: routing.reasoning || 'Best match for your request',
+        thinkingData: {
+          routingDuration: retryRoutingDuration,
+          thinkingDuration: retryThinkingDuration,
+          totalDuration: (
+            parseFloat(retryRoutingDuration) + parseFloat(retryThinkingDuration)
+          ).toFixed(1),
+        },
       };
       dispatch(addMessage(assistantMsg));
 

@@ -16,6 +16,8 @@ import {
   SourcesIcon,
   FileDownIcon,
   FileTextIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '../Icons';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
@@ -441,11 +443,15 @@ function ShareDropdown({ message, onClose }) {
 /**
  * Model reasoning tooltip shown on hover/click of the model pill header.
  */
-function ModelReasoningTooltip({ reasoning, modelName, score }) {
+function ModelReasoningTooltip({ reasoning, modelName, score, position = 'below' }) {
   const scoreDisplay = score ? (score * 100).toFixed(1) : null;
 
   return (
-    <div className={styles.reasoningTooltip}>
+    <div
+      className={`${styles.reasoningTooltip} ${
+        position === 'above' ? styles.reasoningTooltipAbove : ''
+      }`}
+    >
       <div className={styles.reasoningTooltipContent}>
         <div className={styles.reasoningTooltipHeader}>
           <span className={styles.reasoningTooltipLabel}>Why {modelName}?</span>
@@ -468,6 +474,7 @@ function ResponseActions({ message, isDark, onRetry, userPrompt }) {
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
+  const [showModelReasoning, setShowModelReasoning] = useState(false);
 
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
@@ -512,16 +519,31 @@ function ResponseActions({ message, isDark, onRetry, userPrompt }) {
       <div className={styles.responseActionsLeft}>
         {providerData && LogoComponent && (
           <div
-            className={styles.modelPillSmall}
-            style={{
-              backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
-              color: isDark
-                ? providerData.accentTextDark || providerData.accentColor
-                : providerData.accentText,
-            }}
+            className={styles.modelPillSmallWrapper}
+            onMouseEnter={() => setShowModelReasoning(true)}
+            onMouseLeave={() => setShowModelReasoning(false)}
+            onClick={() => setShowModelReasoning(!showModelReasoning)}
           >
-            <LogoComponent size={12} />
-            <span>{displayName}</span>
+            <div
+              className={styles.modelPillSmall}
+              style={{
+                backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
+                color: isDark
+                  ? providerData.accentTextDark || providerData.accentColor
+                  : providerData.accentText,
+              }}
+            >
+              <LogoComponent size={12} />
+              <span>{displayName}</span>
+            </div>
+            {showModelReasoning && message.reasoning && (
+              <ModelReasoningTooltip
+                reasoning={message.reasoning}
+                modelName={message.modelName}
+                score={message.score}
+                position="above"
+              />
+            )}
           </div>
         )}
         <PreviewPill modelName={message.modelName} score={message.score} />
@@ -604,6 +626,90 @@ function FollowUpSuggestions({ suggestions, onSelect }) {
 }
 
 /**
+ * Collapsible thinking block shown before assistant responses (Claude-style).
+ * Shows routing + thinking stages with a dotted timeline.
+ */
+function ThinkingBlock({ thinkingData, modelName, provider }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const effectiveTheme = useSelector(selectEffectiveTheme);
+  const isDark = effectiveTheme === 'dark';
+
+  if (!thinkingData) return null;
+
+  const { routingDuration, thinkingDuration, totalDuration } = thinkingData;
+  const providerData = provider ? PROVIDERS[provider] : null;
+  const LogoComponent = provider ? getProviderLogo(provider) : null;
+
+  return (
+    <div className={styles.thinkingBlock}>
+      <button
+        className={styles.thinkingToggle}
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <span className={styles.thinkingToggleIcon}>
+          {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        </span>
+        <span className={styles.thinkingToggleLabel}>Thought for {totalDuration}s</span>
+      </button>
+
+      {isExpanded && (
+        <div className={styles.thinkingDetails}>
+          <div className={styles.thinkingStage}>
+            <div className={styles.thinkingDotLine}>
+              <span className={styles.thinkingStageDot} />
+              <span className={styles.thinkingVerticalLine} />
+            </div>
+            <div className={styles.thinkingStageContent}>
+              <span className={styles.thinkingStageLabel}>Routing to optimal model</span>
+              <span className={styles.thinkingStageDuration}>{routingDuration}s</span>
+            </div>
+          </div>
+
+          <div className={styles.thinkingStage}>
+            <div className={styles.thinkingDotLine}>
+              <span className={styles.thinkingStageDot} />
+              <span className={styles.thinkingVerticalLine} />
+            </div>
+            <div className={styles.thinkingStageContent}>
+              <span className={styles.thinkingStageLabel}>
+                Thinking with{' '}
+                {providerData && LogoComponent ? (
+                  <span
+                    className={styles.thinkingModelBadge}
+                    style={{
+                      backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
+                      color: isDark
+                        ? providerData.accentTextDark || providerData.accentColor
+                        : providerData.accentText,
+                    }}
+                  >
+                    <LogoComponent size={11} />
+                    {modelName}
+                  </span>
+                ) : (
+                  modelName
+                )}
+              </span>
+              <span className={styles.thinkingStageDuration}>{thinkingDuration}s</span>
+            </div>
+          </div>
+
+          <div className={`${styles.thinkingStage} ${styles.thinkingStageLast}`}>
+            <div className={styles.thinkingDotLine}>
+              <span className={styles.thinkingStageDot} />
+            </div>
+            <div className={styles.thinkingStageContent}>
+              <span className={styles.thinkingStageLabel}>Writing response</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * A single message in the chat.
  */
 function Message({
@@ -667,6 +773,14 @@ function Message({
             )}
           </div>
         </div>
+      )}
+
+      {!isUser && !isStreaming && message.thinkingData && (
+        <ThinkingBlock
+          thinkingData={message.thinkingData}
+          modelName={message.modelName}
+          provider={message.provider}
+        />
       )}
 
       <div className={styles.messageContent}>
