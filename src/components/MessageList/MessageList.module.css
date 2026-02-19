@@ -1090,6 +1090,532 @@
   }
 }
 
+/* ===== Selection Tooltip ===== */
+.selectionTooltip {
+  position: absolute;
+  z-index: 200;
+  transform: translate(-50%, -100%);
+  pointer-events: auto;
+  animation: selectionTooltipIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes selectionTooltipIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%) scale(0.92) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%) scale(1) translateY(0);
+  }
+}
+
+.selectionTooltipBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.selectionTooltipBtn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12), 0 3px 8px rgba(0, 0, 0, 0.08);
+}
+
+.selectionTooltipBtn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.selectionTooltipBtn svg {
+  width: 14px;
+  height: 14px;
+  color: #d97706;
+}
+
+[data-theme='dark'] .selectionTooltipBtn {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='dark'] .selectionTooltipBtn:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== Sub-Conversation Dialog ===== */
+.subConvOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  animation: subConvOverlayIn 0.2s ease;
+}
+
+@keyframes subConvOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.subConvDialog {
+  width: 480px;
+  max-width: 92vw;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+  animation: subConvDialogIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+[data-theme='dark'] .subConvDialog {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+@keyframes subConvDialogIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.subConvHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.subConvHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+.subConvHeaderLeft svg {
+  width: 16px;
+  height: 16px;
+  color: #d97706;
+}
+
+.subConvHeaderTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.subConvCloseBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subConvCloseBtn:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.subConvCloseBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Context banner showing highlighted text */
+.subConvContext {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.subConvContextLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.subConvContextText {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-style: italic;
+}
+
+/* Messages area */
+.subConvMessages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 18px;
+  min-height: 120px;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  scrollbar-width: thin;
+}
+
+.subConvMessage {
+  animation: subConvMsgIn 0.25s ease;
+}
+
+@keyframes subConvMsgIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subConvMessageUser {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.subConvMessageAssistant {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.subConvUserBubble {
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 14px 14px 4px 14px;
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 450;
+  word-break: break-word;
+}
+
+[data-theme='dark'] .subConvUserBubble {
+  background-color: #2a2a2a;
+}
+
+.subConvAssistantBubble {
+  max-width: 90%;
+  padding: 10px 14px;
+  border-radius: 14px 14px 14px 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.subConvAssistantBubble .paragraph {
+  margin-bottom: 8px;
+  font-size: 13.5px;
+}
+
+.subConvAssistantBubble .paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.subConvAssistantBubble .list,
+.subConvAssistantBubble .orderedList {
+  margin-bottom: 8px;
+  font-size: 13.5px;
+}
+
+.subConvAssistantBubble strong {
+  font-weight: 600;
+}
+
+/* Typing indicator */
+.subConvTyping {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.subConvTyping span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  animation: subConvTypingDot 1.2s ease-in-out infinite;
+}
+
+.subConvTyping span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.subConvTyping span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes subConvTypingDot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Input row */
+.subConvInputRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-color);
+}
+
+.subConvInput {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.subConvInput::placeholder {
+  color: var(--text-muted);
+}
+
+.subConvInput:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+[data-theme='dark'] .subConvInput:focus {
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
+}
+
+.subConvSendBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background-color: #d97706;
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.subConvSendBtn:hover:not(:disabled) {
+  background-color: #b45309;
+  transform: translateY(-1px);
+}
+
+.subConvSendBtn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.subConvSendBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.subConvSendBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Footer with Cancel and Done buttons */
+.subConvFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--border-color);
+}
+
+.subConvCancelBtn {
+  padding: 8px 18px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 550;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subConvCancelBtn:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.subConvDoneBtn {
+  padding: 8px 22px;
+  border-radius: 9px;
+  border: none;
+  background-color: #d97706;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subConvDoneBtn:hover {
+  background-color: #b45309;
+  transform: translateY(-1px);
+}
+
+.subConvDoneBtn:active {
+  transform: scale(0.97);
+}
+
+/* ===== Sub-Conversation Pills ===== */
+.subConvPills {
+  margin-top: 12px;
+  animation: subConvPillsIn 0.3s ease;
+}
+
+@keyframes subConvPillsIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.subConvPillsHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.subConvPillsHeader svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.7;
+}
+
+.subConvPillsTrack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.subConvPillsTrack::-webkit-scrollbar {
+  display: none;
+}
+
+.subConvPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.subConvPill:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.subConvPill:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.subConvPill svg {
+  width: 12px;
+  height: 12px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .subConvPill:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .messagesInner {
@@ -1187,5 +1713,42 @@
 
   .userPromptToggle {
     font-size: 12px;
+  }
+
+  /* Sub-conversation mobile styles */
+  .subConvDialog {
+    width: 95vw;
+    max-height: 80vh;
+    border-radius: 14px;
+  }
+
+  .subConvHeader {
+    padding: 12px 14px;
+  }
+
+  .subConvContext {
+    padding: 8px 14px;
+  }
+
+  .subConvMessages {
+    padding: 12px 14px;
+  }
+
+  .subConvInputRow {
+    padding: 10px 14px;
+  }
+
+  .subConvFooter {
+    padding: 10px 14px;
+  }
+
+  .subConvPill {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+
+  .selectionTooltipBtn {
+    font-size: 12px;
+    padding: 6px 12px;
   }
 }
