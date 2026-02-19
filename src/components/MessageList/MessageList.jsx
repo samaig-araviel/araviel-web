@@ -18,6 +18,9 @@ import {
   FileTextIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  MessageCircleIcon,
+  SendIcon,
+  CloseIcon,
 } from '../Icons';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
@@ -473,6 +476,220 @@ function ModelReasoningTooltip({
 }
 
 /**
+ * Generate a mock sub-conversation response based on highlighted text and user question.
+ */
+function generateSubResponse(highlightedText, question) {
+  const lower = question.toLowerCase();
+  const term = highlightedText.trim();
+
+  if (/what|meaning|define|explain/i.test(lower)) {
+    return `**${term}** refers to a concept that plays a key role in this context. In simple terms, it describes the underlying mechanism or principle being discussed.\n\nThe key thing to understand is that ${term.toLowerCase()} operates as a foundational element — other concepts in this domain build upon it. Think of it as one of the core building blocks that makes the broader system work.\n\nWould you like me to go deeper on any specific aspect?`;
+  }
+
+  if (/why|reason|purpose/i.test(lower)) {
+    return `The reason **${term}** is important here comes down to its role in the broader system.\n\nIt serves as a critical link between the high-level goals and the practical implementation. Without it, the approach described would lack a key structural element.\n\nIn practice, ${term.toLowerCase()} helps ensure that the overall solution remains coherent and maintainable as complexity grows.`;
+  }
+
+  if (/how|work|implement/i.test(lower)) {
+    return `Here is how **${term}** works at a high level:\n\n1. **Input phase** — It receives the relevant data or signals from the surrounding context\n2. **Processing** — It applies the core logic or transformation specific to its role\n3. **Output** — The result feeds into the next stage of the pipeline\n\nThe elegance of this approach is in its composability — each piece handles one concern well, and they combine cleanly.`;
+  }
+
+  if (/example|show|demo/i.test(lower)) {
+    return `Here is a practical example of **${term}** in action:\n\nImagine you have a system that needs to process incoming requests efficiently. ${term} would be the component responsible for coordinating between the input layer and the processing layer.\n\nA concrete scenario: when a user submits a query, ${term.toLowerCase()} ensures the right handler picks it up, processes it correctly, and returns a well-formed response — all without the caller needing to know the internal details.`;
+  }
+
+  return `Great question about **${term}**.\n\nThis is a nuanced topic with several layers worth exploring. At its core, ${term.toLowerCase()} represents a pattern that balances simplicity with power — it is straightforward enough to understand quickly, but flexible enough to handle complex scenarios.\n\nThe most important thing to remember is that ${term.toLowerCase()} does not exist in isolation. It interacts with the surrounding concepts to create something greater than the sum of its parts.\n\nFeel free to ask a follow-up if you want to explore a specific angle.`;
+}
+
+/**
+ * Tooltip shown near text selection prompting user to ask Araviel about the highlighted text.
+ */
+function SelectionTooltip({ position, onAsk }) {
+  return (
+    <div
+      className={styles.selectionTooltip}
+      style={{ top: position.y, left: position.x }}
+      onMouseDown={(e) => e.preventDefault()}
+    >
+      <button className={styles.selectionTooltipBtn} onClick={onAsk}>
+        <SparkleIcon />
+        <span>Ask Araviel</span>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Sub-conversation dialog — a mini chatbot popup for discussing highlighted text.
+ */
+function SubConversationDialog({ subConversation, onSend, onCancel, onDone, isSending }) {
+  const [input, setInput] = useState('');
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const dialogRef = useRef(null);
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [subConversation.messages.length]);
+
+  // Close on escape
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onCancel]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!input.trim() || isSending) return;
+    onSend(input.trim());
+    setInput('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const truncatedHighlight =
+    subConversation.highlightedText.length > 40
+      ? subConversation.highlightedText.slice(0, 40) + '...'
+      : subConversation.highlightedText;
+
+  return (
+    <div className={styles.subConvOverlay} onClick={onCancel}>
+      <div className={styles.subConvDialog} ref={dialogRef} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className={styles.subConvHeader}>
+          <div className={styles.subConvHeaderLeft}>
+            <MessageCircleIcon />
+            <span className={styles.subConvHeaderTitle}>Sub-conversation</span>
+          </div>
+          <button className={styles.subConvCloseBtn} onClick={onCancel} aria-label="Close">
+            <CloseIcon />
+          </button>
+        </div>
+
+        {/* Highlighted text context */}
+        <div className={styles.subConvContext}>
+          <span className={styles.subConvContextLabel}>Discussing:</span>
+          <span className={styles.subConvContextText}>"{truncatedHighlight}"</span>
+        </div>
+
+        {/* Messages */}
+        <div className={styles.subConvMessages}>
+          {subConversation.messages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`${styles.subConvMessage} ${
+                msg.role === 'user' ? styles.subConvMessageUser : styles.subConvMessageAssistant
+              }`}
+            >
+              {msg.role === 'user' ? (
+                <div className={styles.subConvUserBubble}>{msg.content}</div>
+              ) : (
+                <div className={styles.subConvAssistantBubble}>{renderMarkdown(msg.content)}</div>
+              )}
+            </div>
+          ))}
+          {isSending && (
+            <div className={`${styles.subConvMessage} ${styles.subConvMessageAssistant}`}>
+              <div className={styles.subConvAssistantBubble}>
+                <div className={styles.subConvTyping}>
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <form className={styles.subConvInputRow} onSubmit={handleSubmit}>
+          <input
+            ref={inputRef}
+            type="text"
+            className={styles.subConvInput}
+            placeholder={`Ask about "${truncatedHighlight}"...`}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isSending}
+          />
+          <button
+            type="submit"
+            className={styles.subConvSendBtn}
+            disabled={!input.trim() || isSending}
+            aria-label="Send"
+          >
+            <SendIcon />
+          </button>
+        </form>
+
+        {/* Footer buttons */}
+        <div className={styles.subConvFooter}>
+          <button className={styles.subConvCancelBtn} onClick={onCancel}>
+            Cancel
+          </button>
+          <button className={styles.subConvDoneBtn} onClick={onDone}>
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Horizontal scrollable pills showing saved sub-conversations.
+ */
+function SubConversationPills({ subConversations, onOpen }) {
+  if (!subConversations || subConversations.length === 0) return null;
+
+  return (
+    <div className={styles.subConvPills}>
+      <div className={styles.subConvPillsHeader}>
+        <MessageCircleIcon />
+        <span>Sub-conversations</span>
+      </div>
+      <div className={styles.subConvPillsTrack}>
+        {subConversations.map((sc) => {
+          const truncated =
+            sc.highlightedText.length > 10
+              ? sc.highlightedText.slice(0, 10) + '...'
+              : sc.highlightedText;
+          return (
+            <button
+              key={sc.id}
+              className={styles.subConvPill}
+              onClick={() => onOpen(sc.id)}
+              title={sc.highlightedText}
+            >
+              <MessageCircleIcon />
+              <span>{truncated}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Response actions bar shown below each assistant message.
  * Left: model pill + preview pill + sources pill
  * Right: like, dislike, copy, retry, share
@@ -786,13 +1003,177 @@ function Message({
   const LogoComponent = provider ? getProviderLogo(provider) : null;
   const [showReasoning, setShowReasoning] = useState(false);
 
+  // Sub-conversation state
+  const [subConversations, setSubConversations] = useState([]);
+  const [activeSubConvId, setActiveSubConvId] = useState(null);
+  const [showSubConvDialog, setShowSubConvDialog] = useState(false);
+  const [selectionTooltip, setSelectionTooltip] = useState(null);
+  const [isSendingSubMsg, setIsSendingSubMsg] = useState(false);
+  const markdownContentRef = useRef(null);
+  const tooltipTimeoutRef = useRef(null);
+
+  // Handle text selection within the assistant message content
+  const handleMouseUp = useCallback(() => {
+    if (isUser || isStreaming) return;
+
+    // Small delay to let the selection settle
+    if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+    tooltipTimeoutRef.current = setTimeout(() => {
+      const selection = window.getSelection();
+      const text = selection?.toString().trim();
+
+      if (!text || text.length < 2) {
+        setSelectionTooltip(null);
+        return;
+      }
+
+      // Check the selection is within this message's markdown content
+      const contentEl = markdownContentRef.current;
+      if (!contentEl) return;
+
+      const range = selection.getRangeAt(0);
+      if (!contentEl.contains(range.commonAncestorContainer)) {
+        setSelectionTooltip(null);
+        return;
+      }
+
+      const rect = range.getBoundingClientRect();
+      const containerRect = contentEl.closest(`.${styles.message}`)?.getBoundingClientRect();
+      if (!containerRect) return;
+
+      setSelectionTooltip({
+        text,
+        x: rect.left + rect.width / 2 - containerRect.left,
+        y: rect.top - containerRect.top - 8,
+      });
+    }, 10);
+  }, [isUser, isStreaming]);
+
+  // Dismiss tooltip when clicking outside or when selection clears
+  useEffect(() => {
+    if (!selectionTooltip) return;
+
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (!selection || !selection.toString().trim()) {
+        setSelectionTooltip(null);
+      }
+    };
+
+    const handleMouseDown = (e) => {
+      // Don't dismiss if clicking the tooltip itself
+      if (e.target.closest(`.${styles.selectionTooltip}`)) return;
+      setSelectionTooltip(null);
+    };
+
+    document.addEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, [selectionTooltip]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+    };
+  }, []);
+
+  // Start a new sub-conversation from highlighted text
+  const handleAskAraviel = useCallback(() => {
+    if (!selectionTooltip?.text) return;
+
+    const newSubConv = {
+      id: `subconv-${Date.now()}`,
+      highlightedText: selectionTooltip.text,
+      messages: [],
+    };
+
+    setSubConversations((prev) => [...prev, newSubConv]);
+    setActiveSubConvId(newSubConv.id);
+    setShowSubConvDialog(true);
+    setSelectionTooltip(null);
+
+    // Clear the text selection
+    window.getSelection()?.removeAllRanges();
+  }, [selectionTooltip]);
+
+  // Send a message in the active sub-conversation
+  const handleSubConvSend = useCallback(
+    (text) => {
+      if (!activeSubConvId) return;
+
+      // Add user message
+      setSubConversations((prev) =>
+        prev.map((sc) =>
+          sc.id === activeSubConvId
+            ? { ...sc, messages: [...sc.messages, { role: 'user', content: text }] }
+            : sc
+        )
+      );
+
+      // Simulate assistant response
+      setIsSendingSubMsg(true);
+      const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
+      const highlightedText = activeConv?.highlightedText || '';
+
+      setTimeout(() => {
+        const response = generateSubResponse(highlightedText, text);
+        setSubConversations((prev) =>
+          prev.map((sc) =>
+            sc.id === activeSubConvId
+              ? { ...sc, messages: [...sc.messages, { role: 'assistant', content: response }] }
+              : sc
+          )
+        );
+        setIsSendingSubMsg(false);
+      }, 600 + Math.random() * 800);
+    },
+    [activeSubConvId, subConversations]
+  );
+
+  // Open existing sub-conversation pill
+  const handleOpenSubConv = useCallback((id) => {
+    setActiveSubConvId(id);
+    setShowSubConvDialog(true);
+  }, []);
+
+  // Close dialog via Cancel
+  const handleSubConvCancel = useCallback(() => {
+    const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
+    // If the sub-conversation has no messages, remove it
+    if (activeConv && activeConv.messages.length === 0) {
+      setSubConversations((prev) => prev.filter((sc) => sc.id !== activeSubConvId));
+    }
+    setShowSubConvDialog(false);
+    setActiveSubConvId(null);
+  }, [activeSubConvId, subConversations]);
+
+  // Close dialog via Done
+  const handleSubConvDone = useCallback(() => {
+    const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
+    // If the sub-conversation has no messages, remove it
+    if (activeConv && activeConv.messages.length === 0) {
+      setSubConversations((prev) => prev.filter((sc) => sc.id !== activeSubConvId));
+    }
+    setShowSubConvDialog(false);
+    setActiveSubConvId(null);
+  }, [activeSubConvId, subConversations]);
+
+  const activeSubConversation = subConversations.find((sc) => sc.id === activeSubConvId);
+
   const followUps =
     !isUser && isLastAssistant && !isStreaming && message.content
       ? generateFollowUps(message.content)
       : [];
 
   return (
-    <div className={`${styles.message} ${isUser ? styles.userMessage : styles.assistantMessage}`}>
+    <div
+      className={`${styles.message} ${isUser ? styles.userMessage : styles.assistantMessage}`}
+      style={{ position: 'relative' }}
+    >
       {!isUser && providerData && (
         <div className={styles.assistantHeader}>
           <div
@@ -840,16 +1221,21 @@ function Message({
         />
       )}
 
-      <div className={styles.messageContent}>
+      <div className={styles.messageContent} onMouseUp={handleMouseUp}>
         {isUser ? (
           <UserPrompt content={message.content} />
         ) : (
-          <div className={styles.markdownContent}>
+          <div className={styles.markdownContent} ref={markdownContentRef}>
             {renderMarkdown(displayText)}
             {isStreaming && <span className={styles.cursor} />}
           </div>
         )}
       </div>
+
+      {/* Text selection tooltip */}
+      {selectionTooltip && !isUser && (
+        <SelectionTooltip position={selectionTooltip} onAsk={handleAskAraviel} />
+      )}
 
       {!isUser && !isStreaming && message.content && (
         <ResponseActions
@@ -860,8 +1246,24 @@ function Message({
         />
       )}
 
+      {/* Sub-conversation pills — between response actions and follow-ups */}
+      {!isUser && !isStreaming && message.content && (
+        <SubConversationPills subConversations={subConversations} onOpen={handleOpenSubConv} />
+      )}
+
       {followUps.length > 0 && (
         <FollowUpSuggestions suggestions={followUps} onSelect={onFollowUpSelect} />
+      )}
+
+      {/* Sub-conversation dialog */}
+      {showSubConvDialog && activeSubConversation && (
+        <SubConversationDialog
+          subConversation={activeSubConversation}
+          onSend={handleSubConvSend}
+          onCancel={handleSubConvCancel}
+          onDone={handleSubConvDone}
+          isSending={isSendingSubMsg}
+        />
       )}
     </div>
   );
