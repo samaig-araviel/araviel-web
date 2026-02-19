@@ -266,6 +266,215 @@
   }
 }
 
+/* ===== Response Actions Bar ===== */
+.responseActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 10px;
+  animation: actionsFadeIn 0.3s ease;
+}
+
+@keyframes actionsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.responseActionsLeft {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.responseActionsRight {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Small model pill in action bar */
+.modelPillSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: default;
+  transition: opacity 0.15s ease;
+}
+
+.modelPillSmall:hover {
+  opacity: 0.85;
+}
+
+/* Action icon buttons */
+.actionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+}
+
+.actionIcon:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.actionIcon:active {
+  transform: scale(0.92);
+}
+
+.actionIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.actionIconActive {
+  color: var(--text-primary);
+}
+
+.actionIconActive:hover {
+  color: var(--text-primary);
+}
+
+.actionIconCopied {
+  color: #22c55e;
+}
+
+/* ===== Preview Pill ===== */
+.previewPillWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.previewPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.previewPill:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--text-muted);
+}
+
+.previewDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #f59e0b;
+  animation: previewDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes previewDotPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Preview tooltip */
+.previewTooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 100;
+  animation: tooltipFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.previewTooltipContent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  min-width: 180px;
+}
+
+[data-theme='dark'] .previewTooltipContent {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.previewTooltipLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.previewTooltipModel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.previewTooltipScore {
+  font-size: 11px;
+  font-weight: 500;
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.previewTooltipDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
 /* Follow-up suggestions */
 .followUps {
   margin-top: 16px;
@@ -383,5 +592,29 @@
   .followUpItem {
     font-size: 13px;
     padding: 8px 10px;
+  }
+
+  .responseActions {
+    margin-top: 10px;
+  }
+
+  .actionIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .actionIcon svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .modelPillSmall {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .previewPill {
+    font-size: 10px;
+    padding: 2px 7px;
   }
 }

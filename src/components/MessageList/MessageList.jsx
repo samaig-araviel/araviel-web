@@ -4,7 +4,17 @@ import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue } from '../../store/slices/chatSlice';
 import { getProviderLogo } from '../ProviderLogos';
 import { PROVIDERS } from '../../data/models';
-import { CopyIcon, CheckIcon, ArrowRightIcon, SparkleIcon } from '../Icons';
+import {
+  CopyIcon,
+  CheckIcon,
+  ArrowRightIcon,
+  SparkleIcon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  RefreshIcon,
+  ShareIcon,
+  SourcesIcon,
+} from '../Icons';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
 
@@ -294,6 +304,142 @@ function renderInline(text) {
 }
 
 /**
+ * Preview mode pill with hover tooltip showing ADE reasoning.
+ */
+function PreviewPill({ modelName, score }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const scoreDisplay = score ? (score * 100).toFixed(1) : null;
+
+  return (
+    <div
+      className={styles.previewPillWrapper}
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+      onClick={() => setShowTooltip(!showTooltip)}
+    >
+      <span className={styles.previewPill}>
+        <span className={styles.previewDot} />
+        Preview
+      </span>
+      {showTooltip && (
+        <div className={styles.previewTooltip}>
+          <div className={styles.previewTooltipContent}>
+            <span className={styles.previewTooltipLabel}>ADE Routing</span>
+            <span className={styles.previewTooltipModel}>
+              {modelName}
+              {scoreDisplay && <span className={styles.previewTooltipScore}>{scoreDisplay}%</span>}
+            </span>
+            <span className={styles.previewTooltipDesc}>Response generated in preview mode</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Response actions bar shown below each assistant message.
+ * Left: model pill + preview pill
+ * Right: like, dislike, copy, retry, share, sources
+ */
+function ResponseActions({ message, isDark }) {
+  const [copied, setCopied] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
+
+  const provider = message.provider;
+  const providerData = provider ? PROVIDERS[provider] : null;
+  const LogoComponent = provider ? getProviderLogo(provider) : null;
+
+  // Determine the display name for the provider
+  const getProviderDisplayName = () => {
+    if (!provider) return null;
+    if (provider === 'anthropic') return 'Claude';
+    if (provider === 'openai') return 'OpenAI';
+    if (provider === 'google') return 'Gemini';
+    if (provider === 'perplexity') return 'Perplexity';
+    return providerData?.name || provider;
+  };
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(message.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [message.content]);
+
+  const handleLike = () => {
+    setLiked(!liked);
+    if (disliked) setDisliked(false);
+  };
+
+  const handleDislike = () => {
+    setDisliked(!disliked);
+    if (liked) setLiked(false);
+  };
+
+  const displayName = getProviderDisplayName();
+
+  return (
+    <div className={styles.responseActions}>
+      <div className={styles.responseActionsLeft}>
+        {providerData && LogoComponent && (
+          <div
+            className={styles.modelPillSmall}
+            style={{
+              backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
+              color: isDark
+                ? providerData.accentTextDark || providerData.accentColor
+                : providerData.accentText,
+            }}
+          >
+            <LogoComponent size={12} />
+            <span>{displayName}</span>
+          </div>
+        )}
+        <PreviewPill modelName={message.modelName} score={message.score} />
+      </div>
+
+      <div className={styles.responseActionsRight}>
+        <button
+          className={`${styles.actionIcon} ${liked ? styles.actionIconActive : ''}`}
+          onClick={handleLike}
+          title="Like"
+          aria-label="Like response"
+        >
+          <ThumbsUpIcon />
+        </button>
+        <button
+          className={`${styles.actionIcon} ${disliked ? styles.actionIconActive : ''}`}
+          onClick={handleDislike}
+          title="Dislike"
+          aria-label="Dislike response"
+        >
+          <ThumbsDownIcon />
+        </button>
+        <button
+          className={`${styles.actionIcon} ${copied ? styles.actionIconCopied : ''}`}
+          onClick={handleCopy}
+          title={copied ? 'Copied!' : 'Copy'}
+          aria-label="Copy response"
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
+        <button className={styles.actionIcon} title="Retry" aria-label="Retry response">
+          <RefreshIcon />
+        </button>
+        <button className={styles.actionIcon} title="Share" aria-label="Share response">
+          <ShareIcon />
+        </button>
+        <button className={styles.actionIcon} title="Sources" aria-label="View sources">
+          <SourcesIcon />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Follow-up suggestions component shown after assistant responses.
  */
 function FollowUpSuggestions({ suggestions, onSelect }) {
@@ -374,6 +520,10 @@ function Message({
           </div>
         )}
       </div>
+
+      {!isUser && !isStreaming && message.content && (
+        <ResponseActions message={message} isDark={isDark} />
+      )}
 
       {followUps.length > 0 && (
         <FollowUpSuggestions suggestions={followUps} onSelect={onFollowUpSelect} />
