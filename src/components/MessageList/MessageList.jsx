@@ -838,6 +838,23 @@ export default function MessageList({
   const isDark = effectiveTheme === 'dark';
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
+  const userScrolledAwayRef = useRef(false);
+
+  // Track whether the user has manually scrolled away from the bottom.
+  // If they have, stop auto-scrolling so streaming doesn't fight their scroll.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
+      userScrolledAwayRef.current = distanceFromBottom > 200;
+    };
+
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleFollowUpSelect = useCallback(
     (text) => {
@@ -846,23 +863,17 @@ export default function MessageList({
     [dispatch]
   );
 
-  // Auto-scroll to bottom only when user is near the bottom (within 200px).
-  // Always scroll for new messages and timeline changes.
+  // Auto-scroll during streaming — only if the user hasn't scrolled away.
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !bottomRef.current) return;
+    if (userScrolledAwayRef.current) return;
+    if (!bottomRef.current) return;
 
-    const distanceFromBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight;
-    const isNearBottom = distanceFromBottom < 200;
+    bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [streamedText, isProcessing, timelineStages]);
 
-    if (isNearBottom) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [messages, streamedText, isProcessing, timelineStages]);
-
-  // Always scroll on new messages (user or assistant added)
+  // Always scroll on new messages (user or assistant added) and reset the flag.
   useEffect(() => {
+    userScrolledAwayRef.current = false;
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
