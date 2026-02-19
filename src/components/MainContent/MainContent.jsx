@@ -794,18 +794,16 @@ export default function MainContent() {
 
   /**
    * Alternate model request handler: runs a new pipeline with a specific alternate model
-   * for the given user prompt. Called when user confirms switching to an alternate model.
+   * for the given user prompt. Adds a NEW followup response (does not replace the previous one)
+   * so the user can compare responses from different models side by side.
    */
   const handleAlternateModelRequest = useCallback(
     async (userPrompt, alternateModel) => {
       if (isProcessing) return;
 
-      // Remove the last assistant message (we're replacing it)
-      dispatch(removeLastAssistantMessage());
-
       const myRequestId = ++requestIdRef.current;
 
-      // Reset pipeline state
+      // Reset pipeline state (but do NOT remove the previous assistant message)
       setPipelineStatus('idle');
       setShouldStream(false);
       setFullResponseText('');
