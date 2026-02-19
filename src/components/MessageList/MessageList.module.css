@@ -58,24 +58,17 @@
 /* User message */
 .userMessage {
   padding: 0;
-  display: flex;
-  justify-content: flex-end;
 }
 
-/* ===== User Prompt Bubble ===== */
+/* ===== User Prompt ===== */
 .userPromptCard {
-  display: inline-flex;
-  flex-direction: column;
-  max-width: 85%;
-  padding: 12px 18px;
-  border-radius: 20px;
+  padding: 14px 18px;
+  border-radius: 14px;
   background-color: var(--bg-hover);
-  color: var(--text-primary);
-  font-weight: 500;
 }
 
 [data-theme='dark'] .userPromptCard {
-  background-color: #2e2e2e;
+  background-color: #2a2a2a;
 }
 
 .userPromptText {
@@ -105,7 +98,7 @@
 }
 
 [data-theme='dark'] .userPromptCollapsed::after {
-  background: linear-gradient(to bottom, transparent, #2e2e2e 90%);
+  background: linear-gradient(to bottom, transparent, #2a2a2a 90%);
 }
 
 .userPromptToggle {
@@ -1184,9 +1177,8 @@
   }
 
   .userPromptCard {
-    border-radius: 18px;
+    border-radius: 12px;
     padding: 10px 14px;
-    max-width: 90%;
   }
 
   .userPromptText {
