@@ -1,0 +1,257 @@
+.messageList {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar */
+.messageList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messageList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messageList::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+.messageList::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
+}
+
+.messagesInner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.message {
+  margin-bottom: 28px;
+  animation: messageFadeIn 0.35s ease;
+}
+
+@keyframes messageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* User message */
+.userMessage {
+  padding: 0;
+}
+
+.userMessage p {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Assistant message */
+.assistantMessage {
+  padding: 0;
+}
+
+.assistantHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.providerPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.pillDivider {
+  opacity: 0.5;
+  font-size: 14px;
+}
+
+.scoreText {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.messageContent {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+/* Markdown content styling */
+.markdownContent {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.paragraph {
+  margin-bottom: 12px;
+}
+
+.paragraph:last-child {
+  margin-bottom: 0;
+}
+
+.heading1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  margin-top: 20px;
+  color: var(--text-primary);
+}
+
+.heading2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  margin-top: 16px;
+  color: var(--text-primary);
+}
+
+.heading3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  margin-top: 12px;
+  color: var(--text-primary);
+}
+
+.list,
+.orderedList {
+  margin-bottom: 12px;
+  padding-left: 20px;
+}
+
+.list li,
+.orderedList li {
+  margin-bottom: 4px;
+  line-height: 1.65;
+  list-style: disc;
+}
+
+.orderedList li {
+  list-style: decimal;
+}
+
+.codeBlock {
+  margin: 14px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.codeLang {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-hover);
+}
+
+.codeBlock pre {
+  margin: 0;
+  padding: 14px;
+  overflow-x: auto;
+}
+
+.codeBlock code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  tab-size: 2;
+}
+
+.inlineCode {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 13px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: var(--text-primary);
+}
+
+.hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 16px 0;
+}
+
+/* Streaming cursor */
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 16px;
+  background-color: var(--text-secondary);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: cursorBlink 0.8s ease-in-out infinite;
+}
+
+@keyframes cursorBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Timeline wrapper */
+.timelineWrapper {
+  padding: 4px 0;
+  animation: messageFadeIn 0.35s ease;
+}
+
+.scrollAnchor {
+  height: 1px;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .messagesInner {
+    padding: 0 16px;
+  }
+
+  .message {
+    margin-bottom: 22px;
+  }
+
+  .messageContent {
+    font-size: 14px;
+  }
+
+  .markdownContent {
+    font-size: 14px;
+  }
+
+  .codeBlock code {
+    font-size: 12px;
+  }
+}

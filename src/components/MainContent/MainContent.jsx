@@ -1,10 +1,15 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   selectInputValue,
   selectMode,
+  selectMessages,
+  selectIsProcessing,
   setInputValue,
   setMode,
+  addMessage,
+  setIsProcessing,
+  updateLastMessage,
   createNewChat,
 } from '../../store/slices/chatSlice';
 import {
@@ -25,11 +30,9 @@ import {
   BugIcon,
   LightbulbIcon,
   ZapIcon,
-  RefreshIcon,
   MailIcon,
   FileTextIcon,
   CopyIcon,
-  TargetIcon,
   TrendingUpIcon,
   ClipboardIcon,
   EyeIcon,
@@ -38,6 +41,11 @@ import {
   HelpCircleIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
+import MessageList from '../MessageList/MessageList';
+import useStreamingText from '../../hooks/useStreamingText';
+import { routePrompt } from '../../services/adeApi';
+import { generateMockResponse } from '../../services/mockResponseGenerator';
+import { MODELS } from '../../data/models';
 import styles from './MainContent.module.css';
 
 const getGreeting = () => {
@@ -120,16 +128,87 @@ const attachOptions = [
 
 const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn'];
 
+// Timeline stage factory
+function createStages(status, modelName) {
+  const stages = [
+    { label: 'Routing to optimal model...', status: 'pending', showModel: false },
+    {
+      label: modelName ? `Thinking with` : 'Thinking...',
+      status: 'pending',
+      showModel: true,
+    },
+    { label: 'Writing response...', status: 'pending', showModel: false },
+  ];
+
+  if (status === 'routing') {
+    stages[0].status = 'active';
+  } else if (status === 'thinking') {
+    stages[0].status = 'complete';
+    stages[1].status = 'active';
+  } else if (status === 'writing') {
+    stages[0].status = 'complete';
+    stages[1].status = 'complete';
+    stages[2].status = 'active';
+  } else if (status === 'complete') {
+    stages[0].status = 'complete';
+    stages[1].status = 'complete';
+    stages[2].status = 'complete';
+  }
+
+  return stages;
+}
+
 export default function MainContent() {
   const dispatch = useDispatch();
   const inputValue = useSelector(selectInputValue);
   const mode = useSelector(selectMode);
+  const messages = useSelector(selectMessages);
+  const isProcessing = useSelector(selectIsProcessing);
+
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const textareaRef = useRef(null);
 
+  // Streaming / timeline state
+  const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
+  const [routeResult, setRouteResult] = useState(null);
+  const [fullResponseText, setFullResponseText] = useState('');
+  const [shouldStream, setShouldStream] = useState(false);
+
+  const hasMessages = messages.length > 0;
+
+  // Streaming hook
+  const { streamedText, isStreaming } = useStreamingText(fullResponseText, shouldStream, {
+    baseDelay: 25,
+    variance: 18,
+    punctuationPause: 70,
+    paragraphPause: 120,
+    onComplete: useCallback(() => {
+      // Ensure final content is persisted in Redux
+      dispatch(updateLastMessage({ content: fullResponseText }));
+      setPipelineStatus('complete');
+      dispatch(setIsProcessing(false));
+
+      // Brief delay then clear timeline
+      setTimeout(() => {
+        setPipelineStatus('idle');
+        setShouldStream(false);
+        setFullResponseText('');
+        setRouteResult(null);
+      }, 600);
+    }, [dispatch, fullResponseText]),
+  });
+
+  // Update the assistant message content as streaming progresses
+  useEffect(() => {
+    if (isStreaming && streamedText) {
+      dispatch(updateLastMessage({ content: streamedText }));
+    }
+  }, [streamedText, isStreaming, dispatch]);
+
+  // Click-outside handlers
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -160,30 +239,127 @@ export default function MainContent() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
-  const handleInputChange = (e) => {
-    dispatch(setInputValue(e.target.value));
-    autoResizeTextarea();
-  };
-
+  // Auto-resize textarea
   const autoResizeTextarea = () => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const lineHeight = 24; // ~1.5 line-height * 16px font
-      const maxHeight = lineHeight * 15; // 15 lines max
+      const lineHeight = 24;
+      const maxHeight = lineHeight * 15;
       textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
     }
+  };
+
+  const handleInputChange = (e) => {
+    dispatch(setInputValue(e.target.value));
+    autoResizeTextarea();
   };
 
   useEffect(() => {
     autoResizeTextarea();
   }, [inputValue]);
 
-  const handleSubmit = (e) => {
+  // Focus textarea when not processing
+  useEffect(() => {
+    if (!isProcessing && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isProcessing, messages.length]);
+
+  /**
+   * Main submit handler: orchestrates the full ADE pipeline.
+   */
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!inputValue.trim()) return;
-    console.log('Submitting:', inputValue, 'Mode:', mode);
+    const prompt = inputValue.trim();
+    if (!prompt || isProcessing) return;
+
+    // 1. Add user message
+    const userMsg = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: prompt,
+      timestamp: Date.now(),
+    };
+    dispatch(addMessage(userMsg));
     dispatch(setInputValue(''));
+    dispatch(setIsProcessing(true));
+
+    // Reset textarea height
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+
+    // Close dropdowns
+    setActiveDropdown(null);
+    setShowAttachDropdown(false);
+
+    // 2. Stage 1: Routing
+    setPipelineStatus('routing');
+
+    let routing;
+    try {
+      // Simulate a minimum routing time for visual effect
+      const [result] = await Promise.all([
+        routePrompt(prompt),
+        new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400)),
+      ]);
+      routing = result;
+    } catch {
+      routing = {
+        modelId: 'claude-sonnet-4-5-20250929',
+        modelName: 'Claude Sonnet 4.5',
+        provider: 'anthropic',
+        score: 0.88,
+        reasoning: 'Fallback routing',
+      };
+    }
+
+    // Resolve model name from our registry if not provided
+    const model = MODELS.find((m) => m.id === routing.modelId);
+    const resolvedModelName = routing.modelName || (model ? model.name : routing.modelId);
+    const resolvedProvider = routing.provider || (model ? model.provider : 'anthropic');
+
+    setRouteResult({
+      ...routing,
+      modelName: resolvedModelName,
+      provider: resolvedProvider,
+    });
+
+    // 3. Stage 2: Thinking
+    setPipelineStatus('thinking');
+
+    // Generate mock response
+    const responseText = generateMockResponse(
+      prompt,
+      resolvedProvider,
+      resolvedModelName,
+      routing.score
+    );
+
+    // Simulate thinking time based on response complexity
+    const thinkingTime = 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
+    await new Promise((resolve) => setTimeout(resolve, thinkingTime));
+
+    // 4. Stage 3: Writing (streaming)
+    setPipelineStatus('writing');
+
+    // Add empty assistant message that will be filled by streaming
+    const assistantMsg = {
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: '',
+      timestamp: Date.now(),
+      modelId: routing.modelId,
+      modelName: resolvedModelName,
+      provider: resolvedProvider,
+      score: routing.score,
+    };
+    dispatch(addMessage(assistantMsg));
+
+    // Start streaming
+    setFullResponseText(responseText);
+    setShouldStream(true);
   };
 
   const handleModeClick = (newMode) => {
@@ -219,6 +395,10 @@ export default function MainContent() {
     dispatch(createNewChat());
     dispatch(setInputValue(''));
     setActiveDropdown(null);
+    setPipelineStatus('idle');
+    setShouldStream(false);
+    setFullResponseText('');
+    setRouteResult(null);
   };
 
   const handleAttachClick = () => {
@@ -233,8 +413,14 @@ export default function MainContent() {
 
   const currentPromptData = activeDropdown ? promptsData[activeDropdown] : null;
 
+  // Build timeline stages
+  const timelineStages =
+    pipelineStatus !== 'idle'
+      ? createStages(pipelineStatus, routeResult ? routeResult.modelName : null)
+      : null;
+
   return (
-    <main className={styles.main}>
+    <main className={`${styles.main} ${hasMessages ? styles.hasMessages : ''}`}>
       <button
         className={styles.newChatBtn}
         onClick={handleNewChat}
@@ -243,9 +429,29 @@ export default function MainContent() {
       >
         <NewChatIcon />
       </button>
-      <div className={styles.container}>
-        <h1 className={styles.greeting}>{getGreeting()}</h1>
-        <p className={styles.subtitle}>What can I help you orchestrate today?</p>
+
+      {/* Messages area — only shown when there are messages */}
+      {hasMessages && (
+        <MessageList
+          messages={messages}
+          isProcessing={pipelineStatus !== 'idle'}
+          timelineStages={timelineStages}
+          timelineFading={pipelineStatus === 'complete'}
+          modelName={routeResult ? routeResult.modelName : null}
+          provider={routeResult ? routeResult.provider : null}
+          isStreaming={isStreaming}
+          streamedText={streamedText}
+        />
+      )}
+
+      <div className={`${styles.container} ${hasMessages ? styles.containerBottom : ''}`}>
+        {/* Greeting — only when no messages */}
+        {!hasMessages && (
+          <>
+            <h1 className={styles.greeting}>{getGreeting()}</h1>
+            <p className={styles.subtitle}>What can I help you orchestrate today?</p>
+          </>
+        )}
 
         <div className={styles.inputSection}>
           <form className={styles.inputContainer} onSubmit={handleSubmit}>
@@ -253,11 +459,13 @@ export default function MainContent() {
               <textarea
                 ref={textareaRef}
                 className={styles.input}
-                placeholder="Ask anything..."
+                placeholder={hasMessages ? 'Reply...' : 'Ask anything...'}
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                disabled={isProcessing}
                 rows={1}
+                aria-label="Message input"
               />
               <div className={styles.inputActions}>
                 <div className={styles.leftActions}>
@@ -266,6 +474,7 @@ export default function MainContent() {
                     className={`${styles.attachBtn} ${showAttachDropdown ? styles.active : ''}`}
                     onClick={handleAttachClick}
                     aria-label="Add content"
+                    disabled={isProcessing}
                   >
                     <PlusIcon />
                   </button>
@@ -290,16 +499,19 @@ export default function MainContent() {
                 </div>
                 <button
                   type="submit"
-                  className={`${styles.submitBtn} ${inputValue.trim() ? styles.active : ''}`}
-                  disabled={!inputValue.trim()}
+                  className={`${styles.submitBtn} ${
+                    inputValue.trim() && !isProcessing ? styles.active : ''
+                  }`}
+                  disabled={!inputValue.trim() || isProcessing}
+                  aria-label="Send message"
                 >
-                  <SendIcon />
+                  {isProcessing ? <span className={styles.sendSpinner} /> : <SendIcon />}
                 </button>
               </div>
             </div>
           </form>
 
-          {activeDropdown && currentPromptData && (
+          {!hasMessages && activeDropdown && currentPromptData && (
             <div className={styles.promptsDropdown} ref={dropdownRef}>
               <div className={styles.dropdownHeader}>
                 <div className={styles.dropdownTitleWrapper}>
@@ -335,24 +547,26 @@ export default function MainContent() {
           )}
         </div>
 
-        <div className={styles.actionButtons}>
-          {quickPromptKeys.map((key) => {
-            const data = promptsData[key];
-            const Icon = data.icon;
-            return (
-              <button
-                key={key}
-                className={`${styles.actionBtn} ${
-                  activeDropdown === key ? styles.activeAction : ''
-                }`}
-                onClick={() => handleModeClick(key)}
-              >
-                <Icon />
-                <span>{data.title}</span>
-              </button>
-            );
-          })}
-        </div>
+        {!hasMessages && (
+          <div className={styles.actionButtons}>
+            {quickPromptKeys.map((key) => {
+              const data = promptsData[key];
+              const Icon = data.icon;
+              return (
+                <button
+                  key={key}
+                  className={`${styles.actionBtn} ${
+                    activeDropdown === key ? styles.activeAction : ''
+                  }`}
+                  onClick={() => handleModeClick(key)}
+                >
+                  <Icon />
+                  <span>{data.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );
