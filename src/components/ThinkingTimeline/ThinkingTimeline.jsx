@@ -71,6 +71,7 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading }
 
             <div className={styles.stageContent}>
               <div className={styles.stageLabel}>
+                <span className={isPending ? styles.mutedText : ''}>{stage.label}</span>
                 {stage.showModel && modelName ? (
                   <span className={styles.modelLabel}>
                     <span
@@ -87,7 +88,6 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading }
                     </span>
                   </span>
                 ) : null}
-                <span className={isPending ? styles.mutedText : ''}>{stage.label}</span>
               </div>
               {isComplete && durations[index] && (
                 <span className={styles.duration}>{durations[index]}s</span>
