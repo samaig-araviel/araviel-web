@@ -523,6 +523,9 @@ function ImageGalleryPanel({ images, onClose }) {
   return (
     <>
       <div className={styles.imageGalleryPanel}>
+        <div className={styles.imageGalleryDragHandle}>
+          <span className={styles.imageGalleryDragBar} />
+        </div>
         <div className={styles.imageGalleryPanelFadeTop} />
         <div className={styles.imageGalleryHeader}>
           <div className={styles.imageGalleryHeaderLeft}>

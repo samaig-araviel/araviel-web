@@ -713,6 +713,13 @@
 
   .topNav {
     padding: 8px 12px;
+    height: 56px;
+    background: linear-gradient(
+      to bottom,
+      var(--bg-primary) 0%,
+      var(--bg-primary) 70%,
+      transparent 100%
+    );
   }
 }
 
