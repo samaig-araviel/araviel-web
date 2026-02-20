@@ -750,20 +750,71 @@ function SelectionTooltip({ position, onAsk }) {
 }
 
 /**
- * Sub-conversation panel — a right-side panel for discussing highlighted text.
- * Renders as a fixed panel on the right side of the screen instead of a modal.
+ * Mini thinking timeline for sub-conversation responses.
  */
-function SubConversationPanel({ subConversation, onSend, onClose, isSending }) {
+function SubConvThinkingTimeline({ status }) {
+  return (
+    <div className={styles.subConvTimeline}>
+      <div
+        className={`${styles.subConvTimelineStage} ${
+          status === 'thinking' ? styles.subConvTimelineActive : styles.subConvTimelineComplete
+        }`}
+      >
+        <span
+          className={
+            status === 'thinking' ? styles.subConvTimelinePulse : styles.subConvTimelineCheck
+          }
+        >
+          {status !== 'thinking' && (
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </span>
+        <span>Thinking...</span>
+      </div>
+      {status === 'streaming' && (
+        <div className={`${styles.subConvTimelineStage} ${styles.subConvTimelineActive}`}>
+          <span className={styles.subConvTimelinePulse} />
+          <span>Writing response...</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Sub-conversation panel — a right-side panel for discussing highlighted text.
+ * Renders as a floating card on the right side, styled to feel like part of the page.
+ */
+function SubConversationPanel({
+  subConversation,
+  onSend,
+  onClose,
+  isSending,
+  streamingText,
+  thinkingStatus,
+}) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const panelRef = useRef(null);
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     // Focus input after panel slide-in animation
     const timer = setTimeout(() => {
-      if (inputRef.current) inputRef.current.focus();
-    }, 350);
+      if (textareaRef.current) textareaRef.current.focus();
+    }, 400);
     return () => clearTimeout(timer);
   }, []);
 
@@ -771,7 +822,7 @@ function SubConversationPanel({ subConversation, onSend, onClose, isSending }) {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [subConversation.messages.length]);
+  }, [subConversation.messages.length, streamingText]);
 
   // Close on escape
   useEffect(() => {
@@ -782,11 +833,21 @@ function SubConversationPanel({ subConversation, onSend, onClose, isSending }) {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
+  // Auto-resize textarea
+  const autoResize = () => {
+    const el = textareaRef.current;
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!input.trim() || isSending) return;
     onSend(input.trim());
     setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
   const handleKeyDown = (e) => {
@@ -801,53 +862,68 @@ function SubConversationPanel({ subConversation, onSend, onClose, isSending }) {
       ? subConversation.highlightedText.slice(0, 60) + '...'
       : subConversation.highlightedText;
 
+  // Build the list of finalized messages (excluding the one being streamed)
+  const finalizedMessages = subConversation.messages;
+  const showStreaming = isSending || (thinkingStatus && thinkingStatus !== 'idle');
+
   return (
     <div className={styles.subConvPanel} ref={panelRef}>
+      {/* Top fade */}
+      <div className={styles.subConvPanelFadeTop} />
+
       {/* Header */}
       <div className={styles.subConvPanelHeader}>
         <div className={styles.subConvPanelHeaderTop}>
-          <div className={styles.subConvHeaderLeft}>
-            <MessageCircleIcon />
-            <span className={styles.subConvHeaderTitle}>Sub Conversation</span>
-          </div>
+          <span className={styles.subConvHeaderTitle}>Sub Conversation</span>
           <button className={styles.subConvCloseBtn} onClick={onClose} aria-label="Close panel">
             <CloseIcon />
           </button>
         </div>
         <div className={styles.subConvPanelSubheader} title={subConversation.highlightedText}>
-          "{truncatedHighlight}"
+          <SparkleIcon />
+          <span>{truncatedHighlight}</span>
         </div>
       </div>
 
       {/* Messages */}
       <div className={styles.subConvMessages}>
-        {subConversation.messages.length === 0 && (
+        {finalizedMessages.length === 0 && !showStreaming && (
           <div className={styles.subConvEmpty}>
-            <MessageCircleIcon />
-            <p>Ask anything about the highlighted text</p>
+            <div className={styles.subConvEmptyIcon}>
+              <SparkleIcon />
+            </div>
+            <p className={styles.subConvEmptyTitle}>Start a conversation</p>
+            <p className={styles.subConvEmptyDesc}>Ask anything about the highlighted text below</p>
           </div>
         )}
-        {subConversation.messages.map((msg, idx) => (
+        {finalizedMessages.map((msg, idx) => (
           <div
             key={idx}
-            className={`${styles.subConvMessage} ${
-              msg.role === 'user' ? styles.subConvMessageUser : styles.subConvMessageAssistant
+            className={`${styles.subConvMsg} ${
+              msg.role === 'user' ? styles.subConvMsgUser : styles.subConvMsgAssistant
             }`}
           >
             {msg.role === 'user' ? (
-              <div className={styles.subConvUserBubble}>{msg.content}</div>
+              <div className={styles.subConvUserCard}>{msg.content}</div>
             ) : (
-              <div className={styles.subConvAssistantBubble}>{renderMarkdown(msg.content)}</div>
+              <div className={styles.subConvAssistantContent}>
+                <div className={styles.subConvMarkdown}>{renderMarkdown(msg.content)}</div>
+              </div>
             )}
           </div>
         ))}
-        {isSending && (
-          <div className={`${styles.subConvMessage} ${styles.subConvMessageAssistant}`}>
-            <div className={styles.subConvAssistantBubble}>
-              <div className={styles.subConvTyping}>
-                <span />
-                <span />
-                <span />
+        {/* Thinking timeline + streaming response */}
+        {thinkingStatus && thinkingStatus !== 'idle' && (
+          <div className={styles.subConvMsg}>
+            <SubConvThinkingTimeline status={thinkingStatus} />
+          </div>
+        )}
+        {streamingText && (
+          <div className={`${styles.subConvMsg} ${styles.subConvMsgAssistant}`}>
+            <div className={styles.subConvAssistantContent}>
+              <div className={styles.subConvMarkdown}>
+                {renderMarkdown(streamingText)}
+                <span className={styles.subConvCursor} />
               </div>
             </div>
           </div>
@@ -855,27 +931,41 @@ function SubConversationPanel({ subConversation, onSend, onClose, isSending }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <form className={styles.subConvInputRow} onSubmit={handleSubmit}>
-        <input
-          ref={inputRef}
-          type="text"
-          className={styles.subConvInput}
-          placeholder="Ask a question..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isSending}
-        />
-        <button
-          type="submit"
-          className={styles.subConvSendBtn}
-          disabled={!input.trim() || isSending}
-          aria-label="Send"
-        >
-          <SendIcon />
-        </button>
-      </form>
+      {/* Bottom fade */}
+      <div className={styles.subConvPanelFadeBottom} />
+
+      {/* Input — matches main chatbox design */}
+      <div className={styles.subConvInputSection}>
+        <form className={styles.subConvInputContainer} onSubmit={handleSubmit}>
+          <div className={styles.subConvInputWrapper}>
+            <textarea
+              ref={textareaRef}
+              className={styles.subConvTextarea}
+              placeholder="Ask about this..."
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                autoResize();
+              }}
+              onKeyDown={handleKeyDown}
+              disabled={isSending}
+              rows={1}
+            />
+            <div className={styles.subConvInputActions}>
+              <button
+                type="submit"
+                className={`${styles.subConvSubmitBtn} ${
+                  input.trim() ? styles.subConvSubmitBtnActive : ''
+                }`}
+                disabled={!input.trim() || isSending}
+                aria-label="Send"
+              >
+                <SendIcon />
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -1304,6 +1394,9 @@ function Message({
   const [selectionTooltip, setSelectionTooltip] = useState(null);
   const [isSendingSubMsg, setIsSendingSubMsg] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [subConvThinkingStatus, setSubConvThinkingStatus] = useState('idle'); // idle | thinking | streaming
+  const [subConvStreamText, setSubConvStreamText] = useState('');
+  const subConvStreamRef = useRef(null);
   const markdownContentRef = useRef(null);
   const tooltipTimeoutRef = useRef(null);
 
@@ -1398,7 +1491,14 @@ function Message({
     window.getSelection()?.removeAllRanges();
   }, [selectionTooltip, onSubConvPanelToggle]);
 
-  // Send a message in the active sub-conversation
+  // Cleanup streaming on unmount
+  useEffect(() => {
+    return () => {
+      if (subConvStreamRef.current) clearTimeout(subConvStreamRef.current);
+    };
+  }, []);
+
+  // Send a message in the active sub-conversation with thinking + streaming
   const handleSubConvSend = useCallback(
     (text) => {
       if (!activeSubConvId) return;
@@ -1412,22 +1512,57 @@ function Message({
         )
       );
 
-      // Simulate assistant response
       setIsSendingSubMsg(true);
+      setSubConvThinkingStatus('thinking');
+      setSubConvStreamText('');
+
       const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
       const highlightedText = activeConv?.highlightedText || '';
 
-      setTimeout(() => {
+      // Phase 1: Thinking (600-1000ms)
+      const thinkingTime = 600 + Math.random() * 400;
+      subConvStreamRef.current = setTimeout(() => {
         const response = generateSubResponse(highlightedText, text);
-        setSubConversations((prev) =>
-          prev.map((sc) =>
-            sc.id === activeSubConvId
-              ? { ...sc, messages: [...sc.messages, { role: 'assistant', content: response }] }
-              : sc
-          )
-        );
-        setIsSendingSubMsg(false);
-      }, 600 + Math.random() * 800);
+        setSubConvThinkingStatus('streaming');
+
+        // Phase 2: Stream the response word by word
+        const tokens = response.split(/(\s+)/);
+        let idx = 0;
+        let accumulated = '';
+
+        const streamNext = () => {
+          if (idx >= tokens.length) {
+            // Done streaming — finalize the message
+            setSubConvStreamText('');
+            setSubConvThinkingStatus('idle');
+            setIsSendingSubMsg(false);
+            setSubConversations((prev) =>
+              prev.map((sc) =>
+                sc.id === activeSubConvId
+                  ? { ...sc, messages: [...sc.messages, { role: 'assistant', content: response }] }
+                  : sc
+              )
+            );
+            return;
+          }
+
+          accumulated += tokens[idx];
+          idx++;
+          setSubConvStreamText(accumulated);
+
+          // Natural timing with variance
+          let delay = 20 + Math.random() * 15;
+          const token = tokens[idx - 1];
+          if (token && /[.!?;:]$/.test(token.trim())) delay += 60;
+          else if (token && /[,]$/.test(token.trim())) delay += 25;
+          if (token && token.includes('\n\n')) delay += 100;
+
+          subConvStreamRef.current = setTimeout(streamNext, delay);
+        };
+
+        // Small delay before first token
+        subConvStreamRef.current = setTimeout(streamNext, 80);
+      }, thinkingTime);
     },
     [activeSubConvId, subConversations]
   );
@@ -1623,6 +1758,8 @@ function Message({
           onSend={handleSubConvSend}
           onClose={handleCloseSubConvPanel}
           isSending={isSendingSubMsg}
+          streamingText={subConvStreamText}
+          thinkingStatus={subConvThinkingStatus}
         />
       )}
 
