@@ -312,9 +312,11 @@ function CodeBlock({ lang, code }) {
 
 /**
  * Horizontal scrollable image row shown when response contains images.
+ * Clicking a single image opens a lightbox. "View all" opens the side gallery panel.
  */
 function ImageRow({ images }) {
   const [showGallery, setShowGallery] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(null);
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -377,11 +379,7 @@ function ImageRow({ images }) {
           )}
           <div className={styles.imageRowTrack} ref={scrollRef}>
             {images.map((img, idx) => (
-              <button
-                key={idx}
-                className={styles.imageRowItem}
-                onClick={() => setShowGallery(true)}
-              >
+              <button key={idx} className={styles.imageRowItem} onClick={() => setLightboxIdx(idx)}>
                 <img
                   src={img.src}
                   alt={img.alt || `Image ${idx + 1}`}
@@ -413,37 +411,135 @@ function ImageRow({ images }) {
           )}
         </div>
       </div>
-      {showGallery && <ImageGallery images={images} onClose={() => setShowGallery(false)} />}
+      {lightboxIdx !== null && (
+        <ImageLightbox
+          images={images}
+          startIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />
+      )}
+      {showGallery && <ImageGalleryPanel images={images} onClose={() => setShowGallery(false)} />}
     </>
   );
 }
 
 /**
- * Full-screen image gallery overlay.
+ * Lightbox popup for viewing a single image.
+ * Shows the image large with prev/next navigation.
  */
-function ImageGallery({ images, onClose }) {
+function ImageLightbox({ images, startIndex, onClose }) {
+  const [currentIdx, setCurrentIdx] = useState(startIndex);
+  const img = images[currentIdx];
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft' && currentIdx > 0) setCurrentIdx((i) => i - 1);
+      if (e.key === 'ArrowRight' && currentIdx < images.length - 1) setCurrentIdx((i) => i + 1);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose, currentIdx, images.length]);
+
+  return (
+    <div className={styles.lightboxOverlay} onClick={onClose}>
+      <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+        <button className={styles.lightboxClose} onClick={onClose} aria-label="Close">
+          <CloseIcon />
+        </button>
+        <div className={styles.lightboxImageWrap}>
+          {images.length > 1 && currentIdx > 0 && (
+            <button
+              className={`${styles.lightboxNav} ${styles.lightboxNavLeft}`}
+              onClick={() => setCurrentIdx((i) => i - 1)}
+              aria-label="Previous"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+          <img
+            src={img.src}
+            alt={img.alt || `Image ${currentIdx + 1}`}
+            className={styles.lightboxImg}
+          />
+          {images.length > 1 && currentIdx < images.length - 1 && (
+            <button
+              className={`${styles.lightboxNav} ${styles.lightboxNavRight}`}
+              onClick={() => setCurrentIdx((i) => i + 1)}
+              aria-label="Next"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {img.alt && <p className={styles.lightboxCaption}>{img.alt}</p>}
+        {images.length > 1 && (
+          <span className={styles.lightboxCounter}>
+            {currentIdx + 1} / {images.length}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Right-side gallery panel — mirrors the sub-conversation panel design.
+ * Shows all images in a clean 2-column grid.
+ */
+function ImageGalleryPanel({ images, onClose }) {
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && lightboxIdx === null) onClose();
     };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+  }, [onClose, lightboxIdx]);
 
   return (
-    <div className={styles.imageGalleryOverlay} onClick={onClose}>
-      <div className={styles.imageGalleryPanel} onClick={(e) => e.stopPropagation()}>
+    <>
+      <div className={styles.imageGalleryPanel}>
+        <div className={styles.imageGalleryPanelFadeTop} />
         <div className={styles.imageGalleryHeader}>
-          <span className={styles.imageGalleryTitle}>
-            {images.length} image{images.length !== 1 ? 's' : ''}
-          </span>
+          <div className={styles.imageGalleryHeaderLeft}>
+            <span className={styles.imageGalleryTitle}>Images</span>
+            <span className={styles.imageGalleryBadge}>{images.length}</span>
+          </div>
           <button className={styles.imageGalleryClose} onClick={onClose} aria-label="Close gallery">
             <CloseIcon />
           </button>
         </div>
         <div className={styles.imageGalleryGrid}>
           {images.map((img, idx) => (
-            <div key={idx} className={styles.imageGalleryItem}>
+            <button
+              key={idx}
+              className={styles.imageGalleryItem}
+              onClick={() => setLightboxIdx(idx)}
+            >
               <img
                 src={img.src}
                 alt={img.alt || `Image ${idx + 1}`}
@@ -451,11 +547,18 @@ function ImageGallery({ images, onClose }) {
                 loading="lazy"
               />
               {img.alt && <span className={styles.imageGalleryCaption}>{img.alt}</span>}
-            </div>
+            </button>
           ))}
         </div>
       </div>
-    </div>
+      {lightboxIdx !== null && (
+        <ImageLightbox
+          images={images}
+          startIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />
+      )}
+    </>
   );
 }
 
