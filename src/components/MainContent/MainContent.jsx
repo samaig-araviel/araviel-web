@@ -252,6 +252,7 @@ export default function MainContent() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const textareaRef = useRef(null);
@@ -903,7 +904,11 @@ export default function MainContent() {
       : null;
 
   return (
-    <main className={`${styles.main} ${hasMessages ? styles.hasMessages : ''}`}>
+    <main
+      className={`${styles.main} ${hasMessages ? styles.hasMessages : ''} ${
+        isSubConvPanelOpen ? styles.subConvPanelOpen : ''
+      }`}
+    >
       {/* Top nav bar with share + new chat buttons */}
       <div className={styles.topNav}>
         <div className={styles.topNavInner}>
@@ -942,6 +947,7 @@ export default function MainContent() {
           streamedText={streamedText}
           onRetry={handleRetry}
           onAlternateModelRequest={handleAlternateModelRequest}
+          onSubConvPanelToggle={setIsSubConvPanelOpen}
         />
       )}
 

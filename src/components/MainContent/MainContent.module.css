@@ -6,7 +6,7 @@
   justify-content: center;
   padding: 24px;
   background-color: var(--bg-primary);
-  transition: background-color 0.2s ease;
+  transition: background-color 0.2s ease, margin-right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   min-height: 100%;
   position: relative;
 }
@@ -16,6 +16,11 @@
   justify-content: flex-end;
   align-items: stretch;
   padding: 0;
+}
+
+/* When sub-conversation panel is open, make room on the right */
+.main.subConvPanelOpen {
+  margin-right: 420px;
 }
 
 /* Top nav bar */
@@ -670,6 +675,11 @@
     padding: 0;
   }
 
+  /* On mobile, panel overlays — no margin shift */
+  .main.subConvPanelOpen {
+    margin-right: 0;
+  }
+
   .containerBottom {
     padding: 0 16px 16px;
   }
@@ -703,5 +713,12 @@
 
   .topNav {
     padding: 8px 12px;
+  }
+}
+
+/* Tablet: narrower panel */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .main.subConvPanelOpen {
+    margin-right: 360px;
   }
 }
