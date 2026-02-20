@@ -23,8 +23,45 @@ import {
   CloseIcon,
   ZapIcon,
 } from '../Icons';
+import hljs from 'highlight.js/lib/core';
+import javascript from 'highlight.js/lib/languages/javascript';
+import python from 'highlight.js/lib/languages/python';
+import typescript from 'highlight.js/lib/languages/typescript';
+import css from 'highlight.js/lib/languages/css';
+import xml from 'highlight.js/lib/languages/xml';
+import json from 'highlight.js/lib/languages/json';
+import bash from 'highlight.js/lib/languages/bash';
+import sql from 'highlight.js/lib/languages/sql';
+import java from 'highlight.js/lib/languages/java';
+import go from 'highlight.js/lib/languages/go';
+import rust from 'highlight.js/lib/languages/rust';
+import cpp from 'highlight.js/lib/languages/cpp';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
+
+// Register highlight.js languages
+hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('js', javascript);
+hljs.registerLanguage('jsx', javascript);
+hljs.registerLanguage('python', python);
+hljs.registerLanguage('py', python);
+hljs.registerLanguage('typescript', typescript);
+hljs.registerLanguage('ts', typescript);
+hljs.registerLanguage('tsx', typescript);
+hljs.registerLanguage('css', css);
+hljs.registerLanguage('html', xml);
+hljs.registerLanguage('xml', xml);
+hljs.registerLanguage('json', json);
+hljs.registerLanguage('bash', bash);
+hljs.registerLanguage('sh', bash);
+hljs.registerLanguage('shell', bash);
+hljs.registerLanguage('sql', sql);
+hljs.registerLanguage('java', java);
+hljs.registerLanguage('go', go);
+hljs.registerLanguage('rust', rust);
+hljs.registerLanguage('rs', rust);
+hljs.registerLanguage('cpp', cpp);
+hljs.registerLanguage('c', cpp);
 
 /**
  * Generate 2 follow-up suggestion prompts based on the assistant's response content.
@@ -97,16 +134,16 @@ function pickRandom(arr, n) {
 
 /**
  * Render basic markdown to React elements.
- * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, paragraphs.
+ * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  */
-function renderMarkdown(text, onCopyCode) {
+function renderMarkdown(text) {
   if (!text) return null;
 
   const lines = text.split('\n');
   const elements = [];
+  const images = [];
   let i = 0;
   let key = 0;
-  let codeBlockIndex = 0;
 
   while (i < lines.length) {
     const line = lines[i];
@@ -122,8 +159,15 @@ function renderMarkdown(text, onCopyCode) {
       }
       i++; // skip closing ```
       const codeContent = codeLines.join('\n');
-      const blockIdx = codeBlockIndex++;
-      elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} index={blockIdx} />);
+      elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+      continue;
+    }
+
+    // Image line: ![alt](url)
+    const imgMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+    if (imgMatch) {
+      images.push({ alt: imgMatch[1], src: imgMatch[2] });
+      i++;
       continue;
     }
 
@@ -197,14 +241,36 @@ function renderMarkdown(text, onCopyCode) {
     i++;
   }
 
+  // If images were found, prepend the image row
+  if (images.length > 0) {
+    elements.unshift(<ImageRow key="img-row" images={images} />);
+  }
+
   return elements;
 }
 
 /**
- * Code block component with copy functionality.
+ * Code block component with syntax highlighting and copy functionality.
  */
-function CodeBlock({ lang, code, index }) {
+function CodeBlock({ lang, code }) {
   const [copied, setCopied] = useState(false);
+  const codeRef = useRef(null);
+
+  useEffect(() => {
+    if (codeRef.current) {
+      // Try language-specific highlighting, fall back to auto-detect
+      try {
+        const langId = lang ? lang.toLowerCase() : null;
+        const result =
+          langId && hljs.getLanguage(langId)
+            ? hljs.highlight(code, { language: langId })
+            : hljs.highlightAuto(code);
+        codeRef.current.innerHTML = result.value;
+      } catch {
+        codeRef.current.textContent = code;
+      }
+    }
+  }, [code, lang]);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(code).then(() => {
@@ -238,9 +304,218 @@ function CodeBlock({ lang, code, index }) {
         </button>
       </div>
       <pre>
-        <code>{code}</code>
+        <code ref={codeRef}>{code}</code>
       </pre>
     </div>
+  );
+}
+
+/**
+ * Horizontal scrollable image row shown when response contains images.
+ */
+function ImageRow({ images }) {
+  const [showGallery, setShowGallery] = useState(false);
+  const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollButtons = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollButtons();
+    el.addEventListener('scroll', updateScrollButtons, { passive: true });
+    return () => el.removeEventListener('scroll', updateScrollButtons);
+  }, [updateScrollButtons]);
+
+  const scroll = (direction) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = direction === 'left' ? -240 : 240;
+    el.scrollBy({ left: amount, behavior: 'smooth' });
+  };
+
+  return (
+    <>
+      <div className={styles.imageRowContainer}>
+        <div className={styles.imageRowHeader}>
+          <span className={styles.imageRowCount}>
+            {images.length} image{images.length !== 1 ? 's' : ''}
+          </span>
+          {images.length > 1 && (
+            <button className={styles.imageRowViewAll} onClick={() => setShowGallery(true)}>
+              View all
+            </button>
+          )}
+        </div>
+        <div className={styles.imageRowScrollArea}>
+          {canScrollLeft && (
+            <button
+              className={`${styles.imageRowArrow} ${styles.imageRowArrowLeft}`}
+              onClick={() => scroll('left')}
+              aria-label="Scroll left"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+          )}
+          <div className={styles.imageRowTrack} ref={scrollRef}>
+            {images.map((img, idx) => (
+              <button
+                key={idx}
+                className={styles.imageRowItem}
+                onClick={() => setShowGallery(true)}
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt || `Image ${idx + 1}`}
+                  className={styles.imageRowImg}
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
+          {canScrollRight && (
+            <button
+              className={`${styles.imageRowArrow} ${styles.imageRowArrowRight}`}
+              onClick={() => scroll('right')}
+              aria-label="Scroll right"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+      {showGallery && <ImageGallery images={images} onClose={() => setShowGallery(false)} />}
+    </>
+  );
+}
+
+/**
+ * Full-screen image gallery overlay.
+ */
+function ImageGallery({ images, onClose }) {
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  return (
+    <div className={styles.imageGalleryOverlay} onClick={onClose}>
+      <div className={styles.imageGalleryPanel} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.imageGalleryHeader}>
+          <span className={styles.imageGalleryTitle}>
+            {images.length} image{images.length !== 1 ? 's' : ''}
+          </span>
+          <button className={styles.imageGalleryClose} onClick={onClose} aria-label="Close gallery">
+            <CloseIcon />
+          </button>
+        </div>
+        <div className={styles.imageGalleryGrid}>
+          {images.map((img, idx) => (
+            <div key={idx} className={styles.imageGalleryItem}>
+              <img
+                src={img.src}
+                alt={img.alt || `Image ${idx + 1}`}
+                className={styles.imageGalleryImg}
+                loading="lazy"
+              />
+              {img.alt && <span className={styles.imageGalleryCaption}>{img.alt}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Inline link component with hover tooltip showing the URL.
+ */
+function InlineLink({ href, children }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const linkRef = useRef(null);
+  const timerRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    timerRef.current = setTimeout(() => {
+      if (linkRef.current) {
+        const rect = linkRef.current.getBoundingClientRect();
+        setTooltipPos({ x: rect.left, y: rect.top });
+      }
+      setShowTooltip(true);
+    }, 400);
+  };
+
+  const handleMouseLeave = () => {
+    clearTimeout(timerRef.current);
+    setShowTooltip(false);
+  };
+
+  // Basic safety check for URLs
+  const isSafe = /^https?:\/\//i.test(href);
+
+  return (
+    <span className={styles.inlineLinkWrapper} ref={linkRef}>
+      <a
+        href={isSafe ? href : '#'}
+        className={styles.inlineLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={(e) => {
+          if (!isSafe) e.preventDefault();
+        }}
+      >
+        {children}
+      </a>
+      {showTooltip && (
+        <span
+          className={styles.linkTooltip}
+          style={{
+            position: 'fixed',
+            left: tooltipPos.x,
+            top: tooltipPos.y - 36,
+          }}
+        >
+          <span className={styles.linkTooltipUrl}>
+            {href.length > 60 ? href.slice(0, 60) + '...' : href}
+          </span>
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -262,6 +537,38 @@ function renderInline(text) {
         <code className={styles.inlineCode} key={key++}>
           {match[1]}
         </code>
+      );
+      remaining = remaining.slice(match[0].length);
+      continue;
+    }
+
+    // Markdown link [text](url)
+    match = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+    if (match) {
+      parts.push(
+        <InlineLink key={key++} href={match[2]}>
+          {match[1]}
+        </InlineLink>
+      );
+      remaining = remaining.slice(match[0].length);
+      continue;
+    }
+
+    // Auto-detect bare URLs
+    match = remaining.match(/^(https?:\/\/[^\s<>)\]]+)/);
+    if (match) {
+      const url = match[1];
+      // Extract a display name from the hostname
+      let displayText;
+      try {
+        displayText = new URL(url).hostname.replace(/^www\./, '');
+      } catch {
+        displayText = url;
+      }
+      parts.push(
+        <InlineLink key={key++} href={url}>
+          {displayText}
+        </InlineLink>
       );
       remaining = remaining.slice(match[0].length);
       continue;
@@ -295,11 +602,21 @@ function renderInline(text) {
       continue;
     }
 
-    // Plain text up to next special char
-    match = remaining.match(/^[^`*]+/);
+    // Plain text up to next special char or URL start
+    match = remaining.match(/^[^`*\[h]+/);
     if (match) {
       parts.push(match[0]);
       remaining = remaining.slice(match[0].length);
+      continue;
+    }
+
+    // Check for 'h' that isn't the start of a URL, or '[' that isn't a link
+    if (
+      (remaining[0] === 'h' && !remaining.match(/^https?:\/\//)) ||
+      (remaining[0] === '[' && !remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/))
+    ) {
+      parts.push(remaining[0]);
+      remaining = remaining.slice(1);
       continue;
     }
 
