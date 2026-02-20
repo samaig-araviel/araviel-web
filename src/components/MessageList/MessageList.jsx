@@ -2107,6 +2107,7 @@ export default function MessageList({
   onRetry,
   onAlternateModelRequest,
   onSubConvPanelToggle,
+  focusInput,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -2190,8 +2191,9 @@ export default function MessageList({
   const handleFollowUpSelect = useCallback(
     (text) => {
       dispatch(setInputValue(text));
+      if (focusInput) focusInput();
     },
-    [dispatch]
+    [dispatch, focusInput]
   );
 
   const scrollToBottom = useCallback(() => {
