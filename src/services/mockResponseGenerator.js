@@ -38,6 +38,14 @@ function detectIntent(prompt) {
   }
 
   if (
+    /\b(design|ui|ux|interface|layout|mockup|wireframe|visual|brand|logo|typography|color palette|architecture.*photo|image|gallery|photo)\b/.test(
+      lower
+    )
+  ) {
+    return 'design';
+  }
+
+  if (
     /\b(explain|what is|how does|why|history|science|quantum|theory|research|tell me about|describe)\b/.test(
       lower
     )
@@ -58,6 +66,7 @@ const personalities = {
         coding: "I'd be happy to help with that.",
         creative: 'What a delightful request.',
         analytical: 'Let me think through this carefully.',
+        design: "Here's some design inspiration for you.",
         question: 'Great question.',
         math: 'Let me work through this.',
         research: "That's a fascinating topic to explore.",
@@ -74,6 +83,7 @@ const personalities = {
         coding: 'Here is a solution for you.',
         creative: 'Here is what I came up with.',
         analytical: 'Here is a structured analysis.',
+        design: 'Here are some design references.',
         question: 'Here is what you need to know.',
         math: 'Here is the solution.',
         research: 'Here is a comprehensive overview.',
@@ -89,6 +99,7 @@ const personalities = {
         coding: 'Here is an implementation approach.',
         creative: 'Here is a creative response.',
         analytical: 'Based on available data, here is my analysis.',
+        design: 'Here are visually relevant references.',
         question: 'Here is a data-driven answer.',
         math: 'Computing the result.',
         research: 'Here is what the evidence shows.',
@@ -104,6 +115,7 @@ const personalities = {
         coding: 'Based on current documentation and best practices:',
         creative: 'Drawing from various sources and styles:',
         analytical: 'According to recent data and analysis:',
+        design: 'Based on current design trends and sources:',
         question: 'Based on current information:',
         math: 'Here is the calculated result:',
         research: 'Based on multiple authoritative sources:',
@@ -342,6 +354,48 @@ The field has converged on several key principles, though active debate continue
 **Further Exploration**
 
 For deeper understanding, consider looking into the primary research literature and established reference texts in this domain. The most valuable insights often come from practitioners who have navigated the gap between theory and application.`;
+  },
+
+  design: () => {
+    return `Here is a curated collection of modern UI design references to inspire your project:
+
+![Minimal dashboard with clean typography](https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=400&fit=crop)
+![Dark mode interface with gradient accents](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&h=400&fit=crop)
+![Mobile app with card-based layout](https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&h=400&fit=crop)
+![Clean data visualization design](https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop)
+![Minimalist web layout](https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&h=400&fit=crop)
+
+**Key Design Principles**
+
+1. **Visual hierarchy** — Use size, weight, and spacing to guide the eye. The most important elements should be the most prominent
+2. **Consistent spacing** — Follow an 8px grid system for padding and margins to maintain rhythm
+3. **Color restraint** — Limit your palette to 2-3 primary colors plus neutrals. Use accent colors sparingly for emphasis
+
+**Recommended Resources**
+
+- Check out [Refactoring UI](https://www.refactoringui.com/) for practical design tips aimed at developers
+- The [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) are excellent for understanding platform conventions
+- For color palette inspiration, try [Realtime Colors](https://www.realtimecolors.com/) — it lets you preview palettes on a real UI
+- [Tailwind UI](https://tailwindui.com/) offers beautifully crafted component examples at https://tailwindui.com/components
+
+**Typography Tips**
+
+Use \`font-size: clamp(1rem, 2.5vw, 1.25rem)\` for responsive body text. For headings, pair a bold weight (700) with a slightly tighter \`letter-spacing: -0.02em\` to create a polished look.
+
+\`\`\`css
+/* Modern type scale */
+:root {
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 2rem;
+}
+\`\`\`
+
+The trend in 2026 is toward softer borders, larger border-radius values, and generous whitespace. The best interfaces feel calm and uncluttered.`;
   },
 
   question: (prompt, provider) => {

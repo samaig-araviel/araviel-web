@@ -107,7 +107,7 @@ const promptsData = {
     icon: SparkleIcon,
     items: [
       { text: 'Generate ideas', icon: LightbulbIcon },
-      { text: 'Design a solution', icon: PuzzleIcon },
+      { text: 'Design a modern UI layout', icon: PuzzleIcon },
       { text: 'Build a prototype', icon: LayersIcon },
       { text: 'Create content', icon: SparkleIcon },
     ],
@@ -602,6 +602,12 @@ export default function MainContent() {
     }
   };
 
+  const focusInput = useCallback(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
+
   const handleCloseDropdown = () => {
     setActiveDropdown(null);
   };
@@ -948,6 +954,7 @@ export default function MainContent() {
           onRetry={handleRetry}
           onAlternateModelRequest={handleAlternateModelRequest}
           onSubConvPanelToggle={setIsSubConvPanelOpen}
+          focusInput={focusInput}
         />
       )}
 
