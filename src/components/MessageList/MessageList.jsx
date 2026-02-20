@@ -750,18 +750,21 @@ function SelectionTooltip({ position, onAsk }) {
 }
 
 /**
- * Sub-conversation dialog — a mini chatbot popup for discussing highlighted text.
+ * Sub-conversation panel — a right-side panel for discussing highlighted text.
+ * Renders as a fixed panel on the right side of the screen instead of a modal.
  */
-function SubConversationDialog({ subConversation, onSend, onCancel, onDone, isSending }) {
+function SubConversationPanel({ subConversation, onSend, onClose, isSending }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const dialogRef = useRef(null);
+  const panelRef = useRef(null);
 
   useEffect(() => {
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    // Focus input after panel slide-in animation
+    const timer = setTimeout(() => {
+      if (inputRef.current) inputRef.current.focus();
+    }, 350);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -773,11 +776,11 @@ function SubConversationDialog({ subConversation, onSend, onCancel, onDone, isSe
   // Close on escape
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
-  }, [onCancel]);
+  }, [onClose]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -794,89 +797,121 @@ function SubConversationDialog({ subConversation, onSend, onCancel, onDone, isSe
   };
 
   const truncatedHighlight =
-    subConversation.highlightedText.length > 40
-      ? subConversation.highlightedText.slice(0, 40) + '...'
+    subConversation.highlightedText.length > 60
+      ? subConversation.highlightedText.slice(0, 60) + '...'
       : subConversation.highlightedText;
 
   return (
-    <div className={styles.subConvOverlay} onClick={onCancel}>
-      <div className={styles.subConvDialog} ref={dialogRef} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className={styles.subConvHeader}>
+    <div className={styles.subConvPanel} ref={panelRef}>
+      {/* Header */}
+      <div className={styles.subConvPanelHeader}>
+        <div className={styles.subConvPanelHeaderTop}>
           <div className={styles.subConvHeaderLeft}>
             <MessageCircleIcon />
-            <span className={styles.subConvHeaderTitle}>Sub-conversation</span>
+            <span className={styles.subConvHeaderTitle}>Sub Conversation</span>
           </div>
-          <button className={styles.subConvCloseBtn} onClick={onCancel} aria-label="Close">
+          <button className={styles.subConvCloseBtn} onClick={onClose} aria-label="Close panel">
             <CloseIcon />
           </button>
         </div>
-
-        {/* Highlighted text context */}
-        <div className={styles.subConvContext}>
-          <span className={styles.subConvContextLabel}>Discussing:</span>
-          <span className={styles.subConvContextText}>"{truncatedHighlight}"</span>
+        <div className={styles.subConvPanelSubheader} title={subConversation.highlightedText}>
+          "{truncatedHighlight}"
         </div>
+      </div>
 
-        {/* Messages */}
-        <div className={styles.subConvMessages}>
-          {subConversation.messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`${styles.subConvMessage} ${
-                msg.role === 'user' ? styles.subConvMessageUser : styles.subConvMessageAssistant
-              }`}
-            >
-              {msg.role === 'user' ? (
-                <div className={styles.subConvUserBubble}>{msg.content}</div>
-              ) : (
-                <div className={styles.subConvAssistantBubble}>{renderMarkdown(msg.content)}</div>
-              )}
-            </div>
-          ))}
-          {isSending && (
-            <div className={`${styles.subConvMessage} ${styles.subConvMessageAssistant}`}>
-              <div className={styles.subConvAssistantBubble}>
-                <div className={styles.subConvTyping}>
-                  <span />
-                  <span />
-                  <span />
-                </div>
+      {/* Messages */}
+      <div className={styles.subConvMessages}>
+        {subConversation.messages.length === 0 && (
+          <div className={styles.subConvEmpty}>
+            <MessageCircleIcon />
+            <p>Ask anything about the highlighted text</p>
+          </div>
+        )}
+        {subConversation.messages.map((msg, idx) => (
+          <div
+            key={idx}
+            className={`${styles.subConvMessage} ${
+              msg.role === 'user' ? styles.subConvMessageUser : styles.subConvMessageAssistant
+            }`}
+          >
+            {msg.role === 'user' ? (
+              <div className={styles.subConvUserBubble}>{msg.content}</div>
+            ) : (
+              <div className={styles.subConvAssistantBubble}>{renderMarkdown(msg.content)}</div>
+            )}
+          </div>
+        ))}
+        {isSending && (
+          <div className={`${styles.subConvMessage} ${styles.subConvMessageAssistant}`}>
+            <div className={styles.subConvAssistantBubble}>
+              <div className={styles.subConvTyping}>
+                <span />
+                <span />
+                <span />
               </div>
             </div>
-          )}
-          <div ref={messagesEndRef} />
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input */}
+      <form className={styles.subConvInputRow} onSubmit={handleSubmit}>
+        <input
+          ref={inputRef}
+          type="text"
+          className={styles.subConvInput}
+          placeholder="Ask a question..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={isSending}
+        />
+        <button
+          type="submit"
+          className={styles.subConvSendBtn}
+          disabled={!input.trim() || isSending}
+          aria-label="Send"
+        >
+          <SendIcon />
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/**
+ * Confirmation dialog for deleting a sub-conversation.
+ */
+function DeleteSubConvDialog({ highlightedText, onConfirm, onCancel }) {
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onCancel]);
+
+  const truncated =
+    highlightedText.length > 30 ? highlightedText.slice(0, 30) + '...' : highlightedText;
+
+  return (
+    <div className={styles.deleteSubConvOverlay} onClick={onCancel}>
+      <div className={styles.deleteSubConvDialog} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.deleteSubConvIcon}>
+          <MessageCircleIcon />
         </div>
-
-        {/* Input */}
-        <form className={styles.subConvInputRow} onSubmit={handleSubmit}>
-          <input
-            ref={inputRef}
-            type="text"
-            className={styles.subConvInput}
-            placeholder={`Ask about "${truncatedHighlight}"...`}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isSending}
-          />
-          <button
-            type="submit"
-            className={styles.subConvSendBtn}
-            disabled={!input.trim() || isSending}
-            aria-label="Send"
-          >
-            <SendIcon />
+        <h3 className={styles.deleteSubConvTitle}>Remove this conversation?</h3>
+        <p className={styles.deleteSubConvDesc}>
+          The sub-conversation about <strong>"{truncated}"</strong> and all its messages will be
+          permanently removed.
+        </p>
+        <div className={styles.deleteSubConvActions}>
+          <button className={styles.deleteSubConvCancelBtn} onClick={onCancel}>
+            Keep it
           </button>
-        </form>
-
-        {/* Footer buttons */}
-        <div className={styles.subConvFooter}>
-          <button className={styles.subConvCancelBtn} onClick={onCancel}>
-            Cancel
-          </button>
-          <button className={styles.subConvDoneBtn} onClick={onDone}>
-            Done
+          <button className={styles.deleteSubConvConfirmBtn} onClick={onConfirm}>
+            Yes, remove
           </button>
         </div>
       </div>
@@ -887,7 +922,7 @@ function SubConversationDialog({ subConversation, onSend, onCancel, onDone, isSe
 /**
  * Horizontal scrollable pills showing saved sub-conversations.
  */
-function SubConversationPills({ subConversations, onOpen }) {
+function SubConversationPills({ subConversations, onOpen, onDelete, activeSubConvId }) {
   if (!subConversations || subConversations.length === 0) return null;
 
   return (
@@ -899,19 +934,35 @@ function SubConversationPills({ subConversations, onOpen }) {
       <div className={styles.subConvPillsTrack}>
         {subConversations.map((sc) => {
           const truncated =
-            sc.highlightedText.length > 10
-              ? sc.highlightedText.slice(0, 10) + '...'
+            sc.highlightedText.length > 14
+              ? sc.highlightedText.slice(0, 14) + '...'
               : sc.highlightedText;
+          const isActive = sc.id === activeSubConvId;
           return (
-            <button
+            <div
               key={sc.id}
-              className={styles.subConvPill}
-              onClick={() => onOpen(sc.id)}
-              title={sc.highlightedText}
+              className={`${styles.subConvPill} ${isActive ? styles.subConvPillActive : ''}`}
             >
-              <MessageCircleIcon />
-              <span>{truncated}</span>
-            </button>
+              <button
+                className={styles.subConvPillBtn}
+                onClick={() => onOpen(sc.id)}
+                title={sc.highlightedText}
+              >
+                <MessageCircleIcon />
+                <span>{truncated}</span>
+              </button>
+              <button
+                className={styles.subConvPillDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(sc.id);
+                }}
+                aria-label={`Delete sub-conversation about ${sc.highlightedText}`}
+                title="Remove"
+              >
+                <CloseIcon />
+              </button>
+            </div>
           );
         })}
       </div>
@@ -1233,6 +1284,9 @@ function Message({
   onRetry,
   onAlternateModelRequest,
   userPrompt,
+  onSubConvPanelToggle,
+  subConvPanelOwnerId,
+  onSetSubConvPanelOwner,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -1246,9 +1300,10 @@ function Message({
   // Sub-conversation state
   const [subConversations, setSubConversations] = useState([]);
   const [activeSubConvId, setActiveSubConvId] = useState(null);
-  const [showSubConvDialog, setShowSubConvDialog] = useState(false);
+  const [showSubConvPanel, setShowSubConvPanel] = useState(false);
   const [selectionTooltip, setSelectionTooltip] = useState(null);
   const [isSendingSubMsg, setIsSendingSubMsg] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const markdownContentRef = useRef(null);
   const tooltipTimeoutRef = useRef(null);
 
@@ -1333,12 +1388,15 @@ function Message({
 
     setSubConversations((prev) => [...prev, newSubConv]);
     setActiveSubConvId(newSubConv.id);
-    setShowSubConvDialog(true);
+    setShowSubConvPanel(true);
     setSelectionTooltip(null);
+
+    // Notify parent that panel is opening
+    if (onSubConvPanelToggle) onSubConvPanelToggle(true);
 
     // Clear the text selection
     window.getSelection()?.removeAllRanges();
-  }, [selectionTooltip]);
+  }, [selectionTooltip, onSubConvPanelToggle]);
 
   // Send a message in the active sub-conversation
   const handleSubConvSend = useCallback(
@@ -1375,34 +1433,67 @@ function Message({
   );
 
   // Open existing sub-conversation pill
-  const handleOpenSubConv = useCallback((id) => {
-    setActiveSubConvId(id);
-    setShowSubConvDialog(true);
+  const handleOpenSubConv = useCallback(
+    (id) => {
+      setActiveSubConvId(id);
+      setShowSubConvPanel(true);
+      if (onSubConvPanelToggle) onSubConvPanelToggle(true);
+    },
+    [onSubConvPanelToggle]
+  );
+
+  // Close panel
+  const handleCloseSubConvPanel = useCallback(() => {
+    const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
+    // If the sub-conversation has no messages, remove it
+    if (activeConv && activeConv.messages.length === 0) {
+      setSubConversations((prev) => prev.filter((sc) => sc.id !== activeSubConvId));
+    }
+    setShowSubConvPanel(false);
+    setActiveSubConvId(null);
+    if (onSubConvPanelToggle) onSubConvPanelToggle(false);
+  }, [activeSubConvId, subConversations, onSubConvPanelToggle]);
+
+  // Request to delete a sub-conversation (shows confirmation)
+  const handleRequestDeleteSubConv = useCallback((id) => {
+    setPendingDeleteId(id);
   }, []);
 
-  // Close dialog via Cancel
-  const handleSubConvCancel = useCallback(() => {
-    const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
-    // If the sub-conversation has no messages, remove it
-    if (activeConv && activeConv.messages.length === 0) {
-      setSubConversations((prev) => prev.filter((sc) => sc.id !== activeSubConvId));
+  // Confirm delete
+  const handleConfirmDeleteSubConv = useCallback(() => {
+    if (!pendingDeleteId) return;
+    // If deleting the active one, close the panel
+    if (pendingDeleteId === activeSubConvId) {
+      setShowSubConvPanel(false);
+      setActiveSubConvId(null);
+      if (onSubConvPanelToggle) onSubConvPanelToggle(false);
     }
-    setShowSubConvDialog(false);
-    setActiveSubConvId(null);
-  }, [activeSubConvId, subConversations]);
+    setSubConversations((prev) => prev.filter((sc) => sc.id !== pendingDeleteId));
+    setPendingDeleteId(null);
+  }, [pendingDeleteId, activeSubConvId, onSubConvPanelToggle]);
 
-  // Close dialog via Done
-  const handleSubConvDone = useCallback(() => {
-    const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
-    // If the sub-conversation has no messages, remove it
-    if (activeConv && activeConv.messages.length === 0) {
-      setSubConversations((prev) => prev.filter((sc) => sc.id !== activeSubConvId));
+  // Cancel delete
+  const handleCancelDeleteSubConv = useCallback(() => {
+    setPendingDeleteId(null);
+  }, []);
+
+  // If another message took ownership of the panel, close ours
+  useEffect(() => {
+    if (showSubConvPanel && subConvPanelOwnerId !== null && subConvPanelOwnerId !== message.id) {
+      setShowSubConvPanel(false);
+      setActiveSubConvId(null);
     }
-    setShowSubConvDialog(false);
-    setActiveSubConvId(null);
-  }, [activeSubConvId, subConversations]);
+  }, [subConvPanelOwnerId, showSubConvPanel, message.id]);
+
+  // Register this message as the panel owner when it opens
+  useEffect(() => {
+    if (showSubConvPanel && onSetSubConvPanelOwner) {
+      onSetSubConvPanelOwner(message.id);
+    }
+  }, [showSubConvPanel, message.id, onSetSubConvPanelOwner]);
 
   const activeSubConversation = subConversations.find((sc) => sc.id === activeSubConvId);
+  const pendingDeleteConv = subConversations.find((sc) => sc.id === pendingDeleteId);
 
   const followUps =
     !isUser && isLastAssistant && !isStreaming && message.content
@@ -1513,21 +1604,34 @@ function Message({
 
       {/* Sub-conversation pills — between response actions and follow-ups */}
       {!isUser && !isStreaming && message.content && (
-        <SubConversationPills subConversations={subConversations} onOpen={handleOpenSubConv} />
+        <SubConversationPills
+          subConversations={subConversations}
+          onOpen={handleOpenSubConv}
+          onDelete={handleRequestDeleteSubConv}
+          activeSubConvId={showSubConvPanel ? activeSubConvId : null}
+        />
       )}
 
       {followUps.length > 0 && (
         <FollowUpSuggestions suggestions={followUps} onSelect={onFollowUpSelect} />
       )}
 
-      {/* Sub-conversation dialog */}
-      {showSubConvDialog && activeSubConversation && (
-        <SubConversationDialog
+      {/* Sub-conversation panel (right side) */}
+      {showSubConvPanel && activeSubConversation && subConvPanelOwnerId === message.id && (
+        <SubConversationPanel
           subConversation={activeSubConversation}
           onSend={handleSubConvSend}
-          onCancel={handleSubConvCancel}
-          onDone={handleSubConvDone}
+          onClose={handleCloseSubConvPanel}
           isSending={isSendingSubMsg}
+        />
+      )}
+
+      {/* Delete confirmation dialog */}
+      {pendingDeleteConv && (
+        <DeleteSubConvDialog
+          highlightedText={pendingDeleteConv.highlightedText}
+          onConfirm={handleConfirmDeleteSubConv}
+          onCancel={handleCancelDeleteSubConv}
         />
       )}
     </div>
@@ -1548,6 +1652,7 @@ export default function MessageList({
   streamedText,
   onRetry,
   onAlternateModelRequest,
+  onSubConvPanelToggle,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -1556,6 +1661,7 @@ export default function MessageList({
   const containerRef = useRef(null);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [shouldPulse, setShouldPulse] = useState(false);
+  const [subConvPanelOwnerId, setSubConvPanelOwnerId] = useState(null);
   const userScrolledDuringStreamRef = useRef(false);
   const wasStreamingRef = useRef(false);
 
@@ -1705,6 +1811,9 @@ export default function MessageList({
                 onRetry={onRetry}
                 onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}
+                onSubConvPanelToggle={onSubConvPanelToggle}
+                subConvPanelOwnerId={subConvPanelOwnerId}
+                onSetSubConvPanelOwner={setSubConvPanelOwnerId}
               />
             </div>
           );
