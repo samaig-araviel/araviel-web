@@ -2686,31 +2686,32 @@
     position: fixed;
     inset: 0;
     z-index: 1100;
-    background-color: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     animation: overlayFadeIn 0.25s ease;
   }
 
-  /* ===== Image Gallery — Mobile Full-Screen ===== */
+  /* ===== Image Gallery — Mobile Centered Popup ===== */
   .imageGalleryPanel {
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-width: 100%;
-    max-height: none;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
+    top: 50%;
+    left: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    width: calc(100vw - 40px);
+    max-width: 400px;
+    max-height: calc(100dvh - 80px);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.1);
     z-index: 1101;
-    animation: imageGallerySheetUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: imageGalleryPopIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   [data-theme='dark'] .imageGalleryPanel {
-    box-shadow: none;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.3);
   }
 
   .imageGalleryDragHandle {
@@ -2718,12 +2719,12 @@
   }
 
   .imageGalleryPanelFadeTop {
-    border-radius: 0;
+    border-radius: 16px 16px 0 0;
     height: 50px;
   }
 
   .imageGalleryHeader {
-    padding: 60px 18px 14px;
+    padding: 18px 18px 14px;
   }
 
   .imageGalleryGrid {
@@ -2807,6 +2808,17 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes imageGalleryPopIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
