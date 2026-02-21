@@ -1034,6 +1034,7 @@ export default function MainContent() {
               </div>
             </div>
           </form>
+          <p className={styles.disclaimer}>Araviel can make mistakes. Please verify important information.</p>
 
           {!hasMessages && activeDropdown && currentPromptData && (
             <div className={styles.promptsDropdown} ref={dropdownRef}>
