@@ -316,108 +316,43 @@ function CodeBlock({ lang, code }) {
  */
 function ImageRow({ images }) {
   const [showGallery, setShowGallery] = useState(false);
-  const [lightboxIdx, setLightboxIdx] = useState(null);
-  const scrollRef = useRef(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
-
-  const updateScrollButtons = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 2);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
-  }, []);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    updateScrollButtons();
-    el.addEventListener('scroll', updateScrollButtons, { passive: true });
-    return () => el.removeEventListener('scroll', updateScrollButtons);
-  }, [updateScrollButtons]);
-
-  const scroll = (direction) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const amount = direction === 'left' ? -240 : 240;
-    el.scrollBy({ left: amount, behavior: 'smooth' });
-  };
 
   return (
     <>
-      <div className={styles.imageRowContainer}>
-        <div className={styles.imageRowHeader}>
-          <span className={styles.imageRowCount}>
-            {images.length} image{images.length !== 1 ? 's' : ''}
-          </span>
-          {images.length > 1 && (
-            <button className={styles.imageRowViewAll} onClick={() => setShowGallery(true)}>
-              View all
-            </button>
-          )}
-        </div>
-        <div className={styles.imageRowScrollArea}>
-          {canScrollLeft && (
-            <button
-              className={`${styles.imageRowArrow} ${styles.imageRowArrowLeft}`}
-              onClick={() => scroll('left')}
-              aria-label="Scroll left"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            </button>
-          )}
-          <div className={styles.imageRowTrack} ref={scrollRef}>
-            {images.map((img, idx) => (
-              <button key={idx} className={styles.imageRowItem} onClick={() => setLightboxIdx(idx)}>
-                <img
-                  src={img.src}
-                  alt={img.alt || `Image ${idx + 1}`}
-                  className={styles.imageRowImg}
-                  loading="lazy"
-                />
-              </button>
-            ))}
-          </div>
-          {canScrollRight && (
-            <button
-              className={`${styles.imageRowArrow} ${styles.imageRowArrowRight}`}
-              onClick={() => scroll('right')}
-              aria-label="Scroll right"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
-          )}
-        </div>
-      </div>
-      {lightboxIdx !== null && (
-        <ImageLightbox
-          images={images}
-          startIndex={lightboxIdx}
-          onClose={() => setLightboxIdx(null)}
-        />
-      )}
+      <button className={styles.imagesPill} onClick={() => setShowGallery(true)}>
+        <svg
+          className={styles.imagesPillIcon}
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="3" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="m21 15-5-5L5 21" />
+        </svg>
+        <span className={styles.imagesPillCount}>
+          {images.length} image{images.length !== 1 ? 's' : ''}
+        </span>
+        <span className={styles.imagesPillAction}>View images</span>
+        <svg
+          className={styles.imagesPillChevron}
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
       {showGallery && <ImageGalleryPanel images={images} onClose={() => setShowGallery(false)} />}
     </>
   );

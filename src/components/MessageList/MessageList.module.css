@@ -2645,36 +2645,20 @@
     padding: 12px 16px 16px;
   }
 
-  /* ===== Image Row — Mobile: compact 2-col grid ===== */
-  .imageRowContainer {
-    margin: 10px 0;
-  }
-
-  .imageRowScrollArea {
-    position: relative;
-  }
-
-  .imageRowTrack {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  /* ===== Images Pill — Mobile ===== */
+  .imagesPill {
+    margin: 8px 0 2px;
+    padding: 6px 12px 6px 10px;
     gap: 6px;
-    overflow: hidden;
   }
 
-  .imageRowItem {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 4 / 3;
-    border-radius: 8px;
-    flex-shrink: unset;
+  .imagesPillCount {
+    font-size: 12px;
   }
 
-  .imageRowItem:nth-child(n + 5) {
-    display: none;
-  }
-
-  .imageRowArrow {
-    display: none;
+  .imagesPillAction {
+    font-size: 12px;
+    padding-left: 8px;
   }
 
   /* ===== Image Gallery — Mobile Bottom Sheet ===== */
@@ -2853,131 +2837,84 @@
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
-/* ===== Image Row (Horizontal Scrollable) ===== */
-.imageRowContainer {
-  margin: 16px 0;
-  position: relative;
-  overflow: hidden;
-  max-width: 100%;
-}
-
-.imageRowHeader {
-  display: flex;
+/* ===== Images Pill (compact image count + view trigger) ===== */
+.imagesPill {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.imageRowCount {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-}
-
-.imageRowViewAll {
-  font-size: 12px;
-  font-weight: 550;
-  color: var(--text-muted);
+  gap: 7px;
+  margin: 12px 0 4px;
+  padding: 7px 14px 7px 11px;
+  border-radius: 20px;
+  border: 1.5px dashed var(--border-color);
   background: transparent;
-  border: none;
   cursor: pointer;
-  padding: 3px 8px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
   font-family: inherit;
-}
-
-.imageRowViewAll:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-secondary);
-}
-
-.imageRowScrollArea {
-  position: relative;
-}
-
-.imageRowTrack {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  padding-bottom: 4px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.imageRowTrack::-webkit-scrollbar {
-  display: none;
-}
-
-.imageRowItem {
-  flex-shrink: 0;
-  width: 160px;
-  height: 110px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0;
+  animation: imagesPillFadeIn 0.35s ease;
 }
 
-.imageRowItem:hover {
+.imagesPill:hover {
   border-color: var(--text-muted);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background-color: var(--bg-secondary);
 }
 
-[data-theme='dark'] .imageRowItem:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+.imagesPill:active {
+  transform: scale(0.97);
 }
 
-.imageRowImg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+@keyframes imagesPillFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Scroll arrows */
-.imageRowArrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
+.imagesPillIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+}
+
+.imagesPill:hover .imagesPillIcon {
   color: var(--text-secondary);
-  transition: all 0.15s ease;
-  padding: 0;
 }
 
-.imageRowArrow:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.imagesPillCount {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
 }
 
-[data-theme='dark'] .imageRowArrow {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+.imagesPillAction {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding-left: 3px;
+  border-left: 1px solid var(--border-color);
+  padding-left: 10px;
+  transition: color 0.15s ease;
 }
 
-.imageRowArrowLeft {
-  left: -6px;
+.imagesPill:hover .imagesPillAction {
+  color: var(--text-secondary);
 }
 
-.imageRowArrowRight {
-  right: -6px;
+.imagesPillChevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: all 0.2s ease;
+}
+
+.imagesPill:hover .imagesPillChevron {
+  opacity: 1;
+  transform: translateX(1px);
+  color: var(--text-secondary);
 }
 
 /* ===== Image Lightbox (single image popup) ===== */
