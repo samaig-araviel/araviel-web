@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue } from '../../store/slices/chatSlice';
@@ -455,7 +456,7 @@ function ImageGalleryPanel({ images, onClose }) {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose, lightboxIdx]);
 
-  return (
+  return createPortal(
     <>
       <div className={styles.imageGalleryOverlay} onClick={onClose} />
       <div className={styles.imageGalleryPanel}>
@@ -497,7 +498,8 @@ function ImageGalleryPanel({ images, onClose }) {
           onClose={() => setLightboxIdx(null)}
         />
       )}
-    </>
+    </>,
+    document.body
   );
 }
 
