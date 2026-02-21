@@ -2742,8 +2742,29 @@
   }
 
   /* ===== Lightbox — Mobile ===== */
+  .lightboxOverlay {
+    padding: 16px;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+  }
+
+  .lightboxContent {
+    max-width: 100%;
+    max-height: none;
+    margin: auto;
+  }
+
+  .lightboxClose {
+    position: static;
+    align-self: flex-end;
+    margin-bottom: 8px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 50%;
+  }
+
   .lightboxImg {
-    max-width: 92vw;
+    max-width: calc(100vw - 32px);
     max-height: 60vh;
     max-height: 60dvh;
     border-radius: 8px;
@@ -2761,11 +2782,6 @@
 
   .lightboxNavRight {
     right: 6px;
-  }
-
-  .lightboxClose {
-    top: -40px;
-    right: 4px;
   }
 
   .lightboxCaption {
