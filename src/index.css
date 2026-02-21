@@ -25,7 +25,7 @@
   --shadow-lg: 0 4px 12px rgba(61, 53, 40, 0.08);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   /* Dark theme - Soft charcoal tones */
   --bg-primary: #1a1a1a;
   --bg-secondary: #242424;
@@ -46,12 +46,17 @@
   --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, sans-serif;
   background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.2s ease, color 0.2s ease;
@@ -66,7 +71,8 @@ button {
   background: none;
 }
 
-input, textarea {
+input,
+textarea {
   font-family: inherit;
   border: none;
   outline: none;
@@ -78,6 +84,7 @@ a {
   color: inherit;
 }
 
-ul, li {
+ul,
+li {
   list-style: none;
 }
