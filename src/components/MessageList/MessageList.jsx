@@ -317,10 +317,19 @@ function CodeBlock({ lang, code }) {
  */
 function ImageRow({ images }) {
   const [showGallery, setShowGallery] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(null);
+
+  const handleClick = () => {
+    if (window.innerWidth <= 768) {
+      setLightboxIdx(0);
+    } else {
+      setShowGallery(true);
+    }
+  };
 
   return (
     <>
-      <button className={styles.imagesPill} onClick={() => setShowGallery(true)}>
+      <button className={styles.imagesPill} onClick={handleClick}>
         <svg
           className={styles.imagesPillIcon}
           width="14"
@@ -355,6 +364,14 @@ function ImageRow({ images }) {
         </svg>
       </button>
       {showGallery && <ImageGalleryPanel images={images} onClose={() => setShowGallery(false)} />}
+      {lightboxIdx !== null && createPortal(
+        <ImageLightbox
+          images={images}
+          startIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />,
+        document.body
+      )}
     </>
   );
 }
