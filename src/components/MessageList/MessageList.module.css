@@ -2692,39 +2692,38 @@
     animation: overlayFadeIn 0.25s ease;
   }
 
-  /* ===== Image Gallery — Mobile Bottom Sheet ===== */
+  /* ===== Image Gallery — Mobile Full-Screen ===== */
   .imageGalleryPanel {
     position: fixed;
-    top: auto;
+    top: 0;
     right: 0;
     bottom: 0;
     left: 0;
     width: 100%;
     max-width: 100%;
-    max-height: 85vh;
-    max-height: 85dvh;
+    max-height: none;
     border: none;
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+    border-radius: 0;
+    box-shadow: none;
     z-index: 1101;
     animation: imageGallerySheetUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   [data-theme='dark'] .imageGalleryPanel {
-    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+    box-shadow: none;
   }
 
   .imageGalleryDragHandle {
-    display: flex;
+    display: none;
   }
 
   .imageGalleryPanelFadeTop {
-    border-radius: 16px 16px 0 0;
+    border-radius: 0;
     height: 50px;
   }
 
   .imageGalleryHeader {
-    padding: 6px 18px 14px;
+    padding: 60px 18px 14px;
   }
 
   .imageGalleryGrid {
