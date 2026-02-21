@@ -457,6 +457,7 @@ function ImageGalleryPanel({ images, onClose }) {
 
   return (
     <>
+      <div className={styles.imageGalleryOverlay} onClick={onClose} />
       <div className={styles.imageGalleryPanel}>
         <div className={styles.imageGalleryDragHandle}>
           <span className={styles.imageGalleryDragBar} />
@@ -1225,106 +1226,111 @@ function SubConversationPanel({
   const showStreaming = isSending || (thinkingStatus && thinkingStatus !== 'idle');
 
   return (
-    <div className={styles.subConvPanel} ref={panelRef}>
-      {/* Top fade */}
-      <div className={styles.subConvPanelFadeTop} />
+    <>
+      <div className={styles.subConvOverlay} onClick={onClose} />
+      <div className={styles.subConvPanel} ref={panelRef}>
+        {/* Top fade */}
+        <div className={styles.subConvPanelFadeTop} />
 
-      {/* Header */}
-      <div className={styles.subConvPanelHeader}>
-        <div className={styles.subConvPanelHeaderTop}>
-          <span className={styles.subConvHeaderTitle}>Sub Conversation</span>
-          <button className={styles.subConvCloseBtn} onClick={onClose} aria-label="Close panel">
-            <CloseIcon />
-          </button>
-        </div>
-        <div className={styles.subConvPanelSubheader} title={subConversation.highlightedText}>
-          <SparkleIcon />
-          <span>{truncatedHighlight}</span>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className={styles.subConvMessages}>
-        {finalizedMessages.length === 0 && !showStreaming && (
-          <div className={styles.subConvEmpty}>
-            <div className={styles.subConvEmptyIcon}>
-              <SparkleIcon />
-            </div>
-            <p className={styles.subConvEmptyTitle}>Start a conversation</p>
-            <p className={styles.subConvEmptyDesc}>Ask anything about the highlighted text below</p>
+        {/* Header */}
+        <div className={styles.subConvPanelHeader}>
+          <div className={styles.subConvPanelHeaderTop}>
+            <span className={styles.subConvHeaderTitle}>Sub Conversation</span>
+            <button className={styles.subConvCloseBtn} onClick={onClose} aria-label="Close panel">
+              <CloseIcon />
+            </button>
           </div>
-        )}
-        {finalizedMessages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`${styles.subConvMsg} ${
-              msg.role === 'user' ? styles.subConvMsgUser : styles.subConvMsgAssistant
-            }`}
-          >
-            {msg.role === 'user' ? (
-              <div className={styles.subConvUserCard}>{msg.content}</div>
-            ) : (
+          <div className={styles.subConvPanelSubheader} title={subConversation.highlightedText}>
+            <SparkleIcon />
+            <span>{truncatedHighlight}</span>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className={styles.subConvMessages}>
+          {finalizedMessages.length === 0 && !showStreaming && (
+            <div className={styles.subConvEmpty}>
+              <div className={styles.subConvEmptyIcon}>
+                <SparkleIcon />
+              </div>
+              <p className={styles.subConvEmptyTitle}>Start a conversation</p>
+              <p className={styles.subConvEmptyDesc}>
+                Ask anything about the highlighted text below
+              </p>
+            </div>
+          )}
+          {finalizedMessages.map((msg, idx) => (
+            <div
+              key={idx}
+              className={`${styles.subConvMsg} ${
+                msg.role === 'user' ? styles.subConvMsgUser : styles.subConvMsgAssistant
+              }`}
+            >
+              {msg.role === 'user' ? (
+                <div className={styles.subConvUserCard}>{msg.content}</div>
+              ) : (
+                <div className={styles.subConvAssistantContent}>
+                  <div className={styles.subConvMarkdown}>{renderMarkdown(msg.content)}</div>
+                </div>
+              )}
+            </div>
+          ))}
+          {/* Thinking timeline + streaming response */}
+          {thinkingStatus && thinkingStatus !== 'idle' && (
+            <div className={styles.subConvMsg}>
+              <SubConvThinkingTimeline status={thinkingStatus} />
+            </div>
+          )}
+          {streamingText && (
+            <div className={`${styles.subConvMsg} ${styles.subConvMsgAssistant}`}>
               <div className={styles.subConvAssistantContent}>
-                <div className={styles.subConvMarkdown}>{renderMarkdown(msg.content)}</div>
-              </div>
-            )}
-          </div>
-        ))}
-        {/* Thinking timeline + streaming response */}
-        {thinkingStatus && thinkingStatus !== 'idle' && (
-          <div className={styles.subConvMsg}>
-            <SubConvThinkingTimeline status={thinkingStatus} />
-          </div>
-        )}
-        {streamingText && (
-          <div className={`${styles.subConvMsg} ${styles.subConvMsgAssistant}`}>
-            <div className={styles.subConvAssistantContent}>
-              <div className={styles.subConvMarkdown}>
-                {renderMarkdown(streamingText)}
-                <span className={styles.subConvCursor} />
+                <div className={styles.subConvMarkdown}>
+                  {renderMarkdown(streamingText)}
+                  <span className={styles.subConvCursor} />
+                </div>
               </div>
             </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-      {/* Bottom fade */}
-      <div className={styles.subConvPanelFadeBottom} />
+        {/* Bottom fade */}
+        <div className={styles.subConvPanelFadeBottom} />
 
-      {/* Input — matches main chatbox design */}
-      <div className={styles.subConvInputSection}>
-        <form className={styles.subConvInputContainer} onSubmit={handleSubmit}>
-          <div className={styles.subConvInputWrapper}>
-            <textarea
-              ref={textareaRef}
-              className={styles.subConvTextarea}
-              placeholder="Ask about this..."
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                autoResize();
-              }}
-              onKeyDown={handleKeyDown}
-              disabled={isSending}
-              rows={1}
-            />
-            <div className={styles.subConvInputActions}>
-              <button
-                type="submit"
-                className={`${styles.subConvSubmitBtn} ${
-                  input.trim() ? styles.subConvSubmitBtnActive : ''
-                }`}
-                disabled={!input.trim() || isSending}
-                aria-label="Send"
-              >
-                <SendIcon />
-              </button>
+        {/* Input — matches main chatbox design */}
+        <div className={styles.subConvInputSection}>
+          <form className={styles.subConvInputContainer} onSubmit={handleSubmit}>
+            <div className={styles.subConvInputWrapper}>
+              <textarea
+                ref={textareaRef}
+                className={styles.subConvTextarea}
+                placeholder="Ask about this..."
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  autoResize();
+                }}
+                onKeyDown={handleKeyDown}
+                disabled={isSending}
+                rows={1}
+              />
+              <div className={styles.subConvInputActions}>
+                <button
+                  type="submit"
+                  className={`${styles.subConvSubmitBtn} ${
+                    input.trim() ? styles.subConvSubmitBtnActive : ''
+                  }`}
+                  disabled={!input.trim() || isSending}
+                  aria-label="Send"
+                >
+                  <SendIcon />
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
