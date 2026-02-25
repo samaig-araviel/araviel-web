@@ -6,12 +6,14 @@ import {
   selectMessages,
   selectIsProcessing,
   selectSelectedModelId,
+  selectCurrentChatId,
   setInputValue,
   setMode,
   addMessage,
   setIsProcessing,
   updateLastMessage,
   createNewChat,
+  setCurrentChat,
   removeLastAssistantMessage,
 } from '../../store/slices/chatSlice';
 import {
@@ -48,10 +50,7 @@ import {
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
-import useStreamingText from '../../hooks/useStreamingText';
-import { routePrompt } from '../../services/adeApi';
-import { generateMockResponse } from '../../services/mockResponseGenerator';
-import { MODELS } from '../../data/models';
+import { sendMessage, consumeSSEStream } from '../../services/api';
 import styles from './MainContent.module.css';
 
 const getGreeting = () => {
@@ -248,6 +247,7 @@ export default function MainContent() {
   const messages = useSelector(selectMessages);
   const isProcessing = useSelector(selectIsProcessing);
   const selectedModelId = useSelector(selectSelectedModelId);
+  const currentChatId = useSelector(selectCurrentChatId);
 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
@@ -260,55 +260,16 @@ export default function MainContent() {
   // Streaming / timeline state
   const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
   const [routeResult, setRouteResult] = useState(null);
-  const [fullResponseText, setFullResponseText] = useState('');
-  const [shouldStream, setShouldStream] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamedText, setStreamedText] = useState('');
 
-  // Stop-request state: use a generation counter so stale async work is ignored
-  const [lastPrompt, setLastPrompt] = useState('');
+  // Stop-request state
   const [isManualRequest, setIsManualRequest] = useState(false);
   const requestIdRef = useRef(0);
-  const pipelineTimeoutRef = useRef(null); // stores in-flight routing/thinking setTimeout
-  const completeTimeoutRef = useRef(null); // stores the onComplete cleanup setTimeout
+  const abortControllerRef = useRef(null);
+  const completeTimeoutRef = useRef(null);
 
   const hasMessages = messages.length > 0;
-
-  // Streaming hook
-  const {
-    streamedText,
-    isStreaming,
-    stop: stopStreaming,
-  } = useStreamingText(fullResponseText, shouldStream, {
-    baseDelay: 25,
-    variance: 18,
-    punctuationPause: 70,
-    paragraphPause: 120,
-    onComplete: useCallback(() => {
-      // Guard: if request was cancelled, do nothing
-      const id = requestIdRef.current;
-
-      // Ensure final content is persisted in Redux
-      dispatch(updateLastMessage({ content: fullResponseText }));
-      setPipelineStatus('complete');
-      dispatch(setIsProcessing(false));
-
-      // Brief delay then clear timeline
-      completeTimeoutRef.current = setTimeout(() => {
-        // Only clean up if no new request has started
-        if (requestIdRef.current !== id) return;
-        setPipelineStatus('idle');
-        setShouldStream(false);
-        setFullResponseText('');
-        setRouteResult(null);
-      }, 600);
-    }, [dispatch, fullResponseText]),
-  });
-
-  // Update the assistant message content as streaming progresses
-  useEffect(() => {
-    if (isStreaming && streamedText) {
-      dispatch(updateLastMessage({ content: streamedText }));
-    }
-  }, [streamedText, isStreaming, dispatch]);
 
   // Click-outside handlers
   useEffect(() => {
@@ -369,220 +330,275 @@ export default function MainContent() {
   }, [isProcessing, messages.length]);
 
   /**
-   * Cancellable delay that stores its timeout in the pipeline ref.
-   * Resolves to false if the timeout is cleared externally (via handleStop).
+   * Core SSE streaming pipeline. Used by handleSubmit, handleRetry, and handleAlternateModelRequest.
+   * @param {string} prompt - User message text
+   * @param {object} options
+   * @param {string} [options.selectedModelId] - Manual model override
+   * @param {string} [options.conversationId] - Existing conversation to continue
+   * @param {boolean} [options.addUserMessage] - Whether to add a user message to Redux
    */
-  const pipelineDelay = useCallback(
-    (ms) =>
-      new Promise((resolve) => {
-        pipelineTimeoutRef.current = setTimeout(() => {
-          pipelineTimeoutRef.current = null;
-          resolve(true);
-        }, ms);
-      }),
-    []
+  const runSSEPipeline = useCallback(
+    async (prompt, options = {}) => {
+      const myRequestId = ++requestIdRef.current;
+      const isManual = !!options.selectedModelId;
+      setIsManualRequest(isManual);
+
+      // Abort any previous in-flight request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
+      if (options.addUserMessage !== false) {
+        const userMsg = {
+          id: `user-${Date.now()}`,
+          role: 'user',
+          content: prompt,
+          timestamp: Date.now(),
+        };
+        dispatch(addMessage(userMsg));
+      }
+
+      dispatch(setIsProcessing(true));
+      setPipelineStatus('routing');
+      setRouteResult(null);
+      setIsStreaming(false);
+      setStreamedText('');
+
+      const routingStart = Date.now();
+      let assistantMsgAdded = false;
+      let accumulatedContent = '';
+      let accumulatedThinking = '';
+      let receivedDone = false;
+
+      try {
+        const response = await sendMessage({
+          message: prompt,
+          conversationId: options.conversationId || currentChatId || undefined,
+          selectedModelId: options.selectedModelId || undefined,
+        });
+
+        if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
+
+        await consumeSSEStream(
+          response,
+          (event) => {
+            if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
+
+            const { type, data } = event;
+
+            if (type === 'routing') {
+              const routingDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
+
+              // Save the conversationId from backend (may be newly created)
+              if (data.conversationId) {
+                dispatch(setCurrentChat(data.conversationId));
+              }
+
+              const routeData = {
+                modelName: data.model?.name || 'AI',
+                provider: data.model?.provider || 'anthropic',
+                modelId: data.model?.id,
+                score: data.confidence || data.model?.score,
+                reasoning: data.model?.reasoning,
+                analysis: data.analysis,
+                isManualSelection: data.isManualSelection,
+                upgradeHint: data.upgradeHint,
+                providerHint: data.providerHint,
+              };
+              setRouteResult(routeData);
+              setPipelineStatus('thinking');
+
+              // Build alternate models list from backupModels
+              const alternates = (data.backupModels || []).map((m) => ({
+                modelId: m.id,
+                modelName: m.name,
+                provider: m.provider,
+                score: m.score,
+                reasoning: m.reasoning,
+              }));
+
+              // Add empty assistant message
+              const assistantMsg = {
+                id: data.messageId || `assistant-${Date.now()}`,
+                role: 'assistant',
+                content: '',
+                timestamp: Date.now(),
+                modelId: data.model?.id,
+                modelName: data.model?.name || 'AI',
+                provider: data.model?.provider || 'anthropic',
+                score: data.confidence || data.model?.score,
+                reasoning: data.model?.reasoning || 'Best match for your request',
+                isManualSelection: data.isManualSelection || isManual,
+                alternateModels: alternates,
+                analysis: data.analysis,
+                upgradeHint: data.upgradeHint,
+                providerHint: data.providerHint,
+                thinkingData: {
+                  routingDuration,
+                  thinkingDuration: '0.0',
+                  totalDuration: routingDuration,
+                },
+              };
+              dispatch(addMessage(assistantMsg));
+              assistantMsgAdded = true;
+            } else if (type === 'thinking') {
+              accumulatedThinking += data.content || '';
+              if (assistantMsgAdded) {
+                dispatch(updateLastMessage({ thinkingContent: accumulatedThinking }));
+              }
+            } else if (type === 'delta') {
+              setPipelineStatus('writing');
+              accumulatedContent += data.content || '';
+              setStreamedText(accumulatedContent);
+              setIsStreaming(true);
+              if (assistantMsgAdded) {
+                dispatch(updateLastMessage({ content: accumulatedContent }));
+              }
+            } else if (type === 'tool_use') {
+              if (assistantMsgAdded) {
+                dispatch(updateLastMessage({ toolUse: data }));
+              }
+            } else if (type === 'citations') {
+              if (assistantMsgAdded && data.citations) {
+                dispatch(updateLastMessage({ citations: data.citations }));
+              }
+            } else if (type === 'done') {
+              receivedDone = true;
+              const totalDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
+              if (assistantMsgAdded) {
+                dispatch(
+                  updateLastMessage({
+                    usage: data.usage,
+                    costUsd: data.usage?.costUsd,
+                    latencyMs: data.latencyMs,
+                    adeLatencyMs: data.adeLatencyMs,
+                    thinkingData: {
+                      routingDuration: ((data.adeLatencyMs || 0) / 1000).toFixed(1),
+                      thinkingDuration: '0.0',
+                      totalDuration,
+                    },
+                  })
+                );
+              }
+            } else if (type === 'error') {
+              if (data.code === 'PROVIDER_RETRY') {
+                // Non-fatal — show a brief notification but keep listening
+                if (assistantMsgAdded) {
+                  dispatch(updateLastMessage({ providerRetry: true }));
+                }
+              } else {
+                // Fatal error
+                if (assistantMsgAdded) {
+                  dispatch(
+                    updateLastMessage({
+                      content: accumulatedContent || '',
+                      error: {
+                        message: data.message,
+                        code: data.code,
+                        suggestedPlatforms: data.suggestedPlatforms,
+                      },
+                    })
+                  );
+                }
+              }
+            }
+          },
+          abortController.signal
+        );
+      } catch (err) {
+        if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
+        // Network or fetch error
+        if (assistantMsgAdded) {
+          dispatch(
+            updateLastMessage({
+              content: accumulatedContent || '',
+              error: { message: err.message || 'Connection failed', code: 'INTERNAL_ERROR' },
+            })
+          );
+        } else {
+          // No assistant message was added yet — add an error message
+          dispatch(
+            addMessage({
+              id: `error-${Date.now()}`,
+              role: 'assistant',
+              content: '',
+              timestamp: Date.now(),
+              error: { message: err.message || 'Connection failed', code: 'INTERNAL_ERROR' },
+            })
+          );
+        }
+      }
+
+      if (requestIdRef.current !== myRequestId) return;
+
+      // Stream ended — handle timeout (no done event)
+      if (!receivedDone && accumulatedContent) {
+        dispatch(updateLastMessage({ streamTimeout: true }));
+      }
+
+      // Finalize
+      setPipelineStatus('complete');
+      setIsStreaming(false);
+      dispatch(setIsProcessing(false));
+
+      // Brief delay then clear timeline
+      const id = requestIdRef.current;
+      completeTimeoutRef.current = setTimeout(() => {
+        if (requestIdRef.current !== id) return;
+        setPipelineStatus('idle');
+        setRouteResult(null);
+        setStreamedText('');
+      }, 600);
+    },
+    [dispatch, currentChatId]
   );
 
   /**
-   * Main submit handler: orchestrates the full ADE pipeline.
+   * Main submit handler.
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
     const prompt = inputValue.trim();
     if (!prompt || isProcessing) return;
 
-    // Increment request generation — any previous in-flight request is now stale
-    const myRequestId = ++requestIdRef.current;
-
-    // Save prompt for stop functionality
-    setLastPrompt(prompt);
-
-    // Determine if user manually selected a model
-    const manualModelId = selectedModelId;
-    const isManual = !!manualModelId;
-    setIsManualRequest(isManual);
-
-    // 1. Add user message
-    const userMsg = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: prompt,
-      timestamp: Date.now(),
-    };
-    dispatch(addMessage(userMsg));
     dispatch(setInputValue(''));
-    dispatch(setIsProcessing(true));
-
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-
-    // Close dropdowns
     setActiveDropdown(null);
     setShowAttachDropdown(false);
 
-    // 2. Stage 1: Routing — always call ADE (even for manual selection)
-    setPipelineStatus('routing');
-
-    let routing;
-    const routingStart = Date.now();
-
-    if (isManual) {
-      // Manual selection — call ADE with preferModel so we still get alternates
-      const model = MODELS.find((m) => m.id === manualModelId);
-      try {
-        const [adeResult] = await Promise.all([
-          routePrompt(prompt, { preferModel: manualModelId }),
-          pipelineDelay(300),
-        ]);
-        routing = {
-          modelId: manualModelId,
-          modelName: model ? model.name : manualModelId,
-          provider: model ? model.provider : 'anthropic',
-          score: null,
-          reasoning: 'Selected by you',
-          alternateModels: (adeResult.alternateModels || []).filter(
-            (m) => m.modelId !== manualModelId
-          ),
-        };
-      } catch {
-        routing = {
-          modelId: manualModelId,
-          modelName: model ? model.name : manualModelId,
-          provider: model ? model.provider : 'anthropic',
-          score: null,
-          reasoning: 'Selected by you',
-          alternateModels: [],
-        };
-      }
-    } else {
-      // Auto mode — route through ADE
-      try {
-        const [result] = await Promise.all([
-          routePrompt(prompt),
-          pipelineDelay(600 + Math.random() * 400),
-        ]);
-        routing = result;
-      } catch {
-        routing = {
-          modelId: 'claude-sonnet-4-5-20250929',
-          modelName: 'Claude Sonnet 4.5',
-          provider: 'anthropic',
-          score: 0.88,
-          reasoning: 'Fallback routing',
-          alternateModels: [],
-        };
-      }
-    }
-
-    // Bail out if this request was cancelled (stop clicked or new request started)
-    if (requestIdRef.current !== myRequestId) return;
-    const routingDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
-
-    // Resolve model name from our registry if not provided
-    const model = MODELS.find((m) => m.id === routing.modelId);
-    const resolvedModelName = routing.modelName || (model ? model.name : routing.modelId);
-    const resolvedProvider = routing.provider || (model ? model.provider : 'anthropic');
-
-    setRouteResult({
-      ...routing,
-      modelName: resolvedModelName,
-      provider: resolvedProvider,
+    await runSSEPipeline(prompt, {
+      selectedModelId: selectedModelId || undefined,
+      addUserMessage: true,
     });
-
-    // 3. Stage 2: Thinking
-    setPipelineStatus('thinking');
-
-    // Generate mock response
-    const responseText = generateMockResponse(
-      prompt,
-      resolvedProvider,
-      resolvedModelName,
-      routing.score
-    );
-
-    // Simulate thinking time based on response complexity
-    const thinkingStart = Date.now();
-    const thinkingTime = isManual
-      ? 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400
-      : 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
-    await pipelineDelay(thinkingTime);
-
-    if (requestIdRef.current !== myRequestId) return;
-    const thinkingDuration = ((Date.now() - thinkingStart) / 1000).toFixed(1);
-
-    // 4. Stage 3: Writing (streaming)
-    setPipelineStatus('writing');
-
-    // Resolve alternate model names from registry
-    const resolvedAlternates = (routing.alternateModels || [])
-      .filter((alt) => alt.modelId !== routing.modelId)
-      .map((alt) => {
-        const altModel = MODELS.find((m) => m.id === alt.modelId);
-        return {
-          ...alt,
-          modelName: alt.modelName || (altModel ? altModel.name : alt.modelId),
-          provider: alt.provider || (altModel ? altModel.provider : 'unknown'),
-        };
-      })
-      .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, 3);
-
-    // Add empty assistant message that will be filled by streaming
-    const assistantMsg = {
-      id: `assistant-${Date.now()}`,
-      role: 'assistant',
-      content: '',
-      timestamp: Date.now(),
-      modelId: routing.modelId,
-      modelName: resolvedModelName,
-      provider: resolvedProvider,
-      score: routing.score,
-      reasoning: routing.reasoning || 'Best match for your request',
-      isManualSelection: isManual,
-      alternateModels: resolvedAlternates,
-      thinkingData: {
-        routingDuration,
-        thinkingDuration,
-        totalDuration: (parseFloat(routingDuration) + parseFloat(thinkingDuration)).toFixed(1),
-      },
-    };
-    dispatch(addMessage(assistantMsg));
-
-    // Start streaming
-    setFullResponseText(responseText);
-    setShouldStream(true);
   };
 
   /**
-   * Stop handler: kills all processing immediately and shows the send icon.
+   * Stop handler.
    */
   const handleStop = useCallback(() => {
-    // Invalidate any in-flight async pipeline work
     requestIdRef.current++;
 
-    // Clear every pending timeout (routing/thinking delays + onComplete cleanup)
-    if (pipelineTimeoutRef.current) {
-      clearTimeout(pipelineTimeoutRef.current);
-      pipelineTimeoutRef.current = null;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
+
     if (completeTimeoutRef.current) {
       clearTimeout(completeTimeoutRef.current);
       completeTimeoutRef.current = null;
     }
 
-    // Kill streaming (also nulls out onComplete so it can never fire)
-    stopStreaming();
-
-    // Reset all state so nothing can restart
-    setShouldStream(false);
-    setFullResponseText('');
+    setIsStreaming(false);
+    setStreamedText('');
     setPipelineStatus('idle');
     setRouteResult(null);
     setIsManualRequest(false);
     dispatch(setIsProcessing(false));
-  }, [dispatch, stopStreaming]);
+  }, [dispatch]);
 
   const handleModeClick = (newMode) => {
     if (activeDropdown === newMode) {
@@ -620,275 +636,61 @@ export default function MainContent() {
   };
 
   const handleNewChat = () => {
-    // Kill any in-flight request
     requestIdRef.current++;
-    if (pipelineTimeoutRef.current) {
-      clearTimeout(pipelineTimeoutRef.current);
-      pipelineTimeoutRef.current = null;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
     if (completeTimeoutRef.current) {
       clearTimeout(completeTimeoutRef.current);
       completeTimeoutRef.current = null;
     }
-    stopStreaming();
 
     dispatch(createNewChat());
     dispatch(setInputValue(''));
     setActiveDropdown(null);
     setPipelineStatus('idle');
-    setShouldStream(false);
-    setFullResponseText('');
+    setIsStreaming(false);
+    setStreamedText('');
     setRouteResult(null);
-    setLastPrompt('');
     setIsManualRequest(false);
   };
 
   /**
-   * Retry handler: removes last assistant message and re-runs the pipeline.
+   * Retry handler.
    */
   const handleRetry = useCallback(
     async (userPrompt) => {
       if (isProcessing) return;
-
-      // Remove the last assistant message
       dispatch(removeLastAssistantMessage());
 
-      // New generation for this retry
-      const myRequestId = ++requestIdRef.current;
-
-      // Reset pipeline state
-      setPipelineStatus('idle');
-      setShouldStream(false);
-      setFullResponseText('');
-      setRouteResult(null);
-
-      const manualModelId = selectedModelId;
-      const isManual = !!manualModelId;
-      setIsManualRequest(isManual);
-      setLastPrompt(userPrompt);
-
-      // Small delay for visual feedback before restarting
       await new Promise((resolve) => setTimeout(resolve, 150));
-      if (requestIdRef.current !== myRequestId) return;
 
-      // Re-run the pipeline
-      dispatch(setIsProcessing(true));
-      setPipelineStatus('routing');
-
-      let routing;
-      const retryRoutingStart = Date.now();
-
-      if (isManual) {
-        const model = MODELS.find((m) => m.id === manualModelId);
-        try {
-          const [adeResult] = await Promise.all([
-            routePrompt(userPrompt, { preferModel: manualModelId }),
-            pipelineDelay(300),
-          ]);
-          routing = {
-            modelId: manualModelId,
-            modelName: model ? model.name : manualModelId,
-            provider: model ? model.provider : 'anthropic',
-            score: null,
-            reasoning: 'Selected by you',
-            alternateModels: (adeResult.alternateModels || []).filter(
-              (m) => m.modelId !== manualModelId
-            ),
-          };
-        } catch {
-          routing = {
-            modelId: manualModelId,
-            modelName: model ? model.name : manualModelId,
-            provider: model ? model.provider : 'anthropic',
-            score: null,
-            reasoning: 'Selected by you',
-            alternateModels: [],
-          };
-        }
-      } else {
-        try {
-          const [result] = await Promise.all([
-            routePrompt(userPrompt),
-            pipelineDelay(600 + Math.random() * 400),
-          ]);
-          routing = result;
-        } catch {
-          routing = {
-            modelId: 'claude-sonnet-4-5-20250929',
-            modelName: 'Claude Sonnet 4.5',
-            provider: 'anthropic',
-            score: 0.88,
-            reasoning: 'Fallback routing',
-            alternateModels: [],
-          };
-        }
-      }
-
-      if (requestIdRef.current !== myRequestId) return;
-      const retryRoutingDuration = ((Date.now() - retryRoutingStart) / 1000).toFixed(1);
-
-      const model = MODELS.find((m) => m.id === routing.modelId);
-      const resolvedModelName = routing.modelName || (model ? model.name : routing.modelId);
-      const resolvedProvider = routing.provider || (model ? model.provider : 'anthropic');
-
-      setRouteResult({
-        ...routing,
-        modelName: resolvedModelName,
-        provider: resolvedProvider,
+      await runSSEPipeline(userPrompt, {
+        selectedModelId: selectedModelId || undefined,
+        conversationId: currentChatId || undefined,
+        addUserMessage: false,
       });
-
-      setPipelineStatus('thinking');
-
-      const responseText = generateMockResponse(
-        userPrompt,
-        resolvedProvider,
-        resolvedModelName,
-        routing.score
-      );
-
-      const retryThinkingStart = Date.now();
-      const thinkingTime = isManual
-        ? 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400
-        : 800 + Math.min(responseText.length * 0.8, 2000) + Math.random() * 600;
-      await pipelineDelay(thinkingTime);
-
-      if (requestIdRef.current !== myRequestId) return;
-      const retryThinkingDuration = ((Date.now() - retryThinkingStart) / 1000).toFixed(1);
-
-      setPipelineStatus('writing');
-
-      // Resolve alternate model names from registry
-      const resolvedAlternates = (routing.alternateModels || [])
-        .filter((alt) => alt.modelId !== routing.modelId)
-        .map((alt) => {
-          const altModel = MODELS.find((m) => m.id === alt.modelId);
-          return {
-            ...alt,
-            modelName: alt.modelName || (altModel ? altModel.name : alt.modelId),
-            provider: alt.provider || (altModel ? altModel.provider : 'unknown'),
-          };
-        })
-        .sort((a, b) => (b.score || 0) - (a.score || 0))
-        .slice(0, 3);
-
-      const assistantMsg = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        modelId: routing.modelId,
-        modelName: resolvedModelName,
-        provider: resolvedProvider,
-        score: routing.score,
-        reasoning: routing.reasoning || 'Best match for your request',
-        isManualSelection: isManual,
-        alternateModels: resolvedAlternates,
-        thinkingData: {
-          routingDuration: retryRoutingDuration,
-          thinkingDuration: retryThinkingDuration,
-          totalDuration: (
-            parseFloat(retryRoutingDuration) + parseFloat(retryThinkingDuration)
-          ).toFixed(1),
-        },
-      };
-      dispatch(addMessage(assistantMsg));
-
-      setFullResponseText(responseText);
-      setShouldStream(true);
     },
-    [dispatch, isProcessing, selectedModelId, pipelineDelay]
+    [dispatch, isProcessing, selectedModelId, currentChatId, runSSEPipeline]
   );
 
   /**
-   * Alternate model request handler: runs a new pipeline with a specific alternate model
-   * for the given user prompt. Adds a NEW followup response (does not replace the previous one)
-   * so the user can compare responses from different models side by side.
+   * Alternate model request handler.
    */
   const handleAlternateModelRequest = useCallback(
     async (userPrompt, alternateModel) => {
       if (isProcessing) return;
 
-      const myRequestId = ++requestIdRef.current;
-
-      // Reset pipeline state (but do NOT remove the previous assistant message)
-      setPipelineStatus('idle');
-      setShouldStream(false);
-      setFullResponseText('');
-      setRouteResult(null);
-      setIsManualRequest(true);
-      setLastPrompt(userPrompt);
-
       await new Promise((resolve) => setTimeout(resolve, 150));
-      if (requestIdRef.current !== myRequestId) return;
 
-      dispatch(setIsProcessing(true));
-      setPipelineStatus('routing');
-
-      const altModelData = MODELS.find((m) => m.id === alternateModel.modelId);
-      const altModelName =
-        alternateModel.modelName || (altModelData ? altModelData.name : alternateModel.modelId);
-      const altProvider =
-        alternateModel.provider || (altModelData ? altModelData.provider : 'anthropic');
-
-      // Skip ADE — the user already chose this model explicitly, no routing needed
-      const altRoutingStart = Date.now();
-      await pipelineDelay(300);
-
-      if (requestIdRef.current !== myRequestId) return;
-      const altRoutingDuration = ((Date.now() - altRoutingStart) / 1000).toFixed(1);
-
-      setRouteResult({
-        modelId: alternateModel.modelId,
-        modelName: altModelName,
-        provider: altProvider,
-        score: alternateModel.score,
-        reasoning: alternateModel.reasoning || 'Selected as alternate model',
+      await runSSEPipeline(userPrompt, {
+        selectedModelId: alternateModel.modelId,
+        conversationId: currentChatId || undefined,
+        addUserMessage: false,
       });
-
-      setPipelineStatus('thinking');
-
-      const responseText = generateMockResponse(
-        userPrompt,
-        altProvider,
-        altModelName,
-        alternateModel.score
-      );
-
-      const altThinkingStart = Date.now();
-      const thinkingTime = 600 + Math.min(responseText.length * 0.5, 1200) + Math.random() * 400;
-      await pipelineDelay(thinkingTime);
-
-      if (requestIdRef.current !== myRequestId) return;
-      const altThinkingDuration = ((Date.now() - altThinkingStart) / 1000).toFixed(1);
-
-      setPipelineStatus('writing');
-
-      const assistantMsg = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: '',
-        timestamp: Date.now(),
-        modelId: alternateModel.modelId,
-        modelName: altModelName,
-        provider: altProvider,
-        score: alternateModel.score,
-        reasoning: alternateModel.reasoning || 'Selected as alternate model',
-        isManualSelection: true,
-        alternateModels: [],
-        thinkingData: {
-          routingDuration: altRoutingDuration,
-          thinkingDuration: altThinkingDuration,
-          totalDuration: (parseFloat(altRoutingDuration) + parseFloat(altThinkingDuration)).toFixed(
-            1
-          ),
-        },
-      };
-      dispatch(addMessage(assistantMsg));
-
-      setFullResponseText(responseText);
-      setShouldStream(true);
     },
-    [dispatch, isProcessing, pipelineDelay]
+    [isProcessing, currentChatId, runSSEPipeline]
   );
 
   const handleAttachClick = () => {
@@ -955,6 +757,7 @@ export default function MainContent() {
           onAlternateModelRequest={handleAlternateModelRequest}
           onSubConvPanelToggle={setIsSubConvPanelOpen}
           focusInput={focusInput}
+          currentChatId={currentChatId}
         />
       )}
 
@@ -1034,7 +837,9 @@ export default function MainContent() {
               </div>
             </div>
           </form>
-          <p className={styles.disclaimer}>Araviel can make mistakes. Please verify important information.</p>
+          <p className={styles.disclaimer}>
+            Araviel can make mistakes. Please verify important information.
+          </p>
 
           {!hasMessages && activeDropdown && currentPromptData && (
             <div className={styles.promptsDropdown} ref={dropdownRef}>

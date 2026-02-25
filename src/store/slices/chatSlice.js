@@ -12,9 +12,12 @@ const initialState = {
   extendedThinking: false,
   deepResearch: false,
   googleThinking: false,
-  recentChats: [],
-  currentChatId: null,
-  isProcessing: false, // true while ADE routing + response generation
+  currentChatId: null, // current conversationId from backend
+  isProcessing: false,
+  // Conversation list from backend
+  conversations: [],
+  conversationsTotal: 0,
+  conversationsLoading: false,
 };
 
 const chatSlice = createSlice({
@@ -85,13 +88,26 @@ const chatSlice = createSlice({
       state.isProcessing = false;
     },
     removeLastAssistantMessage: (state) => {
-      // Remove the last assistant message and return the preceding user prompt
       for (let i = state.messages.length - 1; i >= 0; i--) {
         if (state.messages[i].role === 'assistant') {
           state.messages.splice(i, 1);
           break;
         }
       }
+    },
+    setMessages: (state, action) => {
+      state.messages = action.payload;
+    },
+    setConversations: (state, action) => {
+      state.conversations = action.payload.conversations;
+      state.conversationsTotal = action.payload.total;
+    },
+    appendConversations: (state, action) => {
+      state.conversations.push(...action.payload.conversations);
+      state.conversationsTotal = action.payload.total;
+    },
+    setConversationsLoading: (state, action) => {
+      state.conversationsLoading = action.payload;
     },
   },
 });
@@ -110,6 +126,10 @@ export const {
   setCurrentChat,
   createNewChat,
   removeLastAssistantMessage,
+  setMessages,
+  setConversations,
+  appendConversations,
+  setConversationsLoading,
 } = chatSlice.actions;
 
 export const selectInputValue = (state) => state.chat.inputValue;
@@ -120,7 +140,9 @@ export const selectDeepResearch = (state) => state.chat.deepResearch;
 export const selectGoogleThinking = (state) => state.chat.googleThinking;
 export const selectMessages = (state) => state.chat.messages;
 export const selectIsProcessing = (state) => state.chat.isProcessing;
-export const selectRecentChats = (state) => state.chat.recentChats;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
+export const selectConversations = (state) => state.chat.conversations;
+export const selectConversationsTotal = (state) => state.chat.conversationsTotal;
+export const selectConversationsLoading = (state) => state.chat.conversationsLoading;
 
 export default chatSlice.reducer;
