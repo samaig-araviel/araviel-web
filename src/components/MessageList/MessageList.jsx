@@ -738,9 +738,10 @@ function CitationsDisplay({ citations }) {
 }
 
 /**
- * Usage stats footer — shows model, tokens, cost, latency.
+ * Usage stats inline — shows info icon to the left of the model pill in the actions bar.
+ * On click, expands to show model, tokens, cost, latency details.
  */
-function UsageFooter({ message }) {
+function UsageFooterInline({ message }) {
   const [showDetails, setShowDetails] = useState(false);
 
   if (!message.usage && !message.costUsd && !message.latencyMs) return null;
@@ -763,7 +764,7 @@ function UsageFooter({ message }) {
   if (parts.length === 0) return null;
 
   return (
-    <div className={styles.usageFooter}>
+    <div className={styles.usageInline}>
       <button
         className={styles.usageToggle}
         onClick={() => setShowDetails(!showDetails)}
@@ -771,24 +772,75 @@ function UsageFooter({ message }) {
       >
         <span className={styles.usageIcon}>i</span>
       </button>
-      {showDetails && <span className={styles.usageDetails}>{parts.join(' \u00b7 ')}</span>}
+      {showDetails && <span className={styles.usageDetails}>{parts.join(' · ')}</span>}
     </div>
   );
 }
 
 /**
- * Upgrade hint banner — shown when the routing suggests a better model.
+ * Upgrade hint card — shown when the routing suggests a better pro model.
+ * Explains the user is on the free plan and invites them to upgrade.
  */
 function UpgradeHint({ upgradeHint }) {
-  if (!upgradeHint || !upgradeHint.recommendedModel) return null;
+  const [dismissed, setDismissed] = useState(false);
+
+  if (!upgradeHint || !upgradeHint.recommendedModel || dismissed) return null;
+
+  const modelName = upgradeHint.recommendedModel.name;
+  const provider = upgradeHint.recommendedModel.provider;
+  const providerData = provider ? PROVIDERS[provider] : null;
+  const LogoComponent = provider ? getProviderLogo(provider) : null;
 
   return (
-    <div className={styles.upgradeHint}>
-      <SparkleIcon />
-      <span>
-        For better results, try <strong>{upgradeHint.recommendedModel.name}</strong>
-        {upgradeHint.reason ? ` — ${upgradeHint.reason}` : ''}
-      </span>
+    <div className={styles.upgradeCard}>
+      <div className={styles.upgradeCardInner}>
+        <div className={styles.upgradeCardHeader}>
+          <div className={styles.upgradeFreeBadge}>Free plan</div>
+          <button
+            className={styles.upgradeDismiss}
+            onClick={() => setDismissed(true)}
+            aria-label="Dismiss"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+        <div className={styles.upgradeCardBody}>
+          <div className={styles.upgradeCardIcon}>
+            <SparkleIcon />
+          </div>
+          <div className={styles.upgradeCardText}>
+            <p className={styles.upgradeCardTitle}>
+              Get better answers with <strong>{modelName}</strong>
+            </p>
+            <p className={styles.upgradeCardDesc}>
+              {upgradeHint.reason
+                ? upgradeHint.reason
+                : `${modelName} delivers higher accuracy and deeper reasoning for questions like this.`}
+            </p>
+          </div>
+        </div>
+        {LogoComponent && providerData && (
+          <div
+            className={styles.upgradeModelChip}
+            style={{
+              backgroundColor: providerData.accentBg,
+              color: providerData.accentText,
+            }}
+          >
+            <LogoComponent size={12} />
+            <span>{modelName}</span>
+          </div>
+        )}
+        <div className={styles.upgradeCardActions}>
+          <button className={styles.upgradeProButton}>
+            <ZapIcon />
+            <span>Upgrade to Pro</span>
+          </button>
+          <button className={styles.upgradeTryButton} onClick={() => setDismissed(true)}>
+            Maybe later
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1600,6 +1652,7 @@ function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlterna
   return (
     <div className={styles.responseActions}>
       <div className={styles.responseActionsLeft}>
+        <UsageFooterInline message={message} />
         {providerData && LogoComponent && (
           <div
             className={styles.modelPillSmallWrapper}
@@ -2318,16 +2371,13 @@ function Message({
       )}
 
       {!isUser && !isStreaming && message.content && (
-        <>
-          <ResponseActions
-            message={message}
-            isDark={isDark}
-            onRetry={onRetry}
-            userPrompt={userPrompt}
-            onSelectAlternate={(alt) => setPendingAlternate(alt)}
-          />
-          <UsageFooter message={message} />
-        </>
+        <ResponseActions
+          message={message}
+          isDark={isDark}
+          onRetry={onRetry}
+          userPrompt={userPrompt}
+          onSelectAlternate={(alt) => setPendingAlternate(alt)}
+        />
       )}
 
       {/* Upgrade hint */}
