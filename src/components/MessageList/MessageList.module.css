@@ -3427,13 +3427,11 @@
   white-space: nowrap;
 }
 
-/* ===== Usage Footer ===== */
-.usageFooter {
+/* ===== Usage Inline (in actions bar) ===== */
+.usageInline {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 2px;
-  min-height: 24px;
 }
 
 .usageToggle {
@@ -3467,6 +3465,7 @@
   font-size: 11px;
   color: var(--text-muted);
   letter-spacing: 0.01em;
+  white-space: nowrap;
   animation: usageFadeIn 0.2s ease;
 }
 
@@ -3481,31 +3480,200 @@
   }
 }
 
-/* ===== Upgrade Hint ===== */
-.upgradeHint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  margin-top: 8px;
-  border-radius: 10px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  font-size: 12px;
-  color: var(--text-secondary);
-  animation: messageFadeIn 0.3s ease;
+/* ===== Upgrade Card ===== */
+.upgradeCard {
+  margin-top: 12px;
+  animation: upgradeCardSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.upgradeHint svg {
-  width: 14px;
-  height: 14px;
-  color: var(--accent, #d4a574);
+@keyframes upgradeCardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.upgradeCardInner {
+  position: relative;
+  border-radius: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.upgradeCardInner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d4a574, #e8c9a0, #d4a574);
+  opacity: 0.8;
+}
+
+.upgradeCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.upgradeFreeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background-color: var(--bg-hover);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.upgradeDismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.upgradeDismiss:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.upgradeDismiss svg {
+  width: 12px;
+  height: 12px;
+}
+
+.upgradeCardBody {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.upgradeCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #d4a574 0%, #e8c9a0 100%);
   flex-shrink: 0;
 }
 
-.upgradeHint strong {
-  font-weight: 600;
+.upgradeCardIcon svg {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
+
+.upgradeCardText {
+  flex: 1;
+  min-width: 0;
+}
+
+.upgradeCardTitle {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-primary);
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.upgradeCardTitle strong {
+  font-weight: 650;
+}
+
+.upgradeCardDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.upgradeModelChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.upgradeModelChip svg {
+  width: 12px;
+  height: 12px;
+}
+
+.upgradeCardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.upgradeProButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #d4a574 0%, #c99a6b 100%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(212, 165, 116, 0.3);
+}
+
+.upgradeProButton:hover {
+  background: linear-gradient(135deg, #c99a6b 0%, #b8895e 100%);
+  box-shadow: 0 2px 8px rgba(212, 165, 116, 0.4);
+  transform: translateY(-1px);
+}
+
+.upgradeProButton svg {
+  width: 13px;
+  height: 13px;
+}
+
+.upgradeTryButton {
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.upgradeTryButton:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--text-muted);
 }
 
 /* ===== Web Search Indicator ===== */
