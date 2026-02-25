@@ -437,6 +437,66 @@
   font-weight: 500;
 }
 
+/* Web search toggle button */
+.webSearchToggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.webSearchToggle svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.webSearchToggle:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.webSearchToggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Auto state — subtle dashed border to indicate auto */
+.webSearchToggle.webSearchToggleAuto {
+  color: var(--text-muted);
+  border: 1px dashed var(--border-color);
+}
+
+.webSearchToggle.webSearchToggleAuto:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--text-muted);
+}
+
+/* On state — active/highlighted */
+.webSearchToggle.webSearchToggleOn {
+  background-color: var(--bg-active);
+  color: var(--text-primary);
+  border: 1px solid var(--text-muted);
+}
+
+.webSearchToggle.webSearchToggleOn:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+}
+
+.webSearchToggleLabel {
+  line-height: 1;
+}
+
 .modeSelector {
   display: flex;
   align-items: center;
@@ -714,6 +774,17 @@
 
   .attachDropdown {
     left: -8px;
+  }
+
+  .webSearchToggle {
+    padding: 5px 8px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .webSearchToggle svg {
+    width: 13px;
+    height: 13px;
   }
 
   .shareModal {

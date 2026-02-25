@@ -2235,6 +2235,18 @@ function Message({
               />
             )}
           </div>
+          {message.webSearchUsed && !isStreaming && (
+            <div
+              className={`${styles.webSearchBadge} ${
+                message.webSearchAutoDetected ? styles.webSearchBadgeAuto : ''
+              }`}
+            >
+              <GlobeIcon />
+              <span>
+                {message.webSearchAutoDetected ? 'Searched the web (auto)' : 'Searched the web'}
+              </span>
+            </div>
+          )}
         </div>
       )}
 

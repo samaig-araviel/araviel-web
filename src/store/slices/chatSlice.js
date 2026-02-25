@@ -21,6 +21,7 @@ const initialState = {
   extendedThinking: false,
   deepResearch: false,
   googleThinking: false,
+  webSearchEnabled: null, // null = Auto/let ADE decide, true = user toggled on, false = user toggled off
   currentChatId: null, // current conversationId from backend
   isProcessing: false,
   // Conversation list from backend
@@ -71,6 +72,9 @@ const chatSlice = createSlice({
         state.extendedThinking = false;
         state.deepResearch = false;
       }
+    },
+    setWebSearchEnabled: (state, action) => {
+      state.webSearchEnabled = action.payload; // null | true | false
     },
     addMessage: (state, action) => {
       state.messages.push(action.payload);
@@ -128,6 +132,7 @@ export const {
   setExtendedThinking,
   setDeepResearch,
   setGoogleThinking,
+  setWebSearchEnabled,
   addMessage,
   updateLastMessage,
   setIsProcessing,
@@ -147,6 +152,7 @@ export const selectSelectedModelId = (state) => state.chat.selectedModelId;
 export const selectExtendedThinking = (state) => state.chat.extendedThinking;
 export const selectDeepResearch = (state) => state.chat.deepResearch;
 export const selectGoogleThinking = (state) => state.chat.googleThinking;
+export const selectWebSearchEnabled = (state) => state.chat.webSearchEnabled;
 export const selectMessages = (state) => state.chat.messages;
 export const selectIsProcessing = (state) => state.chat.isProcessing;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
