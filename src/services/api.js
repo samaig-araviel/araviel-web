@@ -1,6 +1,9 @@
 // Araviel API service layer
-
-const API_BASE = import.meta.env.VITE_ARAVIEL_API_BASE || 'https://araviel-api.vercel.app';
+// In development, Vite proxies /api/* to the backend (avoids CORS).
+// In production, use the env var or the production API URL directly.
+const API_BASE =
+  import.meta.env.VITE_ARAVIEL_API_BASE ||
+  (import.meta.env.DEV ? '' : 'https://araviel-api.vercel.app');
 
 /**
  * Fetch conversation list.
