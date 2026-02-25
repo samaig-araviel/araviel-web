@@ -7,6 +7,7 @@ import {
   selectIsProcessing,
   selectSelectedModelId,
   selectCurrentChatId,
+  selectWebSearchEnabled,
   setInputValue,
   setMode,
   addMessage,
@@ -15,6 +16,7 @@ import {
   createNewChat,
   setCurrentChat,
   removeLastAssistantMessage,
+  setWebSearchEnabled,
 } from '../../store/slices/chatSlice';
 import {
   SendIcon,
@@ -248,6 +250,7 @@ export default function MainContent() {
   const isProcessing = useSelector(selectIsProcessing);
   const selectedModelId = useSelector(selectSelectedModelId);
   const currentChatId = useSelector(selectCurrentChatId);
+  const webSearchEnabled = useSelector(selectWebSearchEnabled);
 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
@@ -336,6 +339,7 @@ export default function MainContent() {
    * @param {string} [options.selectedModelId] - Manual model override
    * @param {string} [options.conversationId] - Existing conversation to continue
    * @param {boolean} [options.addUserMessage] - Whether to add a user message to Redux
+   * @param {boolean|null} [options.webSearch] - Web search preference (null = auto)
    */
   const runSSEPipeline = useCallback(
     async (prompt, options = {}) => {
@@ -373,10 +377,13 @@ export default function MainContent() {
       let receivedDone = false;
 
       try {
+        const webSearchParam =
+          options.webSearch === true ? true : options.webSearch === false ? false : undefined;
         const response = await sendMessage({
           message: prompt,
           conversationId: options.conversationId || currentChatId || undefined,
           selectedModelId: options.selectedModelId || undefined,
+          webSearch: webSearchParam,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -406,6 +413,8 @@ export default function MainContent() {
                 isManualSelection: data.isManualSelection,
                 upgradeHint: data.upgradeHint,
                 providerHint: data.providerHint,
+                webSearchUsed: data.webSearchUsed || false,
+                webSearchAutoDetected: data.webSearchAutoDetected || false,
               };
               setRouteResult(routeData);
               setPipelineStatus('thinking');
@@ -435,6 +444,8 @@ export default function MainContent() {
                 analysis: data.analysis,
                 upgradeHint: data.upgradeHint,
                 providerHint: data.providerHint,
+                webSearchUsed: data.webSearchUsed || false,
+                webSearchAutoDetected: data.webSearchAutoDetected || false,
                 thinkingData: {
                   routingDuration,
                   thinkingDuration: '0.0',
@@ -459,6 +470,10 @@ export default function MainContent() {
             } else if (type === 'tool_use') {
               if (assistantMsgAdded) {
                 dispatch(updateLastMessage({ toolUse: data }));
+                // If the tool is web_search, mark the message as having used web search
+                if (data.tool === 'web_search') {
+                  dispatch(updateLastMessage({ webSearchUsed: true }));
+                }
               }
             } else if (type === 'citations') {
               if (assistantMsgAdded && data.citations) {
@@ -573,6 +588,7 @@ export default function MainContent() {
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
       addUserMessage: true,
+      webSearch: webSearchEnabled,
     });
   };
 
@@ -670,9 +686,10 @@ export default function MainContent() {
         selectedModelId: selectedModelId || undefined,
         conversationId: currentChatId || undefined,
         addUserMessage: false,
+        webSearch: webSearchEnabled,
       });
     },
-    [dispatch, isProcessing, selectedModelId, currentChatId, runSSEPipeline]
+    [dispatch, isProcessing, selectedModelId, currentChatId, runSSEPipeline, webSearchEnabled]
   );
 
   /**
@@ -813,6 +830,40 @@ export default function MainContent() {
                     </div>
                   )}
                   <ModelSelector />
+                  <button
+                    type="button"
+                    className={`${styles.webSearchToggle} ${
+                      webSearchEnabled === true ? styles.webSearchToggleOn : ''
+                    } ${webSearchEnabled === null ? styles.webSearchToggleAuto : ''}`}
+                    onClick={() => {
+                      // Cycle: null (auto) → true (on) → false (off) → null (auto)
+                      if (webSearchEnabled === null) {
+                        dispatch(setWebSearchEnabled(true));
+                      } else if (webSearchEnabled === true) {
+                        dispatch(setWebSearchEnabled(false));
+                      } else {
+                        dispatch(setWebSearchEnabled(null));
+                      }
+                    }}
+                    disabled={isProcessing}
+                    title={
+                      webSearchEnabled === true
+                        ? 'Web search: On'
+                        : webSearchEnabled === false
+                        ? 'Web search: Off'
+                        : 'Web search: Auto'
+                    }
+                    aria-label="Toggle web search"
+                  >
+                    <GlobeIcon />
+                    <span className={styles.webSearchToggleLabel}>
+                      {webSearchEnabled === true
+                        ? 'Search'
+                        : webSearchEnabled === false
+                        ? 'Search off'
+                        : 'Search'}
+                    </span>
+                  </button>
                 </div>
                 {isProcessing ? (
                   <button

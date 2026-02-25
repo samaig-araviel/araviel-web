@@ -41,6 +41,7 @@ export async function fetchConversationMessages(conversationId, limit = 50, offs
  * @param {string} [payload.conversationId]
  * @param {string} [payload.subConversationId]
  * @param {string} [payload.selectedModelId]
+ * @param {boolean} [payload.webSearch]
  * @returns {Promise<Response>}
  */
 export async function sendMessage(payload) {
@@ -52,6 +53,8 @@ export async function sendMessage(payload) {
   if (payload.conversationId) body.conversationId = payload.conversationId;
   if (payload.subConversationId) body.subConversationId = payload.subConversationId;
   if (payload.selectedModelId) body.selectedModelId = payload.selectedModelId;
+  if (payload.webSearch === true) body.webSearch = true;
+  if (payload.webSearch === false) body.webSearch = false;
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
