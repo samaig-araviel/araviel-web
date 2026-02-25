@@ -6,6 +6,13 @@ import { setInputValue } from '../../store/slices/chatSlice';
 import { getProviderLogo } from '../ProviderLogos';
 import { PROVIDERS, MODELS } from '../../data/models';
 import {
+  createSubConversation,
+  fetchSubConversations,
+  fetchSubConversationMessages,
+  sendMessage,
+  consumeSSEStream,
+} from '../../services/api';
+import {
   CopyIcon,
   CheckIcon,
   ArrowRightIcon,
@@ -23,6 +30,7 @@ import {
   SendIcon,
   CloseIcon,
   ZapIcon,
+  GlobeIcon,
 } from '../Icons';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -364,14 +372,15 @@ function ImageRow({ images }) {
         </svg>
       </button>
       {showGallery && <ImageGalleryPanel images={images} onClose={() => setShowGallery(false)} />}
-      {lightboxIdx !== null && createPortal(
-        <ImageLightbox
-          images={images}
-          startIndex={lightboxIdx}
-          onClose={() => setLightboxIdx(null)}
-        />,
-        document.body
-      )}
+      {lightboxIdx !== null &&
+        createPortal(
+          <ImageLightbox
+            images={images}
+            startIndex={lightboxIdx}
+            onClose={() => setLightboxIdx(null)}
+          />,
+          document.body
+        )}
     </>
   );
 }
@@ -690,35 +699,163 @@ function renderInline(text) {
 }
 
 /**
- * Preview mode pill with hover tooltip showing ADE reasoning.
+ * Citations display — shows source pills below the response.
  */
-function PreviewPill({ modelName, score }) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const scoreDisplay = score ? (score * 100).toFixed(1) : null;
+function CitationsDisplay({ citations }) {
+  if (!citations || citations.length === 0) return null;
 
   return (
-    <div
-      className={styles.previewPillWrapper}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
-      onClick={() => setShowTooltip(!showTooltip)}
-    >
-      <span className={styles.previewPill}>
-        <span className={styles.previewDot} />
-        Preview
+    <div className={styles.citationsSection}>
+      <div className={styles.citationsHeader}>
+        <SourcesIcon />
+        <span>Sources</span>
+      </div>
+      <div className={styles.citationsList}>
+        {citations.map((citation, idx) => {
+          let favicon = '';
+          try {
+            const url = new URL(citation.url);
+            favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+          } catch {
+            // skip favicon
+          }
+          return (
+            <a
+              key={idx}
+              href={citation.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.citationPill}
+            >
+              {favicon && <img src={favicon} alt="" className={styles.citationFavicon} />}
+              <span className={styles.citationTitle}>{citation.title || citation.url}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Usage stats footer — shows model, tokens, cost, latency.
+ */
+function UsageFooter({ message }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  if (!message.usage && !message.costUsd && !message.latencyMs) return null;
+
+  const parts = [];
+  if (message.modelName) parts.push(message.modelName);
+  if (message.usage) {
+    const { inputTokens, outputTokens } = message.usage;
+    if (inputTokens != null && outputTokens != null) {
+      parts.push(`${inputTokens} in / ${outputTokens} out tokens`);
+    }
+  }
+  if (message.costUsd != null) {
+    parts.push(`$${message.costUsd.toFixed(4)}`);
+  }
+  if (message.latencyMs != null) {
+    parts.push(`${(message.latencyMs / 1000).toFixed(1)}s`);
+  }
+
+  if (parts.length === 0) return null;
+
+  return (
+    <div className={styles.usageFooter}>
+      <button
+        className={styles.usageToggle}
+        onClick={() => setShowDetails(!showDetails)}
+        title="Usage details"
+      >
+        <span className={styles.usageIcon}>i</span>
+      </button>
+      {showDetails && <span className={styles.usageDetails}>{parts.join(' \u00b7 ')}</span>}
+    </div>
+  );
+}
+
+/**
+ * Upgrade hint banner — shown when the routing suggests a better model.
+ */
+function UpgradeHint({ upgradeHint }) {
+  if (!upgradeHint || !upgradeHint.recommendedModel) return null;
+
+  return (
+    <div className={styles.upgradeHint}>
+      <SparkleIcon />
+      <span>
+        For better results, try <strong>{upgradeHint.recommendedModel.name}</strong>
+        {upgradeHint.reason ? ` — ${upgradeHint.reason}` : ''}
       </span>
-      {showTooltip && (
-        <div className={styles.previewTooltip}>
-          <div className={styles.previewTooltipContent}>
-            <span className={styles.previewTooltipLabel}>ADE Routing</span>
-            <span className={styles.previewTooltipModel}>
-              {modelName}
-              {scoreDisplay && <span className={styles.previewTooltipScore}>{scoreDisplay}%</span>}
-            </span>
-            <span className={styles.previewTooltipDesc}>Response generated in preview mode</span>
+    </div>
+  );
+}
+
+/**
+ * Searching the web indicator — shown during tool_use events.
+ */
+function WebSearchIndicator() {
+  return (
+    <div className={styles.webSearchIndicator}>
+      <GlobeIcon />
+      <span>Searching the web</span>
+      <span className={styles.webSearchDots}>
+        <span className={styles.webSearchDot} />
+        <span className={styles.webSearchDot} />
+        <span className={styles.webSearchDot} />
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Error card displayed inline below messages.
+ */
+function ErrorCard({ error, onRetry, userPrompt }) {
+  if (!error) return null;
+
+  const isFatal = error.code !== 'PROVIDER_RETRY';
+
+  if (!isFatal) {
+    return (
+      <div className={styles.providerRetryNotice}>
+        <span>Switching to backup model...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.errorCard}>
+      <div className={styles.errorCardContent}>
+        <span className={styles.errorCardMessage}>{error.message || 'Something went wrong'}</span>
+        {error.suggestedPlatforms && error.suggestedPlatforms.length > 0 && (
+          <div className={styles.errorSuggestedPlatforms}>
+            {error.suggestedPlatforms.map((platform, idx) => (
+              <span key={idx} className={styles.errorPlatformChip}>
+                {platform}
+              </span>
+            ))}
           </div>
-        </div>
+        )}
+      </div>
+      {onRetry && userPrompt && (
+        <button className={styles.errorRetryBtn} onClick={() => onRetry(userPrompt)}>
+          Try again
+        </button>
       )}
+    </div>
+  );
+}
+
+/**
+ * Stream timeout notice.
+ */
+function StreamTimeoutNotice() {
+  return (
+    <div className={styles.streamTimeoutNotice}>
+      Response may have been cut short due to timeout.
     </div>
   );
 }
@@ -847,7 +984,7 @@ function ModelReasoningTooltip({
         </div>
         <p className={styles.reasoningTooltipText}>{reasoning}</p>
         <span className={styles.reasoningTooltipFooter}>
-          {isManualSelection ? 'Manual selection' : 'Powered by ADE'}
+          {isManualSelection ? 'Manual selection' : 'Araviel routing'}
         </span>
       </div>
     </div>
@@ -1083,31 +1220,7 @@ function AlternateModelConfirmDialog({
   );
 }
 
-/**
- * Generate a mock sub-conversation response based on highlighted text and user question.
- */
-function generateSubResponse(highlightedText, question) {
-  const lower = question.toLowerCase();
-  const term = highlightedText.trim();
-
-  if (/what|meaning|define|explain/i.test(lower)) {
-    return `**${term}** refers to a concept that plays a key role in this context. In simple terms, it describes the underlying mechanism or principle being discussed.\n\nThe key thing to understand is that ${term.toLowerCase()} operates as a foundational element — other concepts in this domain build upon it. Think of it as one of the core building blocks that makes the broader system work.\n\nWould you like me to go deeper on any specific aspect?`;
-  }
-
-  if (/why|reason|purpose/i.test(lower)) {
-    return `The reason **${term}** is important here comes down to its role in the broader system.\n\nIt serves as a critical link between the high-level goals and the practical implementation. Without it, the approach described would lack a key structural element.\n\nIn practice, ${term.toLowerCase()} helps ensure that the overall solution remains coherent and maintainable as complexity grows.`;
-  }
-
-  if (/how|work|implement/i.test(lower)) {
-    return `Here is how **${term}** works at a high level:\n\n1. **Input phase** — It receives the relevant data or signals from the surrounding context\n2. **Processing** — It applies the core logic or transformation specific to its role\n3. **Output** — The result feeds into the next stage of the pipeline\n\nThe elegance of this approach is in its composability — each piece handles one concern well, and they combine cleanly.`;
-  }
-
-  if (/example|show|demo/i.test(lower)) {
-    return `Here is a practical example of **${term}** in action:\n\nImagine you have a system that needs to process incoming requests efficiently. ${term} would be the component responsible for coordinating between the input layer and the processing layer.\n\nA concrete scenario: when a user submits a query, ${term.toLowerCase()} ensures the right handler picks it up, processes it correctly, and returns a well-formed response — all without the caller needing to know the internal details.`;
-  }
-
-  return `Great question about **${term}**.\n\nThis is a nuanced topic with several layers worth exploring. At its core, ${term.toLowerCase()} represents a pattern that balances simplicity with power — it is straightforward enough to understand quickly, but flexible enough to handle complex scenarios.\n\nThe most important thing to remember is that ${term.toLowerCase()} does not exist in isolation. It interacts with the surrounding concepts to create something greater than the sum of its parts.\n\nFeel free to ask a follow-up if you want to explore a specific angle.`;
-}
+// generateSubResponse removed — sub-conversations now use the real backend API
 
 /**
  * Tooltip shown near text selection prompting user to ask Araviel about the highlighted text.
@@ -1395,7 +1508,7 @@ function DeleteSubConvDialog({ highlightedText, onConfirm, onCancel }) {
 /**
  * Horizontal scrollable pills showing saved sub-conversations.
  */
-function SubConversationPills({ subConversations, onOpen, onDelete, activeSubConvId }) {
+function SubConversationPills({ subConversations, onOpen, activeSubConvId }) {
   if (!subConversations || subConversations.length === 0) return null;
 
   return (
@@ -1423,17 +1536,6 @@ function SubConversationPills({ subConversations, onOpen, onDelete, activeSubCon
               >
                 <MessageCircleIcon />
                 <span>{truncated}</span>
-              </button>
-              <button
-                className={styles.subConvPillDelete}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(sc.id);
-                }}
-                aria-label={`Delete sub-conversation about ${sc.highlightedText}`}
-                title="Remove"
-              >
-                <CloseIcon />
               </button>
             </div>
           );
@@ -1533,8 +1635,7 @@ function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlterna
             )}
           </div>
         )}
-        <PreviewPill modelName={message.modelName} score={message.score} />
-        <SourcesPill sources={message.sources} />
+        <SourcesPill sources={message.sources || message.citations} />
       </div>
 
       <div className={styles.responseActionsRight}>
@@ -1613,17 +1714,20 @@ function FollowUpSuggestions({ suggestions, onSelect }) {
 }
 
 /**
- * Collapsible thinking block shown before assistant responses (Claude-style).
- * Shows routing + thinking stages with a dotted timeline.
+ * Collapsible thinking block shown before assistant responses.
+ * Shows routing + thinking stages with a dotted timeline,
+ * and real thinking content when available.
  */
-function ThinkingBlock({ thinkingData, modelName, provider }) {
+function ThinkingBlock({ thinkingData, thinkingContent, modelName, provider }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
 
-  if (!thinkingData) return null;
+  if (!thinkingData && !thinkingContent) return null;
 
-  const { routingDuration, thinkingDuration, totalDuration } = thinkingData;
+  const routingDuration = thinkingData?.routingDuration || '0.0';
+  const thinkingDuration = thinkingData?.thinkingDuration || '0.0';
+  const totalDuration = thinkingData?.totalDuration || '0.0';
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
 
@@ -1681,6 +1785,13 @@ function ThinkingBlock({ thinkingData, modelName, provider }) {
               <span className={styles.thinkingStageDuration}>{thinkingDuration}s</span>
             </div>
           </div>
+
+          {/* Real thinking content from the AI */}
+          {thinkingContent && (
+            <div className={styles.thinkingContentBlock}>
+              <div className={styles.thinkingContentText}>{thinkingContent}</div>
+            </div>
+          )}
 
           <div className={`${styles.thinkingStage} ${styles.thinkingStageLast}`}>
             <div className={styles.thinkingDotLine}>
@@ -1760,6 +1871,7 @@ function Message({
   onSubConvPanelToggle,
   subConvPanelOwnerId,
   onSetSubConvPanelOwner,
+  currentChatId,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -1853,26 +1965,43 @@ function Message({
   }, []);
 
   // Start a new sub-conversation from highlighted text
-  const handleAskAraviel = useCallback(() => {
+  const handleAskAraviel = useCallback(async () => {
     if (!selectionTooltip?.text) return;
 
+    const highlightedText = selectionTooltip.text;
+    setSelectionTooltip(null);
+    window.getSelection()?.removeAllRanges();
+
+    // If we have a currentChatId and message id, create via API
+    if (currentChatId && message.id) {
+      try {
+        const subConv = await createSubConversation(currentChatId, message.id, highlightedText);
+        const newSubConv = {
+          id: subConv.id,
+          highlightedText: subConv.highlightedText,
+          messages: [],
+        };
+        setSubConversations((prev) => [...prev, newSubConv]);
+        setActiveSubConvId(newSubConv.id);
+        setShowSubConvPanel(true);
+        if (onSubConvPanelToggle) onSubConvPanelToggle(true);
+        return;
+      } catch {
+        // Fall through to local-only creation
+      }
+    }
+
+    // Fallback: local-only sub-conversation
     const newSubConv = {
       id: `subconv-${Date.now()}`,
-      highlightedText: selectionTooltip.text,
+      highlightedText,
       messages: [],
     };
-
     setSubConversations((prev) => [...prev, newSubConv]);
     setActiveSubConvId(newSubConv.id);
     setShowSubConvPanel(true);
-    setSelectionTooltip(null);
-
-    // Notify parent that panel is opening
     if (onSubConvPanelToggle) onSubConvPanelToggle(true);
-
-    // Clear the text selection
-    window.getSelection()?.removeAllRanges();
-  }, [selectionTooltip, onSubConvPanelToggle]);
+  }, [selectionTooltip, onSubConvPanelToggle, currentChatId, message.id]);
 
   // Cleanup streaming on unmount
   useEffect(() => {
@@ -1881,12 +2010,38 @@ function Message({
     };
   }, []);
 
-  // Send a message in the active sub-conversation with thinking + streaming
+  // Load existing sub-conversations for this message from the API
+  useEffect(() => {
+    if (isUser || !currentChatId || !message.id || isStreaming) return;
+    // Only fetch if we don't already have sub-conversations loaded
+    if (subConversations.length > 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await fetchSubConversations(currentChatId, message.id);
+        if (cancelled || !data.subConversations?.length) return;
+        const mapped = data.subConversations.map((sc) => ({
+          id: sc.id,
+          highlightedText: sc.highlightedText,
+          messages: [], // loaded on demand when opened
+        }));
+        setSubConversations(mapped);
+      } catch {
+        // Silently fail
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentChatId, message.id, isUser, isStreaming]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Send a message in the active sub-conversation via real SSE
   const handleSubConvSend = useCallback(
-    (text) => {
+    async (text) => {
       if (!activeSubConvId) return;
 
-      // Add user message
+      // Add user message locally
       setSubConversations((prev) =>
         prev.map((sc) =>
           sc.id === activeSubConvId
@@ -1899,63 +2054,77 @@ function Message({
       setSubConvThinkingStatus('thinking');
       setSubConvStreamText('');
 
-      const activeConv = subConversations.find((sc) => sc.id === activeSubConvId);
-      const highlightedText = activeConv?.highlightedText || '';
+      let accumulatedContent = '';
 
-      // Phase 1: Thinking (600-1000ms)
-      const thinkingTime = 600 + Math.random() * 400;
-      subConvStreamRef.current = setTimeout(() => {
-        const response = generateSubResponse(highlightedText, text);
-        setSubConvThinkingStatus('streaming');
+      try {
+        const response = await sendMessage({
+          message: text,
+          conversationId: currentChatId || undefined,
+          subConversationId: activeSubConvId,
+        });
 
-        // Phase 2: Stream the response word by word
-        const tokens = response.split(/(\s+)/);
-        let idx = 0;
-        let accumulated = '';
+        await consumeSSEStream(response, (event) => {
+          const { type, data } = event;
 
-        const streamNext = () => {
-          if (idx >= tokens.length) {
-            // Done streaming — finalize the message
-            setSubConvStreamText('');
-            setSubConvThinkingStatus('idle');
-            setIsSendingSubMsg(false);
-            setSubConversations((prev) =>
-              prev.map((sc) =>
-                sc.id === activeSubConvId
-                  ? { ...sc, messages: [...sc.messages, { role: 'assistant', content: response }] }
-                  : sc
-              )
-            );
-            return;
+          if (type === 'routing') {
+            // Sub-conv routing done, move to thinking/streaming phase
+          } else if (type === 'thinking') {
+            // Still thinking
+          } else if (type === 'delta') {
+            setSubConvThinkingStatus('streaming');
+            accumulatedContent += data.content || '';
+            setSubConvStreamText(accumulatedContent);
+          } else if (type === 'done') {
+            // Finalize
+          } else if (type === 'error') {
+            if (data.code !== 'PROVIDER_RETRY') {
+              accumulatedContent += `\n\n*Error: ${data.message}*`;
+              setSubConvStreamText(accumulatedContent);
+            }
           }
+        });
+      } catch (err) {
+        accumulatedContent = accumulatedContent || `*Error: ${err.message || 'Connection failed'}*`;
+      }
 
-          accumulated += tokens[idx];
-          idx++;
-          setSubConvStreamText(accumulated);
-
-          // Natural timing with variance
-          let delay = 20 + Math.random() * 15;
-          const token = tokens[idx - 1];
-          if (token && /[.!?;:]$/.test(token.trim())) delay += 60;
-          else if (token && /[,]$/.test(token.trim())) delay += 25;
-          if (token && token.includes('\n\n')) delay += 100;
-
-          subConvStreamRef.current = setTimeout(streamNext, delay);
-        };
-
-        // Small delay before first token
-        subConvStreamRef.current = setTimeout(streamNext, 80);
-      }, thinkingTime);
+      // Finalize: add assistant message and reset streaming state
+      const finalContent = accumulatedContent || '*No response received*';
+      setSubConvStreamText('');
+      setSubConvThinkingStatus('idle');
+      setIsSendingSubMsg(false);
+      setSubConversations((prev) =>
+        prev.map((sc) =>
+          sc.id === activeSubConvId
+            ? { ...sc, messages: [...sc.messages, { role: 'assistant', content: finalContent }] }
+            : sc
+        )
+      );
     },
-    [activeSubConvId, subConversations]
+    [activeSubConvId, currentChatId]
   );
 
-  // Open existing sub-conversation pill
+  // Open existing sub-conversation pill — fetch messages from API
   const handleOpenSubConv = useCallback(
-    (id) => {
+    async (id) => {
       setActiveSubConvId(id);
       setShowSubConvPanel(true);
       if (onSubConvPanelToggle) onSubConvPanelToggle(true);
+
+      // Try to load messages from backend
+      try {
+        const data = await fetchSubConversationMessages(id);
+        if (data.messages && data.messages.length > 0) {
+          const mappedMsgs = data.messages.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          }));
+          setSubConversations((prev) =>
+            prev.map((sc) => (sc.id === id ? { ...sc, messages: mappedMsgs } : sc))
+          );
+        }
+      } catch {
+        // Use whatever local messages we have
+      }
     },
     [onSubConvPanelToggle]
   );
@@ -2086,12 +2255,25 @@ function Message({
         />
       )}
 
-      {!isUser && !isStreaming && message.thinkingData && (
+      {!isUser && !isStreaming && (message.thinkingData || message.thinkingContent) && (
         <ThinkingBlock
           thinkingData={message.thinkingData}
+          thinkingContent={message.thinkingContent}
           modelName={message.modelName}
           provider={message.provider}
         />
+      )}
+
+      {/* Web search indicator during tool_use */}
+      {!isUser && isStreaming && message.toolUse && message.toolUse.tool === 'web_search' && (
+        <WebSearchIndicator />
+      )}
+
+      {/* Provider retry notice */}
+      {!isUser && message.providerRetry && isStreaming && (
+        <div className={styles.providerRetryNotice}>
+          <span>Switching to backup model...</span>
+        </div>
       )}
 
       <div className={styles.messageContent} onMouseUp={handleMouseUp}>
@@ -2105,27 +2287,47 @@ function Message({
         )}
       </div>
 
+      {/* Error card */}
+      {!isUser && message.error && (
+        <ErrorCard error={message.error} onRetry={onRetry} userPrompt={userPrompt} />
+      )}
+
+      {/* Stream timeout notice */}
+      {!isUser && !isStreaming && message.streamTimeout && <StreamTimeoutNotice />}
+
+      {/* Citations */}
+      {!isUser && !isStreaming && message.citations && (
+        <CitationsDisplay citations={message.citations} />
+      )}
+
       {/* Text selection tooltip */}
       {selectionTooltip && !isUser && (
         <SelectionTooltip position={selectionTooltip} onAsk={handleAskAraviel} />
       )}
 
       {!isUser && !isStreaming && message.content && (
-        <ResponseActions
-          message={message}
-          isDark={isDark}
-          onRetry={onRetry}
-          userPrompt={userPrompt}
-          onSelectAlternate={(alt) => setPendingAlternate(alt)}
-        />
+        <>
+          <ResponseActions
+            message={message}
+            isDark={isDark}
+            onRetry={onRetry}
+            userPrompt={userPrompt}
+            onSelectAlternate={(alt) => setPendingAlternate(alt)}
+          />
+          <UsageFooter message={message} />
+        </>
       )}
 
-      {/* Sub-conversation pills — between response actions and follow-ups */}
+      {/* Upgrade hint */}
+      {!isUser && !isStreaming && message.upgradeHint && (
+        <UpgradeHint upgradeHint={message.upgradeHint} />
+      )}
+
+      {/* Sub-conversation pills */}
       {!isUser && !isStreaming && message.content && (
         <SubConversationPills
           subConversations={subConversations}
           onOpen={handleOpenSubConv}
-          onDelete={handleRequestDeleteSubConv}
           activeSubConvId={showSubConvPanel ? activeSubConvId : null}
         />
       )}
@@ -2146,14 +2348,7 @@ function Message({
         />
       )}
 
-      {/* Delete confirmation dialog */}
-      {pendingDeleteConv && (
-        <DeleteSubConvDialog
-          highlightedText={pendingDeleteConv.highlightedText}
-          onConfirm={handleConfirmDeleteSubConv}
-          onCancel={handleCancelDeleteSubConv}
-        />
-      )}
+      {/* Delete sub-conversation not supported by backend */}
     </div>
   );
 }
@@ -2174,6 +2369,7 @@ export default function MessageList({
   onAlternateModelRequest,
   onSubConvPanelToggle,
   focusInput,
+  currentChatId,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -2336,6 +2532,7 @@ export default function MessageList({
                 onSubConvPanelToggle={onSubConvPanelToggle}
                 subConvPanelOwnerId={subConvPanelOwnerId}
                 onSetSubConvPanelOwner={setSubConvPanelOwnerId}
+                currentChatId={currentChatId}
               />
             </div>
           );

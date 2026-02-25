@@ -50,7 +50,8 @@
   display: flex;
   flex-direction: column;
   padding: 16px 12px;
-  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), padding 0.2s ease, background-color 0.2s ease,
+    border-color 0.2s ease;
   position: relative;
   z-index: 1000;
   flex-shrink: 0;
@@ -333,11 +334,67 @@
   white-space: nowrap;
 }
 
+.recentItemActive {
+  background-color: var(--bg-active);
+  color: var(--text-primary);
+}
+
 .recentsEmpty {
   padding: 12px;
   font-size: 13px;
   color: var(--text-muted);
   text-align: center;
+}
+
+.recentsSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.skeletonItem {
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.loadMoreBtn {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  margin-top: 4px;
+}
+
+.loadMoreBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.loadMoreBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .recentsCollapsed {

@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   selectSidebarCollapsed,
   toggleSidebar,
@@ -7,8 +7,20 @@ import {
   selectActiveItem,
   setActiveItem,
 } from '../../store/slices/sidebarSlice';
-import { selectRecentChats, createNewChat, setCurrentChat } from '../../store/slices/chatSlice';
+import {
+  createNewChat,
+  setCurrentChat,
+  setMessages,
+  selectConversations,
+  selectConversationsTotal,
+  selectConversationsLoading,
+  setConversations,
+  appendConversations,
+  setConversationsLoading,
+  selectCurrentChatId,
+} from '../../store/slices/chatSlice';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
+import { fetchConversations, fetchConversationMessages } from '../../services/api';
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -27,11 +39,45 @@ import styles from './Sidebar.module.css';
 export default function Sidebar() {
   const dispatch = useDispatch();
   const collapsed = useSelector(selectSidebarCollapsed);
-  const recentChats = useSelector(selectRecentChats);
+  const conversations = useSelector(selectConversations);
+  const conversationsTotal = useSelector(selectConversationsTotal);
+  const conversationsLoading = useSelector(selectConversationsLoading);
+  const currentChatId = useSelector(selectCurrentChatId);
   const themeMode = useSelector(selectTheme);
   const activeItem = useSelector(selectActiveItem);
   const [isMobile, setIsMobile] = useState(false);
   const [recentsExpanded, setRecentsExpanded] = useState(true);
+
+  // Load conversations on mount
+  const loadConversations = useCallback(
+    async (offset = 0) => {
+      dispatch(setConversationsLoading(true));
+      try {
+        const data = await fetchConversations(20, offset);
+        if (offset === 0) {
+          dispatch(setConversations(data));
+        } else {
+          dispatch(appendConversations(data));
+        }
+      } catch {
+        // Silently fail — sidebar will show empty state
+      } finally {
+        dispatch(setConversationsLoading(false));
+      }
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    loadConversations(0);
+  }, [loadConversations]);
+
+  // Refresh conversations when currentChatId changes (new conversation created)
+  useEffect(() => {
+    if (currentChatId) {
+      loadConversations(0);
+    }
+  }, [currentChatId, loadConversations]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -52,11 +98,52 @@ export default function Sidebar() {
     }
   };
 
-  const handleChatClick = (chatId) => {
+  const handleChatClick = async (chatId) => {
     dispatch(setCurrentChat(chatId));
     dispatch(setActiveItem('home'));
     if (isMobile) {
       dispatch(setCollapsed(true));
+    }
+    // Load messages for this conversation
+    try {
+      const data = await fetchConversationMessages(chatId);
+      // Map backend messages to the shape the frontend expects
+      const mappedMessages = (data.messages || []).map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: new Date(msg.createdAt).getTime(),
+        // Assistant-specific fields
+        ...(msg.role === 'assistant' && {
+          modelId: msg.model?.id,
+          modelName: msg.model?.name,
+          provider: msg.model?.provider,
+          score: msg.model?.score,
+          reasoning: msg.model?.reasoning,
+          alternateModels: (msg.alternateModels || []).map((m) => ({
+            modelId: m.id,
+            modelName: m.name,
+            provider: m.provider,
+            score: m.score,
+            reasoning: m.reasoning,
+          })),
+          thinkingContent: msg.thinkingContent,
+          citations: msg.citations,
+          usage: msg.usage,
+          costUsd: msg.costUsd,
+          latencyMs: msg.latencyMs,
+          adeLatencyMs: msg.adeLatencyMs,
+        }),
+      }));
+      dispatch(setMessages(mappedMessages));
+    } catch {
+      // Fail silently — conversation will appear empty
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!conversationsLoading && conversations.length < conversationsTotal) {
+      loadConversations(conversations.length);
     }
   };
 
@@ -170,20 +257,39 @@ export default function Sidebar() {
             <div
               className={`${styles.recentsContent} ${recentsExpanded ? styles.recentsOpen : ''}`}
             >
-              {recentChats.length > 0 ? (
-                <ul className={styles.recentsList}>
-                  {recentChats.map((chat) => (
-                    <li key={chat.id}>
-                      <button
-                        className={styles.recentItem}
-                        onClick={() => handleChatClick(chat.id)}
-                      >
-                        <ChatIcon />
-                        <span>{chat.title}</span>
-                      </button>
-                    </li>
+              {conversationsLoading && conversations.length === 0 ? (
+                <div className={styles.recentsSkeleton}>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className={styles.skeletonItem} />
                   ))}
-                </ul>
+                </div>
+              ) : conversations.length > 0 ? (
+                <>
+                  <ul className={styles.recentsList}>
+                    {conversations.map((chat) => (
+                      <li key={chat.id}>
+                        <button
+                          className={`${styles.recentItem} ${
+                            currentChatId === chat.id ? styles.recentItemActive : ''
+                          }`}
+                          onClick={() => handleChatClick(chat.id)}
+                        >
+                          <ChatIcon />
+                          <span>{chat.title}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {conversations.length < conversationsTotal && (
+                    <button
+                      className={styles.loadMoreBtn}
+                      onClick={handleLoadMore}
+                      disabled={conversationsLoading}
+                    >
+                      {conversationsLoading ? 'Loading...' : 'Load more'}
+                    </button>
+                  )}
+                </>
               ) : (
                 <p className={styles.recentsEmpty}>No recent chats</p>
               )}

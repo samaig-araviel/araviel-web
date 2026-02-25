@@ -3313,3 +3313,324 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ===== Thinking Content (real AI reasoning text) ===== */
+.thinkingContentBlock {
+  margin: 8px 0 8px 22px;
+  padding: 10px 14px;
+  border-left: 2px solid var(--border-color);
+  border-radius: 0 8px 8px 0;
+  background-color: var(--bg-secondary);
+}
+
+.thinkingContentText {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ===== Citations Section ===== */
+.citationsSection {
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+
+.citationsHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.citationsHeader svg {
+  width: 14px;
+  height: 14px;
+}
+
+.citationsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.citationPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  max-width: 260px;
+}
+
+.citationPill:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.citationFavicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.citationTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Usage Footer ===== */
+.usageFooter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  min-height: 24px;
+}
+
+.usageToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.usageToggle:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+.usageIcon {
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.usageDetails {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+  animation: usageFadeIn 0.2s ease;
+}
+
+@keyframes usageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ===== Upgrade Hint ===== */
+.upgradeHint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+  animation: messageFadeIn 0.3s ease;
+}
+
+.upgradeHint svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent, #d4a574);
+  flex-shrink: 0;
+}
+
+.upgradeHint strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ===== Web Search Indicator ===== */
+.webSearchIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  font-size: 13px;
+  color: var(--text-muted);
+  animation: messageFadeIn 0.3s ease;
+}
+
+.webSearchIndicator svg {
+  width: 14px;
+  height: 14px;
+}
+
+.webSearchDots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 2px;
+}
+
+.webSearchDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  animation: webSearchBounce 1.2s ease-in-out infinite;
+}
+
+.webSearchDot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.webSearchDot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes webSearchBounce {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* ===== Provider Retry Notice ===== */
+.providerRetryNotice {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background-color: #fef3cd;
+  font-size: 12px;
+  color: #856404;
+  animation: messageFadeIn 0.3s ease;
+}
+
+[data-theme='dark'] .providerRetryNotice {
+  background-color: rgba(255, 193, 7, 0.12);
+  color: #ffc107;
+}
+
+/* ===== Error Card ===== */
+.errorCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background-color: #fff5f5;
+  border: 1px solid #fecaca;
+  animation: messageFadeIn 0.3s ease;
+}
+
+[data-theme='dark'] .errorCard {
+  background-color: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.errorCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.errorCardMessage {
+  font-size: 13px;
+  color: #b91c1c;
+  line-height: 1.5;
+}
+
+[data-theme='dark'] .errorCardMessage {
+  color: #fca5a5;
+}
+
+.errorSuggestedPlatforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.errorPlatformChip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.errorRetryBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.errorRetryBtn:hover {
+  background-color: var(--bg-button-hover);
+}
+
+/* ===== Stream Timeout Notice ===== */
+.streamTimeoutNotice {
+  padding: 6px 12px;
+  margin-top: 8px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+  animation: messageFadeIn 0.3s ease;
+}
