@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   selectSelectedModelId,
@@ -10,7 +10,15 @@ import {
   setDeepResearch,
   setGoogleThinking,
 } from '../../store/slices/chatSlice';
-import { MODELS, PROVIDERS, PROVIDER_ORDER, getModelsByProvider } from '../../data/models';
+import {
+  MODELS,
+  PROVIDERS,
+  PROVIDER_ORDER,
+  ACCESS_TIERS,
+  getUserTier,
+  getModelsForTier,
+  getModelsByProvider,
+} from '../../data/models';
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -21,11 +29,17 @@ import {
 } from '../Icons';
 import styles from './ModelSelector.module.css';
 
-// The 3 featured models shown in the dropdown — one per major provider
-const FEATURED_MODEL_IDS = [
+// Featured models per tier — one per major provider
+const FEATURED_MODEL_IDS_PRO = [
   'claude-opus-4-6', // Anthropic flagship
   'gpt-5.2', // OpenAI flagship
   'gemini-2.5-pro', // Google flagship
+];
+
+const FEATURED_MODEL_IDS_FREE = [
+  'claude-haiku-4-5-20251001', // Anthropic free
+  'gpt-5-mini', // OpenAI free
+  'gemini-2.5-flash', // Google free
 ];
 
 const MODE_CONFIG = [
@@ -77,6 +91,11 @@ export default function ModelSelector() {
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
 
+  // Get user tier and filter models accordingly
+  const userTier = getUserTier();
+  const tierModels = useMemo(() => getModelsForTier(userTier), [userTier]);
+  const tierModelsByProvider = useMemo(() => getModelsByProvider(tierModels), [tierModels]);
+
   const selectedModel = selectedModelId ? MODELS.find((m) => m.id === selectedModelId) : null;
   const selectedProvider = selectedModel ? selectedModel.provider : null;
   const isAutoMode = !selectedModelId;
@@ -86,12 +105,15 @@ export default function ModelSelector() {
   const savedDefaultModel =
     isAutoMode && savedDefaultId ? MODELS.find((m) => m.id === savedDefaultId) : null;
 
-  // Grouped models for "all models" view
-  const modelsByProvider = getModelsByProvider();
+  // Featured models based on tier
+  const featuredIds =
+    userTier === ACCESS_TIERS.pro ? FEATURED_MODEL_IDS_PRO : FEATURED_MODEL_IDS_FREE;
+  const featuredModels = featuredIds
+    .map((id) => tierModels.find((m) => m.id === id))
+    .filter(Boolean);
 
-  const featuredModels = FEATURED_MODEL_IDS.map((id) => MODELS.find((m) => m.id === id)).filter(
-    Boolean
-  );
+  // Active providers for the "All Models" view (only providers that have tier-accessible models)
+  const activeProviders = PROVIDER_ORDER.filter((pid) => tierModelsByProvider[pid]?.length > 0);
 
   const anyModeActive = extendedThinking || deepResearch || googleThinking;
   const activeModeConfig = anyModeActive ? MODE_CONFIG.find((m) => modeValues[m.key]) : null;
@@ -246,9 +268,9 @@ export default function ModelSelector() {
                 </button>
               </div>
               <div className={styles.allModelsList}>
-                {PROVIDER_ORDER.map((providerId) => {
+                {activeProviders.map((providerId) => {
                   const provider = PROVIDERS[providerId];
-                  const providerModels = modelsByProvider[providerId];
+                  const providerModels = tierModelsByProvider[providerId];
                   if (!providerModels || providerModels.length === 0) return null;
                   return (
                     <div key={providerId}>

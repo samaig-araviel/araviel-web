@@ -923,6 +923,57 @@
 }
 
 /* ===================== */
+/* PRO Badge & Tier      */
+/* ===================== */
+
+.proBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.proBadgeInline {
+  display: inline;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.tierHint {
+  color: var(--text-muted);
+}
+
+/* Pro-locked card state */
+.cardProLocked {
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  pointer-events: auto;
+}
+
+.cardProLocked:hover {
+  opacity: 0.6;
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+.cardHeaderLocked {
+  cursor: default;
+}
+
+/* ===================== */
 /* Responsive            */
 /* ===================== */
 

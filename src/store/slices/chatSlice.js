@@ -1,7 +1,16 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { isModelAccessible, getUserTier } from '../../data/models';
 
 const getInitialSelectedModel = () => {
-  return localStorage.getItem('araviel-selected-model') || null;
+  const modelId = localStorage.getItem('araviel-selected-model');
+  if (!modelId) return null;
+  // Clear selection if model is not accessible for the user's tier
+  const tier = getUserTier();
+  if (!isModelAccessible(modelId, tier)) {
+    localStorage.removeItem('araviel-selected-model');
+    return null;
+  }
+  return modelId;
 };
 
 const initialState = {
