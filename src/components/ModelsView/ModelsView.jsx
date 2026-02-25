@@ -1,5 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { MODELS, PROVIDERS, PROVIDER_ORDER, SPEED_TIERS, formatTokens } from '../../data/models';
+import {
+  MODELS,
+  PROVIDERS,
+  PROVIDER_ORDER,
+  SPEED_TIERS,
+  ACCESS_TIERS,
+  getUserTier,
+  formatTokens,
+} from '../../data/models';
 import { StarIcon, CheckCircleIcon, ChevronDownIcon } from '../Icons';
 import styles from './ModelsView.module.css';
 
@@ -32,6 +40,10 @@ function CapabilityPill({ supported, label }) {
       {supported ? '\u2713' : '\u2717'} {label}
     </span>
   );
+}
+
+function ProBadge() {
+  return <span className={styles.proBadge}>PRO</span>;
 }
 
 function DefaultModelPill({ model, onClear }) {
@@ -118,7 +130,8 @@ function FilterDropdown({ activeFilter, onFilterChange, providerModelMap }) {
           </button>
           {PROVIDER_ORDER.map((pid) => {
             const provider = PROVIDERS[pid];
-            const count = providerModelMap[pid].length;
+            const count = providerModelMap[pid]?.length || 0;
+            if (count === 0) return null;
             return (
               <button
                 key={pid}
@@ -147,25 +160,31 @@ function FilterDropdown({ activeFilter, onFilterChange, providerModelMap }) {
   );
 }
 
-function ModelCard({ model, isDefault, onSetDefault }) {
+function ModelCard({ model, isDefault, onSetDefault, isProLocked }) {
   const [expanded, setExpanded] = useState(false);
   const provider = PROVIDERS[model.provider];
 
   const handleStarClick = (e) => {
     e.stopPropagation();
+    if (isProLocked) return;
     onSetDefault(isDefault ? null : model.id);
+  };
+
+  const handleExpand = () => {
+    if (isProLocked) return;
+    setExpanded(!expanded);
   };
 
   return (
     <div
       className={`${styles.card} ${expanded ? styles.cardExpanded : ''} ${
         isDefault ? styles.cardDefault : ''
-      }`}
+      } ${isProLocked ? styles.cardProLocked : ''}`}
     >
       {/* Card Header -- always visible */}
       <button
-        className={styles.cardHeader}
-        onClick={() => setExpanded(!expanded)}
+        className={`${styles.cardHeader} ${isProLocked ? styles.cardHeaderLocked : ''}`}
+        onClick={handleExpand}
         aria-expanded={expanded}
       >
         <div className={styles.cardHeaderLeft}>
@@ -196,6 +215,7 @@ function ModelCard({ model, isDefault, onSetDefault }) {
                   {model.badge}
                 </span>
               )}
+              {isProLocked && <ProBadge />}
               {isDefault && <span className={styles.defaultBadge}>Default</span>}
             </div>
             <p className={styles.cardTagline}>{model.tagline}</p>
@@ -215,113 +235,126 @@ function ModelCard({ model, isDefault, onSetDefault }) {
             </span>
           </div>
 
-          <button
-            className={`${styles.starBtn} ${isDefault ? styles.starActive : ''}`}
-            onClick={handleStarClick}
-            title={isDefault ? 'Remove as default' : 'Set as default model'}
-            aria-label={isDefault ? 'Remove as default' : 'Set as default model'}
-          >
-            <StarIcon filled={isDefault} />
-          </button>
+          {!isProLocked && (
+            <button
+              className={`${styles.starBtn} ${isDefault ? styles.starActive : ''}`}
+              onClick={handleStarClick}
+              title={isDefault ? 'Remove as default' : 'Set as default model'}
+              aria-label={isDefault ? 'Remove as default' : 'Set as default model'}
+            >
+              <StarIcon filled={isDefault} />
+            </button>
+          )}
 
-          <span className={`${styles.expandChevron} ${expanded ? styles.chevronUp : ''}`}>
-            <ChevronDownIcon />
-          </span>
+          {!isProLocked && (
+            <span className={`${styles.expandChevron} ${expanded ? styles.chevronUp : ''}`}>
+              <ChevronDownIcon />
+            </span>
+          )}
         </div>
       </button>
 
       {/* Expanded detail panel */}
-      <div className={`${styles.cardBody} ${expanded ? styles.cardBodyOpen : ''}`}>
-        <div className={styles.cardBodyInner}>
-          {/* Description */}
-          <p className={styles.description}>{model.description}</p>
+      {!isProLocked && (
+        <div className={`${styles.cardBody} ${expanded ? styles.cardBodyOpen : ''}`}>
+          <div className={styles.cardBodyInner}>
+            {/* Description */}
+            <p className={styles.description}>{model.description}</p>
 
-          {/* Stats row */}
-          <div className={styles.statsGrid}>
-            <div className={styles.statBlock}>
-              <span className={styles.statLabel}>Input pricing</span>
-              <span className={styles.statValue}>
-                $
-                {model.pricing.inputPerM < 1
-                  ? model.pricing.inputPerM.toFixed(3)
-                  : model.pricing.inputPerM.toFixed(2)}
-                <span className={styles.statUnit}> / M tokens</span>
-              </span>
-            </div>
-            <div className={styles.statBlock}>
-              <span className={styles.statLabel}>Output pricing</span>
-              <span className={styles.statValue}>
-                $
-                {model.pricing.outputPerM < 1
-                  ? model.pricing.outputPerM.toFixed(3)
-                  : model.pricing.outputPerM.toFixed(2)}
-                <span className={styles.statUnit}> / M tokens</span>
-              </span>
-            </div>
-            <div className={styles.statBlock}>
-              <span className={styles.statLabel}>Context window</span>
-              <span className={styles.statValue}>
-                {formatTokens(model.context.inputTokens)}
-                <span className={styles.statUnit}> tokens</span>
-              </span>
-            </div>
-            <div className={styles.statBlock}>
-              <span className={styles.statLabel}>Max output</span>
-              <span className={styles.statValue}>
-                {formatTokens(model.context.outputTokens)}
-                <span className={styles.statUnit}> tokens</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Capabilities */}
-          <div className={styles.capabilitiesSection}>
-            <span className={styles.sectionLabel}>Capabilities</span>
-            <div className={styles.capabilityPills}>
-              <CapabilityPill supported={model.capabilities.vision} label="Vision" />
-              <CapabilityPill supported={model.capabilities.audio} label="Audio" />
-              <CapabilityPill
-                supported={model.capabilities.extendedThinking}
-                label="Extended Thinking"
-              />
-              <CapabilityPill supported={model.capabilities.webSearch} label="Web Search" />
-              <CapabilityPill
-                supported={model.capabilities.functionCalling}
-                label="Function Calling"
-              />
-              <CapabilityPill supported={model.capabilities.streaming} label="Streaming" />
-            </div>
-          </div>
-
-          {/* Best for */}
-          <div className={styles.bestForSection}>
-            <span className={styles.sectionLabel}>Best for</span>
-            <div className={styles.bestForTags}>
-              {model.bestFor.map((tag) => (
-                <span key={tag} className={styles.bestForTag}>
-                  {tag}
+            {/* Stats row */}
+            <div className={styles.statsGrid}>
+              <div className={styles.statBlock}>
+                <span className={styles.statLabel}>Input pricing</span>
+                <span className={styles.statValue}>
+                  $
+                  {model.pricing.inputPerM < 1
+                    ? model.pricing.inputPerM.toFixed(3)
+                    : model.pricing.inputPerM.toFixed(2)}
+                  <span className={styles.statUnit}> / M tokens</span>
                 </span>
-              ))}
+              </div>
+              <div className={styles.statBlock}>
+                <span className={styles.statLabel}>Output pricing</span>
+                <span className={styles.statValue}>
+                  $
+                  {model.pricing.outputPerM < 1
+                    ? model.pricing.outputPerM.toFixed(3)
+                    : model.pricing.outputPerM.toFixed(2)}
+                  <span className={styles.statUnit}> / M tokens</span>
+                </span>
+              </div>
+              <div className={styles.statBlock}>
+                <span className={styles.statLabel}>Context window</span>
+                <span className={styles.statValue}>
+                  {formatTokens(model.context.inputTokens)}
+                  <span className={styles.statUnit}> tokens</span>
+                </span>
+              </div>
+              <div className={styles.statBlock}>
+                <span className={styles.statLabel}>Max output</span>
+                <span className={styles.statValue}>
+                  {formatTokens(model.context.outputTokens)}
+                  <span className={styles.statUnit}> tokens</span>
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Set default CTA */}
-          <div className={styles.defaultCta}>
-            <button
-              className={`${styles.setDefaultBtn} ${isDefault ? styles.setDefaultActive : ''}`}
-              onClick={() => onSetDefault(isDefault ? null : model.id)}
-            >
-              <StarIcon filled={isDefault} />
-              {isDefault ? 'Default model \u2014 click to remove' : 'Set as default model'}
-            </button>
+            {/* Capabilities */}
+            <div className={styles.capabilitiesSection}>
+              <span className={styles.sectionLabel}>Capabilities</span>
+              <div className={styles.capabilityPills}>
+                <CapabilityPill supported={model.capabilities.vision} label="Vision" />
+                <CapabilityPill supported={model.capabilities.audio} label="Audio" />
+                <CapabilityPill
+                  supported={model.capabilities.extendedThinking}
+                  label="Extended Thinking"
+                />
+                <CapabilityPill supported={model.capabilities.webSearch} label="Web Search" />
+                <CapabilityPill
+                  supported={model.capabilities.functionCalling}
+                  label="Function Calling"
+                />
+                <CapabilityPill supported={model.capabilities.streaming} label="Streaming" />
+              </div>
+            </div>
+
+            {/* Best for */}
+            <div className={styles.bestForSection}>
+              <span className={styles.sectionLabel}>Best for</span>
+              <div className={styles.bestForTags}>
+                {model.bestFor.map((tag) => (
+                  <span key={tag} className={styles.bestForTag}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Set default CTA */}
+            <div className={styles.defaultCta}>
+              <button
+                className={`${styles.setDefaultBtn} ${isDefault ? styles.setDefaultActive : ''}`}
+                onClick={() => onSetDefault(isDefault ? null : model.id)}
+              >
+                <StarIcon filled={isDefault} />
+                {isDefault ? 'Default model \u2014 click to remove' : 'Set as default model'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function ProviderSection({ providerId, models, defaultModelId, onSetDefault, startOpen }) {
+function ProviderSection({
+  providerId,
+  models,
+  defaultModelId,
+  onSetDefault,
+  startOpen,
+  userTier,
+}) {
   const [open, setOpen] = useState(startOpen);
   const provider = PROVIDERS[providerId];
 
@@ -349,14 +382,19 @@ function ProviderSection({ providerId, models, defaultModelId, onSetDefault, sta
         </span>
       </button>
       <div className={`${styles.modelList} ${open ? styles.modelListOpen : ''}`}>
-        {models.map((model) => (
-          <ModelCard
-            key={model.id}
-            model={model}
-            isDefault={defaultModelId === model.id}
-            onSetDefault={onSetDefault}
-          />
-        ))}
+        {models.map((model) => {
+          const isProLocked =
+            userTier === ACCESS_TIERS.free && model.accessTier === ACCESS_TIERS.pro;
+          return (
+            <ModelCard
+              key={model.id}
+              model={model}
+              isDefault={defaultModelId === model.id}
+              onSetDefault={onSetDefault}
+              isProLocked={isProLocked}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -365,6 +403,7 @@ function ProviderSection({ providerId, models, defaultModelId, onSetDefault, sta
 export default function ModelsView() {
   const [activeFilter, setActiveFilter] = useState(PROVIDER_FILTER_ALL);
   const [defaultModelId, setDefaultModelId] = useState(getDefaultModel);
+  const userTier = getUserTier();
 
   const handleSetDefault = (modelId) => {
     setDefaultModelId(modelId);
@@ -381,8 +420,14 @@ export default function ModelsView() {
 
   const providerModelMap = {};
   for (const pid of PROVIDER_ORDER) {
-    providerModelMap[pid] = MODELS.filter((m) => m.provider === pid);
+    const providerModels = MODELS.filter((m) => m.provider === pid);
+    if (providerModels.length > 0) {
+      providerModelMap[pid] = providerModels;
+    }
   }
+
+  // Only show providers that have models
+  const visibleProviders = filteredProviders.filter((pid) => providerModelMap[pid]?.length > 0);
 
   const totalModels = MODELS.length;
 
@@ -392,7 +437,13 @@ export default function ModelsView() {
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>Models</h1>
         <p className={styles.pageSubtitle}>
-          {totalModels} AI models across {PROVIDER_ORDER.length} providers
+          {totalModels} AI models across {Object.keys(providerModelMap).length} providers
+          {userTier === ACCESS_TIERS.free && (
+            <span className={styles.tierHint}>
+              {' \u2014 '}
+              <span className={styles.proBadgeInline}>PRO</span> models require an upgrade
+            </span>
+          )}
         </p>
       </div>
 
@@ -408,7 +459,7 @@ export default function ModelsView() {
 
       {/* Model sections */}
       <div className={styles.content}>
-        {filteredProviders.map((pid, idx) => (
+        {visibleProviders.map((pid, idx) => (
           <ProviderSection
             key={pid}
             providerId={pid}
@@ -416,6 +467,7 @@ export default function ModelsView() {
             defaultModelId={defaultModelId}
             onSetDefault={handleSetDefault}
             startOpen={idx === 0}
+            userTier={userTier}
           />
         ))}
       </div>

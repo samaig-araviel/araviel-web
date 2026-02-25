@@ -1,6 +1,12 @@
 // Model registry for Araviel — organized by provider
 // Data sourced from ADE (Araviel Decision Engine) model registry
 
+// Access tiers
+export const ACCESS_TIERS = {
+  free: 'free',
+  pro: 'pro',
+};
+
 export const PROVIDERS = {
   anthropic: {
     id: 'anthropic',
@@ -45,6 +51,61 @@ export const PROVIDERS = {
     accentBgDark: '#1e1340',
     accentText: '#6d28d9',
     accentTextDark: '#c4b5fd',
+  },
+  xai: {
+    id: 'xai',
+    name: 'xAI',
+    shortName: 'xAI',
+    logoChar: 'X',
+    accentColor: '#f43f5e', // rose
+    accentBg: '#ffe4e6',
+    accentBgDark: '#3b0d14',
+    accentText: '#be123c',
+    accentTextDark: '#fb7185',
+  },
+  mistral: {
+    id: 'mistral',
+    name: 'Mistral',
+    shortName: 'Mistral',
+    logoChar: 'M',
+    accentColor: '#f97316', // orange
+    accentBg: '#fff7ed',
+    accentBgDark: '#3b1a06',
+    accentText: '#c2410c',
+    accentTextDark: '#fdba74',
+  },
+  deepseek: {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    shortName: 'DeepSeek',
+    logoChar: 'D',
+    accentColor: '#06b6d4', // cyan
+    accentBg: '#cffafe',
+    accentBgDark: '#0b2a33',
+    accentText: '#0e7490',
+    accentTextDark: '#67e8f9',
+  },
+  stability: {
+    id: 'stability',
+    name: 'Stability AI',
+    shortName: 'Stability',
+    logoChar: 'S',
+    accentColor: '#8b5cf6', // purple
+    accentBg: '#f5f3ff',
+    accentBgDark: '#1e1040',
+    accentText: '#7c3aed',
+    accentTextDark: '#a78bfa',
+  },
+  elevenlabs: {
+    id: 'elevenlabs',
+    name: 'ElevenLabs',
+    shortName: 'ElevenLabs',
+    logoChar: 'E',
+    accentColor: '#ec4899', // pink
+    accentBg: '#fce7f3',
+    accentBgDark: '#3b0d24',
+    accentText: '#be185d',
+    accentTextDark: '#f9a8d4',
   },
 };
 
@@ -92,6 +153,7 @@ export const MODELS = [
     },
     bestFor: ['Complex reasoning', 'Coding', 'Agentic workflows', 'Research & analysis'],
     badge: 'Flagship',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'claude-sonnet-4-6',
@@ -113,6 +175,7 @@ export const MODELS = [
     },
     bestFor: ['Coding', 'Agentic tasks', 'Default model', 'Balanced workloads'],
     badge: 'New Default',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'claude-opus-4-5-20251101',
@@ -120,7 +183,7 @@ export const MODELS = [
     provider: 'anthropic',
     tagline: 'Flagship intelligence for the hardest tasks',
     description:
-      'Flagship model with state-of-the-art coding (80.9% SWE-bench), reasoning, and agentic capabilities. 67% cheaper than Opus 4.1.',
+      'Flagship model with state-of-the-art coding (80.9% SWE-bench), reasoning, and agentic capabilities.',
     speedTier: getSpeedTier(2000),
     pricing: { inputPerM: 5.0, outputPerM: 25.0 },
     context: { inputTokens: 200000, outputTokens: 64000 },
@@ -134,6 +197,7 @@ export const MODELS = [
     },
     bestFor: ['Complex reasoning', 'Long-form coding', 'Agentic workflows', 'Research & analysis'],
     badge: null,
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'claude-sonnet-4-5-20250929',
@@ -141,7 +205,7 @@ export const MODELS = [
     provider: 'anthropic',
     tagline: 'Best for coding and agentic tasks',
     description:
-      'Industry-leading agentic capabilities with an ideal balance of intelligence, speed, and cost. Supports 1M token context in beta. The go-to for most coding workflows.',
+      'Best coding model with industry-leading agent capabilities. Ideal balance of intelligence, speed, and cost.',
     speedTier: getSpeedTier(1000),
     pricing: { inputPerM: 3.0, outputPerM: 15.0 },
     context: { inputTokens: 200000, outputTokens: 64000 },
@@ -155,6 +219,7 @@ export const MODELS = [
     },
     bestFor: ['Coding', 'Agentic tasks', 'Balanced workloads'],
     badge: 'Best for Coding',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'claude-haiku-4-5-20251001',
@@ -162,113 +227,29 @@ export const MODELS = [
     provider: 'anthropic',
     tagline: 'Near-frontier speed for everyday tasks',
     description:
-      'The fastest Claude model with near-frontier intelligence. Matches Sonnet 4 on coding benchmarks (73.3% SWE-bench) and excels at computer-use tasks. Perfect for high-volume, latency-sensitive applications.',
-    speedTier: getSpeedTier(350),
-    pricing: { inputPerM: 1.0, outputPerM: 5.0 },
+      'Near-frontier fast model optimized for speed and cost. Ideal for high-volume, quick tasks.',
+    speedTier: getSpeedTier(400),
+    pricing: { inputPerM: 0.8, outputPerM: 4.0 },
     context: { inputTokens: 200000, outputTokens: 64000 },
     capabilities: {
       vision: true,
       audio: false,
-      extendedThinking: true,
+      extendedThinking: false,
       webSearch: false,
       functionCalling: true,
       streaming: true,
     },
-    bestFor: ['Real-time responses', 'High-volume tasks', 'Computer use'],
+    bestFor: ['Real-time responses', 'High-volume tasks', 'Cost-efficient work'],
     badge: 'Fastest',
-  },
-  {
-    id: 'claude-opus-4-1-20250805',
-    name: 'Claude Opus 4.1',
-    provider: 'anthropic',
-    tagline: 'Specialized for agentic and complex tasks',
-    description:
-      'Built for agentic workflows, real-world coding, and multi-step reasoning (74.5% SWE-bench). Drop-in upgrade from Opus 4 with improved instruction following.',
-    speedTier: getSpeedTier(2200),
-    pricing: { inputPerM: 15.0, outputPerM: 75.0 },
-    context: { inputTokens: 200000, outputTokens: 32000 },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-    },
-    bestFor: ['Agentic tasks', 'Complex coding', 'Multi-step reasoning'],
-    badge: null,
-  },
-  {
-    id: 'claude-opus-4-20250514',
-    name: 'Claude Opus 4',
-    provider: 'anthropic',
-    tagline: 'Original Claude 4 flagship',
-    description:
-      'The original Claude 4 flagship model with Level 3 safety classification. Strong reasoning and coding capabilities across a wide range of tasks.',
-    speedTier: getSpeedTier(2400),
-    pricing: { inputPerM: 15.0, outputPerM: 75.0 },
-    context: { inputTokens: 200000, outputTokens: 32000 },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-    },
-    bestFor: ['Reasoning', 'Coding', 'Complex analysis'],
-    badge: null,
-  },
-  {
-    id: 'claude-sonnet-4-20250514',
-    name: 'Claude Sonnet 4',
-    provider: 'anthropic',
-    tagline: 'Balanced performance for most workflows',
-    description:
-      'A reliable all-rounder with strong coding and reasoning. The default choice for most users. Supports 1M token context in beta.',
-    speedTier: getSpeedTier(1200),
-    pricing: { inputPerM: 3.0, outputPerM: 15.0 },
-    context: { inputTokens: 200000, outputTokens: 64000 },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-    },
-    bestFor: ['General tasks', 'Coding', 'Writing'],
-    badge: null,
-  },
-  {
-    id: 'claude-3-7-sonnet-20250219',
-    name: 'Claude Sonnet 3.7',
-    provider: 'anthropic',
-    tagline: 'Hybrid fast and deep reasoning',
-    description:
-      'A hybrid reasoning model that blends fast conversational responses with deeper analysis on demand. Legacy model — still highly performant for most tasks.',
-    speedTier: getSpeedTier(1400),
-    pricing: { inputPerM: 3.0, outputPerM: 15.0 },
-    context: { inputTokens: 200000, outputTokens: 64000 },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-    },
-    bestFor: ['Mixed workloads', 'Conversational AI', 'Analysis'],
-    badge: 'Legacy',
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'claude-3-5-haiku-20241022',
     name: 'Claude Haiku 3.5',
     provider: 'anthropic',
-    tagline: 'Fast and reliable for high-volume work',
-    description:
-      'Built for speed and reliability at scale. Ideal for content moderation, real-time responses, and high-throughput pipelines.',
-    speedTier: getSpeedTier(400),
+    tagline: 'Budget-friendly for simple tasks',
+    description: 'Budget-friendly Claude model for simple tasks and high-volume classification.',
+    speedTier: getSpeedTier(350),
     pricing: { inputPerM: 0.8, outputPerM: 4.0 },
     context: { inputTokens: 200000, outputTokens: 8192 },
     capabilities: {
@@ -279,29 +260,9 @@ export const MODELS = [
       functionCalling: true,
       streaming: true,
     },
-    bestFor: ['Content moderation', 'Real-time chat', 'High-volume tasks'],
-    badge: 'Legacy',
-  },
-  {
-    id: 'claude-3-haiku-20240307',
-    name: 'Claude Haiku 3',
-    provider: 'anthropic',
-    tagline: 'Budget-friendly for simple tasks',
-    description:
-      'The most affordable Claude model. Best for simple classification, extraction, and ultra-high-volume workloads where cost is the top priority.',
-    speedTier: getSpeedTier(300),
-    pricing: { inputPerM: 0.25, outputPerM: 1.25 },
-    context: { inputTokens: 200000, outputTokens: 4096 },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-    },
     bestFor: ['Classification', 'Extraction', 'Cost-sensitive workloads'],
     badge: 'Legacy',
+    accessTier: ACCESS_TIERS.free,
   },
 
   // ===== OPENAI =====
@@ -311,7 +272,7 @@ export const MODELS = [
     provider: 'openai',
     tagline: "OpenAI's flagship reasoning model",
     description:
-      'The best all-around model from OpenAI. Configurable reasoning effort for coding, analysis, and agentic tasks. Massive 400K context window with 128K output.',
+      'Flagship reasoning model for coding and agentic tasks. Configurable reasoning effort.',
     speedTier: getSpeedTier(2000),
     pricing: { inputPerM: 1.75, outputPerM: 14.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -325,6 +286,7 @@ export const MODELS = [
     },
     bestFor: ['Coding', 'Agentic tasks', 'Complex analysis'],
     badge: 'Flagship',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gpt-5.2-pro',
@@ -332,7 +294,7 @@ export const MODELS = [
     provider: 'openai',
     tagline: 'Maximum compute for the hardest problems',
     description:
-      'Premium reasoning with more compute allocated for harder problems. Best for cutting-edge research, competitive benchmarks, and tasks that demand the absolute best.',
+      'Premium GPT-5.2 with more compute for harder problems. Best for research and cutting-edge applications.',
     speedTier: getSpeedTier(8000),
     pricing: { inputPerM: 21.0, outputPerM: 168.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -346,14 +308,14 @@ export const MODELS = [
     },
     bestFor: ['Research', 'Frontier benchmarks', 'Hardest problems'],
     badge: 'Max Power',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gpt-5.1',
     name: 'GPT-5.1',
     provider: 'openai',
     tagline: 'Previous flagship reasoning model',
-    description:
-      'A highly capable reasoning model superseded by GPT-5.2 but still widely available. Strong coding and analytical performance at a slightly lower cost.',
+    description: 'Previous flagship reasoning model. Strong all-rounder superseded by GPT-5.2.',
     speedTier: getSpeedTier(2200),
     pricing: { inputPerM: 1.25, outputPerM: 10.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -367,14 +329,14 @@ export const MODELS = [
     },
     bestFor: ['Coding', 'Analysis', 'Reasoning'],
     badge: null,
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gpt-5',
     name: 'GPT-5',
     provider: 'openai',
     tagline: 'Original GPT-5 reasoning model',
-    description:
-      'The first GPT-5 reasoning model. Superseded by GPT-5.1 and GPT-5.2, but still available for compatibility and cost optimization.',
+    description: 'Original GPT-5 reasoning model. Superseded by GPT-5.1 and GPT-5.2.',
     speedTier: getSpeedTier(2400),
     pricing: { inputPerM: 1.25, outputPerM: 10.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -388,14 +350,14 @@ export const MODELS = [
     },
     bestFor: ['Reasoning', 'Coding', 'General tasks'],
     badge: null,
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gpt-5-mini',
     name: 'GPT-5 Mini',
     provider: 'openai',
     tagline: 'Fast, affordable reasoning for well-defined tasks',
-    description:
-      'A compact reasoning model offering a great balance of speed and intelligence at a fraction of the cost. Ideal for structured, well-defined tasks.',
+    description: 'Fast, affordable reasoning model. Great balance of power and performance.',
     speedTier: getSpeedTier(800),
     pricing: { inputPerM: 0.25, outputPerM: 2.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -409,6 +371,7 @@ export const MODELS = [
     },
     bestFor: ['Structured tasks', 'Cost-efficient reasoning', 'Quick responses'],
     badge: null,
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'gpt-5-nano',
@@ -416,7 +379,7 @@ export const MODELS = [
     provider: 'openai',
     tagline: 'Fastest and cheapest reasoning model',
     description:
-      'Ultra-fast, ultra-cheap reasoning. Excellent for summarization, classification, and high-throughput pipelines where cost is paramount.',
+      'Fastest, cheapest reasoning model. Excellent for summarization and classification.',
     speedTier: getSpeedTier(400),
     pricing: { inputPerM: 0.05, outputPerM: 0.4 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -430,6 +393,7 @@ export const MODELS = [
     },
     bestFor: ['Summarization', 'Classification', 'High-throughput pipelines'],
     badge: 'Most Affordable',
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'gpt-5.1-codex',
@@ -437,7 +401,7 @@ export const MODELS = [
     provider: 'openai',
     tagline: 'Purpose-built for complex coding tasks',
     description:
-      'Optimized for long-horizon agentic coding: multi-file changes, complex refactors, and autonomous software engineering. Benchmark-leading on coding tasks.',
+      'Optimized for long-horizon agentic coding tasks. Best for complex code generation and multi-file changes.',
     speedTier: getSpeedTier(2500),
     pricing: { inputPerM: 1.25, outputPerM: 10.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -451,14 +415,14 @@ export const MODELS = [
     },
     bestFor: ['Complex code generation', 'Multi-file refactors', 'Agentic coding'],
     badge: 'Best for Code',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gpt-5.1-codex-mini',
     name: 'GPT-5.1 Codex Mini',
     provider: 'openai',
     tagline: 'Fast coding assistance at low cost',
-    description:
-      'A smaller, faster version of Codex optimized for quick edits, code completions, and smaller coding tasks. Great cost-efficiency for everyday development.',
+    description: 'Fast, cost-efficient coding model for quick edits and smaller code tasks.',
     speedTier: getSpeedTier(600),
     pricing: { inputPerM: 0.25, outputPerM: 2.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -472,6 +436,7 @@ export const MODELS = [
     },
     bestFor: ['Code completion', 'Quick edits', 'Everyday development'],
     badge: null,
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'gpt-4.1',
@@ -479,7 +444,7 @@ export const MODELS = [
     provider: 'openai',
     tagline: 'Smartest non-reasoning model with 1M context',
     description:
-      'The smartest GPT-4 series model with a 1M token context window. Exceptional at instruction following, tool calling, and handling long documents.',
+      'Smartest non-reasoning model with 1M context window. Excellent instruction following.',
     speedTier: getSpeedTier(1500),
     pricing: { inputPerM: 2.0, outputPerM: 8.0 },
     context: { inputTokens: 1047576, outputTokens: 32768 },
@@ -493,14 +458,14 @@ export const MODELS = [
     },
     bestFor: ['Long documents', 'Tool use', 'Instruction following'],
     badge: '1M Context',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gpt-4.1-mini',
     name: 'GPT-4.1 Mini',
     provider: 'openai',
     tagline: 'Fast and capable with 1M context',
-    description:
-      'A smaller, faster version of GPT-4.1 retaining the 1M context window. A great starting point for most tasks with an excellent cost-to-performance ratio.',
+    description: 'Fast version of GPT-4.1. Great starting point for most tasks.',
     speedTier: getSpeedTier(600),
     pricing: { inputPerM: 0.4, outputPerM: 1.6 },
     context: { inputTokens: 1047576, outputTokens: 32768 },
@@ -514,14 +479,14 @@ export const MODELS = [
     },
     bestFor: ['General tasks', 'Cost-efficient work', 'Long documents'],
     badge: '1M Context',
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'gpt-4.1-nano',
     name: 'GPT-4.1 Nano',
     provider: 'openai',
     tagline: 'Fastest GPT-4.1 for speed and cost',
-    description:
-      'The smallest and most cost-efficient GPT-4.1 model. Retains the 1M context window at a fraction of the cost. Best for speed-critical and price-sensitive use cases.',
+    description: 'Fastest, most cost-efficient GPT-4.1 model for speed and price optimization.',
     speedTier: getSpeedTier(300),
     pricing: { inputPerM: 0.1, outputPerM: 1.4 },
     context: { inputTokens: 1047576, outputTokens: 32768 },
@@ -535,6 +500,7 @@ export const MODELS = [
     },
     bestFor: ['Speed-critical tasks', 'High-volume pipelines', 'Cost optimization'],
     badge: null,
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'gpt-4o',
@@ -542,7 +508,7 @@ export const MODELS = [
     provider: 'openai',
     tagline: 'Versatile multimodal with native audio',
     description:
-      "OpenAI's versatile omni-model with native text, image, and audio I/O. Excellent for voice applications, multilingual tasks, and creative work across modalities.",
+      'Versatile multimodal model with native audio I/O. Best for text, image, and audio processing.',
     speedTier: getSpeedTier(1000),
     pricing: { inputPerM: 2.5, outputPerM: 10.0 },
     context: { inputTokens: 128000, outputTokens: 16384 },
@@ -556,14 +522,14 @@ export const MODELS = [
     },
     bestFor: ['Voice apps', 'Multimodal tasks', 'Creative work'],
     badge: 'Audio',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gpt-4o-mini',
     name: 'GPT-4o Mini',
     provider: 'openai',
     tagline: 'Fast multimodal at budget pricing',
-    description:
-      'A fast, affordable version of GPT-4o with audio support retained. The best budget option for multimodal applications that need text, image, and audio capabilities.',
+    description: 'Fast, affordable multimodal model with audio support.',
     speedTier: getSpeedTier(500),
     pricing: { inputPerM: 0.15, outputPerM: 0.6 },
     context: { inputTokens: 128000, outputTokens: 16384 },
@@ -577,14 +543,14 @@ export const MODELS = [
     },
     bestFor: ['Budget multimodal', 'Voice features', 'Fast responses'],
     badge: 'Audio',
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'o3',
     name: 'o3',
     provider: 'openai',
-    tagline: 'Legacy reasoning for complex problems',
-    description:
-      'A legacy reasoning model for complex analytical tasks. Superseded by GPT-5 but still available. Strong at math, science, and formal problem-solving.',
+    tagline: 'Reasoning model for complex problems',
+    description: 'Reasoning model for complex analytical tasks. Excels at math and science.',
     speedTier: getSpeedTier(3000),
     pricing: { inputPerM: 2.0, outputPerM: 8.0 },
     context: { inputTokens: 200000, outputTokens: 100000 },
@@ -597,15 +563,15 @@ export const MODELS = [
       streaming: true,
     },
     bestFor: ['Math & science', 'Formal reasoning', 'Complex analysis'],
-    badge: 'Legacy',
+    badge: null,
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'o3-pro',
     name: 'o3 Pro',
     provider: 'openai',
     tagline: 'Max-compute reasoning for research',
-    description:
-      'Premium reasoning with maximum compute for the absolute hardest problems. Designed for boundary-pushing research in math, science, and engineering.',
+    description: 'Premium reasoning model with more compute. For the hardest research problems.',
     speedTier: getSpeedTier(10000),
     pricing: { inputPerM: 20.0, outputPerM: 80.0 },
     context: { inputTokens: 200000, outputTokens: 100000 },
@@ -618,7 +584,8 @@ export const MODELS = [
       streaming: true,
     },
     bestFor: ['Research', 'Mathematical proofs', 'Frontier problems'],
-    badge: 'Legacy',
+    badge: null,
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'o4-mini',
@@ -626,7 +593,7 @@ export const MODELS = [
     provider: 'openai',
     tagline: 'Efficient reasoning at moderate cost',
     description:
-      'A cost-efficient reasoning model offering solid performance for structured problems. Superseded by GPT-5 Mini but still available.',
+      'Fast, cost-efficient reasoning model. Superseded by GPT-5 mini but still available.',
     speedTier: getSpeedTier(1200),
     pricing: { inputPerM: 1.1, outputPerM: 4.4 },
     context: { inputTokens: 200000, outputTokens: 100000 },
@@ -639,7 +606,8 @@ export const MODELS = [
       streaming: true,
     },
     bestFor: ['Structured reasoning', 'Cost-efficient analysis'],
-    badge: 'Legacy',
+    badge: null,
+    accessTier: ACCESS_TIERS.free,
   },
 
   // ===== GOOGLE =====
@@ -648,8 +616,7 @@ export const MODELS = [
     name: 'Gemini 2.5 Pro',
     provider: 'google',
     tagline: "Google's most capable multimodal model",
-    description:
-      "Google's most powerful model with extended thinking and best-in-class multimodal capabilities. Massive 1M token context window with audio and vision support.",
+    description: 'Most capable Gemini model with extended thinking and multimodal excellence.',
     speedTier: getSpeedTier(2000),
     pricing: { inputPerM: 1.25, outputPerM: 10.0 },
     context: { inputTokens: 1048576, outputTokens: 65536 },
@@ -663,6 +630,7 @@ export const MODELS = [
     },
     bestFor: ['Long documents', 'Multimodal tasks', 'Translation', 'Research'],
     badge: 'Flagship',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'gemini-2.5-flash',
@@ -670,7 +638,7 @@ export const MODELS = [
     provider: 'google',
     tagline: 'Fast and capable with 1M context',
     description:
-      "Google's best cost-to-performance model. Combines speed, multimodal ability, and a 1M token context window at a very low price point.",
+      'Fast, efficient Gemini model. Excellent cost-performance ratio with multilingual strength.',
     speedTier: getSpeedTier(500),
     pricing: { inputPerM: 0.075, outputPerM: 0.3 },
     context: { inputTokens: 1048576, outputTokens: 65536 },
@@ -684,14 +652,14 @@ export const MODELS = [
     },
     bestFor: ['Fast responses', 'Multimodal tasks', 'Long documents'],
     badge: 'Best Value',
+    accessTier: ACCESS_TIERS.free,
   },
   {
     id: 'gemini-2.5-flash-lite',
     name: 'Gemini 2.5 Flash-Lite',
     provider: 'google',
     tagline: 'Lightweight for cost-sensitive workloads',
-    description:
-      "Google's lightest model for high-volume, cost-sensitive applications. Retains the large context window at the lowest price in the Gemini 2.5 family.",
+    description: 'Lightweight Gemini model for cost-sensitive high-volume applications.',
     speedTier: getSpeedTier(300),
     pricing: { inputPerM: 0.025, outputPerM: 0.1 },
     context: { inputTokens: 1048576, outputTokens: 65536 },
@@ -705,6 +673,7 @@ export const MODELS = [
     },
     bestFor: ['High-volume pipelines', 'Cost optimization', 'Simple tasks'],
     badge: null,
+    accessTier: ACCESS_TIERS.free,
   },
 
   // ===== PERPLEXITY =====
@@ -714,7 +683,7 @@ export const MODELS = [
     provider: 'perplexity',
     tagline: 'Deep research with live web access',
     description:
-      "Perplexity's most capable search-augmented model. Designed for in-depth research with real-time web access. Returns cited, up-to-date information on any topic.",
+      'Advanced search-augmented model for in-depth research and analysis with real-time web access.',
     speedTier: getSpeedTier(3000),
     pricing: { inputPerM: 3.0, outputPerM: 15.0 },
     context: { inputTokens: 200000, outputTokens: 8000 },
@@ -728,6 +697,7 @@ export const MODELS = [
     },
     bestFor: ['Research', 'Fact-checking', 'Current events', 'Market analysis'],
     badge: 'Web Search',
+    accessTier: ACCESS_TIERS.pro,
   },
   {
     id: 'sonar',
@@ -735,7 +705,7 @@ export const MODELS = [
     provider: 'perplexity',
     tagline: 'Fast research with real-time web access',
     description:
-      'A quick, cost-efficient search-augmented model for rapid fact-checking and lightweight research tasks. Returns cited answers from the web in real time.',
+      'Fast search-augmented model for quick research and fact-checking with web access.',
     speedTier: getSpeedTier(1500),
     pricing: { inputPerM: 1.0, outputPerM: 1.0 },
     context: { inputTokens: 128000, outputTokens: 8000 },
@@ -749,17 +719,311 @@ export const MODELS = [
     },
     bestFor: ['Quick fact-checking', 'Lightweight research', 'Current events'],
     badge: 'Web Search',
+    accessTier: ACCESS_TIERS.free,
+  },
+
+  // ===== XAI =====
+  {
+    id: 'grok-3',
+    name: 'Grok 3',
+    provider: 'xai',
+    tagline: 'xAI flagship with real-time web access',
+    description:
+      'xAI flagship model with real-time web access, strong reasoning, and conversational style.',
+    speedTier: getSpeedTier(1200),
+    pricing: { inputPerM: 3.0, outputPerM: 15.0 },
+    context: { inputTokens: 131072, outputTokens: 32768 },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: false,
+      webSearch: true,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Research', 'Real-time analysis', 'Coding', 'Conversational AI'],
+    badge: 'Web Search',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'grok-3-mini',
+    name: 'Grok 3 Mini',
+    provider: 'xai',
+    tagline: 'Fast xAI model with web access',
+    description:
+      'Fast, efficient xAI model with web access for quick research and conversational tasks.',
+    speedTier: getSpeedTier(400),
+    pricing: { inputPerM: 0.6, outputPerM: 4.0 },
+    context: { inputTokens: 131072, outputTokens: 32768 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: false,
+      webSearch: true,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Quick research', 'Fast responses', 'Fact-checking'],
+    badge: 'Web Search',
+    accessTier: ACCESS_TIERS.free,
+  },
+
+  // ===== MISTRAL =====
+  {
+    id: 'mistral-large',
+    name: 'Mistral Large',
+    provider: 'mistral',
+    tagline: 'Flagship multilingual coding model',
+    description:
+      'Flagship Mistral model with excellent multilingual capabilities and strong coding performance.',
+    speedTier: getSpeedTier(900),
+    pricing: { inputPerM: 2.0, outputPerM: 6.0 },
+    context: { inputTokens: 131072, outputTokens: 32768 },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Multilingual tasks', 'Coding', 'Translation'],
+    badge: 'Flagship',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'mistral-small',
+    name: 'Mistral Small',
+    provider: 'mistral',
+    tagline: 'Fast multilingual for low-latency tasks',
+    description:
+      'Fast, efficient Mistral model optimized for low-latency tasks with strong multilingual support.',
+    speedTier: getSpeedTier(300),
+    pricing: { inputPerM: 0.2, outputPerM: 0.6 },
+    context: { inputTokens: 131072, outputTokens: 32768 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Fast multilingual', 'Low-latency tasks', 'Translation'],
+    badge: null,
+    accessTier: ACCESS_TIERS.free,
+  },
+
+  // ===== DEEPSEEK =====
+  {
+    id: 'deepseek-r1',
+    name: 'DeepSeek R1',
+    provider: 'deepseek',
+    tagline: 'Open-source reasoning at very low cost',
+    description:
+      'Open-source reasoning model with exceptional math, science, and coding capabilities at very low cost.',
+    speedTier: getSpeedTier(2500),
+    pricing: { inputPerM: 0.55, outputPerM: 2.19 },
+    context: { inputTokens: 131072, outputTokens: 65536 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: true,
+      webSearch: false,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Math & science', 'Coding', 'Cost-efficient reasoning'],
+    badge: 'Open Source',
+    accessTier: ACCESS_TIERS.free,
+  },
+
+  // ===== GENERATION MODELS =====
+  {
+    id: 'dall-e-3',
+    name: 'DALL-E 3',
+    provider: 'openai',
+    tagline: 'State-of-the-art image generation',
+    description:
+      'State-of-the-art image generation model. Creates high-quality images from text descriptions.',
+    speedTier: getSpeedTier(8000),
+    pricing: { inputPerM: 40.0, outputPerM: 80.0 },
+    context: { inputTokens: 4000, outputTokens: 1 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: false,
+      streaming: false,
+      imageGeneration: true,
+    },
+    bestFor: ['Image creation', 'Visual design', 'Creative projects'],
+    badge: 'Image Gen',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'imagen-3',
+    name: 'Imagen 3',
+    provider: 'google',
+    tagline: 'Photorealistic image generation',
+    description:
+      'Google DeepMind image generation with photorealistic quality and excellent text rendering.',
+    speedTier: getSpeedTier(6000),
+    pricing: { inputPerM: 40.0, outputPerM: 60.0 },
+    context: { inputTokens: 4000, outputTokens: 1 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: false,
+      streaming: false,
+      imageGeneration: true,
+    },
+    bestFor: ['Photorealistic images', 'Text rendering', 'Visual content'],
+    badge: 'Image Gen',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'stable-diffusion-3.5',
+    name: 'Stable Diffusion 3.5',
+    provider: 'stability',
+    tagline: 'Open-source artistic image generation',
+    description:
+      'Open-source image generation with fine control over artistic style and composition.',
+    speedTier: getSpeedTier(5000),
+    pricing: { inputPerM: 30.0, outputPerM: 50.0 },
+    context: { inputTokens: 4000, outputTokens: 1 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: false,
+      streaming: false,
+      imageGeneration: true,
+    },
+    bestFor: ['Artistic images', 'Style control', 'Creative design'],
+    badge: 'Image Gen',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'sora',
+    name: 'Sora',
+    provider: 'openai',
+    tagline: 'Cinematic video generation from text',
+    description:
+      'OpenAI video generation model. Creates high-quality videos from text with cinematic quality.',
+    speedTier: getSpeedTier(30000),
+    pricing: { inputPerM: 100.0, outputPerM: 200.0 },
+    context: { inputTokens: 4000, outputTokens: 1 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: false,
+      streaming: false,
+      videoGeneration: true,
+    },
+    bestFor: ['Video creation', 'Cinematic content', 'Visual storytelling'],
+    badge: 'Video Gen',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'veo-2',
+    name: 'Veo 2',
+    provider: 'google',
+    tagline: 'High-fidelity video with realistic physics',
+    description:
+      'Google DeepMind video generation with high-fidelity output and realistic physics.',
+    speedTier: getSpeedTier(25000),
+    pricing: { inputPerM: 80.0, outputPerM: 150.0 },
+    context: { inputTokens: 4000, outputTokens: 1 },
+    capabilities: {
+      vision: false,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: false,
+      streaming: false,
+      videoGeneration: true,
+    },
+    bestFor: ['Video creation', 'Realistic physics', 'High-fidelity video'],
+    badge: 'Video Gen',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'openai-tts',
+    name: 'OpenAI TTS',
+    provider: 'openai',
+    tagline: 'Natural-sounding text-to-speech',
+    description:
+      'High-quality text-to-speech model with natural-sounding voices and multiple voice options.',
+    speedTier: getSpeedTier(500),
+    pricing: { inputPerM: 15.0, outputPerM: 15.0 },
+    context: { inputTokens: 4096, outputTokens: 1 },
+    capabilities: {
+      vision: false,
+      audio: true,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: false,
+      streaming: true,
+      tts: true,
+    },
+    bestFor: ['Voice narration', 'Accessibility', 'Audio content'],
+    badge: 'TTS',
+    accessTier: ACCESS_TIERS.pro,
+  },
+  {
+    id: 'elevenlabs-v3',
+    name: 'ElevenLabs v3',
+    provider: 'elevenlabs',
+    tagline: 'Ultra-realistic voice synthesis',
+    description:
+      'Premium voice synthesis with ultra-realistic speech, voice cloning, and emotional expression.',
+    speedTier: getSpeedTier(600),
+    pricing: { inputPerM: 30.0, outputPerM: 30.0 },
+    context: { inputTokens: 4096, outputTokens: 1 },
+    capabilities: {
+      vision: false,
+      audio: true,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: false,
+      streaming: true,
+      tts: true,
+    },
+    bestFor: ['Voice cloning', 'Emotional speech', 'Premium audio'],
+    badge: 'TTS',
+    accessTier: ACCESS_TIERS.pro,
   },
 ];
 
 // Get all unique providers in display order
-export const PROVIDER_ORDER = ['anthropic', 'openai', 'google', 'perplexity'];
+export const PROVIDER_ORDER = [
+  'anthropic',
+  'openai',
+  'google',
+  'perplexity',
+  'xai',
+  'mistral',
+  'deepseek',
+  'stability',
+  'elevenlabs',
+];
 
 // Get models grouped by provider
-export function getModelsByProvider() {
+export function getModelsByProvider(modelList) {
+  const source = modelList || MODELS;
   const grouped = {};
   for (const providerId of PROVIDER_ORDER) {
-    grouped[providerId] = MODELS.filter((m) => m.provider === providerId);
+    const providerModels = source.filter((m) => m.provider === providerId);
+    if (providerModels.length > 0) {
+      grouped[providerId] = providerModels;
+    }
   }
   return grouped;
 }
@@ -770,3 +1034,31 @@ export const SPEED_TIERS = {
   balanced: { label: 'Balanced', description: '500ms–1.5s avg. response' },
   powerful: { label: 'Powerful', description: 'Over 1.5s avg. response (deep reasoning)' },
 };
+
+// ===== Tier-based access helpers =====
+
+// Get the current user's tier from localStorage (defaults to 'free')
+export function getUserTier() {
+  return localStorage.getItem('araviel-user-tier') || ACCESS_TIERS.free;
+}
+
+// Get models available for a specific access tier
+export function getModelsForTier(tier) {
+  if (tier === ACCESS_TIERS.pro) {
+    return MODELS;
+  }
+  return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.free);
+}
+
+// Check if a specific model is accessible for a tier
+export function isModelAccessible(modelId, tier) {
+  const model = MODELS.find((m) => m.id === modelId);
+  if (!model) return false;
+  if (tier === ACCESS_TIERS.pro) return true;
+  return model.accessTier === ACCESS_TIERS.free;
+}
+
+// Get pro-only models (for upgrade prompts)
+export function getProOnlyModels() {
+  return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.pro);
+}
