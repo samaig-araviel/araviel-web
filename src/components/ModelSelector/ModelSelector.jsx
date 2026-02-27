@@ -1,15 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import {
-  selectSelectedModelId,
-  selectExtendedThinking,
-  selectDeepResearch,
-  selectGoogleThinking,
-  setSelectedModel,
-  setExtendedThinking,
-  setDeepResearch,
-  setGoogleThinking,
-} from '../../store/slices/chatSlice';
+import { selectSelectedModelId, setSelectedModel } from '../../store/slices/chatSlice';
 import {
   MODELS,
   PROVIDERS,
@@ -19,14 +10,7 @@ import {
   getModelsForTier,
   getModelsByProvider,
 } from '../../data/models';
-import {
-  ChevronDownIcon,
-  ChevronLeftIcon,
-  CheckIcon,
-  BrainIcon,
-  BeakerIcon,
-  CpuIcon,
-} from '../Icons';
+import { ChevronDownIcon, ChevronLeftIcon, CheckIcon } from '../Icons';
 import styles from './ModelSelector.module.css';
 
 // Featured models per tier — one per major provider
@@ -42,47 +26,9 @@ const FEATURED_MODEL_IDS_FREE = [
   'gemini-2.5-flash', // Google free
 ];
 
-const MODE_CONFIG = [
-  {
-    key: 'extendedThinking',
-    label: 'Extended Thinking',
-    description: 'Deep chain-of-thought reasoning',
-    provider: 'anthropic',
-    providerLabel: 'Claude',
-    Icon: BrainIcon,
-    selector: selectExtendedThinking,
-    action: setExtendedThinking,
-  },
-  {
-    key: 'deepResearch',
-    label: 'Deep Research',
-    description: 'Multi-step research & analysis',
-    provider: 'openai',
-    providerLabel: 'OpenAI',
-    Icon: BeakerIcon,
-    selector: selectDeepResearch,
-    action: setDeepResearch,
-  },
-  {
-    key: 'googleThinking',
-    label: 'Thinking Mode',
-    description: 'Enhanced reasoning with Gemini',
-    provider: 'google',
-    providerLabel: 'Gemini',
-    Icon: CpuIcon,
-    selector: selectGoogleThinking,
-    action: setGoogleThinking,
-  },
-];
-
 export default function ModelSelector() {
   const dispatch = useDispatch();
   const selectedModelId = useSelector(selectSelectedModelId);
-  const extendedThinking = useSelector(selectExtendedThinking);
-  const deepResearch = useSelector(selectDeepResearch);
-  const googleThinking = useSelector(selectGoogleThinking);
-
-  const modeValues = { extendedThinking, deepResearch, googleThinking };
 
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownDir, setDropdownDir] = useState('down');
@@ -97,7 +43,6 @@ export default function ModelSelector() {
   const tierModelsByProvider = useMemo(() => getModelsByProvider(tierModels), [tierModels]);
 
   const selectedModel = selectedModelId ? MODELS.find((m) => m.id === selectedModelId) : null;
-  const selectedProvider = selectedModel ? selectedModel.provider : null;
   const isAutoMode = !selectedModelId;
 
   // For Auto mode tagline: check if there's a saved default model to show in subtitle
@@ -114,9 +59,6 @@ export default function ModelSelector() {
 
   // Active providers for the "All Models" view (only providers that have tier-accessible models)
   const activeProviders = PROVIDER_ORDER.filter((pid) => tierModelsByProvider[pid]?.length > 0);
-
-  const anyModeActive = extendedThinking || deepResearch || googleThinking;
-  const activeModeConfig = anyModeActive ? MODE_CONFIG.find((m) => modeValues[m.key]) : null;
 
   // Close on click outside
   useEffect(() => {
@@ -188,11 +130,6 @@ export default function ModelSelector() {
     setIsOpen(false);
   };
 
-  const handleModeToggle = (modeConf) => {
-    const currentValue = modeValues[modeConf.key];
-    dispatch(modeConf.action(!currentValue));
-  };
-
   const handleMoreModels = () => {
     setShowAllModels(true);
   };
@@ -211,9 +148,7 @@ export default function ModelSelector() {
       <button
         ref={triggerRef}
         type="button"
-        className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${
-          anyModeActive ? styles.triggerWithMode : ''
-        }`}
+        className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''}`}
         onClick={handleTriggerClick}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
@@ -234,11 +169,6 @@ export default function ModelSelector() {
           <span className={styles.autoGlyph}>✦</span>
         )}
         <span className={styles.triggerLabel}>{triggerLabel}</span>
-        {activeModeConfig && (
-          <span className={styles.modeTag} title={activeModeConfig.label}>
-            <activeModeConfig.Icon />
-          </span>
-        )}
         <span className={`${styles.triggerChevron} ${isOpen ? styles.triggerChevronOpen : ''}`}>
           <ChevronDownIcon />
         </span>
@@ -406,48 +336,6 @@ export default function ModelSelector() {
                         <CheckIcon />
                       </span>
                     )}
-                  </button>
-                );
-              })}
-
-              <div className={styles.divider} />
-              <div className={styles.sectionLabel}>Modes</div>
-
-              {/* ── Mode toggles ── */}
-              {MODE_CONFIG.map((modeConf) => {
-                const active = modeValues[modeConf.key];
-                // Available when: auto mode (no specific provider locked) OR provider matches
-                const available = isAutoMode || selectedProvider === modeConf.provider;
-                const Icon = modeConf.Icon;
-                return (
-                  <button
-                    key={modeConf.key}
-                    className={`${styles.modeOption} ${active ? styles.modeOptionActive : ''} ${
-                      !available ? styles.modeOptionDisabled : ''
-                    }`}
-                    onClick={() => available && handleModeToggle(modeConf)}
-                    disabled={!available}
-                    aria-pressed={active}
-                    title={
-                      !available
-                        ? `Only available with ${modeConf.providerLabel} models`
-                        : modeConf.description
-                    }
-                  >
-                    <span className={`${styles.modeIcon} ${active ? styles.modeIconActive : ''}`}>
-                      <Icon />
-                    </span>
-                    <div className={styles.modeContent}>
-                      <span className={styles.modeName}>{modeConf.label}</span>
-                      <span className={styles.modeProvider}>{modeConf.providerLabel}</span>
-                    </div>
-                    <div
-                      className={`${styles.toggle} ${active ? styles.toggleOn : ''} ${
-                        !available ? styles.toggleDisabled : ''
-                      }`}
-                    >
-                      <div className={styles.toggleThumb} />
-                    </div>
                   </button>
                 );
               })}
