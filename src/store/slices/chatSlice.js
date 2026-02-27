@@ -22,6 +22,9 @@ const initialState = {
   deepResearch: false,
   googleThinking: false,
   webSearchEnabled: null, // null = Auto/let ADE decide, true = user toggled on, false = user toggled off
+  tone: null, // null = ADE auto-detects, or: casual, focused, curious, frustrated, urgent, playful, professional
+  mood: null, // null = not set, or: happy, neutral, stressed, frustrated, excited, tired, anxious, calm
+  autoStrategy: 'default', // 'default' | 'humanFactors' | 'costEfficient' | 'taskBased'
   currentChatId: null, // current conversationId from backend
   isProcessing: false,
   // Conversation list from backend
@@ -75,6 +78,15 @@ const chatSlice = createSlice({
     },
     setWebSearchEnabled: (state, action) => {
       state.webSearchEnabled = action.payload; // null | true | false
+    },
+    setTone: (state, action) => {
+      state.tone = action.payload; // null | string
+    },
+    setMood: (state, action) => {
+      state.mood = action.payload; // null | string
+    },
+    setAutoStrategy: (state, action) => {
+      state.autoStrategy = action.payload; // 'default' | 'humanFactors' | 'costEfficient' | 'taskBased'
     },
     addMessage: (state, action) => {
       state.messages.push(action.payload);
@@ -133,6 +145,9 @@ export const {
   setDeepResearch,
   setGoogleThinking,
   setWebSearchEnabled,
+  setTone,
+  setMood,
+  setAutoStrategy,
   addMessage,
   updateLastMessage,
   setIsProcessing,
@@ -153,6 +168,9 @@ export const selectExtendedThinking = (state) => state.chat.extendedThinking;
 export const selectDeepResearch = (state) => state.chat.deepResearch;
 export const selectGoogleThinking = (state) => state.chat.googleThinking;
 export const selectWebSearchEnabled = (state) => state.chat.webSearchEnabled;
+export const selectTone = (state) => state.chat.tone;
+export const selectMood = (state) => state.chat.mood;
+export const selectAutoStrategy = (state) => state.chat.autoStrategy;
 export const selectMessages = (state) => state.chat.messages;
 export const selectIsProcessing = (state) => state.chat.isProcessing;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
