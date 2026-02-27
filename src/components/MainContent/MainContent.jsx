@@ -62,11 +62,14 @@ import {
   BrainIcon,
   BeakerIcon,
   CpuIcon,
+  MapPinIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
 import { sendMessage, consumeSSEStream } from '../../services/api';
-import { getUserTier } from '../../data/models';
+import { getUserTier, PROVIDERS } from '../../data/models';
+import { selectEffectiveTheme } from '../../store/slices/themeSlice';
+import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
 
 const getGreeting = () => {
@@ -82,6 +85,7 @@ const MODE_CONFIG = [
     label: 'Extended Thinking',
     description: 'Deep chain-of-thought reasoning',
     providerLabel: 'Claude',
+    providerId: 'anthropic',
     Icon: BrainIcon,
     action: setExtendedThinking,
   },
@@ -90,6 +94,7 @@ const MODE_CONFIG = [
     label: 'Deep Research',
     description: 'Multi-step research & analysis',
     providerLabel: 'OpenAI',
+    providerId: 'openai',
     Icon: BeakerIcon,
     action: setDeepResearch,
   },
@@ -98,6 +103,7 @@ const MODE_CONFIG = [
     label: 'Thinking Mode',
     description: 'Enhanced reasoning with Gemini',
     providerLabel: 'Gemini',
+    providerId: 'google',
     Icon: CpuIcon,
     action: setGoogleThinking,
   },
@@ -377,6 +383,14 @@ export default function MainContent() {
   const extendedThinking = useSelector(selectExtendedThinking);
   const deepResearch = useSelector(selectDeepResearch);
   const googleThinking = useSelector(selectGoogleThinking);
+  const effectiveTheme = useSelector(selectEffectiveTheme);
+  const isDark = effectiveTheme === 'dark';
+  const {
+    location: userLocation,
+    permission: locationPermission,
+    requestLocation,
+    clearLocation,
+  } = useUserLocation();
 
   const modeValues = { extendedThinking, deepResearch, googleThinking };
   const anyModeActive = extendedThinking || deepResearch || googleThinking;
@@ -538,11 +552,20 @@ export default function MainContent() {
       try {
         const webSearchParam =
           options.webSearch === true ? true : options.webSearch === false ? false : undefined;
+        const locationPayload = userLocation
+          ? {
+              city: userLocation.city,
+              region: userLocation.region,
+              country: userLocation.country,
+              countryCode: userLocation.countryCode,
+            }
+          : undefined;
         const response = await sendMessage({
           message: prompt,
           conversationId: options.conversationId || currentChatId || undefined,
           selectedModelId: options.selectedModelId || undefined,
           webSearch: webSearchParam,
+          userLocation: locationPayload,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -726,7 +749,7 @@ export default function MainContent() {
         setStreamedText('');
       }, 600);
     },
-    [dispatch, currentChatId]
+    [dispatch, currentChatId, userLocation]
   );
 
   /**
@@ -1243,6 +1266,14 @@ export default function MainContent() {
                           {MODE_CONFIG.map((modeConf) => {
                             const active = modeValues[modeConf.key];
                             const ModeIcon = modeConf.Icon;
+                            const providerData = PROVIDERS[modeConf.providerId];
+                            const providerAccent = providerData?.accentColor;
+                            const providerBg = isDark
+                              ? providerData?.accentBgDark
+                              : providerData?.accentBg;
+                            const providerText = isDark
+                              ? providerData?.accentTextDark || providerData?.accentColor
+                              : providerData?.accentText;
                             return (
                               <button
                                 key={modeConf.key}
@@ -1252,24 +1283,51 @@ export default function MainContent() {
                                 onClick={() => handleModeToggle(modeConf)}
                                 aria-pressed={active}
                                 title={modeConf.description}
+                                style={
+                                  active
+                                    ? {
+                                        backgroundColor: providerBg,
+                                        borderColor: providerAccent + '30',
+                                      }
+                                    : undefined
+                                }
                               >
                                 <span
                                   className={`${styles.researchModeIcon} ${
                                     active ? styles.researchModeIconActive : ''
                                   }`}
+                                  style={
+                                    active
+                                      ? { backgroundColor: providerAccent, color: '#fff' }
+                                      : { backgroundColor: providerBg, color: providerText }
+                                  }
                                 >
                                   <ModeIcon />
                                 </span>
                                 <div className={styles.researchModeContent}>
                                   <span className={styles.researchModeName}>{modeConf.label}</span>
-                                  <span className={styles.researchModeProvider}>
+                                  <span
+                                    className={styles.researchModeProvider}
+                                    style={{ color: active ? providerText : undefined }}
+                                  >
                                     {modeConf.providerLabel}
+                                  </span>
+                                  <span className={styles.researchModeDesc}>
+                                    {modeConf.description}
                                   </span>
                                 </div>
                                 <div
                                   className={`${styles.researchModeToggle} ${
                                     active ? styles.researchModeToggleOn : ''
                                   }`}
+                                  style={
+                                    active
+                                      ? {
+                                          backgroundColor: providerAccent,
+                                          borderColor: providerAccent,
+                                        }
+                                      : undefined
+                                  }
                                 >
                                   <div className={styles.researchModeToggleThumb} />
                                 </div>
@@ -1357,6 +1415,31 @@ export default function MainContent() {
                   >
                     <GlobeIcon />
                   </button>
+                  {locationPermission === 'granted' && userLocation?.city ? (
+                    <button
+                      type="button"
+                      className={`${styles.locationPill} ${styles.locationPillActive}`}
+                      onClick={clearLocation}
+                      title={`Location: ${userLocation.city}${
+                        userLocation.region ? ', ' + userLocation.region : ''
+                      } — Click to remove`}
+                      aria-label="Location detected"
+                    >
+                      <MapPinIcon />
+                      <span>{userLocation.city}</span>
+                    </button>
+                  ) : locationPermission !== 'denied' && locationPermission !== 'unavailable' ? (
+                    <button
+                      type="button"
+                      className={styles.locationPill}
+                      onClick={requestLocation}
+                      disabled={isProcessing}
+                      title="Share your location for better local results"
+                      aria-label="Share location"
+                    >
+                      <MapPinIcon />
+                    </button>
+                  ) : null}
                 </div>
                 {isProcessing ? (
                   <button

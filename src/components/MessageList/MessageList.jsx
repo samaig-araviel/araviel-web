@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue } from '../../store/slices/chatSlice';
 import { getProviderLogo } from '../ProviderLogos';
-import { PROVIDERS, MODELS } from '../../data/models';
+import { PROVIDERS, MODELS, SPEED_TIERS, formatTokens } from '../../data/models';
 import {
   createSubConversation,
   fetchSubConversations,
@@ -31,6 +31,7 @@ import {
   CloseIcon,
   ZapIcon,
   GlobeIcon,
+  InfoIcon,
 } from '../Icons';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -699,40 +700,64 @@ function renderInline(text) {
 }
 
 /**
- * Citations display — shows source pills below the response.
+ * Citations display — collapsible sources section below the response.
+ * Collapsed by default, showing a summary pill with source count.
  */
 function CitationsDisplay({ citations }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   if (!citations || citations.length === 0) return null;
 
   return (
     <div className={styles.citationsSection}>
-      <div className={styles.citationsHeader}>
-        <SourcesIcon />
-        <span>Sources</span>
-      </div>
-      <div className={styles.citationsList}>
-        {citations.map((citation, idx) => {
-          let favicon = '';
-          try {
-            const url = new URL(citation.url);
-            favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
-          } catch {
-            // skip favicon
-          }
-          return (
-            <a
-              key={idx}
-              href={citation.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.citationPill}
-            >
-              {favicon && <img src={favicon} alt="" className={styles.citationFavicon} />}
-              <span className={styles.citationTitle}>{citation.title || citation.url}</span>
-            </a>
-          );
-        })}
-      </div>
+      <button
+        className={`${styles.citationsToggle} ${isExpanded ? styles.citationsToggleOpen : ''}`}
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <span className={styles.citationsToggleLeft}>
+          <SourcesIcon />
+          <span>
+            {citations.length} source{citations.length !== 1 ? 's' : ''}
+          </span>
+        </span>
+        <span
+          className={`${styles.citationsChevron} ${isExpanded ? styles.citationsChevronOpen : ''}`}
+        >
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {isExpanded && (
+        <div className={styles.citationsList}>
+          {citations.map((citation, idx) => {
+            let favicon = '';
+            let hostname = '';
+            try {
+              const url = new URL(citation.url);
+              hostname = url.hostname.replace(/^www\./, '');
+              favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+            } catch {
+              // skip favicon
+            }
+            return (
+              <a
+                key={idx}
+                href={citation.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.citationPill}
+              >
+                <span className={styles.citationNumber}>{idx + 1}</span>
+                {favicon && <img src={favicon} alt="" className={styles.citationFavicon} />}
+                <div className={styles.citationInfo}>
+                  <span className={styles.citationTitle}>{citation.title || citation.url}</span>
+                  {hostname && <span className={styles.citationDomain}>{hostname}</span>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -802,35 +827,211 @@ function UsageFooterInline({ message }) {
 }
 
 /**
+ * Model info popup — shown when clicking the model name in the upgrade hint.
+ * Shows full model details, why it's recommended, and Pro tier info.
+ */
+function ModelInfoPopup({ model, reason, onClose, isDark }) {
+  const popupRef = useRef(null);
+  const providerData = model?.provider ? PROVIDERS[model.provider] : null;
+  const LogoComponent = model?.provider ? getProviderLogo(model.provider) : null;
+  const speedInfo = model?.speedTier ? SPEED_TIERS[model.speedTier] : null;
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEsc);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
+
+  if (!model) return null;
+
+  const accentColor = providerData?.accentColor || '#d4a574';
+  const accentBg = isDark ? providerData?.accentBgDark : providerData?.accentBg;
+  const accentText = isDark
+    ? providerData?.accentTextDark || providerData?.accentColor
+    : providerData?.accentText;
+
+  return createPortal(
+    <div className={styles.modelInfoOverlay}>
+      <div className={styles.modelInfoPopup} ref={popupRef}>
+        {/* Header with provider branding */}
+        <div className={styles.modelInfoHeader} style={{ borderBottomColor: accentColor + '20' }}>
+          <div className={styles.modelInfoHeaderLeft}>
+            {providerData && LogoComponent && (
+              <span
+                className={styles.modelInfoLogo}
+                style={{ backgroundColor: accentBg, color: accentText }}
+              >
+                <LogoComponent size={18} />
+              </span>
+            )}
+            <div className={styles.modelInfoHeaderText}>
+              <span className={styles.modelInfoName}>{model.name}</span>
+              <span className={styles.modelInfoTagline}>{model.tagline}</span>
+            </div>
+          </div>
+          <button className={styles.modelInfoClose} onClick={onClose} aria-label="Close">
+            <CloseIcon />
+          </button>
+        </div>
+
+        {/* Why this model */}
+        {reason && (
+          <div className={styles.modelInfoReason}>
+            <SparkleIcon />
+            <span>{reason}</span>
+          </div>
+        )}
+
+        {/* Description */}
+        <p className={styles.modelInfoDesc}>{model.description}</p>
+
+        {/* Capabilities */}
+        <div className={styles.modelInfoStats}>
+          {speedInfo && (
+            <div className={styles.modelInfoStat}>
+              <span className={styles.modelInfoStatLabel}>Speed</span>
+              <span className={styles.modelInfoStatValue}>{speedInfo.label}</span>
+            </div>
+          )}
+          {model.context && (
+            <div className={styles.modelInfoStat}>
+              <span className={styles.modelInfoStatLabel}>Context</span>
+              <span className={styles.modelInfoStatValue}>
+                {formatTokens(model.context.inputTokens)} tokens
+              </span>
+            </div>
+          )}
+          {model.badge && (
+            <div className={styles.modelInfoStat}>
+              <span className={styles.modelInfoStatLabel}>Badge</span>
+              <span className={styles.modelInfoStatValue} style={{ color: accentColor }}>
+                {model.badge}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Best for */}
+        {model.bestFor && model.bestFor.length > 0 && (
+          <div className={styles.modelInfoBestFor}>
+            <span className={styles.modelInfoBestForLabel}>Best for</span>
+            <div className={styles.modelInfoBestForTags}>
+              {model.bestFor.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className={styles.modelInfoTag}
+                  style={{ backgroundColor: accentBg, color: accentText }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Pro tier CTA */}
+        <div className={styles.modelInfoProSection}>
+          <div className={styles.modelInfoProBadge}>
+            <SparkleIcon />
+            <span>Available with Araviel Pro</span>
+          </div>
+          <p className={styles.modelInfoProDesc}>
+            Get access to {model.name} and all premium models with faster responses, higher limits,
+            and priority routing.
+          </p>
+          <div className={styles.modelInfoProPricing}>
+            <span className={styles.modelInfoProPrice}>$20</span>
+            <span className={styles.modelInfoProPeriod}>/month</span>
+          </div>
+          <button
+            className={styles.modelInfoProBtn}
+            style={{
+              background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}cc 100%)`,
+            }}
+          >
+            Upgrade to Pro
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/**
  * Upgrade hint — subtle inline banner shown after the response completes.
- * Positioned below the action icons and above follow-up suggestions.
+ * Model name is clickable to open a detailed model info popup.
  */
 function UpgradeHint({ upgradeHint }) {
   const [dismissed, setDismissed] = useState(false);
+  const [showModelInfo, setShowModelInfo] = useState(false);
+  const effectiveTheme = useSelector(selectEffectiveTheme);
+  const isDark = effectiveTheme === 'dark';
 
   if (!upgradeHint || !upgradeHint.recommendedModel || dismissed) return null;
 
   const modelName = upgradeHint.recommendedModel.name;
+  const modelId = upgradeHint.recommendedModel.id;
+  const reason =
+    upgradeHint.reason ||
+    upgradeHint.recommendedModel.reasoning ||
+    `This model would provide a more detailed and accurate response for your query.`;
+
+  // Look up the full model data
+  const fullModel = MODELS.find((m) => m.id === modelId || m.name === modelName);
+  const providerData = fullModel?.provider ? PROVIDERS[fullModel.provider] : null;
+  const accentColor = providerData?.accentColor || '#d4a574';
 
   return (
-    <div className={styles.upgradeBanner}>
-      <div className={styles.upgradeBannerContent}>
-        <SparkleIcon />
-        <span className={styles.upgradeBannerText}>
-          Unlock <strong>{modelName}</strong> for better answers
-        </span>
+    <>
+      <div className={styles.upgradeBanner}>
+        <div className={styles.upgradeBannerContent}>
+          <SparkleIcon />
+          <span className={styles.upgradeBannerText}>
+            A better answer is possible with{' '}
+            <button
+              className={styles.upgradeBannerModelLink}
+              onClick={() => setShowModelInfo(true)}
+              style={{ color: accentColor }}
+            >
+              {modelName}
+            </button>
+          </span>
+        </div>
+        <div className={styles.upgradeBannerActions}>
+          <button className={styles.upgradeBannerButton}>Upgrade</button>
+          <button
+            className={styles.upgradeBannerDismiss}
+            onClick={() => setDismissed(true)}
+            aria-label="Dismiss"
+          >
+            <CloseIcon />
+          </button>
+        </div>
       </div>
-      <div className={styles.upgradeBannerActions}>
-        <button className={styles.upgradeBannerButton}>Upgrade</button>
-        <button
-          className={styles.upgradeBannerDismiss}
-          onClick={() => setDismissed(true)}
-          aria-label="Dismiss"
-        >
-          <CloseIcon />
-        </button>
-      </div>
-    </div>
+      {showModelInfo && fullModel && (
+        <ModelInfoPopup
+          model={fullModel}
+          reason={reason}
+          onClose={() => setShowModelInfo(false)}
+          isDark={isDark}
+        />
+      )}
+    </>
   );
 }
 

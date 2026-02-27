@@ -55,6 +55,7 @@ export async function sendMessage(payload) {
   if (payload.selectedModelId) body.selectedModelId = payload.selectedModelId;
   if (payload.webSearch === true) body.webSearch = true;
   if (payload.webSearch === false) body.webSearch = false;
+  if (payload.userLocation) body.userLocation = payload.userLocation;
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
