@@ -239,6 +239,96 @@ function ShareModal({ onClose }) {
   );
 }
 
+/**
+ * Full-screen gallery preview for attached images.
+ */
+function GalleryPreview({ files, initialIndex, onClose }) {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const file = files[currentIndex];
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft' && currentIndex > 0) setCurrentIndex((i) => i - 1);
+      if (e.key === 'ArrowRight' && currentIndex < files.length - 1) setCurrentIndex((i) => i + 1);
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [currentIndex, files.length, onClose]);
+
+  if (!file) return null;
+
+  return (
+    <div className={styles.galleryOverlay} onClick={onClose}>
+      <button className={styles.galleryClose} onClick={onClose} aria-label="Close gallery">
+        <CloseIcon />
+      </button>
+      <div className={styles.galleryMain} onClick={(e) => e.stopPropagation()}>
+        {currentIndex > 0 && (
+          <button
+            className={`${styles.galleryNav} ${styles.galleryNavLeft}`}
+            onClick={() => setCurrentIndex((i) => i - 1)}
+            aria-label="Previous image"
+          >
+            <ChevronLeftIcon />
+          </button>
+        )}
+        <div className={styles.galleryImageContainer}>
+          <img key={file.id} src={file.preview} alt={file.name} className={styles.galleryImage} />
+        </div>
+        {currentIndex < files.length - 1 && (
+          <button
+            className={`${styles.galleryNav} ${styles.galleryNavRight}`}
+            onClick={() => setCurrentIndex((i) => i + 1)}
+            aria-label="Next image"
+          >
+            <ChevronRightIcon />
+          </button>
+        )}
+      </div>
+      <div className={styles.galleryFooter} onClick={(e) => e.stopPropagation()}>
+        <span className={styles.galleryFileName}>{file.name}</span>
+        <span className={styles.galleryCounter}>
+          {currentIndex + 1} / {files.length}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Limit reached toast notification.
+ */
+function LimitToast({ maxCount, onClose }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4500);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  const isPro = getUserTier() === 'pro';
+
+  return (
+    <div className={styles.limitToast}>
+      <div className={styles.limitToastIcon}>
+        <SparkleIcon />
+      </div>
+      <div className={styles.limitToastContent}>
+        <span className={styles.limitToastTitle}>
+          {isPro ? 'Attachment limit reached' : 'Want to add more?'}
+        </span>
+        <span className={styles.limitToastDesc}>
+          {isPro
+            ? `You can attach up to ${maxCount} files per message.`
+            : `Free plan supports up to ${maxCount} files. Upgrade to Pro for up to 15.`}
+        </span>
+      </div>
+      <button className={styles.limitToastClose} onClick={onClose} aria-label="Dismiss">
+        <CloseIcon />
+      </button>
+    </div>
+  );
+}
+
 export default function MainContent() {
   const dispatch = useDispatch();
   const inputValue = useSelector(selectInputValue);
@@ -256,6 +346,10 @@ export default function MainContent() {
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [mobileFileSubmenu, setMobileFileSubmenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [galleryFiles, setGalleryFiles] = useState([]);
+  const [showLimitToast, setShowLimitToast] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const textareaRef = useRef(null);
@@ -740,12 +834,43 @@ export default function MainContent() {
 
   const maxAttachments = getUserTier() === 'pro' ? 15 : 5;
 
+  const getFileExtension = (name) => {
+    const parts = name.split('.');
+    if (parts.length < 2) return 'FILE';
+    const ext = parts.pop().toUpperCase();
+    return ext.length <= 5 ? ext : 'FILE';
+  };
+
+  const getFileTypeColor = (ext) => {
+    const colors = {
+      PDF: '#ef4444',
+      DOC: '#3b82f6',
+      DOCX: '#3b82f6',
+      XLS: '#22c55e',
+      XLSX: '#22c55e',
+      PPT: '#f97316',
+      PPTX: '#f97316',
+      TXT: '#8b5cf6',
+      CSV: '#22c55e',
+      JSON: '#eab308',
+      XML: '#06b6d4',
+    };
+    return colors[ext] || '#6b7280';
+  };
+
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     const remainingSlots = maxAttachments - attachedFiles.length;
-    if (remainingSlots <= 0) return;
+    if (remainingSlots <= 0) {
+      setShowLimitToast(true);
+      if (e.target) e.target.value = '';
+      return;
+    }
     const filesToAdd = files.slice(0, remainingSlots);
+    if (filesToAdd.length < files.length) {
+      setShowLimitToast(true);
+    }
     const newFiles = filesToAdd.map((file) => ({
       id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       file,
@@ -764,6 +889,7 @@ export default function MainContent() {
       if (file?.preview) URL.revokeObjectURL(file.preview);
       return prev.filter((f) => f.id !== fileId);
     });
+    setShowGallery(false);
   };
 
   const clearAttachedFiles = useCallback(() => {
@@ -773,10 +899,29 @@ export default function MainContent() {
       });
       return [];
     });
+    setShowGallery(false);
   }, []);
+
+  const handleFileClick = (file) => {
+    if (file.preview) {
+      const imageFiles = attachedFiles.filter((f) => f.preview);
+      const idx = imageFiles.findIndex((f) => f.id === file.id);
+      setGalleryFiles(imageFiles);
+      setGalleryIndex(idx >= 0 ? idx : 0);
+      setShowGallery(true);
+    } else {
+      const url = URL.createObjectURL(file.file);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+  };
 
   const handleScreenshot = async () => {
     try {
+      if (attachedFiles.length >= maxAttachments) {
+        setShowLimitToast(true);
+        return;
+      }
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       const video = document.createElement('video');
       video.srcObject = stream;
@@ -789,7 +934,6 @@ export default function MainContent() {
       stream.getTracks().forEach((track) => track.stop());
       const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
       const file = new File([blob], `screenshot-${Date.now()}.png`, { type: 'image/png' });
-      if (attachedFiles.length >= maxAttachments) return;
       setAttachedFiles((prev) => [
         ...prev,
         {
@@ -908,6 +1052,20 @@ export default function MainContent() {
       {/* Share modal */}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
 
+      {/* Gallery preview */}
+      {showGallery && galleryFiles.length > 0 && (
+        <GalleryPreview
+          files={galleryFiles}
+          initialIndex={galleryIndex}
+          onClose={() => setShowGallery(false)}
+        />
+      )}
+
+      {/* Limit reached toast */}
+      {showLimitToast && (
+        <LimitToast maxCount={maxAttachments} onClose={() => setShowLimitToast(false)} />
+      )}
+
       {/* Messages area — only shown when there are messages */}
       {hasMessages && (
         <MessageList
@@ -939,6 +1097,57 @@ export default function MainContent() {
         <div className={styles.inputSection}>
           <form className={styles.inputContainer} onSubmit={handleSubmit}>
             <div className={styles.inputWrapper}>
+              {attachedFiles.length > 0 && (
+                <div className={styles.attachedFiles}>
+                  <div className={styles.attachedFilesScroll}>
+                    {attachedFiles.map((file) => {
+                      const ext = getFileExtension(file.name);
+                      return (
+                        <div
+                          key={file.id}
+                          className={`${styles.attachedFileCard} ${
+                            file.preview ? styles.imageCard : styles.fileCard
+                          }`}
+                          onClick={() => handleFileClick(file)}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Preview ${file.name}`}
+                        >
+                          {file.preview ? (
+                            <img src={file.preview} alt={file.name} className={styles.cardThumb} />
+                          ) : (
+                            <div className={styles.cardFileContent}>
+                              <div className={styles.cardFileIconWrapper}>
+                                <FileIcon />
+                              </div>
+                              <span className={styles.cardFileName}>{file.name}</span>
+                              <span
+                                className={styles.cardFileType}
+                                style={{ backgroundColor: getFileTypeColor(ext) }}
+                              >
+                                {ext}
+                              </span>
+                            </div>
+                          )}
+                          <button
+                            className={styles.cardRemove}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemoveFile(file.id);
+                            }}
+                            aria-label={`Remove ${file.name}`}
+                          >
+                            <CloseIcon />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <span className={styles.attachedFilesCount}>
+                    {attachedFiles.length}/{maxAttachments}
+                  </span>
+                </div>
+              )}
               <textarea
                 ref={textareaRef}
                 className={styles.input}
@@ -950,36 +1159,6 @@ export default function MainContent() {
                 rows={1}
                 aria-label="Message input"
               />
-              {attachedFiles.length > 0 && (
-                <div className={styles.attachedFiles}>
-                  {attachedFiles.map((file) => (
-                    <div key={file.id} className={styles.attachedFileItem}>
-                      {file.preview ? (
-                        <img
-                          src={file.preview}
-                          alt={file.name}
-                          className={styles.attachedFileThumb}
-                        />
-                      ) : (
-                        <div className={styles.attachedFileIcon}>
-                          <FileIcon />
-                        </div>
-                      )}
-                      <span className={styles.attachedFileName}>{file.name}</span>
-                      <button
-                        className={styles.attachedFileRemove}
-                        onClick={() => handleRemoveFile(file.id)}
-                        aria-label={`Remove ${file.name}`}
-                      >
-                        <CloseIcon />
-                      </button>
-                    </div>
-                  ))}
-                  <span className={styles.attachedFilesCount}>
-                    {attachedFiles.length}/{maxAttachments}
-                  </span>
-                </div>
-              )}
               <div className={styles.inputActions}>
                 <div className={styles.leftActions}>
                   <button
