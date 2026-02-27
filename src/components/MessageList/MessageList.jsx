@@ -739,47 +739,71 @@ function CitationsDisplay({ citations }) {
 
 /**
  * Usage stats inline — shows info icon to the left of the model pill in the actions bar.
- * On click, expands to show model, tokens, cost, latency details.
+ * On click, opens a floating tooltip with model, tokens, cost, latency details.
  */
 function UsageFooterInline({ message }) {
-  const [showDetails, setShowDetails] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (!showTooltip) return;
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowTooltip(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showTooltip]);
 
   if (!message.usage && !message.costUsd && !message.latencyMs) return null;
 
-  const parts = [];
-  if (message.modelName) parts.push(message.modelName);
+  const rows = [];
+  if (message.modelName) rows.push({ label: 'Model', value: message.modelName });
   if (message.usage) {
     const { inputTokens, outputTokens } = message.usage;
     if (inputTokens != null && outputTokens != null) {
-      parts.push(`${inputTokens} in / ${outputTokens} out tokens`);
+      rows.push({ label: 'Tokens', value: `${inputTokens} in / ${outputTokens} out` });
     }
   }
   if (message.costUsd != null) {
-    parts.push(`$${message.costUsd.toFixed(4)}`);
+    rows.push({ label: 'Cost', value: `$${message.costUsd.toFixed(4)}` });
   }
   if (message.latencyMs != null) {
-    parts.push(`${(message.latencyMs / 1000).toFixed(1)}s`);
+    rows.push({ label: 'Latency', value: `${(message.latencyMs / 1000).toFixed(1)}s` });
   }
 
-  if (parts.length === 0) return null;
+  if (rows.length === 0) return null;
 
   return (
-    <div className={styles.usageInline}>
+    <div className={styles.usageInline} ref={wrapperRef}>
       <button
-        className={styles.usageToggle}
-        onClick={() => setShowDetails(!showDetails)}
+        className={`${styles.usageToggle} ${showTooltip ? styles.usageToggleActive : ''}`}
+        onClick={() => setShowTooltip(!showTooltip)}
         title="Usage details"
       >
         <span className={styles.usageIcon}>i</span>
       </button>
-      {showDetails && <span className={styles.usageDetails}>{parts.join(' · ')}</span>}
+      {showTooltip && (
+        <div className={styles.usageTooltip}>
+          <div className={styles.usageTooltipArrow} />
+          <div className={styles.usageTooltipBody}>
+            {rows.map((row, idx) => (
+              <div key={idx} className={styles.usageTooltipRow}>
+                <span className={styles.usageTooltipLabel}>{row.label}</span>
+                <span className={styles.usageTooltipValue}>{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 /**
- * Upgrade hint card — shown when the routing suggests a better pro model.
- * Explains the user is on the free plan and invites them to upgrade.
+ * Upgrade hint — subtle inline banner shown after the response completes.
+ * Positioned below the action icons and above follow-up suggestions.
  */
 function UpgradeHint({ upgradeHint }) {
   const [dismissed, setDismissed] = useState(false);
@@ -787,59 +811,24 @@ function UpgradeHint({ upgradeHint }) {
   if (!upgradeHint || !upgradeHint.recommendedModel || dismissed) return null;
 
   const modelName = upgradeHint.recommendedModel.name;
-  const provider = upgradeHint.recommendedModel.provider;
-  const providerData = provider ? PROVIDERS[provider] : null;
-  const LogoComponent = provider ? getProviderLogo(provider) : null;
 
   return (
-    <div className={styles.upgradeCard}>
-      <div className={styles.upgradeCardInner}>
-        <div className={styles.upgradeCardHeader}>
-          <div className={styles.upgradeFreeBadge}>Free plan</div>
-          <button
-            className={styles.upgradeDismiss}
-            onClick={() => setDismissed(true)}
-            aria-label="Dismiss"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-        <div className={styles.upgradeCardBody}>
-          <div className={styles.upgradeCardIcon}>
-            <SparkleIcon />
-          </div>
-          <div className={styles.upgradeCardText}>
-            <p className={styles.upgradeCardTitle}>
-              Get better answers with <strong>{modelName}</strong>
-            </p>
-            <p className={styles.upgradeCardDesc}>
-              {upgradeHint.reason
-                ? upgradeHint.reason
-                : `${modelName} delivers higher accuracy and deeper reasoning for questions like this.`}
-            </p>
-          </div>
-        </div>
-        {LogoComponent && providerData && (
-          <div
-            className={styles.upgradeModelChip}
-            style={{
-              backgroundColor: providerData.accentBg,
-              color: providerData.accentText,
-            }}
-          >
-            <LogoComponent size={12} />
-            <span>{modelName}</span>
-          </div>
-        )}
-        <div className={styles.upgradeCardActions}>
-          <button className={styles.upgradeProButton}>
-            <ZapIcon />
-            <span>Upgrade to Pro</span>
-          </button>
-          <button className={styles.upgradeTryButton} onClick={() => setDismissed(true)}>
-            Maybe later
-          </button>
-        </div>
+    <div className={styles.upgradeBanner}>
+      <div className={styles.upgradeBannerContent}>
+        <SparkleIcon />
+        <span className={styles.upgradeBannerText}>
+          Unlock <strong>{modelName}</strong> for better answers
+        </span>
+      </div>
+      <div className={styles.upgradeBannerActions}>
+        <button className={styles.upgradeBannerButton}>Upgrade</button>
+        <button
+          className={styles.upgradeBannerDismiss}
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss"
+        >
+          <CloseIcon />
+        </button>
       </div>
     </div>
   );
@@ -2380,11 +2369,6 @@ function Message({
         />
       )}
 
-      {/* Upgrade hint */}
-      {!isUser && !isStreaming && message.upgradeHint && (
-        <UpgradeHint upgradeHint={message.upgradeHint} />
-      )}
-
       {/* Sub-conversation pills */}
       {!isUser && !isStreaming && message.content && (
         <SubConversationPills
@@ -2392,6 +2376,11 @@ function Message({
           onOpen={handleOpenSubConv}
           activeSubConvId={showSubConvPanel ? activeSubConvId : null}
         />
+      )}
+
+      {/* Upgrade hint — subtle banner below icons, above follow-ups */}
+      {!isUser && !isStreaming && message.upgradeHint && (
+        <UpgradeHint upgradeHint={message.upgradeHint} />
       )}
 
       {followUps.length > 0 && (
