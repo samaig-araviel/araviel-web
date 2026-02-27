@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectSelectedModelId, setSelectedModel } from '../../store/slices/chatSlice';
+import {
+  selectSelectedModelId,
+  setSelectedModel,
+  selectAutoStrategy,
+  setAutoStrategy,
+} from '../../store/slices/chatSlice';
 import {
   MODELS,
   PROVIDERS,
@@ -26,9 +31,17 @@ const FEATURED_MODEL_IDS_FREE = [
   'gemini-2.5-flash', // Google free
 ];
 
+const AUTO_STRATEGIES = [
+  { id: 'default', label: 'Default', desc: 'Best model for each task' },
+  { id: 'humanFactors', label: 'Human Factors', desc: 'Uses mood, tone & context' },
+  { id: 'costEfficient', label: 'Cost Efficient', desc: 'Optimizes for lower cost' },
+  { id: 'taskBased', label: 'Task Based', desc: 'Pure task routing only' },
+];
+
 export default function ModelSelector() {
   const dispatch = useDispatch();
   const selectedModelId = useSelector(selectSelectedModelId);
+  const autoStrategy = useSelector(selectAutoStrategy);
 
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownDir, setDropdownDir] = useState('down');
@@ -141,7 +154,15 @@ export default function ModelSelector() {
   // Trigger label and provider accent — only reflect the explicitly selected model, not the
   // saved default. When in Auto mode the trigger always shows "Auto".
   const displayProvider = !isAutoMode && selectedModel ? PROVIDERS[selectedModel.provider] : null;
-  const triggerLabel = isAutoMode ? 'Auto' : selectedModel?.name ?? 'Auto';
+  const strategyLabel =
+    isAutoMode && autoStrategy && autoStrategy !== 'default'
+      ? AUTO_STRATEGIES.find((s) => s.id === autoStrategy)?.label
+      : null;
+  const triggerLabel = isAutoMode
+    ? strategyLabel
+      ? `Auto (${strategyLabel})`
+      : 'Auto'
+    : selectedModel?.name ?? 'Auto';
 
   return (
     <div className={styles.wrapper}>
@@ -285,6 +306,30 @@ export default function ModelSelector() {
                   </span>
                 )}
               </button>
+
+              {/* ── Auto strategy chips (shown when Auto is selected) ── */}
+              {isAutoMode && (
+                <div className={styles.autoStrategies}>
+                  {AUTO_STRATEGIES.map((strategy) => {
+                    const isActive = (autoStrategy || 'default') === strategy.id;
+                    return (
+                      <button
+                        key={strategy.id}
+                        className={`${styles.autoStrategyChip} ${
+                          isActive ? styles.autoStrategyChipActive : ''
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          dispatch(setAutoStrategy(strategy.id));
+                        }}
+                        title={strategy.desc}
+                      >
+                        {strategy.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               <div className={styles.divider} />
               <div className={styles.sectionLabel}>Featured Models</div>

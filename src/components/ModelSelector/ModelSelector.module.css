@@ -162,6 +162,45 @@
   margin: 4px 0;
 }
 
+/* ── Auto Strategy Chips ── */
+.autoStrategies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 10px 2px;
+}
+
+.autoStrategyChip {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 550;
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.autoStrategyChip:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.autoStrategyChipActive {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+.autoStrategyChipActive:hover {
+  opacity: 0.9;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+}
+
 /* ───────────────────────────────
    Auto Glyph (trigger button)
    ─────────────────────────────── */

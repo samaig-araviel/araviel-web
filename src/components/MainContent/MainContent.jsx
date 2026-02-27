@@ -23,6 +23,11 @@ import {
   setExtendedThinking,
   setDeepResearch,
   setGoogleThinking,
+  selectTone,
+  selectMood,
+  selectAutoStrategy,
+  setTone,
+  setMood,
 } from '../../store/slices/chatSlice';
 import {
   SendIcon,
@@ -63,6 +68,7 @@ import {
   BeakerIcon,
   CpuIcon,
   MapPinIcon,
+  SmileIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -107,6 +113,31 @@ const MODE_CONFIG = [
     Icon: CpuIcon,
     action: setGoogleThinking,
   },
+];
+
+// Tone options matching ADE Tone enum
+const TONE_OPTIONS = [
+  { id: null, label: 'Auto-detect', desc: 'ADE detects tone from your message' },
+  { id: 'casual', label: 'Casual', desc: 'Relaxed, informal conversation' },
+  { id: 'focused', label: 'Focused', desc: 'Clear and direct responses' },
+  { id: 'curious', label: 'Curious', desc: 'Exploratory and inquisitive' },
+  { id: 'frustrated', label: 'Frustrated', desc: 'Patient, empathetic responses' },
+  { id: 'urgent', label: 'Urgent', desc: 'Quick, action-oriented answers' },
+  { id: 'playful', label: 'Playful', desc: 'Fun and lighthearted style' },
+  { id: 'professional', label: 'Professional', desc: 'Formal and business-like' },
+];
+
+// Mood options matching ADE Mood enum
+const MOOD_OPTIONS = [
+  { id: null, label: 'Not set', desc: 'No mood context sent' },
+  { id: 'happy', label: 'Happy', desc: 'Feeling good and positive' },
+  { id: 'neutral', label: 'Neutral', desc: 'Balanced, no strong mood' },
+  { id: 'stressed', label: 'Stressed', desc: 'Under pressure or overwhelmed' },
+  { id: 'frustrated', label: 'Frustrated', desc: 'Stuck or annoyed' },
+  { id: 'excited', label: 'Excited', desc: 'Energetic and enthusiastic' },
+  { id: 'tired', label: 'Tired', desc: 'Low energy, need concise answers' },
+  { id: 'anxious', label: 'Anxious', desc: 'Worried or uncertain' },
+  { id: 'calm', label: 'Calm', desc: 'Relaxed and at ease' },
 ];
 
 const promptsData = {
@@ -383,6 +414,9 @@ export default function MainContent() {
   const extendedThinking = useSelector(selectExtendedThinking);
   const deepResearch = useSelector(selectDeepResearch);
   const googleThinking = useSelector(selectGoogleThinking);
+  const tone = useSelector(selectTone);
+  const mood = useSelector(selectMood);
+  const autoStrategy = useSelector(selectAutoStrategy);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const {
@@ -398,6 +432,8 @@ export default function MainContent() {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
   const [showResearchModes, setShowResearchModes] = useState(false);
+  const [showToneSubmenu, setShowToneSubmenu] = useState(false);
+  const [showMoodSubmenu, setShowMoodSubmenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -451,7 +487,11 @@ export default function MainContent() {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        if (showResearchModes) {
+        if (showToneSubmenu) {
+          setShowToneSubmenu(false);
+        } else if (showMoodSubmenu) {
+          setShowMoodSubmenu(false);
+        } else if (showResearchModes) {
           setShowResearchModes(false);
         } else {
           setActiveDropdown(null);
@@ -461,7 +501,7 @@ export default function MainContent() {
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showResearchModes]);
+  }, [showResearchModes, showToneSubmenu, showMoodSubmenu]);
 
   // Mobile detection
   useEffect(() => {
@@ -471,10 +511,12 @@ export default function MainContent() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Reset submenu when dropdown closes
+  // Reset submenus when dropdown closes
   useEffect(() => {
     if (!showAttachDropdown) {
       setMobileFileSubmenu(false);
+      setShowToneSubmenu(false);
+      setShowMoodSubmenu(false);
     }
   }, [showAttachDropdown]);
 
@@ -566,6 +608,10 @@ export default function MainContent() {
           selectedModelId: options.selectedModelId || undefined,
           webSearch: webSearchParam,
           userLocation: locationPayload,
+          tone: tone || undefined,
+          mood: mood || undefined,
+          autoStrategy: autoStrategy || undefined,
+          weather: userLocation?.weather || undefined,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -658,8 +704,8 @@ export default function MainContent() {
                 }
               }
             } else if (type === 'citations') {
-              if (assistantMsgAdded && data.citations) {
-                dispatch(updateLastMessage({ citations: data.citations }));
+              if (assistantMsgAdded && data.sources) {
+                dispatch(updateLastMessage({ citations: data.sources }));
               }
             } else if (type === 'done') {
               receivedDone = true;
@@ -749,7 +795,7 @@ export default function MainContent() {
         setStreamedText('');
       }, 600);
     },
-    [dispatch, currentChatId, userLocation]
+    [dispatch, currentChatId, userLocation, tone, mood, autoStrategy]
   );
 
   /**
@@ -900,7 +946,16 @@ export default function MainContent() {
     { id: 'camera', label: isMobile ? 'Camera' : 'Take a screenshot', icon: CameraIcon },
     { id: 'websearch', label: 'Web Search', icon: GlobeIcon },
     { id: 'research', label: 'Research', icon: BookIcon },
-    { id: 'tone', label: 'Tone', icon: MicIcon },
+    {
+      id: 'tone',
+      label: tone ? `Tone: ${tone.charAt(0).toUpperCase() + tone.slice(1)}` : 'Tone',
+      icon: MicIcon,
+    },
+    {
+      id: 'mood',
+      label: mood ? `Mood: ${mood.charAt(0).toUpperCase() + mood.slice(1)}` : 'Mood',
+      icon: SmileIcon,
+    },
   ];
 
   const maxAttachments = getUserTier() === 'pro' ? 15 : 5;
@@ -1090,7 +1145,14 @@ export default function MainContent() {
       setShowAttachDropdown(false);
       return;
     }
-    console.log('Attach option selected:', optionId);
+    if (optionId === 'tone') {
+      setShowToneSubmenu(true);
+      return;
+    }
+    if (optionId === 'mood') {
+      setShowMoodSubmenu(true);
+      return;
+    }
     setShowAttachDropdown(false);
   };
 
@@ -1335,6 +1397,78 @@ export default function MainContent() {
                             );
                           })}
                         </div>
+                      ) : showToneSubmenu ? (
+                        <div className={styles.attachSubmenu}>
+                          <button
+                            className={styles.attachSubmenuBack}
+                            onClick={() => setShowToneSubmenu(false)}
+                          >
+                            <ChevronLeftIcon />
+                            <span>Back</span>
+                          </button>
+                          <div className={styles.submenuLabel}>Tone</div>
+                          {TONE_OPTIONS.map((opt) => {
+                            const isActive = tone === opt.id;
+                            return (
+                              <button
+                                key={opt.id ?? 'auto'}
+                                className={`${styles.submenuOption} ${
+                                  isActive ? styles.submenuOptionActive : ''
+                                }`}
+                                onClick={() => {
+                                  dispatch(setTone(opt.id));
+                                  setShowToneSubmenu(false);
+                                }}
+                              >
+                                <div className={styles.submenuOptionContent}>
+                                  <span className={styles.submenuOptionName}>{opt.label}</span>
+                                  <span className={styles.submenuOptionDesc}>{opt.desc}</span>
+                                </div>
+                                {isActive && (
+                                  <span className={styles.attachOptionCheck}>
+                                    <CheckIcon />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : showMoodSubmenu ? (
+                        <div className={styles.attachSubmenu}>
+                          <button
+                            className={styles.attachSubmenuBack}
+                            onClick={() => setShowMoodSubmenu(false)}
+                          >
+                            <ChevronLeftIcon />
+                            <span>Back</span>
+                          </button>
+                          <div className={styles.submenuLabel}>Mood</div>
+                          {MOOD_OPTIONS.map((opt) => {
+                            const isActive = mood === opt.id;
+                            return (
+                              <button
+                                key={opt.id ?? 'none'}
+                                className={`${styles.submenuOption} ${
+                                  isActive ? styles.submenuOptionActive : ''
+                                }`}
+                                onClick={() => {
+                                  dispatch(setMood(opt.id));
+                                  setShowMoodSubmenu(false);
+                                }}
+                              >
+                                <div className={styles.submenuOptionContent}>
+                                  <span className={styles.submenuOptionName}>{opt.label}</span>
+                                  <span className={styles.submenuOptionDesc}>{opt.desc}</span>
+                                </div>
+                                {isActive && (
+                                  <span className={styles.attachOptionCheck}>
+                                    <CheckIcon />
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
                       ) : mobileFileSubmenu && isMobile ? (
                         <div className={styles.attachSubmenu}>
                           <button
@@ -1365,9 +1499,13 @@ export default function MainContent() {
                           const Icon = option.icon;
                           const isWebSearch = option.id === 'websearch';
                           const isResearch = option.id === 'research';
+                          const isTone = option.id === 'tone';
+                          const isMood = option.id === 'mood';
                           const isActive =
                             (isWebSearch && webSearchEnabled === true) ||
-                            (isResearch && anyModeActive);
+                            (isResearch && anyModeActive) ||
+                            (isTone && !!tone) ||
+                            (isMood && !!mood);
                           return (
                             <button
                               key={option.id}
@@ -1389,6 +1527,8 @@ export default function MainContent() {
                                 </span>
                               )}
                               {(option.id === 'research' ||
+                                option.id === 'tone' ||
+                                option.id === 'mood' ||
                                 (option.id === 'files' && isMobile)) && (
                                 <span className={styles.attachOptionChevron}>
                                   <ChevronRightIcon />
