@@ -49,10 +49,15 @@ import {
   LinkIcon,
   CheckIcon,
   StopIcon,
+  PhotoIcon,
+  FileIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
 import { sendMessage, consumeSSEStream } from '../../services/api';
+import { getUserTier } from '../../data/models';
 import styles from './MainContent.module.css';
 
 const getGreeting = () => {
@@ -124,14 +129,6 @@ const promptsData = {
     ],
   },
 };
-
-const attachOptions = [
-  { id: 'files', label: 'Add files or Photos', icon: FilePlusIcon },
-  { id: 'camera', label: 'Camera', icon: CameraIcon },
-  { id: 'websearch', label: 'Web Search', icon: GlobeIcon },
-  { id: 'research', label: 'Research', icon: BookIcon },
-  { id: 'tone', label: 'Tone', icon: MicIcon },
-];
 
 const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn'];
 
@@ -256,9 +253,14 @@ export default function MainContent() {
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
+  const [mobileFileSubmenu, setMobileFileSubmenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const textareaRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   // Streaming / timeline state
   const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
@@ -304,6 +306,21 @@ export default function MainContent() {
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, []);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Reset submenu when dropdown closes
+  useEffect(() => {
+    if (!showAttachDropdown) {
+      setMobileFileSubmenu(false);
+    }
+  }, [showAttachDropdown]);
 
   // Auto-resize textarea
   const autoResizeTextarea = () => {
@@ -584,6 +601,7 @@ export default function MainContent() {
     }
     setActiveDropdown(null);
     setShowAttachDropdown(false);
+    clearAttachedFiles();
 
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
@@ -664,6 +682,7 @@ export default function MainContent() {
 
     dispatch(createNewChat());
     dispatch(setInputValue(''));
+    clearAttachedFiles();
     setActiveDropdown(null);
     setPipelineStatus('idle');
     setIsStreaming(false);
@@ -710,12 +729,142 @@ export default function MainContent() {
     [isProcessing, currentChatId, runSSEPipeline]
   );
 
+  // Dynamic attach options (label changes based on device)
+  const attachOptions = [
+    { id: 'files', label: 'Add files or Photos', icon: FilePlusIcon },
+    { id: 'camera', label: isMobile ? 'Camera' : 'Take a screenshot', icon: CameraIcon },
+    { id: 'websearch', label: 'Web Search', icon: GlobeIcon },
+    { id: 'research', label: 'Research', icon: BookIcon },
+    { id: 'tone', label: 'Tone', icon: MicIcon },
+  ];
+
+  const maxAttachments = getUserTier() === 'pro' ? 15 : 5;
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const remainingSlots = maxAttachments - attachedFiles.length;
+    if (remainingSlots <= 0) return;
+    const filesToAdd = files.slice(0, remainingSlots);
+    const newFiles = filesToAdd.map((file) => ({
+      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file,
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+    }));
+    setAttachedFiles((prev) => [...prev, ...newFiles]);
+    if (e.target) e.target.value = '';
+  };
+
+  const handleRemoveFile = (fileId) => {
+    setAttachedFiles((prev) => {
+      const file = prev.find((f) => f.id === fileId);
+      if (file?.preview) URL.revokeObjectURL(file.preview);
+      return prev.filter((f) => f.id !== fileId);
+    });
+  };
+
+  const clearAttachedFiles = useCallback(() => {
+    setAttachedFiles((prev) => {
+      prev.forEach((f) => {
+        if (f.preview) URL.revokeObjectURL(f.preview);
+      });
+      return [];
+    });
+  }, []);
+
+  const handleScreenshot = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      await video.play();
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      stream.getTracks().forEach((track) => track.stop());
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      const file = new File([blob], `screenshot-${Date.now()}.png`, { type: 'image/png' });
+      if (attachedFiles.length >= maxAttachments) return;
+      setAttachedFiles((prev) => [
+        ...prev,
+        {
+          id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          file,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          preview: URL.createObjectURL(file),
+        },
+      ]);
+    } catch (err) {
+      console.log('Screenshot cancelled:', err.message);
+    }
+  };
+
+  const handleMobilePhotoLibrary = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute('accept', 'image/*');
+      fileInputRef.current.click();
+    }
+    setMobileFileSubmenu(false);
+    setShowAttachDropdown(false);
+  };
+
+  const handleMobileChooseFiles = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute('accept', 'image/*,.pdf,.doc,.docx,.txt,.csv,.json,.xml');
+      fileInputRef.current.click();
+    }
+    setMobileFileSubmenu(false);
+    setShowAttachDropdown(false);
+  };
+
+  const handleMobileTakePhoto = () => {
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click();
+    }
+    setMobileFileSubmenu(false);
+    setShowAttachDropdown(false);
+  };
+
   const handleAttachClick = () => {
     setShowAttachDropdown(!showAttachDropdown);
     setActiveDropdown(null);
   };
 
   const handleAttachOptionClick = (optionId) => {
+    if (optionId === 'websearch') {
+      dispatch(setWebSearchEnabled(webSearchEnabled === true ? false : true));
+      return;
+    }
+    if (optionId === 'files') {
+      if (isMobile) {
+        setMobileFileSubmenu(true);
+        return;
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.setAttribute('accept', 'image/*,.pdf,.doc,.docx,.txt,.csv,.json,.xml');
+        fileInputRef.current.click();
+      }
+      setShowAttachDropdown(false);
+      return;
+    }
+    if (optionId === 'camera') {
+      if (isMobile) {
+        if (cameraInputRef.current) {
+          cameraInputRef.current.click();
+        }
+      } else {
+        handleScreenshot();
+      }
+      setShowAttachDropdown(false);
+      return;
+    }
     console.log('Attach option selected:', optionId);
     setShowAttachDropdown(false);
   };
@@ -801,6 +950,36 @@ export default function MainContent() {
                 rows={1}
                 aria-label="Message input"
               />
+              {attachedFiles.length > 0 && (
+                <div className={styles.attachedFiles}>
+                  {attachedFiles.map((file) => (
+                    <div key={file.id} className={styles.attachedFileItem}>
+                      {file.preview ? (
+                        <img
+                          src={file.preview}
+                          alt={file.name}
+                          className={styles.attachedFileThumb}
+                        />
+                      ) : (
+                        <div className={styles.attachedFileIcon}>
+                          <FileIcon />
+                        </div>
+                      )}
+                      <span className={styles.attachedFileName}>{file.name}</span>
+                      <button
+                        className={styles.attachedFileRemove}
+                        onClick={() => handleRemoveFile(file.id)}
+                        aria-label={`Remove ${file.name}`}
+                      >
+                        <CloseIcon />
+                      </button>
+                    </div>
+                  ))}
+                  <span className={styles.attachedFilesCount}>
+                    {attachedFiles.length}/{maxAttachments}
+                  </span>
+                </div>
+              )}
               <div className={styles.inputActions}>
                 <div className={styles.leftActions}>
                   <button
@@ -814,19 +993,60 @@ export default function MainContent() {
                   </button>
                   {showAttachDropdown && (
                     <div className={styles.attachDropdown} ref={attachDropdownRef}>
-                      {attachOptions.map((option) => {
-                        const Icon = option.icon;
-                        return (
+                      {mobileFileSubmenu && isMobile ? (
+                        <div className={styles.attachSubmenu}>
                           <button
-                            key={option.id}
-                            className={styles.attachOption}
-                            onClick={() => handleAttachOptionClick(option.id)}
+                            className={styles.attachSubmenuBack}
+                            onClick={() => setMobileFileSubmenu(false)}
                           >
-                            <Icon />
-                            <span>{option.label}</span>
+                            <ChevronLeftIcon />
+                            <span>Back</span>
                           </button>
-                        );
-                      })}
+                          <button
+                            className={styles.attachOption}
+                            onClick={handleMobilePhotoLibrary}
+                          >
+                            <PhotoIcon />
+                            <span>Photo library</span>
+                          </button>
+                          <button className={styles.attachOption} onClick={handleMobileChooseFiles}>
+                            <FileIcon />
+                            <span>Choose files</span>
+                          </button>
+                          <button className={styles.attachOption} onClick={handleMobileTakePhoto}>
+                            <CameraIcon />
+                            <span>Take Photo</span>
+                          </button>
+                        </div>
+                      ) : (
+                        attachOptions.map((option) => {
+                          const Icon = option.icon;
+                          const isWebSearch = option.id === 'websearch';
+                          const isActive = isWebSearch && webSearchEnabled === true;
+                          return (
+                            <button
+                              key={option.id}
+                              className={`${styles.attachOption} ${
+                                isActive ? styles.attachOptionActive : ''
+                              }`}
+                              onClick={() => handleAttachOptionClick(option.id)}
+                            >
+                              <Icon />
+                              <span>{option.label}</span>
+                              {isWebSearch && isActive && (
+                                <span className={styles.attachOptionCheck}>
+                                  <CheckIcon />
+                                </span>
+                              )}
+                              {option.id === 'files' && isMobile && (
+                                <span className={styles.attachOptionChevron}>
+                                  <ChevronRightIcon />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
                     </div>
                   )}
                   <ModelSelector />
@@ -834,35 +1054,15 @@ export default function MainContent() {
                     type="button"
                     className={`${styles.webSearchToggle} ${
                       webSearchEnabled === true ? styles.webSearchToggleOn : ''
-                    } ${webSearchEnabled === null ? styles.webSearchToggleAuto : ''}`}
+                    }`}
                     onClick={() => {
-                      // Cycle: null (auto) → true (on) → false (off) → null (auto)
-                      if (webSearchEnabled === null) {
-                        dispatch(setWebSearchEnabled(true));
-                      } else if (webSearchEnabled === true) {
-                        dispatch(setWebSearchEnabled(false));
-                      } else {
-                        dispatch(setWebSearchEnabled(null));
-                      }
+                      dispatch(setWebSearchEnabled(webSearchEnabled === true ? false : true));
                     }}
                     disabled={isProcessing}
-                    title={
-                      webSearchEnabled === true
-                        ? 'Web search: On'
-                        : webSearchEnabled === false
-                        ? 'Web search: Off'
-                        : 'Web search: Auto'
-                    }
+                    title={webSearchEnabled === true ? 'Web search: On' : 'Web search: Off'}
                     aria-label="Toggle web search"
                   >
                     <GlobeIcon />
-                    <span className={styles.webSearchToggleLabel}>
-                      {webSearchEnabled === true
-                        ? 'Search'
-                        : webSearchEnabled === false
-                        ? 'Search off'
-                        : 'Search'}
-                    </span>
                   </button>
                 </div>
                 {isProcessing ? (
@@ -887,6 +1087,24 @@ export default function MainContent() {
                 )}
               </div>
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.xml"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+              aria-hidden="true"
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileSelect}
+              style={{ display: 'none' }}
+              aria-hidden="true"
+            />
           </form>
           <p className={styles.disclaimer}>
             Araviel can make mistakes. Please verify important information.
