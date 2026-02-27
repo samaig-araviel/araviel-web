@@ -8,6 +8,9 @@ import {
   selectSelectedModelId,
   selectCurrentChatId,
   selectWebSearchEnabled,
+  selectExtendedThinking,
+  selectDeepResearch,
+  selectGoogleThinking,
   setInputValue,
   setMode,
   addMessage,
@@ -17,6 +20,9 @@ import {
   setCurrentChat,
   removeLastAssistantMessage,
   setWebSearchEnabled,
+  setExtendedThinking,
+  setDeepResearch,
+  setGoogleThinking,
 } from '../../store/slices/chatSlice';
 import {
   SendIcon,
@@ -53,6 +59,9 @@ import {
   FileIcon,
   ChevronRightIcon,
   ChevronLeftIcon,
+  BrainIcon,
+  BeakerIcon,
+  CpuIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -66,6 +75,33 @@ const getGreeting = () => {
   if (hour < 18) return 'Good afternoon.';
   return 'Good evening.';
 };
+
+const MODE_CONFIG = [
+  {
+    key: 'extendedThinking',
+    label: 'Extended Thinking',
+    description: 'Deep chain-of-thought reasoning',
+    providerLabel: 'Claude',
+    Icon: BrainIcon,
+    action: setExtendedThinking,
+  },
+  {
+    key: 'deepResearch',
+    label: 'Deep Research',
+    description: 'Multi-step research & analysis',
+    providerLabel: 'OpenAI',
+    Icon: BeakerIcon,
+    action: setDeepResearch,
+  },
+  {
+    key: 'googleThinking',
+    label: 'Thinking Mode',
+    description: 'Enhanced reasoning with Gemini',
+    providerLabel: 'Gemini',
+    Icon: CpuIcon,
+    action: setGoogleThinking,
+  },
+];
 
 const promptsData = {
   code: {
@@ -338,9 +374,16 @@ export default function MainContent() {
   const selectedModelId = useSelector(selectSelectedModelId);
   const currentChatId = useSelector(selectCurrentChatId);
   const webSearchEnabled = useSelector(selectWebSearchEnabled);
+  const extendedThinking = useSelector(selectExtendedThinking);
+  const deepResearch = useSelector(selectDeepResearch);
+  const googleThinking = useSelector(selectGoogleThinking);
+
+  const modeValues = { extendedThinking, deepResearch, googleThinking };
+  const anyModeActive = extendedThinking || deepResearch || googleThinking;
 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [showAttachDropdown, setShowAttachDropdown] = useState(false);
+  const [showResearchModes, setShowResearchModes] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -383,6 +426,7 @@ export default function MainContent() {
         const clickedOnAttach = e.target.closest(`.${styles.attachBtn}`);
         if (!clickedOnAttach) {
           setShowAttachDropdown(false);
+          setShowResearchModes(false);
         }
       }
     };
@@ -393,13 +437,17 @@ export default function MainContent() {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        setActiveDropdown(null);
-        setShowAttachDropdown(false);
+        if (showResearchModes) {
+          setShowResearchModes(false);
+        } else {
+          setActiveDropdown(null);
+          setShowAttachDropdown(false);
+        }
       }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [showResearchModes]);
 
   // Mobile detection
   useEffect(() => {
@@ -978,12 +1026,22 @@ export default function MainContent() {
 
   const handleAttachClick = () => {
     setShowAttachDropdown(!showAttachDropdown);
+    setShowResearchModes(false);
     setActiveDropdown(null);
+  };
+
+  const handleModeToggle = (modeConf) => {
+    const currentValue = modeValues[modeConf.key];
+    dispatch(modeConf.action(!currentValue));
   };
 
   const handleAttachOptionClick = (optionId) => {
     if (optionId === 'websearch') {
       dispatch(setWebSearchEnabled(webSearchEnabled === true ? false : true));
+      return;
+    }
+    if (optionId === 'research') {
+      setShowResearchModes(true);
       return;
     }
     if (optionId === 'files') {
@@ -1172,7 +1230,54 @@ export default function MainContent() {
                   </button>
                   {showAttachDropdown && (
                     <div className={styles.attachDropdown} ref={attachDropdownRef}>
-                      {mobileFileSubmenu && isMobile ? (
+                      {showResearchModes ? (
+                        <div className={styles.attachSubmenu}>
+                          <button
+                            className={styles.attachSubmenuBack}
+                            onClick={() => setShowResearchModes(false)}
+                          >
+                            <ChevronLeftIcon />
+                            <span>Back</span>
+                          </button>
+                          <div className={styles.researchModesLabel}>Modes</div>
+                          {MODE_CONFIG.map((modeConf) => {
+                            const active = modeValues[modeConf.key];
+                            const ModeIcon = modeConf.Icon;
+                            return (
+                              <button
+                                key={modeConf.key}
+                                className={`${styles.researchModeOption} ${
+                                  active ? styles.researchModeOptionActive : ''
+                                }`}
+                                onClick={() => handleModeToggle(modeConf)}
+                                aria-pressed={active}
+                                title={modeConf.description}
+                              >
+                                <span
+                                  className={`${styles.researchModeIcon} ${
+                                    active ? styles.researchModeIconActive : ''
+                                  }`}
+                                >
+                                  <ModeIcon />
+                                </span>
+                                <div className={styles.researchModeContent}>
+                                  <span className={styles.researchModeName}>{modeConf.label}</span>
+                                  <span className={styles.researchModeProvider}>
+                                    {modeConf.providerLabel}
+                                  </span>
+                                </div>
+                                <div
+                                  className={`${styles.researchModeToggle} ${
+                                    active ? styles.researchModeToggleOn : ''
+                                  }`}
+                                >
+                                  <div className={styles.researchModeToggleThumb} />
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : mobileFileSubmenu && isMobile ? (
                         <div className={styles.attachSubmenu}>
                           <button
                             className={styles.attachSubmenuBack}
@@ -1201,7 +1306,10 @@ export default function MainContent() {
                         attachOptions.map((option) => {
                           const Icon = option.icon;
                           const isWebSearch = option.id === 'websearch';
-                          const isActive = isWebSearch && webSearchEnabled === true;
+                          const isResearch = option.id === 'research';
+                          const isActive =
+                            (isWebSearch && webSearchEnabled === true) ||
+                            (isResearch && anyModeActive);
                           return (
                             <button
                               key={option.id}
@@ -1217,7 +1325,13 @@ export default function MainContent() {
                                   <CheckIcon />
                                 </span>
                               )}
-                              {option.id === 'files' && isMobile && (
+                              {isResearch && anyModeActive && (
+                                <span className={styles.attachOptionCheck}>
+                                  <CheckIcon />
+                                </span>
+                              )}
+                              {(option.id === 'research' ||
+                                (option.id === 'files' && isMobile)) && (
                                 <span className={styles.attachOptionChevron}>
                                   <ChevronRightIcon />
                                 </span>

@@ -512,6 +512,111 @@
   height: 14px;
 }
 
+/* ── Research Modes (inside attach dropdown) ── */
+.researchModesLabel {
+  padding: 6px 12px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.researchModeOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-align: left;
+  transition: background-color 0.12s ease;
+  cursor: pointer;
+}
+
+.researchModeOption:hover {
+  background-color: var(--bg-hover);
+}
+
+.researchModeOptionActive {
+  background-color: var(--bg-active);
+}
+
+.researchModeIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.researchModeIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.researchModeIconActive {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+}
+
+.researchModeContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.researchModeName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.researchModeProvider {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.researchModeToggle {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.researchModeToggleOn {
+  background-color: var(--bg-icon-button);
+  border-color: var(--bg-icon-button);
+}
+
+.researchModeToggleThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.researchModeToggleOn .researchModeToggleThumb {
+  transform: translateX(14px);
+  background-color: var(--text-icon-button);
+}
+
 /* Attached files — horizontal scrolling card strip */
 .attachedFiles {
   display: flex;
