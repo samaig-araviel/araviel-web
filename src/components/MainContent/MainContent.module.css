@@ -512,34 +512,54 @@
   height: 14px;
 }
 
-/* Attached files preview */
+/* Attached files — horizontal scrolling card strip */
 .attachedFiles {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border-color);
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
 }
 
-.attachedFileItem {
+.attachedFilesScroll {
   display: flex;
-  align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  max-width: 200px;
-  transition: all 0.15s ease;
-  animation: fileItemAppear 0.2s ease;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+  -webkit-overflow-scrolling: touch;
 }
 
-@keyframes fileItemAppear {
+.attachedFilesScroll::-webkit-scrollbar {
+  height: 3px;
+}
+
+.attachedFilesScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.attachedFilesScroll::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+.attachedFileCard {
+  position: relative;
+  flex-shrink: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  animation: cardAppear 0.25s ease;
+}
+
+@keyframes cardAppear {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.92);
   }
   to {
     opacity: 1;
@@ -547,75 +567,341 @@
   }
 }
 
-.attachedFileItem:hover {
-  border-color: var(--text-muted);
+.attachedFileCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
-.attachedFileThumb {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+.imageCard {
+  width: 80px;
+  height: 80px;
+}
+
+.cardThumb {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  flex-shrink: 0;
+  display: block;
 }
 
-.attachedFileIcon {
-  width: 32px;
-  height: 32px;
+.fileCard {
+  width: 100px;
+  height: 80px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-hover);
-  border-radius: 6px;
+}
+
+.fileCard:hover {
+  border-color: var(--text-muted);
+}
+
+.cardFileContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  width: 100%;
+}
+
+.cardFileIconWrapper {
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
-.attachedFileIcon svg {
-  width: 16px;
-  height: 16px;
+.cardFileIconWrapper svg {
+  width: 22px;
+  height: 22px;
 }
 
-.attachedFileName {
-  font-size: 12px;
+.cardFileName {
+  font-size: 10px;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 100px;
+  max-width: 84px;
+  text-align: center;
+  line-height: 1.2;
 }
 
-.attachedFileRemove {
+.cardFileType {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #fff;
+  line-height: 1.4;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.cardRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
   width: 20px;
   height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
   border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 2;
 }
 
-.attachedFileRemove:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
+.attachedFileCard:hover .cardRemove {
+  opacity: 1;
 }
 
-.attachedFileRemove svg {
-  width: 12px;
-  height: 12px;
+.cardRemove:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.cardRemove svg {
+  width: 10px;
+  height: 10px;
 }
 
 .attachedFilesCount {
   font-size: 11px;
   color: var(--text-muted);
-  padding: 2px 6px;
-  background-color: var(--bg-secondary);
+  padding-left: 2px;
+}
+
+/* ===== Gallery preview ===== */
+.galleryOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: overlayFadeIn 0.2s ease;
+}
+
+.galleryClose {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  z-index: 10;
+}
+
+.galleryClose:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.galleryClose svg {
+  width: 20px;
+  height: 20px;
+}
+
+.galleryMain {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  max-width: 960px;
+  padding: 60px 20px 0;
+  gap: 12px;
+  position: relative;
+}
+
+.galleryNav {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.galleryNav:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.galleryNav svg {
+  width: 18px;
+  height: 18px;
+}
+
+.galleryImageContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: calc(100vh - 160px);
+  min-height: 200px;
+  overflow: hidden;
+}
+
+.galleryImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   border-radius: 10px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+  animation: galleryImageIn 0.25s ease;
+  user-select: none;
+}
+
+@keyframes galleryImageIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.galleryFooter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 16px 20px 24px;
+}
+
+.galleryFileName {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+.galleryCounter {
+  padding: 4px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.3px;
+}
+
+/* ===== Limit toast ===== */
+.limitToast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg), 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1500;
+  max-width: 440px;
+  animation: toastSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.limitToastIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  border-radius: 10px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.limitToastIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.limitToastContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.limitToastTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.limitToastDesc {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.limitToastClose {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--text-muted);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.limitToastClose:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.limitToastClose svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Web search toggle button (icon-only globe) */
@@ -960,16 +1246,52 @@
     height: 14px;
   }
 
-  .attachedFiles {
+  .imageCard {
+    width: 68px;
+    height: 68px;
+  }
+
+  .fileCard {
+    width: 88px;
+    height: 68px;
+  }
+
+  .cardRemove {
+    opacity: 1;
+  }
+
+  .galleryNav {
+    width: 36px;
+    height: 36px;
+  }
+
+  .galleryNav svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .galleryMain {
+    padding: 50px 8px 0;
     gap: 6px;
   }
 
-  .attachedFileItem {
-    max-width: 160px;
+  .limitToast {
+    left: 16px;
+    right: 16px;
+    bottom: 80px;
+    transform: none;
+    max-width: none;
   }
 
-  .attachedFileName {
-    max-width: 70px;
+  @keyframes toastSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .shareModal {
