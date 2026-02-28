@@ -834,6 +834,198 @@
   height: 11px;
 }
 
+/* ===== Inline Sources Dropdown (in actions bar) ===== */
+.inlineSourcesWrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.inlineSourcesPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.inlineSourcesPill:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--text-muted);
+}
+
+.inlineSourcesPillOpen {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border-color: var(--text-muted);
+}
+
+.inlineSourcesPill svg {
+  width: 11px;
+  height: 11px;
+}
+
+.inlineSourcesChevron {
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.inlineSourcesChevron svg {
+  width: 10px;
+  height: 10px;
+}
+
+.inlineSourcesChevronOpen {
+  transform: rotate(180deg);
+}
+
+.inlineSourcesDropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 260px;
+  max-width: 360px;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  animation: inlineSourcesIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+}
+
+[data-theme='dark'] .inlineSourcesDropdown {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes inlineSourcesIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.inlineSourceItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: background-color 0.12s ease;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.inlineSourceItem:last-child {
+  border-bottom: none;
+}
+
+.inlineSourceItem:hover {
+  background-color: var(--bg-hover);
+}
+
+.inlineSourceNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.inlineSourceFavicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.inlineSourceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.inlineSourceTitle {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inlineSourceDomain {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+/* ===== Upgrade Pill (in actions bar) ===== */
+.upgradePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  color: var(--upgrade-accent, #d4a574);
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.1) 0%, rgba(212, 165, 116, 0.05) 100%);
+  border: 1px solid rgba(212, 165, 116, 0.25);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  animation: upgradePillIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.upgradePill:hover {
+  background: linear-gradient(135deg, rgba(212, 165, 116, 0.18) 0%, rgba(212, 165, 116, 0.1) 100%);
+  border-color: rgba(212, 165, 116, 0.4);
+  transform: translateY(-0.5px);
+}
+
+.upgradePill svg {
+  width: 11px;
+  height: 11px;
+}
+
+@keyframes upgradePillIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ===== Share Dropdown ===== */
 .shareActionWrapper {
   position: relative;
