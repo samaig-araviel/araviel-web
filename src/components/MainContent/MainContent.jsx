@@ -1412,23 +1412,22 @@ export default function MainContent() {
                             return (
                               <button
                                 key={opt.id ?? 'auto'}
-                                className={`${styles.submenuOption} ${
-                                  isActive ? styles.submenuOptionActive : ''
+                                className={`${styles.submenuOptionCompact} ${
+                                  isActive ? styles.submenuOptionCompactActive : ''
                                 }`}
                                 onClick={() => {
                                   dispatch(setTone(opt.id));
                                   setShowToneSubmenu(false);
                                 }}
+                                data-tooltip={opt.desc}
                               >
-                                <div className={styles.submenuOptionContent}>
-                                  <span className={styles.submenuOptionName}>{opt.label}</span>
-                                  <span className={styles.submenuOptionDesc}>{opt.desc}</span>
-                                </div>
+                                <span className={styles.submenuOptionCompactName}>{opt.label}</span>
                                 {isActive && (
                                   <span className={styles.attachOptionCheck}>
                                     <CheckIcon />
                                   </span>
                                 )}
+                                <span className={styles.submenuTooltip}>{opt.desc}</span>
                               </button>
                             );
                           })}
@@ -1448,23 +1447,22 @@ export default function MainContent() {
                             return (
                               <button
                                 key={opt.id ?? 'none'}
-                                className={`${styles.submenuOption} ${
-                                  isActive ? styles.submenuOptionActive : ''
+                                className={`${styles.submenuOptionCompact} ${
+                                  isActive ? styles.submenuOptionCompactActive : ''
                                 }`}
                                 onClick={() => {
                                   dispatch(setMood(opt.id));
                                   setShowMoodSubmenu(false);
                                 }}
+                                data-tooltip={opt.desc}
                               >
-                                <div className={styles.submenuOptionContent}>
-                                  <span className={styles.submenuOptionName}>{opt.label}</span>
-                                  <span className={styles.submenuOptionDesc}>{opt.desc}</span>
-                                </div>
+                                <span className={styles.submenuOptionCompactName}>{opt.label}</span>
                                 {isActive && (
                                   <span className={styles.attachOptionCheck}>
                                     <CheckIcon />
                                   </span>
                                 )}
+                                <span className={styles.submenuTooltip}>{opt.desc}</span>
                               </button>
                             );
                           })}
