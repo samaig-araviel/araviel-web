@@ -1264,7 +1264,7 @@ function getEstimatedCost(modelId) {
 /**
  * Dropdown shown when clicking a model pill — lists the current model and alternates.
  */
-function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlternate }) {
+function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlternate, triggerRef }) {
   const dropdownRef = useRef(null);
   const providerData = message.provider ? PROVIDERS[message.provider] : null;
   const LogoComponent = message.provider ? getProviderLogo(message.provider) : null;
@@ -1272,24 +1272,24 @@ function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlterna
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target) &&
+        (!triggerRef?.current || !triggerRef.current.contains(e.target))
+      ) {
         onClose();
       }
     };
     const handleEsc = (e) => {
       if (e.key === 'Escape') onClose();
     };
-    // Delay listener slightly to avoid closing immediately from the opening click
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEsc);
-    }, 10);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
     return () => {
-      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEsc);
     };
-  }, [onClose]);
+  }, [onClose, triggerRef]);
 
   const fitLabel = getFitLabel(message.score);
 
@@ -1788,22 +1788,146 @@ function SubConversationPills({ subConversations, onOpen, activeSubConvId }) {
 }
 
 /**
+ * Inline sources dropdown — pill in the actions bar that expands to show citations.
+ */
+function InlineSourcesDropdown({ citations }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsExpanded(false);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') setIsExpanded(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isExpanded]);
+
+  if (!citations || citations.length === 0) return null;
+
+  return (
+    <div className={styles.inlineSourcesWrapper} ref={wrapperRef}>
+      <button
+        className={`${styles.inlineSourcesPill} ${isExpanded ? styles.inlineSourcesPillOpen : ''}`}
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <SourcesIcon />
+        <span>
+          {citations.length} source{citations.length !== 1 ? 's' : ''}
+        </span>
+        <span
+          className={`${styles.inlineSourcesChevron} ${
+            isExpanded ? styles.inlineSourcesChevronOpen : ''
+          }`}
+        >
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {isExpanded && (
+        <div className={styles.inlineSourcesDropdown}>
+          {citations.map((citation, idx) => {
+            let favicon = '';
+            let hostname = '';
+            try {
+              const url = new URL(citation.url);
+              hostname = url.hostname.replace(/^www\./, '');
+              favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+            } catch {
+              // skip favicon
+            }
+            return (
+              <a
+                key={idx}
+                href={citation.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.inlineSourceItem}
+              >
+                <span className={styles.inlineSourceNumber}>{idx + 1}</span>
+                {favicon && <img src={favicon} alt="" className={styles.inlineSourceFavicon} />}
+                <div className={styles.inlineSourceInfo}>
+                  <span className={styles.inlineSourceTitle}>{citation.title || citation.url}</span>
+                  {hostname && <span className={styles.inlineSourceDomain}>{hostname}</span>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Upgrade pill — compact pill shown in the actions bar to the left of the info icon.
+ * Only shown intermittently: first message, then every 10 assistant messages.
+ */
+function UpgradePill({ upgradeHint }) {
+  const [dismissed, setDismissed] = useState(false);
+
+  if (!upgradeHint || !upgradeHint.recommendedModel || dismissed) return null;
+
+  const modelName = upgradeHint.recommendedModel.name;
+  const fullModel = MODELS.find(
+    (m) => m.id === upgradeHint.recommendedModel.id || m.name === modelName
+  );
+  const providerData = fullModel?.provider ? PROVIDERS[fullModel.provider] : null;
+  const accentColor = providerData?.accentColor || '#d4a574';
+
+  return (
+    <button
+      className={styles.upgradePill}
+      onClick={() => setDismissed(true)}
+      title={`Try ${modelName} for better results — Upgrade to Pro`}
+      style={{ '--upgrade-accent': accentColor }}
+    >
+      <SparkleIcon />
+      <span>Upgrade</span>
+    </button>
+  );
+}
+
+/**
  * Response actions bar shown below each assistant message.
- * Left: model pill + preview pill + sources pill
+ * Left: upgrade pill (intermittent) + info icon + model pill + sources dropdown
  * Right: like, dislike, copy, retry, share
  */
-function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlternate }) {
+function ResponseActions({
+  message,
+  isDark,
+  onRetry,
+  userPrompt,
+  onSelectAlternate,
+  assistantIndex,
+}) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const modelPillRef = useRef(null);
 
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
 
   const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
+  const citations = message.sources || message.citations;
+
+  // Show upgrade pill intermittently: first assistant message, then every 10
+  const showUpgrade =
+    message.upgradeHint &&
+    (assistantIndex === 0 || (assistantIndex > 0 && assistantIndex % 10 === 0));
 
   const getProviderDisplayName = () => {
     if (!provider) return null;
@@ -1842,11 +1966,13 @@ function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlterna
   return (
     <div className={styles.responseActions}>
       <div className={styles.responseActionsLeft}>
+        {showUpgrade && <UpgradePill upgradeHint={message.upgradeHint} />}
         <UsageFooterInline message={message} />
         {providerData && LogoComponent && (
           <div
             className={styles.modelPillSmallWrapper}
-            onClick={() => setShowModelDropdown(!showModelDropdown)}
+            ref={modelPillRef}
+            onClick={() => setShowModelDropdown((prev) => !prev)}
           >
             <div
               className={`${styles.modelPillSmall} ${
@@ -1874,11 +2000,12 @@ function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlterna
                 position="above"
                 onClose={() => setShowModelDropdown(false)}
                 onSelectAlternate={onSelectAlternate}
+                triggerRef={modelPillRef}
               />
             )}
           </div>
         )}
-        <SourcesPill sources={message.sources || message.citations} />
+        <InlineSourcesDropdown citations={citations} />
       </div>
 
       <div className={styles.responseActionsRight}>
@@ -2115,6 +2242,7 @@ function Message({
   subConvPanelOwnerId,
   onSetSubConvPanelOwner,
   currentChatId,
+  assistantIndex,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -2550,11 +2678,6 @@ function Message({
       {/* Stream timeout notice */}
       {!isUser && !isStreaming && message.streamTimeout && <StreamTimeoutNotice />}
 
-      {/* Citations */}
-      {!isUser && !isStreaming && message.citations && (
-        <CitationsDisplay citations={message.citations} />
-      )}
-
       {/* Text selection tooltip */}
       {selectionTooltip && !isUser && (
         <SelectionTooltip position={selectionTooltip} onAsk={handleAskAraviel} />
@@ -2567,6 +2690,7 @@ function Message({
           onRetry={onRetry}
           userPrompt={userPrompt}
           onSelectAlternate={(alt) => setPendingAlternate(alt)}
+          assistantIndex={assistantIndex}
         />
       )}
 
@@ -2577,11 +2701,6 @@ function Message({
           onOpen={handleOpenSubConv}
           activeSubConvId={showSubConvPanel ? activeSubConvId : null}
         />
-      )}
-
-      {/* Upgrade hint — subtle banner below icons, above follow-ups */}
-      {!isUser && !isStreaming && message.upgradeHint && (
-        <UpgradeHint upgradeHint={message.upgradeHint} />
       )}
 
       {followUps.length > 0 && (
@@ -2736,6 +2855,16 @@ export default function MessageList({
   // - Otherwise, timeline goes after all messages
   const timelineBeforeLastMsg = isLastAssistantStreaming;
 
+  // Pre-compute assistant indices for upgrade pill intermittent display
+  const assistantIndices = new Map();
+  let aIdx = 0;
+  for (let i = 0; i < messages.length; i++) {
+    if (messages[i].role === 'assistant') {
+      assistantIndices.set(i, aIdx);
+      aIdx++;
+    }
+  }
+
   return (
     <div className={styles.messageList} ref={containerRef}>
       {/* Top fade gradient */}
@@ -2785,6 +2914,7 @@ export default function MessageList({
                 subConvPanelOwnerId={subConvPanelOwnerId}
                 onSetSubConvPanelOwner={setSubConvPanelOwnerId}
                 currentChatId={currentChatId}
+                assistantIndex={assistantIndices.get(index) ?? -1}
               />
             </div>
           );
