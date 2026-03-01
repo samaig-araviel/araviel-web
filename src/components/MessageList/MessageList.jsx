@@ -2267,7 +2267,7 @@ function InlineSourcesDropdown({ citations }) {
 }
 
 /**
- * Upgrade pill — compact pill shown in the actions bar to the left of the info icon.
+ * Upgrade pill — warm glowing pill shown in the actions bar.
  * Clicking opens a delightful upgrade popup with model info and upgrade CTA.
  */
 function UpgradePill({ upgradeHint }) {
@@ -2295,8 +2295,10 @@ function UpgradePill({ upgradeHint }) {
         title={`Try ${modelName} — Upgrade to Pro`}
         style={{ '--upgrade-accent': accentColor }}
       >
-        <SparkleIcon />
-        <span>Upgrade</span>
+        <span className={styles.upgradePillIcon}>
+          <SparkleIcon />
+        </span>
+        <span className={styles.upgradePillLabel}>Pro</span>
       </button>
       {showPopup && fullModel && (
         <UpgradePopup
@@ -2312,7 +2314,7 @@ function UpgradePill({ upgradeHint }) {
 
 /**
  * Delightful upgrade popup — shown when clicking the upgrade pill.
- * Shows model info, capabilities, and a compelling upgrade CTA.
+ * Elegant card with model branding, warm Araviel aesthetics, and compelling CTA.
  */
 function UpgradePopup({ model, reason, onClose, isDark }) {
   const popupRef = useRef(null);
@@ -2348,107 +2350,127 @@ function UpgradePopup({ model, reason, onClose, isDark }) {
     ? providerData?.accentTextDark || providerData?.accentColor
     : providerData?.accentText;
 
+  const features = [
+    { label: 'All premium models', desc: 'Access every model in the catalog' },
+    { label: 'Priority routing', desc: 'Faster queue times and optimized paths' },
+    { label: 'Higher limits', desc: 'Extended usage with generous quotas' },
+  ];
+
   return createPortal(
-    <div className={styles.modelInfoOverlay}>
-      <div className={styles.upgradePopup} ref={popupRef}>
-        {/* Gradient header with model branding */}
+    <div className={styles.upgradeOverlay} onClick={onClose}>
+      <div className={styles.upgradePopup} ref={popupRef} onClick={(e) => e.stopPropagation()}>
+        {/* Header with warm gradient and model branding */}
         <div
           className={styles.upgradePopupHeader}
           style={{
-            background: `linear-gradient(135deg, ${accentColor}15 0%, ${accentColor}08 100%)`,
-            borderBottom: `1px solid ${accentColor}20`,
+            '--popup-accent': accentColor,
+            '--popup-accent-bg': accentBg,
+            '--popup-accent-text': accentText,
           }}
         >
-          <div className={styles.upgradePopupHeaderTop}>
-            {providerData && LogoComponent && (
-              <span
-                className={styles.upgradePopupLogo}
-                style={{ backgroundColor: accentBg, color: accentText }}
-              >
-                <LogoComponent size={20} />
-              </span>
-            )}
-            <button className={styles.modelInfoClose} onClick={onClose} aria-label="Close">
+          <div className={styles.upgradePopupHeaderGlow} />
+          <div className={styles.upgradePopupHeaderContent}>
+            <div className={styles.upgradePopupBrand}>
+              {providerData && LogoComponent && (
+                <span
+                  className={styles.upgradePopupLogo}
+                  style={{ backgroundColor: accentBg, color: accentText }}
+                >
+                  <LogoComponent size={22} />
+                </span>
+              )}
+              <div className={styles.upgradePopupModelInfo}>
+                <span className={styles.upgradePopupModelName}>{model.name}</span>
+                {model.tagline && (
+                  <span className={styles.upgradePopupTagline}>{model.tagline}</span>
+                )}
+              </div>
+            </div>
+            <button className={styles.upgradePopupClose} onClick={onClose} aria-label="Close">
               <CloseIcon />
             </button>
           </div>
-          <div className={styles.upgradePopupModelInfo}>
-            <span className={styles.upgradePopupModelName}>{model.name}</span>
-            {model.tagline && <span className={styles.upgradePopupTagline}>{model.tagline}</span>}
-          </div>
-        </div>
 
-        {/* Why this model section */}
-        {reason && (
-          <div className={styles.upgradePopupReason}>
-            <SparkleIcon />
-            <span>{reason}</span>
-          </div>
-        )}
-
-        {/* Model stats */}
-        <div className={styles.upgradePopupStats}>
-          {speedInfo && (
-            <div className={styles.upgradePopupStat}>
-              <span className={styles.upgradePopupStatLabel}>Speed</span>
-              <span className={styles.upgradePopupStatValue}>{speedInfo.label}</span>
-            </div>
-          )}
-          {model.context && (
-            <div className={styles.upgradePopupStat}>
-              <span className={styles.upgradePopupStatLabel}>Context</span>
-              <span className={styles.upgradePopupStatValue}>
-                {formatTokens(model.context.inputTokens)}
-              </span>
-            </div>
-          )}
-          {model.badge && (
-            <div className={styles.upgradePopupStat}>
-              <span className={styles.upgradePopupStatLabel}>Tier</span>
-              <span className={styles.upgradePopupStatValue} style={{ color: accentColor }}>
-                {model.badge}
-              </span>
+          {/* Recommended reason */}
+          {reason && (
+            <div className={styles.upgradePopupReason}>
+              <SparkleIcon />
+              <span>{reason}</span>
             </div>
           )}
         </div>
 
-        {/* Best for tags */}
-        {model.bestFor && model.bestFor.length > 0 && (
-          <div className={styles.upgradePopupBestFor}>
-            {model.bestFor.map((tag, idx) => (
-              <span
-                key={idx}
-                className={styles.upgradePopupTag}
-                style={{ backgroundColor: accentBg, color: accentText }}
-              >
-                {tag}
-              </span>
+        {/* Body */}
+        <div className={styles.upgradePopupBody}>
+          {/* Stats row */}
+          <div className={styles.upgradePopupStats}>
+            {speedInfo && (
+              <div className={styles.upgradePopupStat}>
+                <span className={styles.upgradePopupStatValue}>{speedInfo.label}</span>
+                <span className={styles.upgradePopupStatLabel}>Speed</span>
+              </div>
+            )}
+            {model.context && (
+              <div className={styles.upgradePopupStat}>
+                <span className={styles.upgradePopupStatValue}>
+                  {formatTokens(model.context.inputTokens)}
+                </span>
+                <span className={styles.upgradePopupStatLabel}>Context</span>
+              </div>
+            )}
+            {model.badge && (
+              <div className={styles.upgradePopupStat}>
+                <span className={styles.upgradePopupStatValue} style={{ color: accentColor }}>
+                  {model.badge}
+                </span>
+                <span className={styles.upgradePopupStatLabel}>Tier</span>
+              </div>
+            )}
+          </div>
+
+          {/* Best for tags */}
+          {model.bestFor && model.bestFor.length > 0 && (
+            <div className={styles.upgradePopupTags}>
+              {model.bestFor.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className={styles.upgradePopupTag}
+                  style={{ backgroundColor: accentBg, color: accentText }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Pro features list */}
+          <div className={styles.upgradePopupFeatures}>
+            {features.map((feat, idx) => (
+              <div key={idx} className={styles.upgradePopupFeature}>
+                <span className={styles.upgradePopupFeatureCheck}>
+                  <CheckIcon />
+                </span>
+                <span className={styles.upgradePopupFeatureLabel}>{feat.label}</span>
+              </div>
             ))}
           </div>
-        )}
+        </div>
 
-        {/* Pro upgrade CTA */}
-        <div className={styles.upgradePopupCta}>
-          <div className={styles.upgradePopupCtaText}>
-            <span className={styles.upgradePopupCtaTitle}>Unlock {model.name} with Pro</span>
-            <span className={styles.upgradePopupCtaDesc}>
-              Access all pro models, faster responses, higher limits, and priority routing.
-            </span>
+        {/* CTA footer */}
+        <div className={styles.upgradePopupFooter}>
+          <div className={styles.upgradePopupPricing}>
+            <span className={styles.upgradePopupPrice}>$20</span>
+            <span className={styles.upgradePopupPeriod}>/month</span>
           </div>
-          <div className={styles.upgradePopupCtaActions}>
-            <div className={styles.upgradePopupPricing}>
-              <span className={styles.upgradePopupPrice}>$20</span>
-              <span className={styles.upgradePopupPeriod}>/mo</span>
-            </div>
-            <button
-              className={styles.upgradePopupBtn}
-              style={{
-                background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}cc 100%)`,
-              }}
-            >
-              Upgrade to Pro
-            </button>
-          </div>
+          <button
+            className={styles.upgradePopupBtn}
+            style={{
+              '--btn-accent': accentColor,
+            }}
+          >
+            <SparkleIcon />
+            Upgrade to Pro
+          </button>
         </div>
       </div>
     </div>,
