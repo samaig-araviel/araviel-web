@@ -272,17 +272,36 @@ function renderMarkdown(text) {
       continue;
     }
 
-    // Heading (## or ###)
-    const headingMatch = line.match(/^(#{1,3})\s+(.+)/);
+    // Heading (# through ######)
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
     if (headingMatch) {
       const level = headingMatch[1].length;
-      const Tag = level === 1 ? 'h3' : level === 2 ? 'h4' : 'h5';
+      // Map heading levels: 1→h3, 2→h4, 3→h5, 4-6→h6
+      const Tag = level === 1 ? 'h3' : level === 2 ? 'h4' : level === 3 ? 'h5' : 'h6';
+      const styleLevel = Math.min(level, 3);
       elements.push(
-        <Tag className={styles[`heading${level}`]} key={key++}>
+        <Tag className={styles[`heading${styleLevel}`]} key={key++}>
           {renderInline(headingMatch[2])}
         </Tag>
       );
       i++;
+      continue;
+    }
+
+    // Blockquote (> text)
+    if (line.trim().startsWith('> ') || line.trim() === '>') {
+      const quoteLines = [];
+      while (i < lines.length && (lines[i].trim().startsWith('> ') || lines[i].trim() === '>')) {
+        quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
+        i++;
+      }
+      elements.push(
+        <blockquote className={styles.blockquote} key={key++}>
+          {quoteLines.map((ql, qi) =>
+            ql === '' ? <br key={qi} /> : <p key={qi}>{renderInline(ql)}</p>
+          )}
+        </blockquote>
+      );
       continue;
     }
 
