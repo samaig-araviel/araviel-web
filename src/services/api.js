@@ -61,6 +61,7 @@ export async function sendMessage(payload) {
   if (payload.autoStrategy && payload.autoStrategy !== 'default')
     body.autoStrategy = payload.autoStrategy;
   if (payload.weather) body.weather = payload.weather;
+  if (payload.requestFollowUps) body.requestFollowUps = true;
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',

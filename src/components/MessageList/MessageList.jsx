@@ -86,73 +86,180 @@ hljs.registerLanguage('cpp', cpp);
 hljs.registerLanguage('c', cpp);
 
 /**
- * Generate 4 follow-up suggestion prompts based on the assistant's response content.
+ * Extract bold-formatted entity names from markdown content (e.g., **SBI Life Insurance (SBI Life)**).
+ * Returns an array of short names extracted from parentheses or the bold text itself.
  */
-function generateFollowUps(content) {
+function extractBoldEntities(content) {
+  const entities = [];
+  // Match **Name (ShortName)** or **Name**
+  const boldPattern = /\*\*([^*]+)\*\*/g;
+  let match;
+  while ((match = boldPattern.exec(content)) !== null) {
+    const full = match[1].trim();
+    // Skip generic headers like "Please note", "Summary", single words like "Q3FY26"
+    if (full.length < 3 || /^(please|note|summary|disclaimer|important|key|risk)/i.test(full))
+      continue;
+    // Extract short name from parentheses if present: "SBI Life Insurance (SBI Life)" → "SBI Life"
+    const parenMatch = full.match(/\(([^)]+)\)\s*$/);
+    if (parenMatch) {
+      entities.push(parenMatch[1].trim());
+    } else if (full.length <= 40) {
+      entities.push(full);
+    }
+  }
+  return entities;
+}
+
+/**
+ * Extract the core topic from the user's question.
+ */
+function extractQuestionTopic(userPrompt) {
+  if (!userPrompt) return null;
+  // Remove filler words to get core topic
+  return userPrompt
+    .replace(
+      /^(give me|show me|tell me|can you|could you|please|what are|what is|what's|how|list|provide|i want|i need|help me with)\s+(an?|the|some|my)?\s*/i,
+      ''
+    )
+    .replace(/[?.!]+$/, '')
+    .trim();
+}
+
+/**
+ * Generate 4 contextual follow-up suggestion prompts based on the assistant's
+ * response content and the user's original question.
+ */
+function generateFollowUps(content, userPrompt) {
   if (!content) return [];
 
   const lower = content.toLowerCase();
+  const entities = extractBoldEntities(content);
+  const topic = extractQuestionTopic(userPrompt);
+  const suggestions = [];
 
-  // Coding responses
-  if (/```/.test(content) && /function|const|let|var|def |class /.test(content)) {
-    const suggestions = [
-      'Can you add error handling and edge case coverage to this?',
-      'How would I write unit tests for this implementation?',
-      'Can you explain the time and space complexity of this approach?',
-      'What are some alternative approaches to solve this?',
-      'How would this look refactored using TypeScript?',
-      'Can you add inline comments explaining each step?',
-    ];
+  // --- Financial / Stock / Investment responses ---
+  if (
+    /stock|invest|market|portfolio|dividend|earnings|revenue|growth|share|bull|bear|valuation/i.test(
+      lower
+    ) ||
+    /\bQ[1-4]FY\d{2}\b|\bCAGR\b|\bEBITDA\b|\bAPE\b|\bYoY\b/i.test(content)
+  ) {
+    if (entities.length >= 2) {
+      suggestions.push(`Compare ${entities[0]} and ${entities[1]} — which is a better buy right now?`);
+    }
+    if (entities.length >= 1) {
+      suggestions.push(`What are the key risks and downsides for ${entities[0]}?`);
+      suggestions.push(
+        `What is the technical chart analysis for ${entities[entities.length > 1 ? 1 : 0]}?`
+      );
+    }
+    if (entities.length >= 3) {
+      suggestions.push(
+        `Rank ${entities.slice(0, Math.min(entities.length, 4)).join(', ')} by risk-to-reward ratio`
+      );
+    }
+    suggestions.push(
+      ...[
+        topic
+          ? `What sectors should I avoid this ${/week/i.test(userPrompt || '') ? 'week' : 'month'}?`
+          : null,
+        'What are the best entry and exit points for these stocks?',
+        'How do global market trends affect these picks?',
+        entities.length >= 1
+          ? `Show me the historical performance of ${entities[0]} over the last year`
+          : null,
+        'What macroeconomic factors could impact these stocks?',
+      ].filter(Boolean)
+    );
     return pickRandom(suggestions, 4);
   }
 
-  // Analytical responses
-  if (/analysis|findings|methodology|recommendations|pattern/i.test(lower)) {
-    const suggestions = [
-      'Can you go deeper on the key findings with examples?',
-      'What data sources would strengthen this analysis?',
-      'How would you visualize these insights for a presentation?',
-      'What are the potential risks if we ignore these patterns?',
-      'Can you break this into actionable next steps?',
-      'How does this compare to industry benchmarks?',
-    ];
+  // --- Coding / Programming responses ---
+  if (/```/.test(content) && /function|const|let|var|def |class |import /.test(content)) {
+    // Extract function/class names for specificity
+    const fnMatch = content.match(/(?:function|def|class)\s+(\w+)/);
+    const fnName = fnMatch ? fnMatch[1] : null;
+    suggestions.push(
+      ...[
+        fnName ? `How would I write unit tests for \`${fnName}\`?` : 'How would I test this code?',
+        fnName
+          ? `Can you add error handling to \`${fnName}\`?`
+          : 'Can you add error handling to this?',
+        'What are the edge cases I should watch out for?',
+        topic ? `Are there any libraries that simplify ${topic}?` : null,
+        'Can you explain the time and space complexity?',
+        'How would I integrate this into a larger project?',
+      ].filter(Boolean)
+    );
     return pickRandom(suggestions, 4);
   }
 
-  // Research responses
-  if (/quantum|theory|research|history|science|overview/i.test(lower)) {
-    const suggestions = [
-      'What are the most recent breakthroughs in this area?',
-      'Can you explain this in simpler terms for a beginner?',
-      'What are the practical real-world applications?',
-      'Who are the leading researchers or companies in this space?',
-      'What are the open questions still being debated?',
-      'How has this field evolved in the last decade?',
-    ];
+  // --- Comparison / List responses ---
+  if (entities.length >= 3) {
+    suggestions.push(`Which of these would you recommend and why?`);
+    suggestions.push(`What are the pros and cons of ${entities[0]} vs ${entities[1]}?`);
+    suggestions.push(`Can you go deeper on ${entities[entities.length - 1]}?`);
+    suggestions.push(
+      topic ? `What other options should I consider for ${topic}?` : 'What alternatives exist?'
+    );
+    suggestions.push(`How do I choose between these based on my needs?`);
     return pickRandom(suggestions, 4);
   }
 
-  // Creative responses
-  if (/poem|haiku|verse|story|imagine|narrative/i.test(lower)) {
-    const suggestions = [
-      'Can you write another one with a different tone?',
-      'What inspired the imagery in this piece?',
-      'Can you create a longer version expanding on this theme?',
-      'How would this change if written in a different style?',
-      'Can you adapt this for a different audience?',
-      'What literary techniques are at play here?',
-    ];
+  // --- How-to / Tutorial responses ---
+  if (/step\s*\d|first[,.]|then[,.]|finally[,.]|instructions/i.test(lower)) {
+    suggestions.push(
+      ...[
+        'What are common mistakes to avoid with this approach?',
+        topic ? `Are there faster ways to ${topic}?` : null,
+        'Can you show me a practical example of this?',
+        'What should I do if something goes wrong at one of these steps?',
+        topic ? `What tools or resources help with ${topic}?` : null,
+        'Can you explain the reasoning behind each step?',
+      ].filter(Boolean)
+    );
     return pickRandom(suggestions, 4);
   }
 
-  // Default follow-ups
+  // --- Explanation / Educational responses ---
+  if (
+    /because|reason|explains|means|definition|concept|principle/i.test(lower) ||
+    entities.length >= 1
+  ) {
+    const mainEntity = entities[0];
+    suggestions.push(
+      ...[
+        mainEntity ? `Can you give a real-world example of ${mainEntity}?` : null,
+        topic ? `What are common misconceptions about ${topic}?` : null,
+        'Can you explain this in simpler terms?',
+        mainEntity ? `How does ${mainEntity} compare to similar alternatives?` : null,
+        topic ? `What should I learn next after understanding ${topic}?` : null,
+        'What are the practical implications of this?',
+      ].filter(Boolean)
+    );
+    return pickRandom(suggestions, 4);
+  }
+
+  // --- Contextual default: use topic from the user's question ---
+  if (topic && topic.length > 5) {
+    suggestions.push(
+      `Can you go deeper on ${topic} with specific examples?`,
+      `What are the most important things to know about ${topic}?`,
+      `What are common mistakes people make with ${topic}?`,
+      `How would you apply this advice on ${topic} in practice?`,
+      `What related topics should I explore alongside ${topic}?`
+    );
+    return pickRandom(suggestions, 4);
+  }
+
+  // --- Absolute fallback ---
   const defaults = [
-    'Can you elaborate on this with more specific examples?',
-    'What are the most common misconceptions about this?',
-    'How would you apply this in a real-world scenario?',
-    'What should I learn next to go deeper on this topic?',
+    'Can you elaborate with more specific examples?',
+    'What are the practical next steps I should take?',
+    'What are the potential risks or downsides?',
+    'Can you compare the main options mentioned?',
+    'What related topics should I look into?',
     'Can you summarize the key takeaways?',
-    'What are the counterarguments to this?',
   ];
   return pickRandom(defaults, 4);
 }
@@ -3320,12 +3427,16 @@ function Message({
   const pendingDeleteConv = subConversations.find((sc) => sc.id === pendingDeleteId);
 
   // Memoize follow-ups so they don't regenerate on every render (which causes jitter)
+  // Prefer AI-provided follow-ups from the backend; fall back to client-side generation.
   const followUps = useMemo(() => {
     if (!isUser && isLastAssistant && !isStreaming && message.content) {
-      return generateFollowUps(message.content);
+      if (message.followUps && message.followUps.length > 0) {
+        return message.followUps.slice(0, 4);
+      }
+      return generateFollowUps(message.content, userPrompt);
     }
     return [];
-  }, [isUser, isLastAssistant, isStreaming, message.content]);
+  }, [isUser, isLastAssistant, isStreaming, message.content, message.followUps, userPrompt]);
 
   return (
     <div
