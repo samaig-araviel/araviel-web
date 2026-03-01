@@ -386,6 +386,30 @@
   color: var(--text-primary);
 }
 
+.blockquote {
+  margin: 12px 0;
+  padding: 10px 16px;
+  border-left: 3px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  border-radius: 0 8px 8px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.blockquote p {
+  margin-bottom: 4px;
+}
+
+.blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+[data-theme='dark'] .blockquote {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-left-color: rgba(255, 255, 255, 0.15);
+}
+
 .list,
 .orderedList {
   margin-bottom: 12px;
@@ -3877,7 +3901,7 @@
   justify-content: space-between;
   gap: 12px;
   margin-top: 10px;
-  padding: 8px 10px 8px 12px;
+  padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background: var(--bg-secondary);
@@ -3969,12 +3993,12 @@
 .upgradeBannerButton {
   display: inline-flex;
   align-items: center;
-  padding: 4px 14px;
-  border-radius: 7px;
+  padding: 6px 16px;
+  border-radius: 8px;
   border: none;
   background: linear-gradient(135deg, #d4a574 0%, #c99a6b 100%);
   color: #fff;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -4038,7 +4062,7 @@
 }
 
 .modelInfoPopup {
-  width: 400px;
+  width: 440px;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 64px);
   overflow-y: auto;
@@ -4047,6 +4071,7 @@
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
   animation: modelInfoSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
 }
 
 @keyframes modelInfoSlideUp {
@@ -4145,7 +4170,8 @@
 }
 
 .modelInfoDesc {
-  padding: 16px 20px 0;
+  padding: 0 20px;
+  margin: 16px 0 0 0;
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.6;
@@ -4153,7 +4179,7 @@
 
 .modelInfoStats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0;
   margin: 16px 20px 0;
   border-radius: 10px;
@@ -4166,16 +4192,21 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 12px 6px;
+  padding: 12px 10px;
   border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modelInfoStat:nth-child(2n) {
+  border-right: none;
+}
+
+.modelInfoStat:nth-last-child(-n + 2) {
+  border-bottom: none;
 }
 
 .modelInfoCapabilities {
   padding: 16px 20px 0;
-}
-
-.modelInfoStat:last-child {
-  border-right: none;
 }
 
 .modelInfoStatLabel {
@@ -4246,8 +4277,9 @@
 .modelInfoProDesc {
   font-size: 12.5px;
   color: var(--text-secondary);
-  line-height: 1.5;
-  margin-bottom: 12px;
+  line-height: 1.55;
+  margin: 0 0 16px 0;
+  padding: 0;
 }
 
 .modelInfoProPricing {
@@ -4255,7 +4287,7 @@
   align-items: baseline;
   justify-content: center;
   gap: 2px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .modelInfoProPrice {
