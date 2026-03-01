@@ -32,6 +32,8 @@ import {
   ZapIcon,
   GlobeIcon,
   InfoIcon,
+  MaximizeIcon,
+  CodeIcon,
 } from '../Icons';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -181,6 +183,74 @@ function renderMarkdown(text) {
       continue;
     }
 
+    // Markdown table: detect header row with pipes
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      const tableRows = [];
+      let hasValidSeparator = false;
+      const startIdx = i;
+
+      // Collect all contiguous pipe-delimited lines
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        tableRows.push(lines[i].trim());
+        i++;
+      }
+
+      // Validate: need at least 2 rows, and 2nd row should be separator (| --- | --- |)
+      if (tableRows.length >= 2) {
+        const separatorRow = tableRows[1];
+        hasValidSeparator = /^\|[\s:]*-{2,}[\s:]*\|/.test(separatorRow);
+      }
+
+      if (hasValidSeparator && tableRows.length >= 2) {
+        const parseCells = (row) =>
+          row
+            .slice(1, -1) // remove leading/trailing pipes
+            .split('|')
+            .map((cell) => cell.trim());
+
+        const headerCells = parseCells(tableRows[0]);
+        // Parse alignment from separator row
+        const alignCells = parseCells(tableRows[1]);
+        const alignments = alignCells.map((cell) => {
+          if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
+          if (cell.endsWith(':')) return 'right';
+          return 'left';
+        });
+        const bodyRows = tableRows.slice(2).map(parseCells);
+
+        elements.push(
+          <div className={styles.tableWrapper} key={key++}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  {headerCells.map((cell, ci) => (
+                    <th key={ci} style={{ textAlign: alignments[ci] || 'left' }}>
+                      {renderInline(cell)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {bodyRows.map((row, ri) => (
+                  <tr key={ri}>
+                    {headerCells.map((_, ci) => (
+                      <td key={ci} style={{ textAlign: alignments[ci] || 'left' }}>
+                        {renderInline(row[ci] || '')}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+        continue;
+      }
+
+      // Not a valid table — reset and let normal parsing handle it
+      i = startIdx;
+    }
+
     // Horizontal rule
     if (/^---+$/.test(line.trim())) {
       elements.push(<hr className={styles.hr} key={key++} />);
@@ -268,7 +338,6 @@ function CodeBlock({ lang, code }) {
 
   useEffect(() => {
     if (codeRef.current) {
-      // Try language-specific highlighting, fall back to auto-detect
       try {
         const langId = lang ? lang.toLowerCase() : null;
         const result =
@@ -317,6 +386,140 @@ function CodeBlock({ lang, code }) {
         <code ref={codeRef}>{code}</code>
       </pre>
     </div>
+  );
+}
+
+/**
+ * Canvas-style code viewer — full-screen overlay for viewing code in a file-like view.
+ */
+function CodeCanvasViewer({ codeBlocks, onClose }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const codeRef = useRef(null);
+
+  const activeBlock = codeBlocks[activeIdx];
+
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  useEffect(() => {
+    if (codeRef.current && activeBlock) {
+      try {
+        const langId = activeBlock.lang ? activeBlock.lang.toLowerCase() : null;
+        const result =
+          langId && hljs.getLanguage(langId)
+            ? hljs.highlight(activeBlock.code, { language: langId })
+            : hljs.highlightAuto(activeBlock.code);
+        codeRef.current.innerHTML = result.value;
+      } catch {
+        codeRef.current.textContent = activeBlock.code;
+      }
+    }
+  }, [activeBlock]);
+
+  const handleCopy = useCallback(() => {
+    if (!activeBlock) return;
+    navigator.clipboard.writeText(activeBlock.code).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [activeBlock]);
+
+  if (!codeBlocks || codeBlocks.length === 0) return null;
+
+  const lineCount = activeBlock.code.split('\n').length;
+
+  return createPortal(
+    <div className={styles.canvasOverlay} onClick={onClose}>
+      <div className={styles.canvasPanel} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className={styles.canvasHeader}>
+          <div className={styles.canvasHeaderLeft}>
+            <CodeIcon />
+            <span className={styles.canvasTitle}>{activeBlock.lang || 'Code'}</span>
+            <span className={styles.canvasLineCount}>{lineCount} lines</span>
+          </div>
+          <div className={styles.canvasHeaderActions}>
+            {codeBlocks.length > 1 && (
+              <div className={styles.canvasTabs}>
+                {codeBlocks.map((block, idx) => (
+                  <button
+                    key={idx}
+                    className={`${styles.canvasTab} ${
+                      idx === activeIdx ? styles.canvasTabActive : ''
+                    }`}
+                    onClick={() => {
+                      setActiveIdx(idx);
+                      setCopied(false);
+                    }}
+                  >
+                    {block.lang || `Block ${idx + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              className={styles.canvasCopyBtn}
+              onClick={handleCopy}
+              title={copied ? 'Copied!' : 'Copy code'}
+            >
+              {copied ? <CheckIcon /> : <CopyIcon />}
+              <span>{copied ? 'Copied' : 'Copy'}</span>
+            </button>
+            <button className={styles.canvasCloseBtn} onClick={onClose} aria-label="Close">
+              <CloseIcon />
+            </button>
+          </div>
+        </div>
+        {/* Code area with line numbers */}
+        <div className={styles.canvasCodeArea}>
+          <div className={styles.canvasLineNumbers}>
+            {activeBlock.code.split('\n').map((_, idx) => (
+              <span key={idx}>{idx + 1}</span>
+            ))}
+          </div>
+          <pre className={styles.canvasCodePre}>
+            <code ref={codeRef}>{activeBlock.code}</code>
+          </pre>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/**
+ * Button shown below response content that opens the canvas code viewer.
+ */
+function CodeCanvasButton({ codeBlocks, onClick }) {
+  if (!codeBlocks || codeBlocks.length === 0) return null;
+
+  const totalLines = codeBlocks.reduce((sum, b) => sum + b.code.split('\n').length, 0);
+  const label =
+    codeBlocks.length === 1
+      ? `${codeBlocks[0].lang || 'Code'}`
+      : `${codeBlocks.length} code blocks`;
+
+  return (
+    <button className={styles.canvasOpenBtn} onClick={onClick}>
+      <div className={styles.canvasOpenBtnLeft}>
+        <span className={styles.canvasOpenBtnIcon}>
+          <CodeIcon />
+        </span>
+        <div className={styles.canvasOpenBtnText}>
+          <span className={styles.canvasOpenBtnTitle}>{label}</span>
+          <span className={styles.canvasOpenBtnMeta}>{totalLines} lines</span>
+        </div>
+      </div>
+      <span className={styles.canvasOpenBtnArrow}>
+        <MaximizeIcon />
+      </span>
+    </button>
   );
 }
 
@@ -864,6 +1067,17 @@ function ModelInfoPopup({ model, reason, onClose, isDark }) {
     ? providerData?.accentTextDark || providerData?.accentColor
     : providerData?.accentText;
 
+  // Gather capabilities for display
+  const capabilities = [];
+  if (model.capabilities) {
+    if (model.capabilities.vision) capabilities.push('Vision');
+    if (model.capabilities.audio) capabilities.push('Audio');
+    if (model.capabilities.extendedThinking) capabilities.push('Extended Thinking');
+    if (model.capabilities.webSearch) capabilities.push('Web Search');
+    if (model.capabilities.functionCalling) capabilities.push('Function Calling');
+    if (model.capabilities.streaming) capabilities.push('Streaming');
+  }
+
   return createPortal(
     <div className={styles.modelInfoOverlay}>
       <div className={styles.modelInfoPopup} ref={popupRef}>
@@ -888,10 +1102,9 @@ function ModelInfoPopup({ model, reason, onClose, isDark }) {
           </button>
         </div>
 
-        {/* Why this model */}
+        {/* Why this model — no icon, clean text */}
         {reason && (
           <div className={styles.modelInfoReason}>
-            <SparkleIcon />
             <span>{reason}</span>
           </div>
         )}
@@ -899,7 +1112,7 @@ function ModelInfoPopup({ model, reason, onClose, isDark }) {
         {/* Description */}
         <p className={styles.modelInfoDesc}>{model.description}</p>
 
-        {/* Capabilities */}
+        {/* Stats grid */}
         <div className={styles.modelInfoStats}>
           {speedInfo && (
             <div className={styles.modelInfoStat}>
@@ -911,19 +1124,41 @@ function ModelInfoPopup({ model, reason, onClose, isDark }) {
             <div className={styles.modelInfoStat}>
               <span className={styles.modelInfoStatLabel}>Context</span>
               <span className={styles.modelInfoStatValue}>
-                {formatTokens(model.context.inputTokens)} tokens
+                {formatTokens(model.context.inputTokens)}
               </span>
             </div>
           )}
-          {model.badge && (
+          {model.pricing && (
             <div className={styles.modelInfoStat}>
-              <span className={styles.modelInfoStatLabel}>Badge</span>
-              <span className={styles.modelInfoStatValue} style={{ color: accentColor }}>
-                {model.badge}
-              </span>
+              <span className={styles.modelInfoStatLabel}>Input</span>
+              <span className={styles.modelInfoStatValue}>${model.pricing.inputPerM}/M</span>
+            </div>
+          )}
+          {model.pricing && (
+            <div className={styles.modelInfoStat}>
+              <span className={styles.modelInfoStatLabel}>Output</span>
+              <span className={styles.modelInfoStatValue}>${model.pricing.outputPerM}/M</span>
             </div>
           )}
         </div>
+
+        {/* Capabilities */}
+        {capabilities.length > 0 && (
+          <div className={styles.modelInfoCapabilities}>
+            <span className={styles.modelInfoBestForLabel}>Capabilities</span>
+            <div className={styles.modelInfoBestForTags}>
+              {capabilities.map((cap, idx) => (
+                <span
+                  key={idx}
+                  className={styles.modelInfoTag}
+                  style={{ backgroundColor: accentBg, color: accentText }}
+                >
+                  {cap}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Best for */}
         {model.bestFor && model.bestFor.length > 0 && (
@@ -946,7 +1181,6 @@ function ModelInfoPopup({ model, reason, onClose, isDark }) {
         {/* Pro tier CTA */}
         <div className={styles.modelInfoProSection}>
           <div className={styles.modelInfoProBadge}>
-            <SparkleIcon />
             <span>Available with Araviel Pro</span>
           </div>
           <p className={styles.modelInfoProDesc}>
@@ -1000,7 +1234,13 @@ function UpgradeHint({ upgradeHint }) {
     <>
       <div className={styles.upgradeBanner}>
         <div className={styles.upgradeBannerContent}>
-          <SparkleIcon />
+          <button
+            className={styles.upgradeBannerInfoBtn}
+            onClick={() => setShowModelInfo(true)}
+            title="Learn more about this model"
+          >
+            <InfoIcon />
+          </button>
           <span className={styles.upgradeBannerText}>
             A better answer is possible with{' '}
             <button
@@ -1048,6 +1288,90 @@ function WebSearchIndicator() {
         <span className={styles.webSearchDot} />
         <span className={styles.webSearchDot} />
       </span>
+    </div>
+  );
+}
+
+/**
+ * Clickable "Searched the web" badge with dropdown showing sources.
+ */
+function WebSearchBadgeWithSources({ isAutoDetected, citations }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen]);
+
+  const hasSources = citations && citations.length > 0;
+
+  return (
+    <div className={styles.webSearchBadgeWrapper} ref={wrapperRef}>
+      <button
+        className={`${styles.webSearchBadge} ${isAutoDetected ? styles.webSearchBadgeAuto : ''} ${
+          hasSources ? styles.webSearchBadgeClickable : ''
+        } ${isOpen ? styles.webSearchBadgeOpen : ''}`}
+        onClick={() => hasSources && setIsOpen(!isOpen)}
+      >
+        <GlobeIcon />
+        <span>{isAutoDetected ? 'Searched the web (auto)' : 'Searched the web'}</span>
+        {hasSources && (
+          <>
+            <span className={styles.webSearchBadgeCount}>{citations.length}</span>
+            <span
+              className={`${styles.webSearchBadgeChevron} ${
+                isOpen ? styles.webSearchBadgeChevronOpen : ''
+              }`}
+            >
+              <ChevronDownIcon />
+            </span>
+          </>
+        )}
+      </button>
+      {isOpen && hasSources && (
+        <div className={styles.webSearchSourcesDropdown}>
+          {citations.map((citation, idx) => {
+            let favicon = '';
+            let hostname = '';
+            try {
+              const url = new URL(citation.url);
+              hostname = url.hostname.replace(/^www\./, '');
+              favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+            } catch {
+              // skip
+            }
+            return (
+              <a
+                key={idx}
+                href={citation.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.webSearchSourceItem}
+              >
+                {favicon && <img src={favicon} alt="" className={styles.webSearchSourceFavicon} />}
+                <div className={styles.webSearchSourceInfo}>
+                  <span className={styles.webSearchSourceTitle}>{citation.title || hostname}</span>
+                  {hostname && <span className={styles.webSearchSourceDomain}>{hostname}</span>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1103,15 +1427,36 @@ function StreamTimeoutNotice() {
 }
 
 /**
- * Sources pill shown when the response has sources.
+ * Sources pill shown when the response has sources — styled with count and favicons.
  */
 function SourcesPill({ sources }) {
   if (!sources || sources.length === 0) return null;
 
+  // Extract favicons from first few sources
+  const faviconUrls = sources
+    .slice(0, 3)
+    .map((s) => {
+      try {
+        const url = new URL(s.url);
+        return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
   return (
     <span className={styles.sourcesPill}>
-      <SourcesIcon />
-      <span>Sources</span>
+      {faviconUrls.length > 0 && (
+        <span className={styles.sourcesPillFavicons}>
+          {faviconUrls.map((url, idx) => (
+            <img key={idx} src={url} alt="" className={styles.sourcesPillFavicon} />
+          ))}
+        </span>
+      )}
+      <span>
+        {sources.length} source{sources.length !== 1 ? 's' : ''}
+      </span>
     </span>
   );
 }
@@ -2123,6 +2468,7 @@ function Message({
   const LogoComponent = provider ? getProviderLogo(provider) : null;
   const [showHeaderDropdown, setShowHeaderDropdown] = useState(false);
   const [pendingAlternate, setPendingAlternate] = useState(null);
+  const [showCodeCanvas, setShowCodeCanvas] = useState(false);
   const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
 
   // Sub-conversation state
@@ -2479,16 +2825,10 @@ function Message({
             )}
           </div>
           {message.webSearchUsed && !isStreaming && (
-            <div
-              className={`${styles.webSearchBadge} ${
-                message.webSearchAutoDetected ? styles.webSearchBadgeAuto : ''
-              }`}
-            >
-              <GlobeIcon />
-              <span>
-                {message.webSearchAutoDetected ? 'Searched the web (auto)' : 'Searched the web'}
-              </span>
-            </div>
+            <WebSearchBadgeWithSources
+              isAutoDetected={message.webSearchAutoDetected}
+              citations={message.citations}
+            />
           )}
         </div>
       )}
@@ -2541,6 +2881,28 @@ function Message({
           </div>
         )}
       </div>
+
+      {/* Code canvas button — shown below response when code blocks exist */}
+      {!isUser &&
+        !isStreaming &&
+        displayText &&
+        (() => {
+          const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+          const blocks = [];
+          let m;
+          while ((m = codeBlockRegex.exec(displayText)) !== null) {
+            blocks.push({ lang: m[1] || '', code: m[2] });
+          }
+          if (blocks.length === 0) return null;
+          return (
+            <>
+              <CodeCanvasButton codeBlocks={blocks} onClick={() => setShowCodeCanvas(true)} />
+              {showCodeCanvas && (
+                <CodeCanvasViewer codeBlocks={blocks} onClose={() => setShowCodeCanvas(false)} />
+              )}
+            </>
+          );
+        })()}
 
       {/* Error card */}
       {!isUser && message.error && (
