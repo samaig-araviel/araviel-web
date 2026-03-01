@@ -2887,6 +2887,7 @@ function Message({
   streamedText,
   isDark,
   isLastAssistant,
+  hideThinking,
   onFollowUpSelect,
   onRetry,
   onAlternateModelRequest,
@@ -3289,16 +3290,19 @@ function Message({
         />
       )}
 
-      {!isUser && !isStreaming && (message.thinkingData || message.thinkingContent) && (
-        <ThinkingBlock
-          thinkingData={message.thinkingData}
-          thinkingContent={message.thinkingContent}
-          modelName={message.modelName}
-          provider={message.provider}
-          webSearchUsed={message.webSearchUsed}
-          webSearchSources={message.sources || message.citations}
-        />
-      )}
+      {!isUser &&
+        !isStreaming &&
+        !hideThinking &&
+        (message.thinkingData || message.thinkingContent) && (
+          <ThinkingBlock
+            thinkingData={message.thinkingData}
+            thinkingContent={message.thinkingContent}
+            modelName={message.modelName}
+            provider={message.provider}
+            webSearchUsed={message.webSearchUsed}
+            webSearchSources={message.sources || message.citations}
+          />
+        )}
 
       {/* Web search indicator during tool_use */}
       {!isUser && isStreaming && message.toolUse && message.toolUse.tool === 'web_search' && (
@@ -3581,6 +3585,7 @@ export default function MessageList({
                 streamedText={shouldStream ? streamedText : msg.content}
                 isDark={isDark}
                 isLastAssistant={isLastAssistant}
+                hideThinking={isLast && isProcessing && msg.role === 'assistant'}
                 onFollowUpSelect={handleFollowUpSelect}
                 onRetry={onRetry}
                 onAlternateModelRequest={onAlternateModelRequest}
