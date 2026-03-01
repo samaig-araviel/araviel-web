@@ -612,6 +612,7 @@ export default function MainContent() {
           mood: mood || undefined,
           autoStrategy: autoStrategy || undefined,
           weather: userLocation?.weather || undefined,
+          requestFollowUps: true,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -706,6 +707,10 @@ export default function MainContent() {
             } else if (type === 'citations') {
               if (assistantMsgAdded && data.sources) {
                 dispatch(updateLastMessage({ citations: data.sources }));
+              }
+            } else if (type === 'followups') {
+              if (assistantMsgAdded && data.suggestions) {
+                dispatch(updateLastMessage({ followUps: data.suggestions }));
               }
             } else if (type === 'done') {
               receivedDone = true;
