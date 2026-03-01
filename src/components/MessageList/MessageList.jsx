@@ -34,6 +34,7 @@ import {
   InfoIcon,
   MaximizeIcon,
   CodeIcon,
+  EditIcon,
 } from '../Icons';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -48,8 +49,17 @@ import java from 'highlight.js/lib/languages/java';
 import go from 'highlight.js/lib/languages/go';
 import rust from 'highlight.js/lib/languages/rust';
 import cpp from 'highlight.js/lib/languages/cpp';
+import mermaid from 'mermaid';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import styles from './MessageList.module.css';
+
+// Initialize mermaid with sensible defaults
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+});
 
 // Register highlight.js languages
 hljs.registerLanguage('javascript', javascript);
@@ -179,7 +189,11 @@ function renderMarkdown(text) {
       }
       i++; // skip closing ```
       const codeContent = codeLines.join('\n');
-      elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+      if (lang === 'mermaid') {
+        elements.push(<MermaidBlock key={key++} code={codeContent} />);
+      } else {
+        elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+      }
       continue;
     }
 
@@ -412,6 +426,73 @@ function CodeBlock({ lang, code }) {
       <pre>
         <code ref={codeRef}>{code}</code>
       </pre>
+    </div>
+  );
+}
+
+/**
+ * Mermaid diagram block — renders mermaid code as a visual diagram.
+ */
+function MermaidBlock({ code }) {
+  const containerRef = useRef(null);
+  const [svgContent, setSvgContent] = useState('');
+  const [error, setError] = useState(null);
+  const [showCode, setShowCode] = useState(false);
+  const idRef = useRef(`mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
+  const effectiveTheme = useSelector(selectEffectiveTheme);
+
+  useEffect(() => {
+    let cancelled = false;
+    const renderDiagram = async () => {
+      try {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: effectiveTheme === 'dark' ? 'dark' : 'default',
+          securityLevel: 'loose',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        });
+        const { svg } = await mermaid.render(idRef.current, code.trim());
+        if (!cancelled) {
+          setSvgContent(svg);
+          setError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Failed to render diagram');
+          setSvgContent('');
+        }
+      }
+    };
+    renderDiagram();
+    return () => {
+      cancelled = true;
+    };
+  }, [code, effectiveTheme]);
+
+  if (error) {
+    return <CodeBlock lang="mermaid" code={code} />;
+  }
+
+  return (
+    <div className={styles.mermaidBlock}>
+      <div className={styles.mermaidHeader}>
+        <span className={styles.mermaidLabel}>Diagram</span>
+        <button
+          className={styles.mermaidToggleCode}
+          onClick={() => setShowCode(!showCode)}
+        >
+          {showCode ? 'Preview' : 'Code'}
+        </button>
+      </div>
+      {showCode ? (
+        <CodeBlock lang="mermaid" code={code} />
+      ) : (
+        <div
+          ref={containerRef}
+          className={styles.mermaidContent}
+          dangerouslySetInnerHTML={{ __html: svgContent }}
+        />
+      )}
     </div>
   );
 }
@@ -2295,10 +2376,7 @@ function UpgradePill({ upgradeHint }) {
         title={`Try ${modelName} — Upgrade to Pro`}
         style={{ '--upgrade-accent': accentColor }}
       >
-        <span className={styles.upgradePillIcon}>
-          <SparkleIcon />
-        </span>
-        <span className={styles.upgradePillLabel}>Pro</span>
+        <span className={styles.upgradePillLabel}>Go Pro</span>
       </button>
       {showPopup && fullModel && (
         <UpgradePopup
@@ -2832,9 +2910,11 @@ function ThinkingBlock({
 
 /**
  * User prompt component with distinctive styling and collapse/expand for long messages.
+ * Includes hover actions: copy and edit (sends content back to input).
  */
-function UserPrompt({ content }) {
+function UserPrompt({ content, onEdit }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const contentRef = useRef(null);
   const [isLong, setIsLong] = useState(false);
   const LINE_LIMIT = 10;
@@ -2844,11 +2924,40 @@ function UserPrompt({ content }) {
     setIsLong(lineCount > LINE_LIMIT);
   }, [content]);
 
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [content]);
+
+  const handleEdit = useCallback(() => {
+    if (onEdit) onEdit(content);
+  }, [content, onEdit]);
+
   // Calculate collapsed height based on line count
   const collapsedStyle = !isExpanded && isLong ? { maxHeight: `${LINE_LIMIT * 1.65}em` } : {};
 
   return (
     <div className={styles.userPromptCard}>
+      <div className={styles.userPromptActions}>
+        <button
+          className={`${styles.userPromptActionBtn} ${copied ? styles.userPromptActionBtnActive : ''}`}
+          onClick={handleCopy}
+          title={copied ? 'Copied!' : 'Copy'}
+          aria-label="Copy prompt"
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
+        <button
+          className={styles.userPromptActionBtn}
+          onClick={handleEdit}
+          title="Edit prompt"
+          aria-label="Edit prompt"
+        >
+          <EditIcon />
+        </button>
+      </div>
       <div
         ref={contentRef}
         className={`${styles.userPromptText} ${
@@ -2897,6 +3006,7 @@ function Message({
   onSetSubConvPanelOwner,
   currentChatId,
   assistantIndex,
+  onEditPrompt,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -2907,6 +3017,7 @@ function Message({
   const [pendingAlternate, setPendingAlternate] = useState(null);
   const [showCodeCanvas, setShowCodeCanvas] = useState(false);
   const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
+  const headerPillRef = useRef(null);
 
   // Sub-conversation state
   const [subConversations, setSubConversations] = useState([]);
@@ -3225,7 +3336,8 @@ function Message({
         <div className={styles.assistantHeader}>
           <div
             className={styles.providerPillWrapper}
-            onClick={() => setShowHeaderDropdown(!showHeaderDropdown)}
+            ref={headerPillRef}
+            onClick={() => setShowHeaderDropdown((prev) => !prev)}
           >
             <div
               className={`${styles.providerPill} ${
@@ -3261,6 +3373,7 @@ function Message({
                 position="below"
                 onClose={() => setShowHeaderDropdown(false)}
                 onSelectAlternate={(alt) => setPendingAlternate(alt)}
+                triggerRef={headerPillRef}
               />
             )}
           </div>
@@ -3318,7 +3431,7 @@ function Message({
 
       <div className={styles.messageContent} onMouseUp={handleMouseUp}>
         {isUser ? (
-          <UserPrompt content={message.content} />
+          <UserPrompt content={message.content} onEdit={onEditPrompt} />
         ) : (
           <div className={styles.markdownContent} ref={markdownContentRef}>
             {renderMarkdown(displayText)}
@@ -3508,6 +3621,14 @@ export default function MessageList({
     [dispatch, focusInput]
   );
 
+  const handleEditPrompt = useCallback(
+    (text) => {
+      dispatch(setInputValue(text));
+      if (focusInput) focusInput();
+    },
+    [dispatch, focusInput]
+  );
+
   const scrollToBottom = useCallback(() => {
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -3595,6 +3716,7 @@ export default function MessageList({
                 onSetSubConvPanelOwner={setSubConvPanelOwnerId}
                 currentChatId={currentChatId}
                 assistantIndex={assistantIndices.get(index) ?? -1}
+                onEditPrompt={handleEditPrompt}
               />
             </div>
           );
