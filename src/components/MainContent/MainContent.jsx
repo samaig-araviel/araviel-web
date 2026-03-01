@@ -1213,7 +1213,7 @@ export default function MainContent() {
       {hasMessages && (
         <MessageList
           messages={messages}
-          isProcessing={pipelineStatus !== 'idle'}
+          isProcessing={pipelineStatus !== 'idle' && pipelineStatus !== 'complete'}
           timelineStages={timelineStages}
           timelineFading={pipelineStatus === 'complete'}
           modelName={routeResult ? routeResult.modelName : null}
