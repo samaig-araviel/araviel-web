@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
@@ -76,7 +76,7 @@ hljs.registerLanguage('cpp', cpp);
 hljs.registerLanguage('c', cpp);
 
 /**
- * Generate 2 follow-up suggestion prompts based on the assistant's response content.
+ * Generate 4 follow-up suggestion prompts based on the assistant's response content.
  */
 function generateFollowUps(content) {
   if (!content) return [];
@@ -93,7 +93,7 @@ function generateFollowUps(content) {
       'How would this look refactored using TypeScript?',
       'Can you add inline comments explaining each step?',
     ];
-    return pickRandom(suggestions, 2);
+    return pickRandom(suggestions, 4);
   }
 
   // Analytical responses
@@ -103,8 +103,10 @@ function generateFollowUps(content) {
       'What data sources would strengthen this analysis?',
       'How would you visualize these insights for a presentation?',
       'What are the potential risks if we ignore these patterns?',
+      'Can you break this into actionable next steps?',
+      'How does this compare to industry benchmarks?',
     ];
-    return pickRandom(suggestions, 2);
+    return pickRandom(suggestions, 4);
   }
 
   // Research responses
@@ -114,8 +116,10 @@ function generateFollowUps(content) {
       'Can you explain this in simpler terms for a beginner?',
       'What are the practical real-world applications?',
       'Who are the leading researchers or companies in this space?',
+      'What are the open questions still being debated?',
+      'How has this field evolved in the last decade?',
     ];
-    return pickRandom(suggestions, 2);
+    return pickRandom(suggestions, 4);
   }
 
   // Creative responses
@@ -125,8 +129,10 @@ function generateFollowUps(content) {
       'What inspired the imagery in this piece?',
       'Can you create a longer version expanding on this theme?',
       'How would this change if written in a different style?',
+      'Can you adapt this for a different audience?',
+      'What literary techniques are at play here?',
     ];
-    return pickRandom(suggestions, 2);
+    return pickRandom(suggestions, 4);
   }
 
   // Default follow-ups
@@ -135,8 +141,10 @@ function generateFollowUps(content) {
     'What are the most common misconceptions about this?',
     'How would you apply this in a real-world scenario?',
     'What should I learn next to go deeper on this topic?',
+    'Can you summarize the key takeaways?',
+    'What are the counterarguments to this?',
   ];
-  return pickRandom(defaults, 2);
+  return pickRandom(defaults, 4);
 }
 
 function pickRandom(arr, n) {
@@ -969,7 +977,7 @@ function CitationsDisplay({ citations }) {
  * Usage stats inline — shows info icon to the left of the model pill in the actions bar.
  * On click, opens a floating tooltip with model, tokens, cost, latency details.
  */
-function UsageFooterInline({ message }) {
+function UsageFooterInline({ message, isDark }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const wrapperRef = useRef(null);
 
@@ -984,38 +992,64 @@ function UsageFooterInline({ message }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showTooltip]);
 
-  if (!message.usage && !message.costUsd && !message.latencyMs) return null;
-
+  // Build useful rows: model, tokens, cost, speed
   const rows = [];
   if (message.modelName) rows.push({ label: 'Model', value: message.modelName });
   if (message.usage) {
     const { inputTokens, outputTokens } = message.usage;
+    if (inputTokens != null) {
+      rows.push({ label: 'Input', value: `${inputTokens.toLocaleString()} tokens` });
+    }
+    if (outputTokens != null) {
+      rows.push({ label: 'Output', value: `${outputTokens.toLocaleString()} tokens` });
+    }
     if (inputTokens != null && outputTokens != null) {
-      rows.push({ label: 'Tokens', value: `${inputTokens} in / ${outputTokens} out` });
+      rows.push({
+        label: 'Total',
+        value: `${(inputTokens + outputTokens).toLocaleString()} tokens`,
+      });
     }
   }
   if (message.costUsd != null) {
     rows.push({ label: 'Cost', value: `$${message.costUsd.toFixed(4)}` });
   }
   if (message.latencyMs != null) {
-    rows.push({ label: 'Latency', value: `${(message.latencyMs / 1000).toFixed(1)}s` });
+    const seconds = message.latencyMs / 1000;
+    rows.push({
+      label: 'Speed',
+      value: seconds < 1 ? `${message.latencyMs}ms` : `${seconds.toFixed(1)}s`,
+    });
+  }
+  if (message.provider) {
+    const providerNames = {
+      anthropic: 'Anthropic',
+      openai: 'OpenAI',
+      google: 'Google',
+      perplexity: 'Perplexity',
+      xai: 'xAI',
+      mistral: 'Mistral',
+      deepseek: 'DeepSeek',
+    };
+    rows.push({ label: 'Provider', value: providerNames[message.provider] || message.provider });
   }
 
-  if (rows.length === 0) return null;
+  // Always show the info icon (even without data, show at least a placeholder)
+  const hasData = rows.length > 0;
 
   return (
     <div className={styles.usageInline} ref={wrapperRef}>
       <button
         className={`${styles.usageToggle} ${showTooltip ? styles.usageToggleActive : ''}`}
-        onClick={() => setShowTooltip(!showTooltip)}
-        title="Usage details"
+        onClick={() => hasData && setShowTooltip(!showTooltip)}
+        title={hasData ? 'Response details' : 'No details available'}
       >
-        <span className={styles.usageIcon}>i</span>
+        <InfoIcon />
       </button>
-      {showTooltip && (
+      {showTooltip && hasData && (
         <div className={styles.usageTooltip}>
           <div className={styles.usageTooltipArrow} />
           <div className={styles.usageTooltipBody}>
+            <div className={styles.usageTooltipTitle}>Response details</div>
             {rows.map((row, idx) => (
               <div key={idx} className={styles.usageTooltipRow}>
                 <span className={styles.usageTooltipLabel}>{row.label}</span>
@@ -1609,7 +1643,7 @@ function getEstimatedCost(modelId) {
 /**
  * Dropdown shown when clicking a model pill — lists the current model and alternates.
  */
-function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlternate }) {
+function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlternate, triggerRef }) {
   const dropdownRef = useRef(null);
   const providerData = message.provider ? PROVIDERS[message.provider] : null;
   const LogoComponent = message.provider ? getProviderLogo(message.provider) : null;
@@ -1617,24 +1651,24 @@ function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlterna
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target) &&
+        (!triggerRef?.current || !triggerRef.current.contains(e.target))
+      ) {
         onClose();
       }
     };
     const handleEsc = (e) => {
       if (e.key === 'Escape') onClose();
     };
-    // Delay listener slightly to avoid closing immediately from the opening click
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEsc);
-    }, 10);
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
     return () => {
-      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEsc);
     };
-  }, [onClose]);
+  }, [onClose, triggerRef]);
 
   const fitLabel = getFitLabel(message.score);
 
@@ -2133,22 +2167,305 @@ function SubConversationPills({ subConversations, onOpen, activeSubConvId }) {
 }
 
 /**
+ * Inline sources dropdown — pill in the actions bar that expands to show citations.
+ */
+function InlineSourcesDropdown({ citations }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsExpanded(false);
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') setIsExpanded(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isExpanded]);
+
+  if (!citations || citations.length === 0) return null;
+
+  return (
+    <div className={styles.inlineSourcesWrapper} ref={wrapperRef}>
+      <button
+        className={`${styles.inlineSourcesPill} ${isExpanded ? styles.inlineSourcesPillOpen : ''}`}
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <SourcesIcon />
+        <span>
+          {citations.length} source{citations.length !== 1 ? 's' : ''}
+        </span>
+        <span
+          className={`${styles.inlineSourcesChevron} ${
+            isExpanded ? styles.inlineSourcesChevronOpen : ''
+          }`}
+        >
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {isExpanded && (
+        <div className={styles.inlineSourcesDropdown}>
+          {citations.map((citation, idx) => {
+            let favicon = '';
+            let hostname = '';
+            try {
+              const url = new URL(citation.url);
+              hostname = url.hostname.replace(/^www\./, '');
+              favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+            } catch {
+              // skip favicon
+            }
+            return (
+              <a
+                key={idx}
+                href={citation.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.inlineSourceItem}
+              >
+                <span className={styles.inlineSourceNumber}>{idx + 1}</span>
+                {favicon && <img src={favicon} alt="" className={styles.inlineSourceFavicon} />}
+                <div className={styles.inlineSourceInfo}>
+                  <span className={styles.inlineSourceTitle}>{citation.title || citation.url}</span>
+                  {hostname && <span className={styles.inlineSourceDomain}>{hostname}</span>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Upgrade pill — compact pill shown in the actions bar to the left of the info icon.
+ * Clicking opens a delightful upgrade popup with model info and upgrade CTA.
+ */
+function UpgradePill({ upgradeHint }) {
+  const [showPopup, setShowPopup] = useState(false);
+  const effectiveTheme = useSelector(selectEffectiveTheme);
+  const isDark = effectiveTheme === 'dark';
+
+  if (!upgradeHint || !upgradeHint.recommendedModel) return null;
+
+  const modelName = upgradeHint.recommendedModel.name;
+  const modelId = upgradeHint.recommendedModel.id;
+  const reason =
+    upgradeHint.reason ||
+    upgradeHint.recommendedModel.reasoning ||
+    `This model would provide a more detailed and accurate response for your query.`;
+  const fullModel = MODELS.find((m) => m.id === modelId || m.name === modelName);
+  const providerData = fullModel?.provider ? PROVIDERS[fullModel.provider] : null;
+  const accentColor = providerData?.accentColor || '#d4a574';
+
+  return (
+    <>
+      <button
+        className={styles.upgradePill}
+        onClick={() => setShowPopup(true)}
+        title={`Try ${modelName} — Upgrade to Pro`}
+        style={{ '--upgrade-accent': accentColor }}
+      >
+        <SparkleIcon />
+        <span>Upgrade</span>
+      </button>
+      {showPopup && fullModel && (
+        <UpgradePopup
+          model={fullModel}
+          reason={reason}
+          onClose={() => setShowPopup(false)}
+          isDark={isDark}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * Delightful upgrade popup — shown when clicking the upgrade pill.
+ * Shows model info, capabilities, and a compelling upgrade CTA.
+ */
+function UpgradePopup({ model, reason, onClose, isDark }) {
+  const popupRef = useRef(null);
+  const providerData = model?.provider ? PROVIDERS[model.provider] : null;
+  const LogoComponent = model?.provider ? getProviderLogo(model.provider) : null;
+  const speedInfo = model?.speedTier ? SPEED_TIERS[model.speedTier] : null;
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEsc);
+    }, 10);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [onClose]);
+
+  if (!model) return null;
+
+  const accentColor = providerData?.accentColor || '#d4a574';
+  const accentBg = isDark ? providerData?.accentBgDark : providerData?.accentBg;
+  const accentText = isDark
+    ? providerData?.accentTextDark || providerData?.accentColor
+    : providerData?.accentText;
+
+  return createPortal(
+    <div className={styles.modelInfoOverlay}>
+      <div className={styles.upgradePopup} ref={popupRef}>
+        {/* Gradient header with model branding */}
+        <div
+          className={styles.upgradePopupHeader}
+          style={{
+            background: `linear-gradient(135deg, ${accentColor}15 0%, ${accentColor}08 100%)`,
+            borderBottom: `1px solid ${accentColor}20`,
+          }}
+        >
+          <div className={styles.upgradePopupHeaderTop}>
+            {providerData && LogoComponent && (
+              <span
+                className={styles.upgradePopupLogo}
+                style={{ backgroundColor: accentBg, color: accentText }}
+              >
+                <LogoComponent size={20} />
+              </span>
+            )}
+            <button className={styles.modelInfoClose} onClick={onClose} aria-label="Close">
+              <CloseIcon />
+            </button>
+          </div>
+          <div className={styles.upgradePopupModelInfo}>
+            <span className={styles.upgradePopupModelName}>{model.name}</span>
+            {model.tagline && <span className={styles.upgradePopupTagline}>{model.tagline}</span>}
+          </div>
+        </div>
+
+        {/* Why this model section */}
+        {reason && (
+          <div className={styles.upgradePopupReason}>
+            <SparkleIcon />
+            <span>{reason}</span>
+          </div>
+        )}
+
+        {/* Model stats */}
+        <div className={styles.upgradePopupStats}>
+          {speedInfo && (
+            <div className={styles.upgradePopupStat}>
+              <span className={styles.upgradePopupStatLabel}>Speed</span>
+              <span className={styles.upgradePopupStatValue}>{speedInfo.label}</span>
+            </div>
+          )}
+          {model.context && (
+            <div className={styles.upgradePopupStat}>
+              <span className={styles.upgradePopupStatLabel}>Context</span>
+              <span className={styles.upgradePopupStatValue}>
+                {formatTokens(model.context.inputTokens)}
+              </span>
+            </div>
+          )}
+          {model.badge && (
+            <div className={styles.upgradePopupStat}>
+              <span className={styles.upgradePopupStatLabel}>Tier</span>
+              <span className={styles.upgradePopupStatValue} style={{ color: accentColor }}>
+                {model.badge}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Best for tags */}
+        {model.bestFor && model.bestFor.length > 0 && (
+          <div className={styles.upgradePopupBestFor}>
+            {model.bestFor.map((tag, idx) => (
+              <span
+                key={idx}
+                className={styles.upgradePopupTag}
+                style={{ backgroundColor: accentBg, color: accentText }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Pro upgrade CTA */}
+        <div className={styles.upgradePopupCta}>
+          <div className={styles.upgradePopupCtaText}>
+            <span className={styles.upgradePopupCtaTitle}>Unlock {model.name} with Pro</span>
+            <span className={styles.upgradePopupCtaDesc}>
+              Access all pro models, faster responses, higher limits, and priority routing.
+            </span>
+          </div>
+          <div className={styles.upgradePopupCtaActions}>
+            <div className={styles.upgradePopupPricing}>
+              <span className={styles.upgradePopupPrice}>$20</span>
+              <span className={styles.upgradePopupPeriod}>/mo</span>
+            </div>
+            <button
+              className={styles.upgradePopupBtn}
+              style={{
+                background: `linear-gradient(135deg, ${accentColor} 0%, ${accentColor}cc 100%)`,
+              }}
+            >
+              Upgrade to Pro
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/**
  * Response actions bar shown below each assistant message.
- * Left: model pill + preview pill + sources pill
+ * Left: upgrade pill (intermittent) + info icon + model pill + sources dropdown
  * Right: like, dislike, copy, retry, share
  */
-function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlternate }) {
+function ResponseActions({
+  message,
+  isDark,
+  onRetry,
+  userPrompt,
+  onSelectAlternate,
+  assistantIndex,
+}) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
+  const modelPillRef = useRef(null);
 
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
 
   const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
+  const citations = message.sources || message.citations;
+
+  // Always show upgrade pill when hint is available (left of info icon)
+  const showUpgrade = !!message.upgradeHint;
 
   const getProviderDisplayName = () => {
     if (!provider) return null;
@@ -2187,11 +2504,13 @@ function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlterna
   return (
     <div className={styles.responseActions}>
       <div className={styles.responseActionsLeft}>
-        <UsageFooterInline message={message} />
+        {showUpgrade && <UpgradePill upgradeHint={message.upgradeHint} />}
+        <UsageFooterInline message={message} isDark={isDark} />
         {providerData && LogoComponent && (
           <div
             className={styles.modelPillSmallWrapper}
-            onClick={() => setShowModelDropdown(!showModelDropdown)}
+            ref={modelPillRef}
+            onClick={() => setShowModelDropdown((prev) => !prev)}
           >
             <div
               className={`${styles.modelPillSmall} ${
@@ -2219,11 +2538,12 @@ function ResponseActions({ message, isDark, onRetry, userPrompt, onSelectAlterna
                 position="above"
                 onClose={() => setShowModelDropdown(false)}
                 onSelectAlternate={onSelectAlternate}
+                triggerRef={modelPillRef}
               />
             )}
           </div>
         )}
-        <SourcesPill sources={message.sources || message.citations} />
+        <InlineSourcesDropdown citations={citations} />
       </div>
 
       <div className={styles.responseActionsRight}>
@@ -2286,7 +2606,6 @@ function FollowUpSuggestions({ suggestions, onSelect }) {
   return (
     <div className={styles.followUps}>
       <div className={styles.followUpsHeader}>
-        <SparkleIcon />
         <span>Follow up</span>
       </div>
       <div className={styles.followUpsList}>
@@ -2303,11 +2622,19 @@ function FollowUpSuggestions({ suggestions, onSelect }) {
 
 /**
  * Collapsible thinking block shown before assistant responses.
- * Shows routing + thinking stages with a dotted timeline,
- * and real thinking content when available.
+ * Shows routing + thinking + web search stages with a clean timeline.
+ * Persists at the top of the response so users can always expand it.
  */
-function ThinkingBlock({ thinkingData, thinkingContent, modelName, provider }) {
+function ThinkingBlock({
+  thinkingData,
+  thinkingContent,
+  modelName,
+  provider,
+  webSearchUsed,
+  webSearchSources,
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showWebSources, setShowWebSources] = useState(false);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
 
@@ -2319,6 +2646,10 @@ function ThinkingBlock({ thinkingData, thinkingContent, modelName, provider }) {
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
 
+  // Build a summary label for the toggle
+  const stepsCount = 2 + (webSearchUsed ? 1 : 0);
+  const summaryLabel = `Thought for ${totalDuration}s`;
+
   return (
     <div className={styles.thinkingBlock}>
       <button
@@ -2329,30 +2660,92 @@ function ThinkingBlock({ thinkingData, thinkingContent, modelName, provider }) {
         <span className={styles.thinkingToggleIcon}>
           {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
         </span>
-        <span className={styles.thinkingToggleLabel}>Thought for {totalDuration}s</span>
+        <span className={styles.thinkingToggleLabel}>{summaryLabel}</span>
+        <span className={styles.thinkingStepCount}>{stepsCount} steps</span>
       </button>
 
       {isExpanded && (
         <div className={styles.thinkingDetails}>
+          {/* Stage 1: Routing */}
           <div className={styles.thinkingStage}>
             <div className={styles.thinkingDotLine}>
-              <span className={styles.thinkingStageDot} />
+              <span className={styles.thinkingStageDotComplete} />
               <span className={styles.thinkingVerticalLine} />
             </div>
             <div className={styles.thinkingStageContent}>
-              <span className={styles.thinkingStageLabel}>Routing to optimal model</span>
+              <span className={styles.thinkingStageLabel}>Routed to optimal model</span>
               <span className={styles.thinkingStageDuration}>{routingDuration}s</span>
             </div>
           </div>
 
+          {/* Stage 2: Web search (if used) */}
+          {webSearchUsed && (
+            <div className={styles.thinkingStage}>
+              <div className={styles.thinkingDotLine}>
+                <span className={styles.thinkingStageDotComplete} />
+                <span className={styles.thinkingVerticalLine} />
+              </div>
+              <div className={styles.thinkingStageContent}>
+                <button
+                  className={styles.thinkingStageWebSearch}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowWebSources(!showWebSources);
+                  }}
+                >
+                  <GlobeIcon />
+                  <span>Searched the web</span>
+                  <span className={styles.thinkingStageChevron}>
+                    {showWebSources ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Web search sources detail */}
+          {showWebSources && webSearchSources && webSearchSources.length > 0 && (
+            <div className={styles.thinkingWebSources}>
+              {webSearchSources.map((source, idx) => {
+                let hostname = '';
+                let favicon = '';
+                try {
+                  const url = new URL(source.url);
+                  hostname = url.hostname.replace(/^www\./, '');
+                  favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
+                } catch {
+                  /* ignore */
+                }
+                return (
+                  <a
+                    key={idx}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.thinkingWebSourceItem}
+                  >
+                    {favicon && (
+                      <img src={favicon} alt="" className={styles.thinkingWebSourceFavicon} />
+                    )}
+                    <span className={styles.thinkingWebSourceTitle}>
+                      {source.title || hostname}
+                    </span>
+                    {hostname && <span className={styles.thinkingWebSourceDomain}>{hostname}</span>}
+                  </a>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Stage 3: Thinking */}
           <div className={styles.thinkingStage}>
             <div className={styles.thinkingDotLine}>
-              <span className={styles.thinkingStageDot} />
+              <span className={styles.thinkingStageDotComplete} />
               <span className={styles.thinkingVerticalLine} />
             </div>
             <div className={styles.thinkingStageContent}>
               <span className={styles.thinkingStageLabel}>
-                Thinking with{' '}
+                Thought with{' '}
                 {providerData && LogoComponent ? (
                   <span
                     className={styles.thinkingModelBadge}
@@ -2381,12 +2774,13 @@ function ThinkingBlock({ thinkingData, thinkingContent, modelName, provider }) {
             </div>
           )}
 
+          {/* Stage 4: Response written */}
           <div className={`${styles.thinkingStage} ${styles.thinkingStageLast}`}>
             <div className={styles.thinkingDotLine}>
-              <span className={styles.thinkingStageDot} />
+              <span className={styles.thinkingStageDotComplete} />
             </div>
             <div className={styles.thinkingStageContent}>
-              <span className={styles.thinkingStageLabel}>Writing response</span>
+              <span className={styles.thinkingStageLabel}>Wrote response</span>
             </div>
           </div>
         </div>
@@ -2460,6 +2854,7 @@ function Message({
   subConvPanelOwnerId,
   onSetSubConvPanelOwner,
   currentChatId,
+  assistantIndex,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -2771,10 +3166,13 @@ function Message({
   const activeSubConversation = subConversations.find((sc) => sc.id === activeSubConvId);
   const pendingDeleteConv = subConversations.find((sc) => sc.id === pendingDeleteId);
 
-  const followUps =
-    !isUser && isLastAssistant && !isStreaming && message.content
-      ? generateFollowUps(message.content)
-      : [];
+  // Memoize follow-ups so they don't regenerate on every render (which causes jitter)
+  const followUps = useMemo(() => {
+    if (!isUser && isLastAssistant && !isStreaming && message.content) {
+      return generateFollowUps(message.content);
+    }
+    return [];
+  }, [isUser, isLastAssistant, isStreaming, message.content]);
 
   return (
     <div
@@ -2856,6 +3254,8 @@ function Message({
           thinkingContent={message.thinkingContent}
           modelName={message.modelName}
           provider={message.provider}
+          webSearchUsed={message.webSearchUsed}
+          webSearchSources={message.sources || message.citations}
         />
       )}
 
@@ -2912,11 +3312,6 @@ function Message({
       {/* Stream timeout notice */}
       {!isUser && !isStreaming && message.streamTimeout && <StreamTimeoutNotice />}
 
-      {/* Citations */}
-      {!isUser && !isStreaming && message.citations && (
-        <CitationsDisplay citations={message.citations} />
-      )}
-
       {/* Text selection tooltip */}
       {selectionTooltip && !isUser && (
         <SelectionTooltip position={selectionTooltip} onAsk={handleAskAraviel} />
@@ -2929,6 +3324,7 @@ function Message({
           onRetry={onRetry}
           userPrompt={userPrompt}
           onSelectAlternate={(alt) => setPendingAlternate(alt)}
+          assistantIndex={assistantIndex}
         />
       )}
 
@@ -2939,11 +3335,6 @@ function Message({
           onOpen={handleOpenSubConv}
           activeSubConvId={showSubConvPanel ? activeSubConvId : null}
         />
-      )}
-
-      {/* Upgrade hint — subtle banner below icons, above follow-ups */}
-      {!isUser && !isStreaming && message.upgradeHint && (
-        <UpgradeHint upgradeHint={message.upgradeHint} />
       )}
 
       {followUps.length > 0 && (
@@ -3098,6 +3489,16 @@ export default function MessageList({
   // - Otherwise, timeline goes after all messages
   const timelineBeforeLastMsg = isLastAssistantStreaming;
 
+  // Pre-compute assistant indices for upgrade pill intermittent display
+  const assistantIndices = new Map();
+  let aIdx = 0;
+  for (let i = 0; i < messages.length; i++) {
+    if (messages[i].role === 'assistant') {
+      assistantIndices.set(i, aIdx);
+      aIdx++;
+    }
+  }
+
   return (
     <div className={styles.messageList} ref={containerRef}>
       {/* Top fade gradient */}
@@ -3147,6 +3548,7 @@ export default function MessageList({
                 subConvPanelOwnerId={subConvPanelOwnerId}
                 onSetSubConvPanelOwner={setSubConvPanelOwnerId}
                 currentChatId={currentChatId}
+                assistantIndex={assistantIndices.get(index) ?? -1}
               />
             </div>
           );

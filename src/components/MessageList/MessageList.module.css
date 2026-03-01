@@ -1051,6 +1051,8 @@
 .followUps {
   margin-top: 16px;
   animation: followUpsFadeIn 0.4s ease;
+  /* Prevent layout shift by reserving stable space */
+  contain: layout;
 }
 
 @keyframes followUpsFadeIn {
@@ -1070,15 +1072,10 @@
   gap: 6px;
   margin-bottom: 8px;
   color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.followUpsHeader svg {
-  width: 13px;
-  height: 13px;
-  opacity: 0.7;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .followUpsList {
@@ -1092,10 +1089,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 10px;
   text-align: left;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 450;
   line-height: 1.4;
   color: var(--text-secondary);
@@ -1185,6 +1182,14 @@
   letter-spacing: 0.01em;
 }
 
+.thinkingStepCount {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  opacity: 0.6;
+  margin-left: 2px;
+}
+
 .thinkingDetails {
   display: flex;
   flex-direction: column;
@@ -1228,6 +1233,16 @@
   background-color: var(--text-muted);
   opacity: 0.5;
   flex-shrink: 0;
+}
+
+.thinkingStageDotComplete {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .thinkingVerticalLine {
@@ -1284,6 +1299,91 @@
   line-height: 1.4;
   white-space: nowrap;
   vertical-align: middle;
+}
+
+/* Web search button inside thinking timeline */
+.thinkingStageWebSearch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+
+.thinkingStageWebSearch:hover {
+  color: var(--text-primary);
+}
+
+.thinkingStageWebSearch svg {
+  width: 13px;
+  height: 13px;
+}
+
+.thinkingStageChevron {
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.thinkingStageChevron svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0.5;
+}
+
+/* Web sources list inside thinking block */
+.thinkingWebSources {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 22px;
+  margin-bottom: 4px;
+  padding: 6px 0;
+  animation: thinkingDetailsSlide 0.2s ease;
+}
+
+.thinkingWebSourceItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.thinkingWebSourceItem:hover {
+  background-color: var(--bg-hover);
+}
+
+.thinkingWebSourceFavicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.thinkingWebSourceTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.thinkingWebSourceDomain {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 /* Timeline wrapper */
@@ -3667,33 +3767,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: transparent;
-  border: 1px solid var(--border-color);
-  font-size: 10px;
-  font-weight: 600;
+  border: none;
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
+  padding: 0;
+}
+
+.usageToggle svg {
+  width: 15px;
+  height: 15px;
 }
 
 .usageToggle:hover {
-  background-color: var(--bg-secondary);
   color: var(--text-secondary);
 }
 
 .usageToggleActive {
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
-  border-color: var(--text-muted);
-}
-
-.usageIcon {
-  font-style: italic;
-  font-family: Georgia, serif;
+  color: var(--text-primary);
 }
 
 /* Floating tooltip for usage details */
@@ -3722,12 +3818,23 @@
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 10px;
-  padding: 8px 12px;
+  padding: 10px 14px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  min-width: 180px;
+  min-width: 200px;
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.usageTooltipTitle {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 2px;
 }
 
 .usageTooltipRow {
