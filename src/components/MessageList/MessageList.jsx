@@ -273,6 +273,54 @@ function pickRandom(arr, n) {
 }
 
 /**
+ * Extract video info (provider, ID, thumbnail, embed URL) from a URL.
+ * Returns null if the URL is not a recognized video link.
+ */
+function extractVideoInfo(url) {
+  try {
+    const u = new URL(url);
+
+    // YouTube: youtube.com/watch?v=ID, youtu.be/ID, youtube.com/embed/ID, youtube.com/shorts/ID
+    if (u.hostname.includes('youtube.com') || u.hostname === 'youtu.be') {
+      let videoId;
+      if (u.hostname === 'youtu.be') {
+        videoId = u.pathname.slice(1).split('/')[0];
+      } else if (u.pathname === '/watch') {
+        videoId = u.searchParams.get('v');
+      } else if (u.pathname.startsWith('/embed/')) {
+        videoId = u.pathname.split('/embed/')[1].split('/')[0];
+      } else if (u.pathname.startsWith('/shorts/')) {
+        videoId = u.pathname.split('/shorts/')[1].split('/')[0];
+      }
+      if (videoId) {
+        return {
+          provider: 'youtube',
+          videoId,
+          thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+          embedUrl: `https://www.youtube.com/embed/${videoId}?autoplay=1`,
+        };
+      }
+    }
+
+    // Vimeo: vimeo.com/ID
+    if (u.hostname.includes('vimeo.com')) {
+      const match = u.pathname.match(/^\/(\d+)/);
+      if (match) {
+        return {
+          provider: 'vimeo',
+          videoId: match[1],
+          thumbnailUrl: null,
+          embedUrl: `https://player.vimeo.com/video/${match[1]}?autoplay=1`,
+        };
+      }
+    }
+  } catch {
+    // invalid URL
+  }
+  return null;
+}
+
+/**
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  */
@@ -497,6 +545,31 @@ function renderMarkdown(text) {
         {renderInline(line)}
       </p>
     );
+
+    // Check for video URLs in this line and add inline preview cards
+    // Handles both markdown links [text](url) and bare URLs
+    {
+      const videoSeen = new Set();
+      // Extract URLs from markdown links first
+      const mdLinkRe = /\[[^\]]+\]\((https?:\/\/[^)]+)\)/g;
+      let vm;
+      while ((vm = mdLinkRe.exec(line)) !== null) {
+        if (!videoSeen.has(vm[1]) && extractVideoInfo(vm[1])) {
+          videoSeen.add(vm[1]);
+          elements.push(<VideoPreview key={`vid-${key++}`} url={vm[1]} />);
+        }
+      }
+      // Then bare URLs (Set prevents duplicates)
+      const bareRe = /https?:\/\/[^\s<>)\]]+/g;
+      let bm;
+      while ((bm = bareRe.exec(line)) !== null) {
+        if (!videoSeen.has(bm[0]) && extractVideoInfo(bm[0])) {
+          videoSeen.add(bm[0]);
+          elements.push(<VideoPreview key={`vid-${key++}`} url={bm[0]} />);
+        }
+      }
+    }
+
     i++;
   }
 
@@ -973,6 +1046,73 @@ function ImageGalleryPanel({ images, onClose }) {
       )}
     </>,
     document.body
+  );
+}
+
+/**
+ * Inline video preview card — shows a thumbnail with play overlay.
+ * Clicking swaps the thumbnail for an embedded iframe player.
+ */
+function VideoPreview({ url }) {
+  const [playing, setPlaying] = useState(false);
+  const [vimeoThumb, setVimeoThumb] = useState(null);
+  const info = useMemo(() => extractVideoInfo(url), [url]);
+
+  useEffect(() => {
+    if (info && info.provider === 'vimeo' && !info.thumbnailUrl) {
+      let cancelled = false;
+      fetch(`https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}&width=320`)
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled && data.thumbnail_url) setVimeoThumb(data.thumbnail_url);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [url, info]);
+
+  if (!info) return null;
+
+  const thumbnailUrl = info.thumbnailUrl || vimeoThumb;
+  const providerLabel = info.provider === 'youtube' ? 'YouTube' : 'Vimeo';
+
+  if (playing) {
+    return (
+      <div className={styles.videoPreview}>
+        <div className={styles.videoEmbedWrapper}>
+          <iframe
+            className={styles.videoEmbed}
+            src={info.embedUrl}
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+            title={`${providerLabel} video`}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button className={styles.videoPreview} onClick={() => setPlaying(true)}>
+      {thumbnailUrl ? (
+        <img
+          className={styles.videoThumbnail}
+          src={thumbnailUrl}
+          alt={`${providerLabel} video thumbnail`}
+          loading="lazy"
+        />
+      ) : (
+        <div className={styles.videoThumbnailPlaceholder} />
+      )}
+      <div className={styles.videoPlayOverlay}>
+        <svg className={styles.videoPlayIcon} viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z" />
+        </svg>
+      </div>
+      <span className={styles.videoProviderBadge}>{providerLabel}</span>
+    </button>
   );
 }
 
