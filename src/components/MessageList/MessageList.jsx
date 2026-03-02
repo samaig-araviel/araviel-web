@@ -146,7 +146,9 @@ function generateFollowUps(content, userPrompt) {
     /\bQ[1-4]FY\d{2}\b|\bCAGR\b|\bEBITDA\b|\bAPE\b|\bYoY\b/i.test(content)
   ) {
     if (entities.length >= 2) {
-      suggestions.push(`Compare ${entities[0]} and ${entities[1]} — which is a better buy right now?`);
+      suggestions.push(
+        `Compare ${entities[0]} and ${entities[1]} — which is a better buy right now?`
+      );
     }
     if (entities.length >= 1) {
       suggestions.push(`What are the key risks and downsides for ${entities[0]}?`);
@@ -301,6 +303,32 @@ function renderMarkdown(text) {
         elements.push(<MermaidBlock key={key++} code={codeContent} />);
       } else if (lang === 'chart' || lang === 'araviel-chart') {
         elements.push(<AravielChart key={key++} spec={codeContent} />);
+      } else if (lang === 'json' || lang === '') {
+        // Auto-detect chart specs in json/untagged code blocks
+        let isChartSpec = false;
+        try {
+          const parsed = JSON.parse(codeContent);
+          const chartTypes = [
+            'line',
+            'area',
+            'bar',
+            'candlestick',
+            'pie',
+            'donut',
+            'composed',
+            'scatter',
+          ];
+          if (parsed && chartTypes.includes(parsed.type) && Array.isArray(parsed.data)) {
+            isChartSpec = true;
+          }
+        } catch {
+          // not valid JSON — render as code block
+        }
+        if (isChartSpec) {
+          elements.push(<AravielChart key={key++} spec={codeContent} />);
+        } else {
+          elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+        }
       } else {
         elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
       }
@@ -587,10 +615,7 @@ function MermaidBlock({ code }) {
     <div className={styles.mermaidBlock}>
       <div className={styles.mermaidHeader}>
         <span className={styles.mermaidLabel}>Diagram</span>
-        <button
-          className={styles.mermaidToggleCode}
-          onClick={() => setShowCode(!showCode)}
-        >
+        <button className={styles.mermaidToggleCode} onClick={() => setShowCode(!showCode)}>
           {showCode ? 'Preview' : 'Code'}
         </button>
       </div>
@@ -3052,7 +3077,9 @@ function UserPrompt({ content, onEdit }) {
     <div className={styles.userPromptCard}>
       <div className={styles.userPromptActions}>
         <button
-          className={`${styles.userPromptActionBtn} ${copied ? styles.userPromptActionBtnActive : ''}`}
+          className={`${styles.userPromptActionBtn} ${
+            copied ? styles.userPromptActionBtnActive : ''
+          }`}
           onClick={handleCopy}
           title={copied ? 'Copied!' : 'Copy'}
           aria-label="Copy prompt"
@@ -3565,6 +3592,26 @@ function Message({
           while ((m = codeBlockRegex.exec(displayText)) !== null) {
             const lang = m[1] || '';
             if (lang === 'chart' || lang === 'araviel-chart' || lang === 'mermaid') continue;
+            // Skip json/untagged blocks that are chart specs
+            if (lang === 'json' || lang === '') {
+              try {
+                const parsed = JSON.parse(m[2]);
+                const chartTypes = [
+                  'line',
+                  'area',
+                  'bar',
+                  'candlestick',
+                  'pie',
+                  'donut',
+                  'composed',
+                  'scatter',
+                ];
+                if (parsed && chartTypes.includes(parsed.type) && Array.isArray(parsed.data))
+                  continue;
+              } catch {
+                /* not chart spec */
+              }
+            }
             blocks.push({ lang, code: m[2] });
           }
           if (blocks.length === 0) return null;
