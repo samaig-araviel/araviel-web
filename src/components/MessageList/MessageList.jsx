@@ -51,6 +51,7 @@ import rust from 'highlight.js/lib/languages/rust';
 import cpp from 'highlight.js/lib/languages/cpp';
 import mermaid from 'mermaid';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
+import AravielChart from '../AravielChart/AravielChart';
 import styles from './MessageList.module.css';
 
 // Initialize mermaid with sensible defaults
@@ -298,6 +299,8 @@ function renderMarkdown(text) {
       const codeContent = codeLines.join('\n');
       if (lang === 'mermaid') {
         elements.push(<MermaidBlock key={key++} code={codeContent} />);
+      } else if (lang === 'chart' || lang === 'araviel-chart') {
+        elements.push(<AravielChart key={key++} spec={codeContent} />);
       } else {
         elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
       }
@@ -3560,7 +3563,9 @@ function Message({
           const blocks = [];
           let m;
           while ((m = codeBlockRegex.exec(displayText)) !== null) {
-            blocks.push({ lang: m[1] || '', code: m[2] });
+            const lang = m[1] || '';
+            if (lang === 'chart' || lang === 'araviel-chart' || lang === 'mermaid') continue;
+            blocks.push({ lang, code: m[2] });
           }
           if (blocks.length === 0) return null;
           return (
