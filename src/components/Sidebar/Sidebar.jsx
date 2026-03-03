@@ -33,6 +33,7 @@ import {
   MenuIcon,
   CloseIcon,
   ModelsIcon,
+  AnalyticsIcon,
 } from '../Icons';
 import styles from './Sidebar.module.css';
 
@@ -154,6 +155,13 @@ export default function Sidebar() {
     }
   };
 
+  const handleAnalyticsClick = () => {
+    dispatch(setActiveItem(activeItem === 'analytics' ? 'home' : 'analytics'));
+    if (isMobile) {
+      dispatch(setCollapsed(true));
+    }
+  };
+
   const handleThemeChange = (mode) => {
     dispatch(setTheme(mode));
   };
@@ -237,6 +245,15 @@ export default function Sidebar() {
           >
             <ModelsIcon />
             {showFullContent && <span>Models</span>}
+          </button>
+          <button
+            className={`${styles.navItem} ${activeItem === 'analytics' ? styles.active : ''}`}
+            onClick={handleAnalyticsClick}
+            title="Analytics"
+            aria-label="Analytics"
+          >
+            <AnalyticsIcon />
+            {showFullContent && <span>Analytics</span>}
           </button>
         </nav>
 
