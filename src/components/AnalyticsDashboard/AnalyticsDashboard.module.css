@@ -1,0 +1,1063 @@
+/* ===================== */
+/* Dashboard Layout      */
+/* ===================== */
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  transition: background-color 0.2s ease;
+  scroll-behavior: smooth;
+}
+
+/* ===================== */
+/* Page Header           */
+/* ===================== */
+
+.pageHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 48px 0;
+  gap: 6px;
+}
+
+.pageTitle {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.pageSubtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.tierHint {
+  color: var(--text-muted);
+}
+
+/* ===================== */
+/* Toolbar / Period       */
+/* ===================== */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 48px 0;
+}
+
+.periodSelector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.periodBtn {
+  padding: 7px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.periodBtn:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.periodBtnActive {
+  color: var(--text-primary);
+  background-color: var(--bg-button);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+
+.periodProHint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ===================== */
+/* Content Area          */
+/* ===================== */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 48px 48px;
+}
+
+/* ===================== */
+/* PRO Badge             */
+/* ===================== */
+
+.proBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===================== */
+/* Stat Cards Grid       */
+/* ===================== */
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.statCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.statCard:hover {
+  border-color: var(--border-input);
+  box-shadow: var(--shadow);
+}
+
+.statCardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.statCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.statCardValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.statCardLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.statCardSubtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* ===================== */
+/* Chart Sections        */
+/* ===================== */
+
+.chartSection {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.chartPlaceholder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  min-height: 200px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===================== */
+/* Split Sections        */
+/* ===================== */
+
+.splitSection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.splitCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* ===================== */
+/* Section Headers       */
+/* ===================== */
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ===================== */
+/* Sections (generic)    */
+/* ===================== */
+
+.section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+}
+
+/* ===================== */
+/* PRO Lock              */
+/* ===================== */
+
+.sectionLocked {
+  position: relative;
+}
+
+.proLockedPlaceholder {
+  position: relative;
+  pointer-events: none;
+  user-select: none;
+}
+
+.proLockOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(253, 249, 243, 0.65);
+  backdrop-filter: blur(3px);
+  border-radius: 14px;
+}
+
+:global([data-theme='dark']) .proLockOverlay {
+  background: rgba(26, 26, 26, 0.7);
+}
+
+.proLockContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+}
+
+.proLockIcon {
+  font-size: 16px;
+}
+
+.proLockText {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ===================== */
+/* Top Models List       */
+/* ===================== */
+
+.topModelsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.topModelRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topModelInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.topModelDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.topModelName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topModelCount {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.topModelBarTrack {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background-color: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.topModelBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.75;
+}
+
+.topModelPercent {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* ===================== */
+/* Budget Section        */
+/* ===================== */
+
+.budgetSection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.budgetEmpty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.budgetEmptyText {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.budgetSetBtn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+
+.budgetSetBtn:hover {
+  opacity: 0.9;
+}
+
+.budgetForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.budgetFormRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.budgetFormLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 120px;
+}
+
+.budgetFormInput {
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  width: 120px;
+  transition: border-color 0.15s ease;
+}
+
+.budgetFormInput:focus {
+  border-color: var(--border-input);
+  outline: none;
+}
+
+.budgetFormActions {
+  display: flex;
+  gap: 8px;
+}
+
+.budgetSaveBtn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.budgetSaveBtn:hover {
+  opacity: 0.9;
+}
+
+.budgetCancelBtn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.budgetCancelBtn:hover {
+  background-color: var(--bg-hover);
+}
+
+.budgetDisplay {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.budgetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.budgetAmounts {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.budgetSpent {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.budgetOf {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.budgetTotal {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.budgetEditBtn {
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.budgetEditBtn:hover {
+  background-color: var(--bg-hover);
+}
+
+.budgetBarTrack {
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.budgetBarFill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #10b981, #34d399);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.budgetBarWarn {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.budgetBarOver {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.budgetMeta {
+  display: flex;
+  gap: 16px;
+}
+
+.budgetMetaItem {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.budgetAlert {
+  font-size: 13px;
+  font-weight: 500;
+  color: #dc2626;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background-color: rgba(220, 38, 38, 0.08);
+}
+
+:global([data-theme='dark']) .budgetAlert {
+  color: #f87171;
+  background-color: rgba(248, 113, 113, 0.1);
+}
+
+.budgetWarn {
+  font-size: 13px;
+  font-weight: 500;
+  color: #b45309;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+:global([data-theme='dark']) .budgetWarn {
+  color: #fbbf24;
+  background-color: rgba(251, 191, 36, 0.1);
+}
+
+/* ===================== */
+/* Fun Stats Grid        */
+/* ===================== */
+
+.funStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+/* ── Points Card ── */
+
+.pointsCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pointsCard:hover {
+  border-color: var(--border-input);
+  box-shadow: var(--shadow);
+}
+
+.pointsRing {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.pointsRingSvg {
+  width: 100%;
+  height: 100%;
+}
+
+.pointsRingProgress {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pointsRingValue {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pointsNumber {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.pointsLabel {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pointsInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.pointsLevelName {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.pointsLevelHint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ── Streak Card ── */
+
+.streakCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 16px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.streakCard:hover {
+  border-color: var(--border-input);
+  box-shadow: var(--shadow);
+}
+
+.streakMain {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.streakFireIcon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.streakNumber {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.streakUnit {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.streakBest {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Fun Stat Card (generic) ── */
+
+.funStatCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 20px 16px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  text-align: center;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.funStatCard:hover {
+  border-color: var(--border-input);
+  box-shadow: var(--shadow);
+}
+
+.funStatIcon {
+  font-size: 24px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.funStatValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.funStatLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.funStatDetail {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+/* ===================== */
+/* Frequency Grid        */
+/* ===================== */
+
+.frequencyGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.frequencyCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.frequencyCard:hover {
+  border-color: var(--border-input);
+  box-shadow: var(--shadow);
+}
+
+.frequencyValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.frequencyLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ===================== */
+/* Topic Cloud           */
+/* ===================== */
+
+.topicCloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.topicTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.15s ease;
+}
+
+.topicTag:hover {
+  background-color: var(--bg-hover);
+}
+
+.topicCount {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 1px 5px;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme='dark']) .topicCount {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ===================== */
+/* Empty States          */
+/* ===================== */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  text-align: center;
+  gap: 12px;
+}
+
+.emptyStateIcon {
+  font-size: 48px;
+  line-height: 1;
+  opacity: 0.5;
+}
+
+.emptyStateTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.emptyStateText {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 360px;
+  line-height: 1.6;
+}
+
+.emptyHint {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px 0;
+}
+
+/* ===================== */
+/* Responsive            */
+/* ===================== */
+
+/* Large tablets */
+@media (max-width: 1200px) {
+  .statGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .funStatsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .frequencyGrid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .pageHeader {
+    padding: 28px 24px 0;
+  }
+
+  .toolbar {
+    padding: 16px 24px 0;
+  }
+
+  .content {
+    padding: 16px 24px 40px;
+  }
+
+  .statGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .splitSection {
+    grid-template-columns: 1fr;
+  }
+
+  .funStatsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .frequencyGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Mobile - account for hamburger menu button */
+@media (max-width: 768px) {
+  .pageHeader {
+    padding-top: 60px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 600px) {
+  .pageHeader {
+    padding: 60px 16px 0;
+  }
+
+  .toolbar {
+    padding: 14px 16px 0;
+  }
+
+  .periodSelector {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .periodBtn {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .content {
+    padding: 14px 16px 32px;
+    gap: 14px;
+  }
+
+  .statGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .statCard {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .statCardIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .statCardValue {
+    font-size: 17px;
+  }
+
+  .statCardLabel {
+    font-size: 11px;
+  }
+
+  .splitSection {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .splitCard {
+    padding: 16px;
+  }
+
+  .funStatsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .frequencyGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .frequencyCard {
+    padding: 12px 8px;
+  }
+
+  .frequencyValue {
+    font-size: 18px;
+  }
+
+  .topModelInfo {
+    min-width: 100px;
+  }
+
+  .budgetMeta {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .section {
+    padding: 16px;
+  }
+}

@@ -29,6 +29,7 @@ import {
   setTone,
   setMood,
 } from '../../store/slices/chatSlice';
+import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
   SendIcon,
   CodeIcon,
@@ -727,6 +728,20 @@ export default function MainContent() {
                       thinkingDuration: '0.0',
                       totalDuration,
                     },
+                  })
+                );
+                // Record analytics for this message
+                dispatch(
+                  recordMessage({
+                    modelId: routeData?.modelId,
+                    modelName: routeData?.modelName,
+                    provider: routeData?.provider,
+                    costUsd: data.usage?.costUsd || 0,
+                    inputTokens: data.usage?.promptTokens || data.usage?.inputTokens || 0,
+                    outputTokens: data.usage?.completionTokens || data.usage?.outputTokens || 0,
+                    latencyMs: data.latencyMs || 0,
+                    timestamp: Date.now(),
+                    promptSnippet: prompt?.slice(0, 100) || '',
                   })
                 );
               }
