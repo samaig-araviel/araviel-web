@@ -45,6 +45,184 @@
 }
 
 /* ===================== */
+/* Content Area          */
+/* ===================== */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 48px 48px;
+}
+
+/* ===================== */
+/* PRO Badge             */
+/* ===================== */
+
+.proBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===================== */
+/* XP Hero Card          */
+/* ===================== */
+
+.xpHero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 28px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.xpHero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d97706, #f59e0b, #fbbf24);
+  border-radius: 16px 16px 0 0;
+}
+
+.xpHeroMain {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.xpHeroLevel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.xpLevelLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.xpLevelName {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.xpHeroPoints {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.xpPointsValue {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.xpPointsUnit {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.xpHeroStreak {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.xpStreakFire {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.xpStreakCount {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.xpStreakLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.xpStreakBest {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+.xpProgressContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.xpProgressTrack {
+  height: 10px;
+  border-radius: 5px;
+  background-color: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.xpProgressFill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 4px;
+}
+
+.xpProgressMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.xpProgressPercent {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.xpProgressHint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ===================== */
 /* Toolbar / Period       */
 /* ===================== */
 
@@ -52,7 +230,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 48px 0;
 }
 
 .periodSelector {
@@ -99,41 +276,12 @@
 }
 
 /* ===================== */
-/* Content Area          */
-/* ===================== */
-
-.content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 24px 48px 48px;
-}
-
-/* ===================== */
-/* PRO Badge             */
-/* ===================== */
-
-.proBadge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
-  color: #fff;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-/* ===================== */
 /* Stat Cards Grid       */
 /* ===================== */
 
 .statGrid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
@@ -193,26 +341,35 @@
 }
 
 /* ===================== */
-/* Chart Sections        */
+/* Section Card          */
 /* ===================== */
 
-.chartSection {
-  position: relative;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.chartPlaceholder {
+.sectionCard {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 24px;
   background-color: var(--bg-button);
   border: 1px solid var(--border-color);
   border-radius: 14px;
-  min-height: 200px;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.sectionCardHeader {
+  display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
+  padding: 16px 20px 0;
+}
+
+.sectionCardTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sectionCardBody {
+  position: relative;
+  padding: 12px 20px 20px;
 }
 
 /* ===================== */
@@ -225,57 +382,11 @@
   gap: 16px;
 }
 
-.splitCard {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-/* ===================== */
-/* Section Headers       */
-/* ===================== */
-
-.sectionHeader {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sectionTitle {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-/* ===================== */
-/* Sections (generic)    */
-/* ===================== */
-
-.section {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-}
-
 /* ===================== */
 /* PRO Lock              */
 /* ===================== */
 
-.sectionLocked {
-  position: relative;
-}
-
-.proLockedPlaceholder {
+.sectionLocked .sectionCardBody {
   position: relative;
   pointer-events: none;
   user-select: none;
@@ -290,7 +401,7 @@
   justify-content: center;
   background: rgba(253, 249, 243, 0.65);
   backdrop-filter: blur(3px);
-  border-radius: 14px;
+  border-radius: 0 0 14px 14px;
 }
 
 :global([data-theme='dark']) .proLockOverlay {
@@ -316,6 +427,48 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
+}
+
+/* ===================== */
+/* Frequency Grid        */
+/* ===================== */
+
+.frequencyGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.frequencyCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.frequencyCard:hover {
+  border-color: var(--border-input);
+  box-shadow: var(--shadow);
+}
+
+.frequencyValue {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.frequencyLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* ===================== */
@@ -619,134 +772,6 @@
   gap: 12px;
 }
 
-/* ── Points Card ── */
-
-.pointsCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 20px 16px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.pointsCard:hover {
-  border-color: var(--border-input);
-  box-shadow: var(--shadow);
-}
-
-.pointsRing {
-  position: relative;
-  width: 80px;
-  height: 80px;
-}
-
-.pointsRingSvg {
-  width: 100%;
-  height: 100%;
-}
-
-.pointsRingProgress {
-  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.pointsRingValue {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.pointsNumber {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.pointsLabel {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.pointsInfo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.pointsLevelName {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.pointsLevelHint {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* ── Streak Card ── */
-
-.streakCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 20px 16px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.streakCard:hover {
-  border-color: var(--border-input);
-  box-shadow: var(--shadow);
-}
-
-.streakMain {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.streakFireIcon {
-  font-size: 24px;
-  line-height: 1;
-}
-
-.streakNumber {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--text-primary);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.streakUnit {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.streakBest {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* ── Fun Stat Card (generic) ── */
-
 .funStatCard {
   display: flex;
   flex-direction: column;
@@ -793,48 +818,6 @@
 }
 
 /* ===================== */
-/* Frequency Grid        */
-/* ===================== */
-
-.frequencyGrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-}
-
-.frequencyCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 12px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.frequencyCard:hover {
-  border-color: var(--border-input);
-  box-shadow: var(--shadow);
-}
-
-.frequencyValue {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.frequencyLabel {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-/* ===================== */
 /* Topic Cloud           */
 /* ===================== */
 
@@ -876,37 +859,8 @@
 }
 
 /* ===================== */
-/* Empty States          */
+/* Empty Hint            */
 /* ===================== */
-
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 40px;
-  text-align: center;
-  gap: 12px;
-}
-
-.emptyStateIcon {
-  font-size: 48px;
-  line-height: 1;
-  opacity: 0.5;
-}
-
-.emptyStateTitle {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.emptyStateText {
-  font-size: 14px;
-  color: var(--text-muted);
-  max-width: 360px;
-  line-height: 1.6;
-}
 
 .emptyHint {
   font-size: 13px;
@@ -922,15 +876,11 @@
 /* Large tablets */
 @media (max-width: 1200px) {
   .statGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .funStatsGrid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .frequencyGrid {
-    grid-template-columns: repeat(5, 1fr);
   }
 }
 
@@ -940,16 +890,12 @@
     padding: 28px 24px 0;
   }
 
-  .toolbar {
-    padding: 16px 24px 0;
-  }
-
   .content {
     padding: 16px 24px 40px;
   }
 
   .statGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .splitSection {
@@ -962,6 +908,16 @@
 
   .frequencyGrid {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .xpHeroMain {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .xpHeroPoints {
+    margin-left: 0;
   }
 }
 
@@ -976,10 +932,6 @@
 @media (max-width: 600px) {
   .pageHeader {
     padding: 60px 16px 0;
-  }
-
-  .toolbar {
-    padding: 14px 16px 0;
   }
 
   .periodSelector {
@@ -1026,10 +978,6 @@
     gap: 12px;
   }
 
-  .splitCard {
-    padding: 16px;
-  }
-
   .funStatsGrid {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -1057,7 +1005,23 @@
     gap: 4px;
   }
 
-  .section {
-    padding: 16px;
+  .sectionCardBody {
+    padding: 10px 16px 16px;
+  }
+
+  .sectionCardHeader {
+    padding: 14px 16px 0;
+  }
+
+  .xpHero {
+    padding: 20px;
+  }
+
+  .xpLevelName {
+    font-size: 20px;
+  }
+
+  .xpPointsValue {
+    font-size: 28px;
   }
 }
