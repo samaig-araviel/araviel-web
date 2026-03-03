@@ -15,15 +15,9 @@ import {
   computeCostTrend,
   computeModelBreakdown,
   computeProviderBreakdown,
-  computeWeekdayFrequency,
   computeHourlyActivity,
-  computeLatencyByModel,
   computeTopicAnalysis,
   computeBudgetStatus,
-  computePeriodCounts,
-  getMostActiveHour,
-  getTopModel,
-  getTopProvider,
   getLevel,
 } from '../../services/analytics';
 import styles from './AnalyticsDashboard.module.css';
@@ -433,56 +427,6 @@ const ModelIcon = () => (
   </svg>
 );
 
-const ProviderIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polygon points="12 2 2 7 12 12 22 7 12 2" />
-    <polyline points="2 17 12 22 22 17" />
-    <polyline points="2 12 12 17 22 12" />
-  </svg>
-);
-
-const CalendarDaysIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-    <line x1="16" y1="2" x2="16" y2="6" />
-    <line x1="8" y1="2" x2="8" y2="6" />
-    <line x1="3" y1="10" x2="21" y2="10" />
-  </svg>
-);
-
-const StreakIcon = () => (
-  <svg
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-
 // ════════════════════════════════════════
 // ── Main Dashboard Component ──
 // ════════════════════════════════════════
@@ -511,27 +455,15 @@ export default function AnalyticsDashboard() {
     () => computeProviderBreakdown(stats.providerUsage),
     [stats.providerUsage]
   );
-  const weekdayFrequency = useMemo(
-    () => computeWeekdayFrequency(stats.dailyUsage),
-    [stats.dailyUsage]
-  );
   const hourlyActivity = useMemo(
     () => computeHourlyActivity(stats.hourlyUsage),
     [stats.hourlyUsage]
-  );
-  const latencyByModel = useMemo(
-    () => computeLatencyByModel(stats.latencyByModel),
-    [stats.latencyByModel]
   );
   const topics = useMemo(() => computeTopicAnalysis(stats.promptSnippets), [stats.promptSnippets]);
   const budgetStatus = useMemo(
     () => computeBudgetStatus(stats.dailyUsage, monthlyBudget),
     [stats.dailyUsage, monthlyBudget]
   );
-  const periodCounts = useMemo(() => computePeriodCounts(stats.dailyUsage), [stats.dailyUsage]);
-  const mostActiveHour = useMemo(() => getMostActiveHour(stats.hourlyUsage), [stats.hourlyUsage]);
-  const topModel = useMemo(() => getTopModel(stats.modelUsage), [stats.modelUsage]);
-  const topProvider = useMemo(() => getTopProvider(stats.providerUsage), [stats.providerUsage]);
   const level = useMemo(() => getLevel(stats.points), [stats.points]);
 
   // Chart specs — always create them (AravielChart handles empty data)
@@ -577,19 +509,6 @@ export default function AnalyticsDashboard() {
     };
   }, [providerBreakdown]);
 
-  const weekdaySpec = useMemo(
-    () => ({
-      type: 'bar',
-      title: 'Daily Activity Pattern',
-      subtitle: 'Messages by day of week',
-      xKey: 'day',
-      series: [{ key: 'messages', name: 'Messages', color: '#d97706' }],
-      data: weekdayFrequency,
-      config: { yAxisFormat: 'integer', height: 240, showLegend: false },
-    }),
-    [weekdayFrequency]
-  );
-
   const hourlySpec = useMemo(
     () => ({
       type: 'bar',
@@ -602,19 +521,6 @@ export default function AnalyticsDashboard() {
     }),
     [hourlyActivity]
   );
-
-  const latencySpec = useMemo(() => {
-    if (!latencyByModel.length) return null;
-    return {
-      type: 'bar',
-      title: 'Average Latency by Model',
-      subtitle: 'Response time comparison (ms)',
-      xKey: 'model',
-      series: [{ key: 'latency', name: 'Avg Latency (ms)', color: '#8b5cf6' }],
-      data: latencyByModel,
-      config: { yAxisFormat: 'integer', height: 280, showLegend: false },
-    };
-  }, [latencyByModel]);
 
   return (
     <div className={styles.container}>
@@ -646,31 +552,7 @@ export default function AnalyticsDashboard() {
           <PeriodSelector value={period} onChange={setPeriod} isPro={isPro} />
         </div>
 
-        {/* ── Usage Frequency Counts ── */}
-        <div className={styles.frequencyGrid}>
-          <div className={styles.frequencyCard}>
-            <span className={styles.frequencyValue}>{periodCounts.daily}</span>
-            <span className={styles.frequencyLabel}>Today</span>
-          </div>
-          <div className={styles.frequencyCard}>
-            <span className={styles.frequencyValue}>{periodCounts.weekly}</span>
-            <span className={styles.frequencyLabel}>This Week</span>
-          </div>
-          <div className={styles.frequencyCard}>
-            <span className={styles.frequencyValue}>{periodCounts.monthly}</span>
-            <span className={styles.frequencyLabel}>This Month</span>
-          </div>
-          <div className={styles.frequencyCard}>
-            <span className={styles.frequencyValue}>{periodCounts.yearly}</span>
-            <span className={styles.frequencyLabel}>This Year</span>
-          </div>
-          <div className={styles.frequencyCard}>
-            <span className={styles.frequencyValue}>{periodCounts.allTime}</span>
-            <span className={styles.frequencyLabel}>All Time</span>
-          </div>
-        </div>
-
-        {/* ── Overview Stat Cards (2 rows of 4) ── */}
+        {/* ── Overview Stat Cards (single row of 5) ── */}
         <div className={styles.statGrid}>
           <StatCard
             label="Total Cost"
@@ -688,7 +570,7 @@ export default function AnalyticsDashboard() {
             accent="#d97706"
           />
           <StatCard
-            label="Messages Sent"
+            label="Messages"
             value={overview.totalMessages.toLocaleString()}
             icon={<MessageIcon />}
             accent="#0ea5e9"
@@ -704,25 +586,6 @@ export default function AnalyticsDashboard() {
             value={overview.uniqueModels}
             icon={<ModelIcon />}
             accent="#f97316"
-          />
-          <StatCard
-            label="Providers"
-            value={overview.uniqueProviders}
-            icon={<ProviderIcon />}
-            accent="#06b6d4"
-          />
-          <StatCard
-            label="Active Days"
-            value={overview.activeDays}
-            icon={<CalendarDaysIcon />}
-            accent="#10b981"
-          />
-          <StatCard
-            label="Current Streak"
-            value={`${stats.currentStreak}d`}
-            subtitle={`Best: ${stats.longestStreak}d`}
-            icon={<StreakIcon />}
-            accent="#f43f5e"
           />
         </div>
 
@@ -745,90 +608,39 @@ export default function AnalyticsDashboard() {
           </SectionCard>
         </div>
 
-        {/* ── Budget & Limits (PRO) ── */}
-        <SectionCard title="Budget & Limits" proOnly={!isPro} locked={!isPro}>
-          {isPro ? (
-            <BudgetSection
-              budgetStatus={budgetStatus}
-              monthlyBudget={monthlyBudget}
-              alertThreshold={alertThreshold}
-              dispatch={dispatch}
-            />
-          ) : (
-            <BudgetSection
-              budgetStatus={{ spent: 0, budget: 10, percent: 0, projected: 0, remaining: 10 }}
-              monthlyBudget={10}
-              alertThreshold={0.8}
-              dispatch={() => {}}
-            />
-          )}
-        </SectionCard>
-
-        {/* ── Cumulative Cost Trend (PRO) ── */}
-        <SectionCard title="Cost Trend" proOnly={!isPro} locked={!isPro}>
-          <AravielChart spec={costTrendSpec} />
-        </SectionCard>
-
-        {/* ── Activity Patterns (side by side) ── */}
+        {/* ── Cost Trend + Budget (side by side, PRO) ── */}
         <div className={styles.splitSection}>
-          <SectionCard title="Daily Activity Pattern">
-            <AravielChart spec={weekdaySpec} />
+          <SectionCard title="Cost Trend" proOnly={!isPro} locked={!isPro}>
+            <AravielChart spec={costTrendSpec} />
           </SectionCard>
+          <SectionCard title="Budget & Limits" proOnly={!isPro} locked={!isPro}>
+            {isPro ? (
+              <BudgetSection
+                budgetStatus={budgetStatus}
+                monthlyBudget={monthlyBudget}
+                alertThreshold={alertThreshold}
+                dispatch={dispatch}
+              />
+            ) : (
+              <BudgetSection
+                budgetStatus={{ spent: 0, budget: 10, percent: 0, projected: 0, remaining: 10 }}
+                monthlyBudget={10}
+                alertThreshold={0.8}
+                dispatch={() => {}}
+              />
+            )}
+          </SectionCard>
+        </div>
+
+        {/* ── Hourly Activity + Topics (side by side, PRO) ── */}
+        <div className={styles.splitSection}>
           <SectionCard title="Hourly Activity" proOnly={!isPro} locked={!isPro}>
             <AravielChart spec={hourlySpec} />
           </SectionCard>
+          <SectionCard title="Your Topics" proOnly={!isPro} locked={!isPro}>
+            <TopicCloud topics={topics} />
+          </SectionCard>
         </div>
-
-        {/* ── Latency by Model (PRO) ── */}
-        <SectionCard title="Latency by Model" proOnly={!isPro} locked={!isPro}>
-          {latencySpec ? (
-            <AravielChart spec={latencySpec} />
-          ) : (
-            <p className={styles.emptyHint}>Send some messages to see latency data</p>
-          )}
-        </SectionCard>
-
-        {/* ── Fun Stats ── */}
-        <div className={styles.funStatsGrid}>
-          <div className={styles.funStatCard}>
-            <span className={styles.funStatIcon}>{'\uD83C\uDFAF'}</span>
-            <span className={styles.funStatValue}>{topModel?.name || 'None yet'}</span>
-            <span className={styles.funStatLabel}>Favorite Model</span>
-            {topModel && (
-              <span className={styles.funStatDetail} style={{ color: topModel.color }}>
-                {topModel.count} messages
-              </span>
-            )}
-          </div>
-          <div className={styles.funStatCard}>
-            <span className={styles.funStatIcon}>{'\uD83C\uDFC6'}</span>
-            <span className={styles.funStatValue}>{topProvider?.name || 'None yet'}</span>
-            <span className={styles.funStatLabel}>Top Provider</span>
-            {topProvider && (
-              <span className={styles.funStatDetail} style={{ color: topProvider.color }}>
-                {topProvider.count} messages
-              </span>
-            )}
-          </div>
-          <div className={styles.funStatCard}>
-            <span className={styles.funStatIcon}>{'\u23F0'}</span>
-            <span className={styles.funStatValue}>{mostActiveHour.label}</span>
-            <span className={styles.funStatLabel}>Peak Hour</span>
-            <span className={styles.funStatDetail}>{mostActiveHour.count} messages</span>
-          </div>
-          <div className={styles.funStatCard}>
-            <span className={styles.funStatIcon}>{'\uD83D\uDCC5'}</span>
-            <span className={styles.funStatValue}>
-              {Object.keys(stats.dailyUsage || {}).length}
-            </span>
-            <span className={styles.funStatLabel}>Total Active Days</span>
-          </div>
-        </div>
-
-        {/* ── Topic Cloud (PRO) ── */}
-        <SectionCard title="Your Topics" proOnly={!isPro} locked={!isPro}>
-          <TopicCloud topics={topics} />
-        </SectionCard>
       </div>
     </div>
   );
