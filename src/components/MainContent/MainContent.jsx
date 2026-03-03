@@ -591,6 +591,7 @@ export default function MainContent() {
       let accumulatedContent = '';
       let accumulatedThinking = '';
       let receivedDone = false;
+      let routeInfo = null;
 
       try {
         const webSearchParam =
@@ -647,6 +648,11 @@ export default function MainContent() {
                 webSearchAutoDetected: data.webSearchAutoDetected || false,
               };
               setRouteResult(routeData);
+              routeInfo = {
+                modelId: data.model?.id,
+                modelName: data.model?.name,
+                provider: data.model?.provider,
+              };
               setPipelineStatus('thinking');
 
               // Build alternate models list from backupModels
@@ -733,9 +739,9 @@ export default function MainContent() {
                 // Record analytics for this message
                 dispatch(
                   recordMessage({
-                    modelId: routeData?.modelId,
-                    modelName: routeData?.modelName,
-                    provider: routeData?.provider,
+                    modelId: routeInfo?.modelId,
+                    modelName: routeInfo?.modelName,
+                    provider: routeInfo?.provider,
                     costUsd: data.usage?.costUsd || 0,
                     inputTokens: data.usage?.promptTokens || data.usage?.inputTokens || 0,
                     outputTokens: data.usage?.completionTokens || data.usage?.outputTokens || 0,
