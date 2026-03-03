@@ -51,8 +51,8 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px 48px 48px;
+  gap: 24px;
+  padding: 28px 48px 48px;
 }
 
 /* ===================== */
@@ -281,8 +281,8 @@
 
 .statGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
 }
 
 .statCard {
@@ -369,7 +369,7 @@
 
 .sectionCardBody {
   position: relative;
-  padding: 12px 20px 20px;
+  padding: 16px 24px 24px;
 }
 
 /* ===================== */
@@ -427,48 +427,6 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
-}
-
-/* ===================== */
-/* Frequency Grid        */
-/* ===================== */
-
-.frequencyGrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
-}
-
-.frequencyCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 12px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.frequencyCard:hover {
-  border-color: var(--border-input);
-  box-shadow: var(--shadow);
-}
-
-.frequencyValue {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.frequencyLabel {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 /* ===================== */
@@ -763,61 +721,6 @@
 }
 
 /* ===================== */
-/* Fun Stats Grid        */
-/* ===================== */
-
-.funStatsGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.funStatCard {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 20px 16px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  text-align: center;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.funStatCard:hover {
-  border-color: var(--border-input);
-  box-shadow: var(--shadow);
-}
-
-.funStatIcon {
-  font-size: 24px;
-  line-height: 1;
-  margin-bottom: 4px;
-}
-
-.funStatValue {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.funStatLabel {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.funStatDetail {
-  font-size: 11px;
-  font-weight: 500;
-}
-
-/* ===================== */
 /* Topic Cloud           */
 /* ===================== */
 
@@ -876,11 +779,7 @@
 /* Large tablets */
 @media (max-width: 1200px) {
   .statGrid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .funStatsGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -900,14 +799,6 @@
 
   .splitSection {
     grid-template-columns: 1fr;
-  }
-
-  .funStatsGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .frequencyGrid {
-    grid-template-columns: repeat(3, 1fr);
   }
 
   .xpHeroMain {
@@ -976,24 +867,6 @@
   .splitSection {
     grid-template-columns: 1fr;
     gap: 12px;
-  }
-
-  .funStatsGrid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .frequencyGrid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-
-  .frequencyCard {
-    padding: 12px 8px;
-  }
-
-  .frequencyValue {
-    font-size: 18px;
   }
 
   .topModelInfo {
