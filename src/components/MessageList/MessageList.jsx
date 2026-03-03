@@ -495,11 +495,40 @@ function renderMarkdown(text) {
         quoteLines.push(lines[i].trim().replace(/^>\s?/, ''));
         i++;
       }
+      // Detect note/warning/disclaimer blockquotes
+      const firstLine = quoteLines[0] || '';
+      const isNote =
+        /^(\*\*\s*)?(Note|Warning|Disclaimer|Important|Caution|Please note|Caveat)\b/i.test(
+          firstLine
+        ) || /^[\u26A0\uFE0F\u2139\uFE0F\u2757\uFE0F]/.test(firstLine);
+      const quoteClass = isNote
+        ? `${styles.blockquote} ${styles.blockquoteNote}`
+        : styles.blockquote;
       elements.push(
-        <blockquote className={styles.blockquote} key={key++}>
-          {quoteLines.map((ql, qi) =>
-            ql === '' ? <br key={qi} /> : <p key={qi}>{renderInline(ql)}</p>
+        <blockquote className={quoteClass} key={key++}>
+          {isNote && (
+            <span className={styles.blockquoteIcon} aria-hidden="true">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </span>
           )}
+          <div className={styles.blockquoteContent}>
+            {quoteLines.map((ql, qi) =>
+              ql === '' ? <br key={qi} /> : <p key={qi}>{renderInline(ql)}</p>
+            )}
+          </div>
         </blockquote>
       );
       continue;
