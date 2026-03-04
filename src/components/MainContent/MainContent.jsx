@@ -74,7 +74,13 @@ import {
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
 import { sendMessage, consumeSSEStream } from '../../services/api';
-import { getUserTier, PROVIDERS } from '../../data/models';
+import { getUserTier, PROVIDERS, isImageGenerationModel } from '../../data/models';
+import {
+  canGenerateImage,
+  recordGeneration,
+  saveGeneratedImage,
+  getLimitInfo,
+} from '../../services/imageGeneration';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
@@ -403,6 +409,85 @@ function LimitToast({ maxCount, onClose }) {
   );
 }
 
+/**
+ * Image generation limit prompt — shown when the user has exhausted their image generation quota.
+ * Free users are prompted to upgrade to Pro.
+ * Pro users are prompted to purchase an image generation addon.
+ */
+function ImageLimitPrompt({ onClose }) {
+  const limitInfo = getLimitInfo();
+  const isFree = limitInfo.tier === 'free';
+
+  const resetTime = limitInfo.resetAt
+    ? new Date(limitInfo.resetAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  return (
+    <div className={styles.imageLimitOverlay} onClick={onClose}>
+      <div className={styles.imageLimitCard} onClick={(e) => e.stopPropagation()}>
+        <button className={styles.imageLimitClose} onClick={onClose} aria-label="Close">
+          <CloseIcon />
+        </button>
+
+        <div className={styles.imageLimitIcon}>
+          <svg
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="3" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="m21 15-5-5L5 21" />
+          </svg>
+        </div>
+
+        <h3 className={styles.imageLimitTitle}>
+          {isFree ? 'Image generation limit reached' : 'Daily image limit reached'}
+        </h3>
+
+        <p className={styles.imageLimitDesc}>
+          {isFree
+            ? `You\u2019ve used all ${limitInfo.limit} free image generations for today.`
+            : `You\u2019ve used all ${limitInfo.limit} image generations included with your Pro plan today.`}
+          {resetTime && <> Your limit resets at {resetTime}.</>}
+        </p>
+
+        {isFree ? (
+          <div className={styles.imageLimitUpgrade}>
+            <p className={styles.imageLimitUpgradeText}>
+              Upgrade to Pro for {10} image generations per day, plus access to premium AI models.
+            </p>
+            <button className={styles.imageLimitUpgradeBtn} onClick={onClose}>
+              Upgrade to Pro
+            </button>
+          </div>
+        ) : (
+          <div className={styles.imageLimitUpgrade}>
+            <p className={styles.imageLimitUpgradeText}>
+              Need more? Purchase the Image Generation add-on for additional usage beyond your daily
+              Pro limit.
+            </p>
+            <button className={styles.imageLimitUpgradeBtn} onClick={onClose}>
+              Get Image Generation Add-on
+            </button>
+          </div>
+        )}
+
+        <p className={styles.imageLimitFooter}>
+          {isFree
+            ? `Free plan: ${limitInfo.limit} images / 24 hours`
+            : `Pro plan: ${limitInfo.limit} images / 24 hours`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function MainContent() {
   const dispatch = useDispatch();
   const inputValue = useSelector(selectInputValue);
@@ -444,6 +529,7 @@ export default function MainContent() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [showLimitToast, setShowLimitToast] = useState(false);
+  const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const textareaRef = useRef(null);
@@ -590,6 +676,7 @@ export default function MainContent() {
       let assistantMsgAdded = false;
       let accumulatedContent = '';
       let accumulatedThinking = '';
+      let accumulatedImages = null;
       let receivedDone = false;
       let routeInfo = null;
 
@@ -715,6 +802,39 @@ export default function MainContent() {
               if (assistantMsgAdded && data.sources) {
                 dispatch(updateLastMessage({ citations: data.sources }));
               }
+            } else if (type === 'image_generation') {
+              // Handle generated image from the backend
+              if (assistantMsgAdded && data.url) {
+                const imgEntry = saveGeneratedImage({
+                  url: data.url,
+                  prompt: data.prompt || prompt,
+                  model: data.model || routeInfo?.modelName,
+                  provider: data.provider || routeInfo?.provider,
+                  size: data.size,
+                  style: data.style,
+                });
+                recordGeneration();
+                dispatch(
+                  updateLastMessage({
+                    generatedImages: [
+                      ...(accumulatedImages || []),
+                      {
+                        url: data.url,
+                        prompt: data.prompt || prompt,
+                        model: data.model || routeInfo?.modelName,
+                        provider: data.provider || routeInfo?.provider,
+                        id: imgEntry.id,
+                      },
+                    ],
+                  })
+                );
+                accumulatedImages = accumulatedImages || [];
+                accumulatedImages.push({
+                  url: data.url,
+                  prompt: data.prompt || prompt,
+                  model: data.model || routeInfo?.modelName,
+                });
+              }
             } else if (type === 'followups') {
               if (assistantMsgAdded && data.suggestions) {
                 dispatch(updateLastMessage({ followUps: data.suggestions }));
@@ -831,6 +951,14 @@ export default function MainContent() {
     e.preventDefault();
     const prompt = inputValue.trim();
     if (!prompt || isProcessing) return;
+
+    // Check image generation limits if the selected model is an image gen model
+    if (selectedModelId && isImageGenerationModel(selectedModelId)) {
+      if (!canGenerateImage()) {
+        setShowImageLimitPrompt(true);
+        return;
+      }
+    }
 
     dispatch(setInputValue(''));
     if (textareaRef.current) {
@@ -1234,6 +1362,9 @@ export default function MainContent() {
       {showLimitToast && (
         <LimitToast maxCount={maxAttachments} onClose={() => setShowLimitToast(false)} />
       )}
+
+      {/* Image generation limit prompt */}
+      {showImageLimitPrompt && <ImageLimitPrompt onClose={() => setShowImageLimitPrompt(false)} />}
 
       {/* Messages area — only shown when there are messages */}
       {hasMessages && (

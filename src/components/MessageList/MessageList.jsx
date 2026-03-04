@@ -534,34 +534,86 @@ function renderMarkdown(text) {
       continue;
     }
 
-    // Unordered list
+    // Unordered list (supports nested sub-items indented with 2+ spaces/tab)
     if (/^[-*]\s/.test(line.trim())) {
-      const listItems = [];
-      while (i < lines.length && /^[-*]\s/.test(lines[i].trim())) {
-        listItems.push(lines[i].trim().replace(/^[-*]\s/, ''));
-        i++;
+      const items = [];
+      while (i < lines.length) {
+        const raw = lines[i];
+        // Top-level bullet
+        if (/^[-*]\s/.test(raw.trim()) && /^[-*]\s/.test(raw)) {
+          items.push({ text: raw.trim().replace(/^[-*]\s/, ''), children: [] });
+          i++;
+          continue;
+        }
+        // Indented sub-bullet (2+ spaces or tab before the dash/star)
+        if (/^(\s{2,}|\t)[-*]\s/.test(raw)) {
+          const subText = raw.trim().replace(/^[-*]\s/, '');
+          if (items.length > 0) {
+            items[items.length - 1].children.push(subText);
+          } else {
+            items.push({ text: subText, children: [] });
+          }
+          i++;
+          continue;
+        }
+        break;
       }
       elements.push(
         <ul className={styles.list} key={key++}>
-          {listItems.map((item, idx) => (
-            <li key={idx}>{renderInline(item)}</li>
+          {items.map((item, idx) => (
+            <li key={idx} className={item.children.length > 0 ? styles.listItemWithSub : undefined}>
+              {renderInline(item.text)}
+              {item.children.length > 0 && (
+                <ul className={styles.subList}>
+                  {item.children.map((child, ci) => (
+                    <li key={ci}>{renderInline(child)}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
           ))}
         </ul>
       );
       continue;
     }
 
-    // Ordered list
+    // Ordered list (supports nested sub-items)
     if (/^\d+\.\s/.test(line.trim())) {
-      const listItems = [];
-      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
-        listItems.push(lines[i].trim().replace(/^\d+\.\s/, ''));
-        i++;
+      const items = [];
+      while (i < lines.length) {
+        const raw = lines[i];
+        // Top-level numbered item
+        if (/^\d+\.\s/.test(raw.trim()) && /^\d+\.\s/.test(raw)) {
+          items.push({ text: raw.trim().replace(/^\d+\.\s/, ''), children: [] });
+          i++;
+          continue;
+        }
+        // Indented sub-item (numbered or bulleted)
+        if (/^(\s{2,}|\t)(\d+\.\s|[-*]\s)/.test(raw)) {
+          const subText = raw.trim().replace(/^(\d+\.\s|[-*]\s)/, '');
+          if (items.length > 0) {
+            items[items.length - 1].children.push(subText);
+          } else {
+            items.push({ text: subText, children: [] });
+          }
+          i++;
+          continue;
+        }
+        break;
       }
       elements.push(
         <ol className={styles.orderedList} key={key++}>
-          {listItems.map((item, idx) => (
-            <li key={idx}>{renderInline(item)}</li>
+          {items.map((item, idx) => (
+            <li key={idx} className={item.children.length > 0 ? styles.listItemWithSub : undefined}>
+              {renderInline(item.text)}
+              {item.children.length > 0 && (
+                <ul className={styles.subList}>
+                  {item.children.map((child, ci) => (
+                    <li key={ci}>{renderInline(child)}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
           ))}
         </ol>
       );
@@ -1075,6 +1127,73 @@ function ImageGalleryPanel({ images, onClose }) {
       )}
     </>,
     document.body
+  );
+}
+
+/**
+ * Generated image block — renders an AI-generated image with metadata.
+ * Shows the image with prompt, model info, and action buttons.
+ */
+function GeneratedImageBlock({ imageData }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [downloadHover, setDownloadHover] = useState(false);
+
+  if (!imageData || !imageData.url) return null;
+
+  const handleDownload = (e) => {
+    e.stopPropagation();
+    const link = document.createElement('a');
+    link.href = imageData.url;
+    link.download = `araviel-generated-${Date.now()}.png`;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <>
+      <div className={styles.generatedImageBlock}>
+        <div className={styles.generatedImageFrame} onClick={() => setLightboxOpen(true)}>
+          <img
+            src={imageData.url}
+            alt={imageData.prompt || 'Generated image'}
+            className={styles.generatedImageImg}
+            loading="lazy"
+          />
+          <div className={styles.generatedImageOverlay}>
+            <MaximizeIcon />
+          </div>
+        </div>
+        <div className={styles.generatedImageMeta}>
+          {imageData.prompt && <p className={styles.generatedImagePrompt}>{imageData.prompt}</p>}
+          <div className={styles.generatedImageActions}>
+            {imageData.model && (
+              <span className={styles.generatedImageModel}>{imageData.model}</span>
+            )}
+            <button
+              className={styles.generatedImageDownload}
+              onClick={handleDownload}
+              onMouseEnter={() => setDownloadHover(true)}
+              onMouseLeave={() => setDownloadHover(false)}
+              title="Download image"
+              aria-label="Download image"
+            >
+              <FileDownIcon />
+              {downloadHover && <span>Download</span>}
+            </button>
+          </div>
+        </div>
+      </div>
+      {lightboxOpen && (
+        <ImageLightbox
+          images={[{ src: imageData.url, alt: imageData.prompt || 'Generated image' }]}
+          startIndex={0}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -3749,6 +3868,15 @@ function Message({
           </div>
         )}
       </div>
+
+      {/* Generated images — rendered below the message text */}
+      {!isUser && message.generatedImages && message.generatedImages.length > 0 && (
+        <div className={styles.generatedImagesSection}>
+          {message.generatedImages.map((img, idx) => (
+            <GeneratedImageBlock key={idx} imageData={img} />
+          ))}
+        </div>
+      )}
 
       {/* Code canvas button — shown below response when code blocks exist */}
       {!isUser &&

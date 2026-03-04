@@ -1597,3 +1597,152 @@
     margin-right: 376px;
   }
 }
+
+/* ===== Image Generation Limit Prompt ===== */
+.imageLimitOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  animation: imageLimitFadeIn 0.2s ease;
+}
+
+@keyframes imageLimitFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.imageLimitCard {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 20px;
+  padding: 32px;
+  border-radius: 18px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  animation: imageLimitCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='dark'] .imageLimitCard {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes imageLimitCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.imageLimitClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.imageLimitClose:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.imageLimitClose svg {
+  width: 16px;
+  height: 16px;
+}
+
+.imageLimitIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+}
+
+.imageLimitTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.imageLimitDesc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.imageLimitUpgrade {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  margin-bottom: 16px;
+}
+
+.imageLimitUpgradeText {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.imageLimitUpgradeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--bg-icon-button);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.imageLimitUpgradeBtn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.imageLimitUpgradeBtn:active {
+  transform: scale(0.97);
+}
+
+.imageLimitFooter {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}

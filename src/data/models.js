@@ -1058,6 +1058,12 @@ export function isModelAccessible(modelId, tier) {
   return model.accessTier === ACCESS_TIERS.free;
 }
 
+// Check if a model is an image generation model
+export function isImageGenerationModel(modelId) {
+  const model = MODELS.find((m) => m.id === modelId);
+  return model?.capabilities?.imageGeneration === true;
+}
+
 // Get pro-only models (for upgrade prompts)
 export function getProOnlyModels() {
   return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.pro);

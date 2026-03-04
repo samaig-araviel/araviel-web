@@ -34,6 +34,7 @@ import {
   CloseIcon,
   ModelsIcon,
   AnalyticsIcon,
+  ImageGalleryIcon,
 } from '../Icons';
 import styles from './Sidebar.module.css';
 
@@ -162,6 +163,13 @@ export default function Sidebar() {
     }
   };
 
+  const handleGalleryClick = () => {
+    dispatch(setActiveItem(activeItem === 'gallery' ? 'home' : 'gallery'));
+    if (isMobile) {
+      dispatch(setCollapsed(true));
+    }
+  };
+
   const handleThemeChange = (mode) => {
     dispatch(setTheme(mode));
   };
@@ -254,6 +262,15 @@ export default function Sidebar() {
           >
             <AnalyticsIcon />
             {showFullContent && <span>Analytics</span>}
+          </button>
+          <button
+            className={`${styles.navItem} ${activeItem === 'gallery' ? styles.active : ''}`}
+            onClick={handleGalleryClick}
+            title="Image Gallery"
+            aria-label="Image Gallery"
+          >
+            <ImageGalleryIcon />
+            {showFullContent && <span>Images</span>}
           </button>
         </nav>
 
