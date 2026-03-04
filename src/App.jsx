@@ -7,6 +7,7 @@ import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import ModelsView from './components/ModelsView';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import ImageGalleryView from './components/ImageGalleryView';
 import './App.css';
 
 export default function App() {
@@ -38,6 +39,8 @@ export default function App() {
         <ModelsView />
       ) : activeItem === 'analytics' ? (
         <AnalyticsDashboard />
+      ) : activeItem === 'gallery' ? (
+        <ImageGalleryView />
       ) : (
         <MainContent />
       )}
