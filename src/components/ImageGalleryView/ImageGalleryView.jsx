@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch } from 'react-redux';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { setInputValue } from '../../store/slices/chatSlice';
+import { setInputValue, createNewChat, setPendingAutoSubmit } from '../../store/slices/chatSlice';
 import {
   getGeneratedImages,
   deleteGeneratedImage,
@@ -13,55 +13,55 @@ import {
   CloseIcon,
   FileDownIcon,
   FilterIcon,
-  SearchIcon,
   SparkleIcon,
   SendIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ChevronDownIcon,
   MaximizeIcon,
 } from '../Icons';
 import styles from './ImageGalleryView.module.css';
 
-const QUICK_PROMPT_SETS = [
+const QUICK_PROMPTS = [
   {
-    category: 'Trending',
-    icon: '🔥',
-    prompts: [
-      { text: 'A hyper-realistic portrait with cinematic lighting', tag: 'Portrait' },
-      { text: 'Futuristic neon cityscape at night with rain reflections', tag: 'Sci-fi' },
-      { text: 'Minimalist flat design logo for a tech startup', tag: 'Logo' },
-      { text: 'Ethereal fantasy landscape with floating islands and auroras', tag: 'Fantasy' },
-    ],
+    label: 'Cinematic portrait',
+    prompt:
+      'Generate a hyper-realistic cinematic portrait with dramatic rim lighting, shallow depth of field, and a moody dark background',
   },
   {
-    category: 'Artistic',
-    icon: '🎨',
-    prompts: [
-      { text: 'Oil painting of a stormy ocean with dramatic waves', tag: 'Oil paint' },
-      { text: 'Watercolor illustration of a cozy Japanese café', tag: 'Watercolor' },
-      { text: 'Abstract geometric composition in gold and navy tones', tag: 'Abstract' },
-      { text: 'Pixel art scene of a retro space adventure game', tag: 'Pixel art' },
-    ],
+    label: 'Neon cityscape',
+    prompt:
+      'Create a futuristic neon-lit cityscape at night with rain-soaked streets reflecting colorful signs and towering skyscrapers',
   },
   {
-    category: 'Photography',
-    icon: '📷',
-    prompts: [
-      { text: 'Product shot of premium headphones on a dark surface', tag: 'Product' },
-      { text: 'Golden hour portrait of a person walking through lavender fields', tag: 'Portrait' },
-      { text: 'Architectural photography of a modern glass building', tag: 'Architecture' },
-      { text: 'Macro photography of dew drops on a spider web at sunrise', tag: 'Macro' },
-    ],
+    label: 'Product mockup',
+    prompt:
+      'Generate a premium product photography shot of sleek wireless headphones on a matte black surface with soft gradient studio lighting',
   },
   {
-    category: 'Design',
-    icon: '✏️',
-    prompts: [
-      { text: 'Clean mobile app UI design for a meditation app', tag: 'UI' },
-      { text: 'Isometric 3D illustration of a smart home setup', tag: '3D' },
-      { text: 'Book cover design for a sci-fi novel about AI consciousness', tag: 'Cover' },
-      { text: 'Brand identity mockup with business cards and letterhead', tag: 'Branding' },
-    ],
+    label: 'Watercolor landscape',
+    prompt:
+      'Create a delicate watercolor painting of a misty mountain lake at sunrise with soft pastel pinks and golds',
+  },
+  {
+    label: 'Logo design',
+    prompt:
+      'Design a clean minimalist logo mark for a modern technology company, using geometric shapes and a bold color accent',
+  },
+  {
+    label: 'Fantasy world',
+    prompt:
+      'Generate an ethereal fantasy landscape with floating crystal islands, bioluminescent waterfalls, and a starlit aurora sky',
+  },
+  {
+    label: 'Abstract art',
+    prompt:
+      'Create an abstract fluid art composition with deep ocean blues, liquid gold, and ivory white swirling together in organic forms',
+  },
+  {
+    label: 'Anime character',
+    prompt:
+      'Generate a detailed anime-style character portrait with vibrant colors, expressive eyes, and a dynamic action pose',
   },
 ];
 
@@ -76,7 +76,6 @@ export default function ImageGalleryView() {
   const [filterModel, setFilterModel] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [promptInput, setPromptInput] = useState('');
-  const [activeCategory, setActiveCategory] = useState(0);
   const promptInputRef = useRef(null);
   const filterRef = useRef(null);
 
@@ -104,19 +103,32 @@ export default function ImageGalleryView() {
     loadImages();
   };
 
-  const handleDownload = (img) => {
-    const link = document.createElement('a');
-    link.href = img.url;
-    link.download = `araviel-${img.id}.png`;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (img) => {
+    try {
+      const response = await fetch(img.url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `araviel-${img.id || Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      const link = document.createElement('a');
+      link.href = img.url;
+      link.download = `araviel-${img.id || Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
-  const navigateToChat = (prompt) => {
+  const firePromptInChat = (prompt) => {
+    dispatch(createNewChat());
     dispatch(setInputValue(prompt));
+    dispatch(setPendingAutoSubmit(true));
     dispatch(setActiveItem('home'));
   };
 
@@ -124,11 +136,11 @@ export default function ImageGalleryView() {
     e.preventDefault();
     const prompt = promptInput.trim();
     if (!prompt) return;
-    navigateToChat(prompt);
+    firePromptInChat(prompt);
   };
 
-  const handleQuickPromptClick = (prompt) => {
-    navigateToChat(prompt);
+  const handleQuickPromptClick = (item) => {
+    firePromptInChat(item.prompt);
   };
 
   const limitInfo = getLimitInfo();
@@ -142,23 +154,17 @@ export default function ImageGalleryView() {
       <div className={styles.galleryInner}>
         {/* Hero */}
         <div className={styles.heroSection}>
-          <div className={styles.heroBadge}>
-            <SparkleIcon />
-            <span>AI Image Generation</span>
-          </div>
-          <h1 className={styles.heroTitle}>Create stunning images</h1>
-          <p className={styles.heroSubtitle}>
-            Describe what you imagine and let AI bring it to life
-          </p>
+          <h1 className={styles.heroTitle}>Create something new</h1>
+          <p className={styles.heroSubtitle}>Describe what you imagine and bring it to life</p>
 
           <form className={styles.promptForm} onSubmit={handlePromptSubmit}>
             <div className={styles.promptInputWrapper}>
-              <SearchIcon />
+              <SparkleIcon />
               <input
                 ref={promptInputRef}
                 type="text"
                 className={styles.promptInput}
-                placeholder="Describe an image you want to create..."
+                placeholder="Describe an image..."
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
               />
@@ -175,164 +181,208 @@ export default function ImageGalleryView() {
             </div>
           </form>
 
-          <div className={styles.usageRow}>
-            <span className={styles.usageText}>
-              {limitInfo.remaining} of {limitInfo.limit} generations left
-            </span>
-            <span className={styles.usageDot} />
-            <span className={styles.tierLabel}>{tier === 'pro' ? 'Pro' : 'Free'}</span>
+          {/* Usage — subtle but informative */}
+          <div className={styles.usageContainer}>
+            <div className={styles.usageBarTrack}>
+              <div
+                className={styles.usageBarFill}
+                style={{ width: `${(limitInfo.remaining / limitInfo.limit) * 100}%` }}
+              />
+            </div>
+            <div className={styles.usageDetails}>
+              <span className={styles.usageText}>
+                {limitInfo.remaining} of {limitInfo.limit} left
+              </span>
+              <span className={styles.tierBadge}>{tier === 'pro' ? 'Pro' : 'Free'}</span>
+            </div>
             {limitInfo.isAtLimit && (
               <span className={styles.usageLimitNote}>
-                {tier === 'free' ? 'Upgrade for more' : 'Resets soon'}
+                {tier === 'free'
+                  ? 'Upgrade to Pro for more daily generations'
+                  : 'Daily limit reached — resets soon'}
               </span>
             )}
           </div>
         </div>
 
-        {/* Quick Prompts */}
+        {/* Quick Prompts — inspired by screenshot, short labels only */}
         <div className={styles.quickSection}>
-          <div className={styles.quickTabs}>
-            {QUICK_PROMPT_SETS.map((set, idx) => (
-              <button
-                key={set.category}
-                className={`${styles.quickTab} ${
-                  activeCategory === idx ? styles.quickTabActive : ''
-                }`}
-                onClick={() => setActiveCategory(idx)}
-              >
-                <span className={styles.quickTabIcon}>{set.icon}</span>
-                <span>{set.category}</span>
-              </button>
-            ))}
-          </div>
+          <h2 className={styles.quickTitle}>Discover something new</h2>
           <div className={styles.quickGrid}>
-            {QUICK_PROMPT_SETS[activeCategory].prompts.map((item, idx) => (
+            {QUICK_PROMPTS.map((item, idx) => (
               <button
                 key={idx}
-                className={styles.quickCard}
-                onClick={() => handleQuickPromptClick(item.text)}
+                className={styles.quickChip}
+                onClick={() => handleQuickPromptClick(item)}
+                title={item.prompt}
               >
-                <span className={styles.quickCardTag}>{item.tag}</span>
-                <span className={styles.quickCardText}>{item.text}</span>
-                <span className={styles.quickCardArrow}>
-                  <SendIcon />
-                </span>
+                <SparkleIcon />
+                <span>{item.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Gallery */}
-        <div className={styles.galleryHeader}>
-          <div className={styles.galleryHeaderLeft}>
-            <h2 className={styles.galleryTitle}>Your creations</h2>
-            {filteredImages.length > 0 && (
-              <span className={styles.imageCount}>{filteredImages.length}</span>
-            )}
-          </div>
-          {uniqueModels.length > 0 && (
-            <div className={styles.galleryHeaderRight} ref={filterRef}>
-              <button
-                className={`${styles.filterBtn} ${
-                  filterModel !== 'all' ? styles.filterBtnActive : ''
-                }`}
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <FilterIcon />
-                <span>{filterModel === 'all' ? 'All models' : filterModel}</span>
-              </button>
-              {showFilters && (
-                <div className={styles.filterDropdown}>
+        {(filteredImages.length > 0 || images.length > 0) && (
+          <>
+            <div className={styles.galleryHeader}>
+              <h2 className={styles.galleryTitle}>Your creations</h2>
+              {filteredImages.length > 0 && (
+                <span className={styles.imageCount}>{filteredImages.length}</span>
+              )}
+              <div className={styles.galleryHeaderSpacer} />
+              {uniqueModels.length > 0 && (
+                <div className={styles.filterWrapper} ref={filterRef}>
                   <button
-                    className={`${styles.filterOption} ${
-                      filterModel === 'all' ? styles.filterOptionActive : ''
+                    className={`${styles.filterBtn} ${
+                      filterModel !== 'all' ? styles.filterBtnActive : ''
                     }`}
-                    onClick={() => {
-                      setFilterModel('all');
-                      setShowFilters(false);
-                    }}
+                    onClick={() => setShowFilters(!showFilters)}
                   >
-                    All models
+                    <FilterIcon />
+                    <span className={styles.filterBtnLabel}>
+                      {filterModel === 'all' ? 'All models' : filterModel}
+                    </span>
+                    <ChevronDownIcon />
                   </button>
-                  {uniqueModels.map((model) => (
-                    <button
-                      key={model}
-                      className={`${styles.filterOption} ${
-                        filterModel === model ? styles.filterOptionActive : ''
-                      }`}
-                      onClick={() => {
-                        setFilterModel(model);
-                        setShowFilters(false);
-                      }}
-                    >
-                      {model}
-                    </button>
-                  ))}
+                  {showFilters && (
+                    <div className={styles.filterDropdown}>
+                      <div className={styles.filterDropdownHeader}>Filter by model</div>
+                      <button
+                        className={`${styles.filterOption} ${
+                          filterModel === 'all' ? styles.filterOptionActive : ''
+                        }`}
+                        onClick={() => {
+                          setFilterModel('all');
+                          setShowFilters(false);
+                        }}
+                      >
+                        <span className={styles.filterOptionLabel}>All models</span>
+                        {filterModel === 'all' && (
+                          <span className={styles.filterCheck}>
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                      {uniqueModels.map((model) => (
+                        <button
+                          key={model}
+                          className={`${styles.filterOption} ${
+                            filterModel === model ? styles.filterOptionActive : ''
+                          }`}
+                          onClick={() => {
+                            setFilterModel(model);
+                            setShowFilters(false);
+                          }}
+                        >
+                          <span className={styles.filterOptionLabel}>{model}</span>
+                          {filterModel === model && (
+                            <span className={styles.filterCheck}>
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
 
-        {filteredImages.length > 0 ? (
-          <div className={styles.grid}>
-            {filteredImages.map((img, idx) => (
-              <div key={img.id} className={styles.card}>
-                <div className={styles.cardImageWrapper}>
-                  <button className={styles.cardImage} onClick={() => setLightboxIdx(idx)}>
-                    <img src={img.url} alt={img.prompt || 'Generated image'} loading="lazy" />
-                  </button>
-                  <div className={styles.cardOverlay}>
-                    <div className={styles.cardOverlayTop}>
-                      {img.model && <span className={styles.cardModelLabel}>{img.model}</span>}
-                    </div>
-                    <div className={styles.cardOverlayBottom}>
-                      <button
-                        className={styles.cardOverlayBtn}
-                        onClick={() => setLightboxIdx(idx)}
-                        title="View full size"
-                      >
-                        <MaximizeIcon />
+            {filteredImages.length > 0 ? (
+              <div className={styles.grid}>
+                {filteredImages.map((img, idx) => (
+                  <div key={img.id} className={styles.card}>
+                    <div className={styles.cardImageWrapper}>
+                      <button className={styles.cardImage} onClick={() => setLightboxIdx(idx)}>
+                        <img src={img.url} alt={img.prompt || 'Generated image'} loading="lazy" />
                       </button>
-                      <button
-                        className={styles.cardOverlayBtn}
-                        onClick={() => handleDownload(img)}
-                        title="Download"
-                      >
-                        <FileDownIcon />
-                      </button>
+                      <div className={styles.cardOverlay}>
+                        <div className={styles.cardOverlayTop}>
+                          {img.model && <span className={styles.cardModelLabel}>{img.model}</span>}
+                        </div>
+                        <div className={styles.cardOverlayBottom}>
+                          <button
+                            className={styles.cardOverlayBtn}
+                            onClick={() => setLightboxIdx(idx)}
+                            title="View full size"
+                          >
+                            <MaximizeIcon />
+                          </button>
+                          <button
+                            className={styles.cardOverlayBtn}
+                            onClick={() => handleDownload(img)}
+                            title="Download"
+                          >
+                            <FileDownIcon />
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {deleteConfirm === img.id && (
-                  <div className={styles.deleteOverlay}>
-                    <p>Delete this image?</p>
-                    <div className={styles.deleteActions}>
-                      <button
-                        className={styles.deleteCancelBtn}
-                        onClick={() => setDeleteConfirm(null)}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        className={styles.deleteConfirmBtn}
-                        onClick={() => handleDelete(img.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    {deleteConfirm === img.id && (
+                      <div className={styles.deleteOverlay}>
+                        <p>Delete this image?</p>
+                        <div className={styles.deleteActions}>
+                          <button
+                            className={styles.deleteCancelBtn}
+                            onClick={() => setDeleteConfirm(null)}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            className={styles.deleteConfirmBtn}
+                            onClick={() => handleDelete(img.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
+            ) : (
+              <div className={styles.noResults}>
+                <p>No images match this filter.</p>
+                <button className={styles.clearFilterBtn} onClick={() => setFilterModel('all')}>
+                  Show all
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Empty state — only when no images at all */}
+        {images.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>
               <svg
-                width="36"
-                height="36"
+                width="32"
+                height="32"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -347,7 +397,7 @@ export default function ImageGalleryView() {
             </div>
             <h3 className={styles.emptyTitle}>No images yet</h3>
             <p className={styles.emptyDesc}>
-              Type a description above or try one of the quick prompts to get started.
+              Describe what you want to see above, or pick a quick prompt to get started.
             </p>
           </div>
         )}

@@ -27,6 +27,7 @@ const initialState = {
   autoStrategy: 'default', // 'default' | 'humanFactors' | 'costEfficient' | 'taskBased'
   currentChatId: null, // current conversationId from backend
   isProcessing: false,
+  pendingAutoSubmit: false, // when true, MainContent auto-fires the inputValue on mount
   // Conversation list from backend
   conversations: [],
   conversationsTotal: 0,
@@ -111,6 +112,10 @@ const chatSlice = createSlice({
       state.messages = [];
       state.inputValue = '';
       state.isProcessing = false;
+      state.pendingAutoSubmit = false;
+    },
+    setPendingAutoSubmit: (state, action) => {
+      state.pendingAutoSubmit = action.payload;
     },
     removeLastAssistantMessage: (state) => {
       for (let i = state.messages.length - 1; i >= 0; i--) {
@@ -155,6 +160,7 @@ export const {
   setCurrentChat,
   createNewChat,
   removeLastAssistantMessage,
+  setPendingAutoSubmit,
   setMessages,
   setConversations,
   appendConversations,
@@ -174,6 +180,7 @@ export const selectAutoStrategy = (state) => state.chat.autoStrategy;
 export const selectMessages = (state) => state.chat.messages;
 export const selectIsProcessing = (state) => state.chat.isProcessing;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
+export const selectPendingAutoSubmit = (state) => state.chat.pendingAutoSubmit;
 export const selectConversations = (state) => state.chat.conversations;
 export const selectConversationsTotal = (state) => state.chat.conversationsTotal;
 export const selectConversationsLoading = (state) => state.chat.conversationsLoading;
