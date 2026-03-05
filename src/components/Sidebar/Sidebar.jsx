@@ -26,6 +26,7 @@ import {
   PlusIcon,
   ChevronLeftIcon,
   ChevronDownIcon,
+  ChatIcon,
   UserIcon,
   SunIcon,
   MoonIcon,
