@@ -19,6 +19,12 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   MaximizeIcon,
+  UserIcon,
+  CameraIcon,
+  PenIcon,
+  StarIcon,
+  LayersIcon,
+  EyeIcon,
 } from '../Icons';
 import styles from './ImageGalleryView.module.css';
 
@@ -27,41 +33,37 @@ const QUICK_PROMPTS = [
     label: 'Cinematic portrait',
     prompt:
       'Generate a hyper-realistic cinematic portrait with dramatic rim lighting, shallow depth of field, and a moody dark background',
+    icon: UserIcon,
   },
   {
-    label: 'Neon cityscape',
-    prompt:
-      'Create a futuristic neon-lit cityscape at night with rain-soaked streets reflecting colorful signs and towering skyscrapers',
-  },
-  {
-    label: 'Product mockup',
+    label: 'Product photography',
     prompt:
       'Generate a premium product photography shot of sleek wireless headphones on a matte black surface with soft gradient studio lighting',
+    icon: CameraIcon,
   },
   {
     label: 'Watercolor landscape',
     prompt:
       'Create a delicate watercolor painting of a misty mountain lake at sunrise with soft pastel pinks and golds',
+    icon: PenIcon,
   },
   {
     label: 'Logo design',
     prompt:
       'Design a clean minimalist logo mark for a modern technology company, using geometric shapes and a bold color accent',
+    icon: StarIcon,
   },
   {
-    label: 'Fantasy world',
-    prompt:
-      'Generate an ethereal fantasy landscape with floating crystal islands, bioluminescent waterfalls, and a starlit aurora sky',
-  },
-  {
-    label: 'Abstract art',
+    label: 'Abstract composition',
     prompt:
       'Create an abstract fluid art composition with deep ocean blues, liquid gold, and ivory white swirling together in organic forms',
+    icon: LayersIcon,
   },
   {
-    label: 'Anime character',
+    label: 'Futuristic cityscape',
     prompt:
-      'Generate a detailed anime-style character portrait with vibrant colors, expressive eyes, and a dynamic action pose',
+      'Create a futuristic neon-lit cityscape at night with rain-soaked streets reflecting colorful signs and towering skyscrapers',
+    icon: EyeIcon,
   },
 ];
 
@@ -205,21 +207,25 @@ export default function ImageGalleryView() {
           </div>
         </div>
 
-        {/* Quick Prompts — inspired by screenshot, short labels only */}
+        {/* Quick Prompts — structured 2-column grid like ChatGPT */}
         <div className={styles.quickSection}>
           <h2 className={styles.quickTitle}>Discover something new</h2>
           <div className={styles.quickGrid}>
-            {QUICK_PROMPTS.map((item, idx) => (
-              <button
-                key={idx}
-                className={styles.quickChip}
-                onClick={() => handleQuickPromptClick(item)}
-                title={item.prompt}
-              >
-                <SparkleIcon />
-                <span>{item.label}</span>
-              </button>
-            ))}
+            {QUICK_PROMPTS.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={idx}
+                  className={styles.quickItem}
+                  onClick={() => handleQuickPromptClick(item)}
+                >
+                  <span className={styles.quickItemIcon}>
+                    <Icon />
+                  </span>
+                  <span className={styles.quickItemLabel}>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

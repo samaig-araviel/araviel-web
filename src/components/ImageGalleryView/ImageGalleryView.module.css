@@ -172,7 +172,7 @@
   font-weight: 500;
 }
 
-/* ===== Quick Prompts ===== */
+/* ===== Quick Prompts — 2-column structured grid ===== */
 .quickSection {
   margin-bottom: 56px;
 }
@@ -182,49 +182,64 @@
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.01em;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .quickGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
-.quickChip {
-  display: inline-flex;
+.quickItem {
+  display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  border-radius: 24px;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.quickItem:hover {
+  background: var(--bg-hover);
+}
+
+.quickItemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-}
-
-.quickChip svg {
-  width: 13px;
-  height: 13px;
   color: var(--text-muted);
-  opacity: 0.5;
-  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+  transition: border-color 0.15s ease;
 }
 
-.quickChip:hover {
-  background: var(--bg-hover);
+.quickItem:hover .quickItemIcon {
   border-color: var(--text-muted);
-  color: var(--text-primary);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
 }
 
-.quickChip:hover svg {
-  opacity: 0.8;
+.quickItemIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.quickItemLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+}
+
+.quickItem:hover .quickItemLabel {
+  color: var(--text-primary);
 }
 
 /* ===== Gallery Header ===== */
@@ -901,16 +916,28 @@
   }
 
   .quickGrid {
-    gap: 6px;
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 
-  .quickChip {
-    padding: 8px 12px;
-    font-size: 12px;
+  .quickItem {
+    padding: 12px 14px;
+    gap: 12px;
   }
 
-  .quickChip svg {
-    display: none;
+  .quickItemIcon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .quickItemIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .quickItemLabel {
+    font-size: 13px;
   }
 
   .grid {
@@ -962,9 +989,9 @@
     font-size: 13px;
   }
 
-  .quickChip {
-    padding: 7px 10px;
-    font-size: 11.5px;
+  .quickItemIcon {
+    width: 34px;
+    height: 34px;
   }
 
   .grid {

@@ -1108,21 +1108,28 @@ export default function MainContent() {
     });
   };
 
-  // Auto-submit when navigating from another view (e.g. Image Gallery quick prompt)
+  // Auto-submit when navigating from another view (e.g. Image Gallery quick prompt).
+  // Uses a ref guard to guarantee this fires exactly once, even with StrictMode.
+  const autoSubmitFiredRef = useRef(false);
   useEffect(() => {
-    if (pendingAutoSubmit && inputValue.trim() && !isProcessing) {
-      dispatch(setPendingAutoSubmit(false));
-      const prompt = inputValue.trim();
-      dispatch(setInputValue(''));
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-      }
-      runSSEPipeline(prompt, {
-        selectedModelId: selectedModelId || undefined,
-        addUserMessage: true,
-        webSearch: webSearchEnabled,
-      });
+    if (!pendingAutoSubmit || !inputValue.trim() || isProcessing) return;
+    if (autoSubmitFiredRef.current) return;
+    autoSubmitFiredRef.current = true;
+    const prompt = inputValue.trim();
+    dispatch(setPendingAutoSubmit(false));
+    dispatch(setInputValue(''));
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
     }
+    runSSEPipeline(prompt, {
+      selectedModelId: selectedModelId || undefined,
+      addUserMessage: true,
+      webSearch: webSearchEnabled,
+    });
+    return () => {
+      // Reset on cleanup so it can fire again for future navigations
+      autoSubmitFiredRef.current = false;
+    };
   }, [pendingAutoSubmit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
