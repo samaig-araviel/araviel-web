@@ -1147,11 +1147,6 @@ export default function MainContent() {
     });
   }, [pendingAutoSubmit]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Reset the auto-submit guard when the chat changes (new navigation)
-  useEffect(() => {
-    autoSubmitFiredRef.current = null;
-  }, [currentChatId]);
-
   /**
    * Stop handler.
    */
