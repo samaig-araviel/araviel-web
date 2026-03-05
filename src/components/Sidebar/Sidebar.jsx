@@ -21,11 +21,11 @@ import {
 } from '../../store/slices/chatSlice';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { fetchConversations, fetchConversationMessages } from '../../services/api';
+import { getGeneratedImages } from '../../services/imageGeneration';
 import {
   PlusIcon,
   ChevronLeftIcon,
   ChevronDownIcon,
-  ChatIcon,
   UserIcon,
   SunIcon,
   MoonIcon,
@@ -109,34 +109,58 @@ export default function Sidebar() {
     // Load messages for this conversation
     try {
       const data = await fetchConversationMessages(chatId);
+      // Get locally stored generated images to re-attach to messages
+      const storedImages = getGeneratedImages();
       // Map backend messages to the shape the frontend expects
-      const mappedMessages = (data.messages || []).map((msg) => ({
-        id: msg.id,
-        role: msg.role,
-        content: msg.content,
-        timestamp: new Date(msg.createdAt).getTime(),
-        // Assistant-specific fields
-        ...(msg.role === 'assistant' && {
-          modelId: msg.model?.id,
-          modelName: msg.model?.name,
-          provider: msg.model?.provider,
-          score: msg.model?.score,
-          reasoning: msg.model?.reasoning,
-          alternateModels: (msg.alternateModels || []).map((m) => ({
-            modelId: m.id,
-            modelName: m.name,
-            provider: m.provider,
-            score: m.score,
-            reasoning: m.reasoning,
-          })),
-          thinkingContent: msg.thinkingContent,
-          citations: msg.citations,
-          usage: msg.usage,
-          costUsd: msg.costUsd,
-          latencyMs: msg.latencyMs,
-          adeLatencyMs: msg.adeLatencyMs,
-        }),
-      }));
+      const mappedMessages = (data.messages || []).map((msg) => {
+        const base = {
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.createdAt).getTime(),
+        };
+        if (msg.role === 'assistant') {
+          // Restore generatedImages from backend or localStorage
+          let generatedImages = msg.generatedImages || [];
+          if (generatedImages.length === 0) {
+            // Match images from localStorage by checking if image was created
+            // near this message's timestamp (within 30s window)
+            const msgTime = new Date(msg.createdAt).getTime();
+            const matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
+            if (matched.length > 0) {
+              generatedImages = matched.map((img) => ({
+                url: img.url,
+                prompt: img.prompt,
+                model: img.model,
+                provider: img.provider,
+                id: img.id,
+              }));
+            }
+          }
+          Object.assign(base, {
+            modelId: msg.model?.id,
+            modelName: msg.model?.name,
+            provider: msg.model?.provider,
+            score: msg.model?.score,
+            reasoning: msg.model?.reasoning,
+            alternateModels: (msg.alternateModels || []).map((m) => ({
+              modelId: m.id,
+              modelName: m.name,
+              provider: m.provider,
+              score: m.score,
+              reasoning: m.reasoning,
+            })),
+            thinkingContent: msg.thinkingContent,
+            citations: msg.citations,
+            usage: msg.usage,
+            costUsd: msg.costUsd,
+            latencyMs: msg.latencyMs,
+            adeLatencyMs: msg.adeLatencyMs,
+            ...(generatedImages.length > 0 && { generatedImages }),
+          });
+        }
+        return base;
+      });
       dispatch(setMessages(mappedMessages));
     } catch {
       // Fail silently — conversation will appear empty
@@ -308,7 +332,6 @@ export default function Sidebar() {
                           }`}
                           onClick={() => handleChatClick(chat.id)}
                         >
-                          <ChatIcon />
                           <span>{chat.title}</span>
                         </button>
                       </li>
