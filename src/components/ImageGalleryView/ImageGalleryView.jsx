@@ -548,17 +548,26 @@ export default function ImageGalleryView() {
  */
 function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) {
   const [currentIdx, setCurrentIdx] = useState(startIndex);
+  const [showDeleteWarning, setShowDeleteWarning] = useState(false);
   const img = images[currentIdx];
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Escape') onClose();
-      if (e.key === 'ArrowLeft' && currentIdx > 0) setCurrentIdx((i) => i - 1);
-      if (e.key === 'ArrowRight' && currentIdx < images.length - 1) setCurrentIdx((i) => i + 1);
+      if (e.key === 'Escape') {
+        if (showDeleteWarning) {
+          setShowDeleteWarning(false);
+        } else {
+          onClose();
+        }
+      }
+      if (!showDeleteWarning) {
+        if (e.key === 'ArrowLeft' && currentIdx > 0) setCurrentIdx((i) => i - 1);
+        if (e.key === 'ArrowRight' && currentIdx < images.length - 1) setCurrentIdx((i) => i + 1);
+      }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose, currentIdx, images.length]);
+  }, [onClose, currentIdx, images.length, showDeleteWarning]);
 
   if (!img) return null;
 
@@ -593,7 +602,7 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
             </button>
             <button
               className={styles.detailDeleteBtn}
-              onClick={() => onDelete(img.id)}
+              onClick={() => setShowDeleteWarning(true)}
               title="Delete"
               aria-label="Delete"
             >
@@ -661,6 +670,51 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
                   year: 'numeric',
                 })}
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* Delete confirmation */}
+        {showDeleteWarning && (
+          <div className={styles.deleteWarningOverlay} onClick={() => setShowDeleteWarning(false)}>
+            <div className={styles.deleteWarningDialog} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.deleteWarningIcon}>
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                </svg>
+              </div>
+              <h3 className={styles.deleteWarningTitle}>Delete this image?</h3>
+              <p className={styles.deleteWarningDesc}>
+                This image will be permanently removed from your gallery. This action cannot be
+                undone.
+              </p>
+              <div className={styles.deleteWarningActions}>
+                <button
+                  className={styles.deleteWarningCancel}
+                  onClick={() => setShowDeleteWarning(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  className={styles.deleteWarningConfirm}
+                  onClick={() => {
+                    setShowDeleteWarning(false);
+                    onDelete(img.id);
+                  }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         )}

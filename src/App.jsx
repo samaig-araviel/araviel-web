@@ -8,6 +8,7 @@ import MainContent from './components/MainContent';
 import ModelsView from './components/ModelsView';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import ImageGalleryView from './components/ImageGalleryView';
+import ConversationsView from './components/ConversationsView';
 import './App.css';
 
 export default function App() {
@@ -35,7 +36,9 @@ export default function App() {
   return (
     <div className="app">
       <Sidebar />
-      {activeItem === 'models' ? (
+      {activeItem === 'conversations' ? (
+        <ConversationsView />
+      ) : activeItem === 'models' ? (
         <ModelsView />
       ) : activeItem === 'analytics' ? (
         <AnalyticsDashboard />
