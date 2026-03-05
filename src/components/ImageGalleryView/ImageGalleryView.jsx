@@ -209,7 +209,7 @@ export default function ImageGalleryView() {
 
         {/* Quick Prompts — structured 2-column grid like ChatGPT */}
         <div className={styles.quickSection}>
-          <h2 className={styles.quickTitle}>Discover something new</h2>
+          <h2 className={styles.quickTitle}>Try something new</h2>
           <div className={styles.quickGrid}>
             {QUICK_PROMPTS.map((item, idx) => {
               const Icon = item.icon;
