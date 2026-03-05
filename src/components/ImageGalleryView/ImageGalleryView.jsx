@@ -25,6 +25,8 @@ import {
   StarIcon,
   LayersIcon,
   EyeIcon,
+  PlusIcon,
+  PhotoIcon,
 } from '../Icons';
 import styles from './ImageGalleryView.module.css';
 
@@ -78,8 +80,12 @@ export default function ImageGalleryView() {
   const [filterModel, setFilterModel] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
   const [promptInput, setPromptInput] = useState('');
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
   const promptInputRef = useRef(null);
   const filterRef = useRef(null);
+  const attachMenuRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
 
   const loadImages = useCallback(() => {
     setImages(getGeneratedImages());
@@ -94,6 +100,9 @@ export default function ImageGalleryView() {
       if (filterRef.current && !filterRef.current.contains(e.target)) {
         setShowFilters(false);
       }
+      if (attachMenuRef.current && !attachMenuRef.current.contains(e.target)) {
+        setShowAttachMenu(false);
+      }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -106,24 +115,48 @@ export default function ImageGalleryView() {
   };
 
   const handleDownload = async (img) => {
+    const filename = `araviel-${img.id || Date.now()}.png`;
     try {
       const response = await fetch(img.url);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `araviel-${img.id || Date.now()}.png`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch {
-      const link = document.createElement('a');
-      link.href = img.url;
-      link.download = `araviel-${img.id || Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Cross-origin fallback: draw to canvas and export as blob
+      try {
+        const blob = await new Promise((resolve, reject) => {
+          const imgEl = new Image();
+          imgEl.crossOrigin = 'anonymous';
+          imgEl.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = imgEl.naturalWidth;
+            canvas.height = imgEl.naturalHeight;
+            canvas.getContext('2d').drawImage(imgEl, 0, 0);
+            canvas.toBlob(
+              (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+              'image/png'
+            );
+          };
+          imgEl.onerror = reject;
+          imgEl.src = img.url;
+        });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        window.open(img.url, '_blank', 'noopener,noreferrer');
+      }
     }
   };
 
@@ -134,15 +167,47 @@ export default function ImageGalleryView() {
     dispatch(setActiveItem('home'));
   };
 
+  const handlePromptInputChange = (e) => {
+    setPromptInput(e.target.value);
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  };
+
+  const handlePromptKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handlePromptSubmit(e);
+    }
+  };
+
   const handlePromptSubmit = (e) => {
     e.preventDefault();
     const prompt = promptInput.trim();
     if (!prompt) return;
+    setPromptInput('');
     firePromptInChat(prompt);
   };
 
+  const handleFileSelect = (e) => {
+    // For now just focus the input — file attachment is handled through main chat
+    setShowAttachMenu(false);
+    if (e?.target?.files?.length) {
+      // Could be extended to attach files before sending
+    }
+  };
+
   const handleQuickPromptClick = (item) => {
-    firePromptInChat(item.prompt);
+    setPromptInput(item.prompt);
+    if (promptInputRef.current) {
+      promptInputRef.current.focus();
+      // Auto-resize textarea to fit content
+      const el = promptInputRef.current;
+      el.style.height = 'auto';
+      setTimeout(() => {
+        el.style.height = el.scrollHeight + 'px';
+      }, 0);
+    }
   };
 
   const limitInfo = getLimitInfo();
@@ -161,47 +226,91 @@ export default function ImageGalleryView() {
 
           <form className={styles.promptForm} onSubmit={handlePromptSubmit}>
             <div className={styles.promptInputWrapper}>
-              <SparkleIcon />
-              <input
+              <textarea
                 ref={promptInputRef}
-                type="text"
                 className={styles.promptInput}
                 placeholder="Describe an image..."
                 value={promptInput}
-                onChange={(e) => setPromptInput(e.target.value)}
+                onChange={handlePromptInputChange}
+                onKeyDown={handlePromptKeyDown}
+                rows={1}
               />
-              <button
-                type="submit"
-                className={`${styles.promptSubmitBtn} ${
-                  promptInput.trim() ? styles.promptSubmitBtnActive : ''
-                }`}
-                disabled={!promptInput.trim()}
-                aria-label="Generate image"
-              >
-                <SendIcon />
-              </button>
+              <div className={styles.promptActions}>
+                <div className={styles.promptActionsLeft} ref={attachMenuRef}>
+                  <button
+                    type="button"
+                    className={`${styles.promptAttachBtn} ${
+                      showAttachMenu ? styles.promptAttachBtnActive : ''
+                    }`}
+                    onClick={() => setShowAttachMenu(!showAttachMenu)}
+                    aria-label="Add content"
+                  >
+                    <PlusIcon />
+                  </button>
+                  {showAttachMenu && (
+                    <div className={styles.promptAttachMenu}>
+                      <button
+                        className={styles.promptAttachOption}
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                          setShowAttachMenu(false);
+                        }}
+                      >
+                        <PhotoIcon />
+                        <span>Upload image or file</span>
+                      </button>
+                      {isMobile && (
+                        <button
+                          className={styles.promptAttachOption}
+                          onClick={() => {
+                            setShowAttachMenu(false);
+                            // Open camera on mobile
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.capture = 'environment';
+                            input.click();
+                          }}
+                        >
+                          <CameraIcon />
+                          <span>Take a photo</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  className={`${styles.promptSubmitBtn} ${
+                    promptInput.trim() ? styles.promptSubmitBtnActive : ''
+                  }`}
+                  disabled={!promptInput.trim()}
+                  aria-label="Generate image"
+                >
+                  <SendIcon />
+                </button>
+              </div>
             </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json"
+              className={styles.hiddenFileInput}
+              onChange={handleFileSelect}
+            />
           </form>
 
-          {/* Usage — subtle but informative */}
-          <div className={styles.usageContainer}>
-            <div className={styles.usageBarTrack}>
-              <div
-                className={styles.usageBarFill}
-                style={{ width: `${(limitInfo.remaining / limitInfo.limit) * 100}%` }}
-              />
-            </div>
-            <div className={styles.usageDetails}>
-              <span className={styles.usageText}>
-                {limitInfo.remaining} of {limitInfo.limit} left
-              </span>
-              <span className={styles.tierBadge}>{tier === 'pro' ? 'Pro' : 'Free'}</span>
-            </div>
+          {/* Usage pill */}
+          <div className={styles.usagePill}>
+            <span className={styles.usagePillDot} />
+            <span className={styles.usagePillText}>
+              {limitInfo.remaining} of {limitInfo.limit} left
+            </span>
+            <span className={styles.usagePillBadge}>{tier === 'pro' ? 'PRO' : 'FREE'}</span>
             {limitInfo.isAtLimit && (
-              <span className={styles.usageLimitNote}>
-                {tier === 'free'
-                  ? 'Upgrade to Pro for more daily generations'
-                  : 'Daily limit reached — resets soon'}
+              <span className={styles.usagePillLimit}>
+                {tier === 'free' ? 'Upgrade for more' : 'Resets soon'}
               </span>
             )}
           </div>
