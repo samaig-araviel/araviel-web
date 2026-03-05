@@ -130,13 +130,37 @@ function extractQuestionTopic(userPrompt) {
  * Generate 4 contextual follow-up suggestion prompts based on the assistant's
  * response content and the user's original question.
  */
-function generateFollowUps(content, userPrompt) {
+function generateFollowUps(content, userPrompt, generatedImages) {
   if (!content) return [];
 
   const lower = content.toLowerCase();
   const entities = extractBoldEntities(content);
   const topic = extractQuestionTopic(userPrompt);
   const suggestions = [];
+
+  // --- Image generation responses ---
+  if (generatedImages && generatedImages.length > 0) {
+    const imgPrompt = generatedImages[0].prompt || userPrompt || '';
+    const subject = extractQuestionTopic(imgPrompt) || imgPrompt;
+    if (subject) {
+      suggestions.push(
+        `Generate another variation of ${subject}`,
+        `Create a different art style version of ${subject}`,
+        `Make a more detailed version of ${subject}`,
+        `Generate ${subject} from a different angle or perspective`,
+        `Create a minimalist version of ${subject}`,
+        `Generate ${subject} in a photorealistic style`
+      );
+    } else {
+      suggestions.push(
+        'Generate another variation of this image',
+        'Create a different art style version',
+        'Make a more detailed version of this',
+        'Generate this from a different angle or perspective'
+      );
+    }
+    return pickRandom(suggestions, 4);
+  }
 
   // --- Financial / Stock / Investment responses ---
   if (
@@ -1136,20 +1160,41 @@ function ImageGalleryPanel({ images, onClose }) {
  */
 function GeneratedImageBlock({ imageData }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [downloadHover, setDownloadHover] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   if (!imageData || !imageData.url) return null;
 
-  const handleDownload = (e) => {
+  const handleDownload = async (e) => {
     e.stopPropagation();
-    const link = document.createElement('a');
-    link.href = imageData.url;
-    link.download = `araviel-generated-${Date.now()}.png`;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      // Fetch as blob to enable proper download on all devices
+      const response = await fetch(imageData.url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `araviel-${(imageData.prompt || 'generated')
+        .slice(0, 40)
+        .replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // Fallback to direct link if fetch fails
+      const link = document.createElement('a');
+      link.href = imageData.url;
+      link.download = `araviel-generated-${Date.now()}.png`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } finally {
+      setDownloading(false);
+    }
   };
 
   return (
@@ -1175,13 +1220,12 @@ function GeneratedImageBlock({ imageData }) {
             <button
               className={styles.generatedImageDownload}
               onClick={handleDownload}
-              onMouseEnter={() => setDownloadHover(true)}
-              onMouseLeave={() => setDownloadHover(false)}
-              title="Download image"
+              title="Download to device"
               aria-label="Download image"
+              disabled={downloading}
             >
               <FileDownIcon />
-              {downloadHover && <span>Download</span>}
+              <span>{downloading ? 'Saving...' : 'Download'}</span>
             </button>
           </div>
         </div>
@@ -3751,10 +3795,18 @@ function Message({
       if (message.followUps && message.followUps.length > 0) {
         return message.followUps.slice(0, 4);
       }
-      return generateFollowUps(message.content, userPrompt);
+      return generateFollowUps(message.content, userPrompt, message.generatedImages);
     }
     return [];
-  }, [isUser, isLastAssistant, isStreaming, message.content, message.followUps, userPrompt]);
+  }, [
+    isUser,
+    isLastAssistant,
+    isStreaming,
+    message.content,
+    message.followUps,
+    userPrompt,
+    message.generatedImages,
+  ]);
 
   return (
     <div

@@ -790,16 +790,18 @@
 
 /* ===== Generated Image Block ===== */
 .generatedImageBlock {
-  margin: 16px 0;
+  margin: 12px 0;
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--bg-primary);
-  transition: border-color 0.2s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  max-width: 320px;
 }
 
 .generatedImageBlock:hover {
   border-color: var(--text-muted);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .generatedImageFrame {
@@ -807,15 +809,14 @@
   cursor: pointer;
   overflow: hidden;
   background: var(--bg-secondary);
-  max-height: 480px;
+  aspect-ratio: 1 / 1;
 }
 
 .generatedImageImg {
   display: block;
   width: 100%;
-  height: auto;
-  max-height: 480px;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
 }
 
 .generatedImageOverlay {
@@ -830,27 +831,27 @@
 }
 
 .generatedImageFrame:hover .generatedImageOverlay {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.3);
   opacity: 1;
 }
 
 .generatedImageOverlay svg {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   color: #fff;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
 }
 
 .generatedImageMeta {
-  padding: 12px 16px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .generatedImagePrompt {
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -876,9 +877,9 @@
 .generatedImageDownload {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 6px;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
@@ -894,12 +895,15 @@
 }
 
 .generatedImageDownload svg {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
 }
 
 .generatedImagesSection {
   margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 /* ===== Mermaid Diagram Block ===== */
