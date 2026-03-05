@@ -398,10 +398,20 @@ function renderMarkdown(text) {
       continue;
     }
 
-    // Image line: ![alt](url)
+    // Image line: ![alt](url) — render inline immediately (not behind a pill)
     const imgMatch = line.trim().match(/^!\[([^\]]*)\]\(([^)]+)\)/);
     if (imgMatch) {
       images.push({ alt: imgMatch[1], src: imgMatch[2] });
+      elements.push(
+        <div key={key++} className={styles.inlineGeneratedImage}>
+          <img
+            src={imgMatch[2]}
+            alt={imgMatch[1] || 'Generated image'}
+            className={styles.inlineGeneratedImageImg}
+            loading="lazy"
+          />
+        </div>
+      );
       i++;
       continue;
     }
@@ -4027,14 +4037,21 @@ function Message({
         )}
       </div>
 
-      {/* Generated images — rendered below the message text */}
-      {!isUser && message.generatedImages && message.generatedImages.length > 0 && (
+      {/* Generated images — rendered below the message text (skip if already inline in markdown) */}
+      {!isUser && message.generatedImages && message.generatedImages.length > 0 && (() => {
+        const contentHasMarkdownImages = displayText && /!\[[^\]]*\]\([^)]+\)/.test(displayText);
+        // Filter out images whose URLs already appear inline in the markdown text
+        const imagesToShow = contentHasMarkdownImages
+          ? message.generatedImages.filter((img) => !displayText.includes(img.url))
+          : message.generatedImages;
+        return imagesToShow.length > 0 ? (
         <div className={styles.generatedImagesSection}>
-          {message.generatedImages.map((img, idx) => (
+          {imagesToShow.map((img, idx) => (
             <GeneratedImageBlock key={idx} imageData={img} />
           ))}
         </div>
-      )}
+        ) : null;
+      })()}
 
       {/* Code canvas button — shown below response when code blocks exist */}
       {!isUser &&

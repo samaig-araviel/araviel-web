@@ -1116,10 +1116,18 @@ export default function MainContent() {
     setShowAttachDropdown(false);
     clearAttachedFiles();
 
+    // Detect if conversation already has generated images — if so, hint 'image'
+    // modality so the router picks an image-capable model for follow-ups
+    const conversationHasImages = messages.some(
+      (m) => m.generatedImages && m.generatedImages.length > 0
+    );
+    const modality = conversationHasImages ? 'image' : undefined;
+
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
       addUserMessage: true,
       webSearch: webSearchEnabled,
+      modality,
     });
   };
 
