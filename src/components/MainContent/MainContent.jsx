@@ -26,8 +26,10 @@ import {
   selectTone,
   selectMood,
   selectAutoStrategy,
+  selectPendingAutoSubmit,
   setTone,
   setMood,
+  setPendingAutoSubmit,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -616,6 +618,7 @@ export default function MainContent() {
   const tone = useSelector(selectTone);
   const mood = useSelector(selectMood);
   const autoStrategy = useSelector(selectAutoStrategy);
+  const pendingAutoSubmit = useSelector(selectPendingAutoSubmit);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const {
@@ -1104,6 +1107,23 @@ export default function MainContent() {
       webSearch: webSearchEnabled,
     });
   };
+
+  // Auto-submit when navigating from another view (e.g. Image Gallery quick prompt)
+  useEffect(() => {
+    if (pendingAutoSubmit && inputValue.trim() && !isProcessing) {
+      dispatch(setPendingAutoSubmit(false));
+      const prompt = inputValue.trim();
+      dispatch(setInputValue(''));
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
+      runSSEPipeline(prompt, {
+        selectedModelId: selectedModelId || undefined,
+        addUserMessage: true,
+        webSearch: webSearchEnabled,
+      });
+    }
+  }, [pendingAutoSubmit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
    * Stop handler.
