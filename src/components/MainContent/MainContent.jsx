@@ -840,6 +840,7 @@ export default function MainContent() {
           extendedThinking: extendedThinking || undefined,
           deepResearch: deepResearch || undefined,
           googleThinking: googleThinking || undefined,
+          conversationHasImages: options.conversationHasImages || undefined,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -1116,18 +1117,17 @@ export default function MainContent() {
     setShowAttachDropdown(false);
     clearAttachedFiles();
 
-    // Detect if conversation already has generated images — if so, hint 'image'
-    // modality so the router picks an image-capable model for follow-ups
+    // Let the backend router know if this conversation already has generated
+    // images so it can factor that into model selection (without forcing modality)
     const conversationHasImages = messages.some(
       (m) => m.generatedImages && m.generatedImages.length > 0
     );
-    const modality = conversationHasImages ? 'image' : undefined;
 
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
       addUserMessage: true,
       webSearch: webSearchEnabled,
-      modality,
+      conversationHasImages: conversationHasImages || undefined,
     });
   };
 
