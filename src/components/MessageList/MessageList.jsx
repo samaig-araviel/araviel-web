@@ -1155,8 +1155,8 @@ function ImageGalleryPanel({ images, onClose }) {
 }
 
 /**
- * Generated image block — renders an AI-generated image with metadata.
- * Shows the image with prompt, model info, and action buttons.
+ * Generated image block — renders an AI-generated image with a sleek
+ * ChatGPT-style transparent hover overlay showing model & save icon.
  */
 function GeneratedImageBlock({ imageData }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -1169,7 +1169,6 @@ function GeneratedImageBlock({ imageData }) {
     if (downloading) return;
     setDownloading(true);
     try {
-      // Fetch as blob to enable proper download on all devices
       const response = await fetch(imageData.url);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
@@ -1183,7 +1182,6 @@ function GeneratedImageBlock({ imageData }) {
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch {
-      // Fallback to direct link if fetch fails
       const link = document.createElement('a');
       link.href = imageData.url;
       link.download = `araviel-generated-${Date.now()}.png`;
@@ -1207,37 +1205,131 @@ function GeneratedImageBlock({ imageData }) {
             className={styles.generatedImageImg}
             loading="lazy"
           />
+          {/* Transparent bottom overlay — visible on hover */}
           <div className={styles.generatedImageOverlay}>
-            <MaximizeIcon />
-          </div>
-        </div>
-        <div className={styles.generatedImageMeta}>
-          {imageData.prompt && <p className={styles.generatedImagePrompt}>{imageData.prompt}</p>}
-          <div className={styles.generatedImageActions}>
-            {imageData.model && (
-              <span className={styles.generatedImageModel}>{imageData.model}</span>
-            )}
-            <button
-              className={styles.generatedImageDownload}
-              onClick={handleDownload}
-              title="Download to device"
-              aria-label="Download image"
-              disabled={downloading}
-            >
-              <FileDownIcon />
-              <span>{downloading ? 'Saving...' : 'Download'}</span>
-            </button>
+            <div className={styles.generatedImageOverlayInner}>
+              {imageData.model && (
+                <span className={styles.generatedImageModel}>{imageData.model}</span>
+              )}
+              <div className={styles.generatedImageOverlayActions}>
+                <button
+                  className={styles.generatedImageSaveBtn}
+                  onClick={handleDownload}
+                  title={downloading ? 'Saving...' : 'Save image'}
+                  aria-label="Save image"
+                  disabled={downloading}
+                >
+                  <FileDownIcon />
+                </button>
+                <button
+                  className={styles.generatedImageExpandBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxOpen(true);
+                  }}
+                  title="View full size"
+                  aria-label="Expand image"
+                >
+                  <MaximizeIcon />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      {lightboxOpen && (
-        <ImageLightbox
-          images={[{ src: imageData.url, alt: imageData.prompt || 'Generated image' }]}
-          startIndex={0}
-          onClose={() => setLightboxOpen(false)}
-        />
-      )}
+      {lightboxOpen &&
+        createPortal(
+          <GeneratedImageLightbox
+            imageData={imageData}
+            onClose={() => setLightboxOpen(false)}
+            onDownload={handleDownload}
+            downloading={downloading}
+          />,
+          document.body
+        )}
     </>
+  );
+}
+
+/**
+ * Premium fullscreen lightbox for a generated image — shows the image large
+ * with metadata panel (prompt, model, date) and download action.
+ */
+function GeneratedImageLightbox({ imageData, onClose, onDownload, downloading }) {
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  const providerData = imageData.provider ? PROVIDERS[imageData.provider] : null;
+
+  return (
+    <div className={styles.genLightboxOverlay} onClick={onClose}>
+      <div className={styles.genLightboxContainer} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.genLightboxTopBar}>
+          <div className={styles.genLightboxTopLeft}>
+            {imageData.model && (
+              <span
+                className={styles.genLightboxModelBadge}
+                style={providerData ? { borderColor: providerData.accentColor + '40' } : undefined}
+              >
+                {providerData && (
+                  <span
+                    className={styles.genLightboxModelDot}
+                    style={{ background: providerData.accentColor }}
+                  />
+                )}
+                {imageData.model}
+              </span>
+            )}
+          </div>
+          <div className={styles.genLightboxTopRight}>
+            <button
+              className={styles.genLightboxActionBtn}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDownload(e);
+              }}
+              disabled={downloading}
+              title="Save image"
+            >
+              <FileDownIcon />
+              <span>{downloading ? 'Saving...' : 'Save'}</span>
+            </button>
+            <button className={styles.genLightboxCloseBtn} onClick={onClose} aria-label="Close">
+              <CloseIcon />
+            </button>
+          </div>
+        </div>
+        <div className={styles.genLightboxBody}>
+          <img
+            src={imageData.url}
+            alt={imageData.prompt || 'Generated image'}
+            className={styles.genLightboxImg}
+          />
+        </div>
+        {imageData.prompt && (
+          <div className={styles.genLightboxFooter}>
+            <p className={styles.genLightboxPrompt}>{imageData.prompt}</p>
+            <div className={styles.genLightboxMeta}>
+              {imageData.size && <span>{imageData.size}</span>}
+              {imageData.createdAt && (
+                <span>
+                  {new Date(imageData.createdAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
