@@ -2,7 +2,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch } from 'react-redux';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { setInputValue, createNewChat, setPendingAutoSubmit } from '../../store/slices/chatSlice';
+import {
+  setInputValue,
+  createNewChat,
+  setPendingAutoSubmit,
+  setPendingModality,
+} from '../../store/slices/chatSlice';
 import {
   getGeneratedImages,
   deleteGeneratedImage,
@@ -163,6 +168,7 @@ export default function ImageGalleryView() {
   const firePromptInChat = (prompt) => {
     dispatch(createNewChat());
     dispatch(setInputValue(prompt));
+    dispatch(setPendingModality('image'));
     dispatch(setPendingAutoSubmit(true));
     dispatch(setActiveItem('home'));
   };

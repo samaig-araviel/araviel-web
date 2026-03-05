@@ -28,6 +28,7 @@ const initialState = {
   currentChatId: null, // current conversationId from backend
   isProcessing: false,
   pendingAutoSubmit: false, // when true, MainContent auto-fires the inputValue on mount
+  pendingModality: null, // null = default 'text', or 'image' when prompt originates from image view
   // Conversation list from backend
   conversations: [],
   conversationsTotal: 0,
@@ -113,9 +114,13 @@ const chatSlice = createSlice({
       state.inputValue = '';
       state.isProcessing = false;
       state.pendingAutoSubmit = false;
+      state.pendingModality = null;
     },
     setPendingAutoSubmit: (state, action) => {
       state.pendingAutoSubmit = action.payload;
+    },
+    setPendingModality: (state, action) => {
+      state.pendingModality = action.payload;
     },
     removeLastAssistantMessage: (state) => {
       for (let i = state.messages.length - 1; i >= 0; i--) {
@@ -161,6 +166,7 @@ export const {
   createNewChat,
   removeLastAssistantMessage,
   setPendingAutoSubmit,
+  setPendingModality,
   setMessages,
   setConversations,
   appendConversations,
@@ -181,6 +187,7 @@ export const selectMessages = (state) => state.chat.messages;
 export const selectIsProcessing = (state) => state.chat.isProcessing;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
 export const selectPendingAutoSubmit = (state) => state.chat.pendingAutoSubmit;
+export const selectPendingModality = (state) => state.chat.pendingModality;
 export const selectConversations = (state) => state.chat.conversations;
 export const selectConversationsTotal = (state) => state.chat.conversationsTotal;
 export const selectConversationsLoading = (state) => state.chat.conversationsLoading;

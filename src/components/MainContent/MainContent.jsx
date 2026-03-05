@@ -27,9 +27,11 @@ import {
   selectMood,
   selectAutoStrategy,
   selectPendingAutoSubmit,
+  selectPendingModality,
   setTone,
   setMood,
   setPendingAutoSubmit,
+  setPendingModality,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -619,6 +621,7 @@ export default function MainContent() {
   const mood = useSelector(selectMood);
   const autoStrategy = useSelector(selectAutoStrategy);
   const pendingAutoSubmit = useSelector(selectPendingAutoSubmit);
+  const pendingModality = useSelector(selectPendingModality);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const {
@@ -815,6 +818,7 @@ export default function MainContent() {
           message: prompt,
           conversationId: options.conversationId || currentChatId || undefined,
           selectedModelId: options.selectedModelId || undefined,
+          modality: options.modality || undefined,
           webSearch: webSearchParam,
           userLocation: locationPayload,
           tone: tone || undefined,
@@ -1116,7 +1120,9 @@ export default function MainContent() {
     if (autoSubmitFiredRef.current) return;
     autoSubmitFiredRef.current = true;
     const prompt = inputValue.trim();
+    const modality = pendingModality || undefined;
     dispatch(setPendingAutoSubmit(false));
+    dispatch(setPendingModality(null));
     dispatch(setInputValue(''));
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -1125,6 +1131,7 @@ export default function MainContent() {
       selectedModelId: selectedModelId || undefined,
       addUserMessage: true,
       webSearch: webSearchEnabled,
+      modality,
     });
     return () => {
       // Reset on cleanup so it can fire again for future navigations
