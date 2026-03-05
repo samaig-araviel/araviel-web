@@ -162,43 +162,75 @@
   margin: 4px 0;
 }
 
-/* ── Auto Strategy Chips ── */
+/* ── Auto Strategy Options ── */
 .autoStrategies {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 10px 2px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px 8px 6px;
 }
 
-.autoStrategyChip {
-  padding: 4px 10px;
+.autoStrategyOption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
   font-size: 11px;
-  font-weight: 550;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid transparent;
   background-color: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   font-family: inherit;
+  text-align: left;
 }
 
-.autoStrategyChip:hover {
+.autoStrategyOption:hover {
   background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.autoStrategyOptionActive {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(245, 158, 11, 0.08));
+  border-color: rgba(139, 92, 246, 0.2);
   color: var(--text-primary);
 }
 
-.autoStrategyChipActive {
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-  border-color: var(--text-primary);
+[data-theme='dark'] .autoStrategyOptionActive {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(245, 158, 11, 0.12));
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
-.autoStrategyChipActive:hover {
-  opacity: 0.9;
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
+.autoStrategyOptionActive:hover {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(245, 158, 11, 0.12));
+}
+
+.autoStrategyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--bg-secondary);
+  font-size: 9px;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.autoStrategyOptionActive .autoStrategyIcon {
+  background: linear-gradient(135deg, #8b5cf6, #f59e0b);
+  color: #fff;
+}
+
+.autoStrategyLabel {
+  font-size: 11px;
+  font-weight: 550;
+  letter-spacing: 0.01em;
 }
 
 /* ───────────────────────────────

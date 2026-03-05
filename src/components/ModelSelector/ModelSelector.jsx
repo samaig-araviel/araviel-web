@@ -32,10 +32,10 @@ const FEATURED_MODEL_IDS_FREE = [
 ];
 
 const AUTO_STRATEGIES = [
-  { id: 'default', label: 'Default', desc: 'Best model for each task' },
-  { id: 'humanFactors', label: 'Human Factors', desc: 'Uses mood, tone & context' },
-  { id: 'costEfficient', label: 'Cost Efficient', desc: 'Optimizes for lower cost' },
-  { id: 'taskBased', label: 'Task Based', desc: 'Pure task routing only' },
+  { id: 'default', label: 'Default', desc: 'Best model for each task', icon: '✦' },
+  { id: 'humanFactors', label: 'Human Factors', desc: 'Uses mood, tone & context', icon: '♡' },
+  { id: 'costEfficient', label: 'Cost Efficient', desc: 'Optimizes for lower cost', icon: '◎' },
+  { id: 'taskBased', label: 'Task Based', desc: 'Pure task routing only', icon: '⚡' },
 ];
 
 export default function ModelSelector() {
@@ -307,7 +307,7 @@ export default function ModelSelector() {
                 )}
               </button>
 
-              {/* ── Auto strategy chips (shown when Auto is selected) ── */}
+              {/* ── Auto strategy options (shown when Auto is selected) ── */}
               {isAutoMode && (
                 <div className={styles.autoStrategies}>
                   {AUTO_STRATEGIES.map((strategy) => {
@@ -315,8 +315,8 @@ export default function ModelSelector() {
                     return (
                       <button
                         key={strategy.id}
-                        className={`${styles.autoStrategyChip} ${
-                          isActive ? styles.autoStrategyChipActive : ''
+                        className={`${styles.autoStrategyOption} ${
+                          isActive ? styles.autoStrategyOptionActive : ''
                         }`}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -324,7 +324,8 @@ export default function ModelSelector() {
                         }}
                         title={strategy.desc}
                       >
-                        {strategy.label}
+                        <span className={styles.autoStrategyIcon}>{strategy.icon}</span>
+                        <span className={styles.autoStrategyLabel}>{strategy.label}</span>
                       </button>
                     );
                   })}

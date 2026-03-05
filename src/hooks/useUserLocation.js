@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 const STORAGE_KEY = 'araviel-user-location';
 const PERMISSION_KEY = 'araviel-location-permission';
@@ -42,7 +42,7 @@ export default function useUserLocation() {
     return localStorage.getItem(PERMISSION_KEY) || 'prompt';
   });
 
-  // Check permission state on mount
+  // Check permission state on mount and auto-request location
   useEffect(() => {
     if (!navigator.geolocation) {
       setPermission('unavailable');
@@ -64,10 +64,26 @@ export default function useUserLocation() {
               localStorage.removeItem(STORAGE_KEY);
             }
           });
+
+          // Auto-request location if permission hasn't been denied and we don't have location yet
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored && result.state !== 'denied') {
+            requestLocationRef.current();
+          }
         })
         .catch(() => {
-          // permissions API not fully supported
+          // permissions API not fully supported — try requesting anyway if no stored location
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (!stored) {
+            requestLocationRef.current();
+          }
         });
+    } else {
+      // No permissions API — try requesting if no stored location
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (!stored) {
+        requestLocationRef.current();
+      }
     }
   }, []);
 
@@ -160,6 +176,10 @@ export default function useUserLocation() {
       );
     });
   }, [reverseGeocode, fetchWeather]);
+
+  // Keep a ref so the mount effect can call requestLocation without it in deps
+  const requestLocationRef = useRef(requestLocation);
+  requestLocationRef.current = requestLocation;
 
   // Refresh weather if stale (every 30 min)
   useEffect(() => {

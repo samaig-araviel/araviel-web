@@ -62,6 +62,9 @@ export async function sendMessage(payload) {
     body.autoStrategy = payload.autoStrategy;
   if (payload.weather) body.weather = payload.weather;
   if (payload.requestFollowUps) body.requestFollowUps = true;
+  if (payload.extendedThinking) body.extendedThinking = true;
+  if (payload.deepResearch) body.deepResearch = true;
+  if (payload.googleThinking) body.googleThinking = true;
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
