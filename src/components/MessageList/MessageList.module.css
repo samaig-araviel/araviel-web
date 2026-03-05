@@ -3867,21 +3867,6 @@
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
 }
 
-/* ===== Inline Generated Image (rendered directly in markdown) ===== */
-.inlineGeneratedImage {
-  margin: 12px 0;
-  max-width: 512px;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.inlineGeneratedImageImg {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 12px;
-}
-
 /* ===== Images Pill (compact image count + view trigger) ===== */
 .imagesPill {
   display: inline-flex;
