@@ -181,33 +181,42 @@
 .newChatBtn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
-  padding: 8px 12px;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  color: var(--text-primary);
-  font-size: 14px;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 500;
-  margin-bottom: 12px;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  margin-bottom: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  cursor: pointer;
 }
 
 .newChatBtn:hover {
-  background-color: var(--bg-button-hover);
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .newChatBtn:active {
   transform: scale(0.98);
 }
 
+.newChatBtn svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 .collapsed .newChatBtn {
+  justify-content: center;
   padding: 0;
   width: 36px;
   height: 36px;
   border-radius: 8px;
+  margin-bottom: 8px;
 }
 
 .nav {
@@ -247,8 +256,16 @@
   border-radius: 8px;
 }
 
+.navDivider {
+  height: 0;
+  border: none;
+  border-top: 1px dashed var(--border-color);
+  margin: 6px 12px;
+  opacity: 0.6;
+}
+
 .recents {
-  margin-top: 10px;
+  margin-top: 4px;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -547,10 +564,12 @@
   }
 
   .collapsed .newChatBtn {
-    padding: 10px 12px;
+    padding: 7px 12px;
     width: 100%;
     height: auto;
-    border-radius: 10px;
+    border-radius: 8px;
+    justify-content: flex-start;
+    gap: 10px;
   }
 
   .collapsed .navItem {

@@ -76,6 +76,11 @@ import {
   SmileIcon,
   CloudIcon,
   ExternalLinkIcon,
+  MoreVerticalIcon,
+  StarIcon,
+  ArchiveIcon,
+  FlagIcon,
+  TrashIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -641,6 +646,8 @@ export default function MainContent() {
   const [showMoodSubmenu, setShowMoodSubmenu] = useState(false);
   const [showCloudSubmenu, setShowCloudSubmenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [mobileFileSubmenu, setMobileFileSubmenu] = useState(false);
@@ -652,6 +659,7 @@ export default function MainContent() {
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
+  const chatMenuRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -685,6 +693,9 @@ export default function MainContent() {
           setShowAttachDropdown(false);
           setShowResearchModes(false);
         }
+      }
+      if (chatMenuRef.current && !chatMenuRef.current.contains(e.target)) {
+        setShowChatMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -1114,12 +1125,13 @@ export default function MainContent() {
 
   // Auto-submit when navigating from another view (e.g. Image Gallery quick prompt).
   // Uses a ref guard to guarantee this fires exactly once, even with StrictMode.
-  const autoSubmitFiredRef = useRef(false);
+  const autoSubmitFiredRef = useRef(null);
   useEffect(() => {
     if (!pendingAutoSubmit || !inputValue.trim() || isProcessing) return;
-    if (autoSubmitFiredRef.current) return;
-    autoSubmitFiredRef.current = true;
+    // Guard: skip if we already fired for this exact prompt
     const prompt = inputValue.trim();
+    if (autoSubmitFiredRef.current === prompt) return;
+    autoSubmitFiredRef.current = prompt;
     const modality = pendingModality || undefined;
     dispatch(setPendingAutoSubmit(false));
     dispatch(setPendingModality(null));
@@ -1133,11 +1145,12 @@ export default function MainContent() {
       webSearch: webSearchEnabled,
       modality,
     });
-    return () => {
-      // Reset on cleanup so it can fire again for future navigations
-      autoSubmitFiredRef.current = false;
-    };
   }, [pendingAutoSubmit]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset the auto-submit guard when the chat changes (new navigation)
+  useEffect(() => {
+    autoSubmitFiredRef.current = null;
+  }, [currentChatId]);
 
   /**
    * Stop handler.
@@ -1511,7 +1524,7 @@ export default function MainContent() {
         isSubConvPanelOpen ? styles.subConvPanelOpen : ''
       }`}
     >
-      {/* Top nav bar with share + new chat buttons */}
+      {/* Top nav bar with share + new chat + menu buttons */}
       <div className={styles.topNav}>
         <div className={styles.topNavInner}>
           <button
@@ -1523,15 +1536,100 @@ export default function MainContent() {
             <ShareIcon />
           </button>
           <button
-            className={styles.newChatBtn}
+            className={styles.newChatNavBtn}
             onClick={handleNewChat}
             title="New Chat"
             aria-label="Start new chat"
           >
             <NewChatIcon />
           </button>
+          <div className={styles.chatMenuWrapper} ref={chatMenuRef}>
+            <button
+              className={`${styles.chatMenuBtn} ${showChatMenu ? styles.chatMenuBtnActive : ''}`}
+              onClick={() => setShowChatMenu(!showChatMenu)}
+              title="More options"
+              aria-label="More options"
+            >
+              <MoreVerticalIcon />
+            </button>
+            {showChatMenu && (
+              <div className={styles.chatMenuDropdown}>
+                <button
+                  className={styles.chatMenuItem}
+                  onClick={() => {
+                    setShowChatMenu(false);
+                  }}
+                >
+                  <StarIcon />
+                  <span>Star conversation</span>
+                </button>
+                <button
+                  className={styles.chatMenuItem}
+                  onClick={() => {
+                    setShowChatMenu(false);
+                  }}
+                >
+                  <ArchiveIcon />
+                  <span>Archive</span>
+                </button>
+                <button
+                  className={styles.chatMenuItem}
+                  onClick={() => {
+                    setShowChatMenu(false);
+                  }}
+                >
+                  <FlagIcon />
+                  <span>Report</span>
+                </button>
+                <div className={styles.chatMenuDivider} />
+                <button
+                  className={`${styles.chatMenuItem} ${styles.chatMenuItemDanger}`}
+                  onClick={() => {
+                    setShowChatMenu(false);
+                    setShowDeleteConfirm(true);
+                  }}
+                >
+                  <TrashIcon />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      {showDeleteConfirm && (
+        <div className={styles.confirmOverlay} onClick={() => setShowDeleteConfirm(false)}>
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>
+              <TrashIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Delete conversation?</h3>
+            <p className={styles.confirmDesc}>
+              This will permanently delete this conversation and all its messages. This action
+              cannot be undone.
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setShowDeleteConfirm(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  handleNewChat();
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share modal */}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}

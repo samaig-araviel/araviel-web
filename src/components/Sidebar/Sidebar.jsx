@@ -36,6 +36,7 @@ import {
   ModelsIcon,
   AnalyticsIcon,
   ImageGalleryIcon,
+  ConversationsIcon,
 } from '../Icons';
 import styles from './Sidebar.module.css';
 
@@ -174,6 +175,13 @@ export default function Sidebar() {
     }
   };
 
+  const handleConversationsClick = () => {
+    dispatch(setActiveItem(activeItem === 'conversations' ? 'home' : 'conversations'));
+    if (isMobile) {
+      dispatch(setCollapsed(true));
+    }
+  };
+
   const handleModelsClick = () => {
     dispatch(setActiveItem(activeItem === 'models' ? 'home' : 'models'));
     if (isMobile) {
@@ -264,12 +272,30 @@ export default function Sidebar() {
           )}
         </div>
 
-        <button className={styles.newChatBtn} onClick={handleNewChat}>
+        <button className={styles.newChatBtn} onClick={handleNewChat} title="New chat">
           <PlusIcon />
-          {showFullContent && <span>New Chat</span>}
+          {showFullContent && <span>New chat</span>}
         </button>
 
         <nav className={styles.nav}>
+          <button
+            className={`${styles.navItem} ${activeItem === 'conversations' ? styles.active : ''}`}
+            onClick={handleConversationsClick}
+            title="Conversations"
+            aria-label="Conversations"
+          >
+            <ConversationsIcon />
+            {showFullContent && <span>Conversations</span>}
+          </button>
+          <button
+            className={`${styles.navItem} ${activeItem === 'gallery' ? styles.active : ''}`}
+            onClick={handleGalleryClick}
+            title="Image Gallery"
+            aria-label="Image Gallery"
+          >
+            <ImageGalleryIcon />
+            {showFullContent && <span>Images</span>}
+          </button>
           <button
             className={`${styles.navItem} ${activeItem === 'models' ? styles.active : ''}`}
             onClick={handleModelsClick}
@@ -288,16 +314,9 @@ export default function Sidebar() {
             <AnalyticsIcon />
             {showFullContent && <span>Analytics</span>}
           </button>
-          <button
-            className={`${styles.navItem} ${activeItem === 'gallery' ? styles.active : ''}`}
-            onClick={handleGalleryClick}
-            title="Image Gallery"
-            aria-label="Image Gallery"
-          >
-            <ImageGalleryIcon />
-            {showFullContent && <span>Images</span>}
-          </button>
         </nav>
+
+        {showFullContent && <div className={styles.navDivider} />}
 
         {showFullContent && (
           <div className={styles.recents}>
