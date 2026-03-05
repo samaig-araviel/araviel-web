@@ -140,25 +140,16 @@ function generateFollowUps(content, userPrompt, generatedImages) {
 
   // --- Image generation responses ---
   if (generatedImages && generatedImages.length > 0) {
-    const imgPrompt = generatedImages[0].prompt || userPrompt || '';
-    const subject = extractQuestionTopic(imgPrompt) || imgPrompt;
-    if (subject) {
-      suggestions.push(
-        `Generate another variation of ${subject}`,
-        `Create a different art style version of ${subject}`,
-        `Make a more detailed version of ${subject}`,
-        `Generate ${subject} from a different angle or perspective`,
-        `Create a minimalist version of ${subject}`,
-        `Generate ${subject} in a photorealistic style`
-      );
-    } else {
-      suggestions.push(
-        'Generate another variation of this image',
-        'Create a different art style version',
-        'Make a more detailed version of this',
-        'Generate this from a different angle or perspective'
-      );
-    }
+    suggestions.push(
+      'Generate a similar image with a different mood',
+      'Try a different art style',
+      'Make it more vibrant and colorful',
+      'Create a darker, moodier version',
+      'Show a wider angle of this scene',
+      'Add more fine detail and texture',
+      'Try this in a painterly style',
+      'Generate a cinematic version'
+    );
     return pickRandom(suggestions, 4);
   }
 
@@ -1168,28 +1159,51 @@ function GeneratedImageBlock({ imageData }) {
     e.stopPropagation();
     if (downloading) return;
     setDownloading(true);
+    const filename = `araviel-${(imageData.prompt || 'generated')
+      .slice(0, 40)
+      .replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.png`;
     try {
       const response = await fetch(imageData.url);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = `araviel-${(imageData.prompt || 'generated')
-        .slice(0, 40)
-        .replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.png`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch {
-      const link = document.createElement('a');
-      link.href = imageData.url;
-      link.download = `araviel-generated-${Date.now()}.png`;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Cross-origin fallback: draw to canvas and export as blob
+      try {
+        const blob = await new Promise((resolve, reject) => {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            canvas.toBlob(
+              (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+              'image/png'
+            );
+          };
+          img.onerror = reject;
+          img.src = imageData.url;
+        });
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        // Last resort: open in new tab so user can right-click save
+        window.open(imageData.url, '_blank', 'noopener,noreferrer');
+      }
     } finally {
       setDownloading(false);
     }

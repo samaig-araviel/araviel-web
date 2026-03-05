@@ -43,18 +43,18 @@
 
 /* ===== Prompt ===== */
 .promptForm {
-  max-width: 540px;
+  max-width: 580px;
   margin: 0 auto 20px;
 }
 
 .promptInputWrapper {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px 10px 18px;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px 14px;
   background: var(--bg-input);
   border: 1px solid var(--border-input);
-  border-radius: 14px;
+  border-radius: 16px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -63,22 +63,23 @@
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.06);
 }
 
-.promptInputWrapper > svg {
-  width: 16px;
-  height: 16px;
-  color: var(--text-muted);
-  flex-shrink: 0;
-  opacity: 0.45;
-}
-
 .promptInput {
-  flex: 1;
+  width: 100%;
   font-size: 14px;
   color: var(--text-primary);
   background: transparent;
   border: none;
   outline: none;
   font-family: inherit;
+  resize: none;
+  line-height: 1.5;
+  max-height: 120px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.promptInput::-webkit-scrollbar {
+  display: none;
 }
 
 .promptInput::placeholder {
@@ -86,13 +87,96 @@
   opacity: 0.6;
 }
 
-.promptSubmitBtn {
-  width: 34px;
-  height: 34px;
+.promptActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.promptActionsLeft {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.promptAttachBtn {
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.promptAttachBtn:hover,
+.promptAttachBtnActive {
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.promptAttachBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.promptAttachMenu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 200;
+  min-width: 200px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  animation: filterIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.promptAttachOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+}
+
+.promptAttachOption:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.promptAttachOption svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.promptSubmitBtn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
   background: var(--bg-secondary);
   border: none;
   color: var(--text-muted);
@@ -116,61 +200,72 @@
   height: 14px;
 }
 
-/* ===== Usage ===== */
-.usageContainer {
-  max-width: 300px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
+.hiddenFileInput {
+  display: none;
 }
 
-.usageBarTrack {
-  width: 100%;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--bg-secondary);
-  overflow: hidden;
-}
-
-.usageBarFill {
-  height: 100%;
-  border-radius: 2px;
-  background: var(--bg-icon-button);
-  opacity: 0.35;
-  transition: width 0.4s ease;
-}
-
-.usageDetails {
-  display: flex;
+/* ===== Usage Pill ===== */
+.usagePill {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
+  padding: 6px 16px 6px 12px;
+  border-radius: 100px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  margin: 0 auto;
+  transition: border-color 0.3s ease;
 }
 
-.usageText {
+.usagePill:hover {
+  border-color: var(--text-muted);
+}
+
+.usagePillDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+  animation: pillPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pillPulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.3);
+  }
+}
+
+.usagePillText {
   font-size: 11.5px;
-  color: var(--text-muted);
   font-weight: 500;
-  opacity: 0.7;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
 }
 
-.tierBadge {
+.usagePillBadge {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  padding: 3px 8px;
-  border-radius: 10px;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 6px;
   background: var(--bg-icon-button);
   color: var(--text-icon-button);
-  opacity: 0.75;
+  opacity: 0.8;
 }
 
-.usageLimitNote {
-  font-size: 11px;
+.usagePillLimit {
+  font-size: 10.5px;
   color: #d97706;
   font-weight: 500;
+  margin-left: 2px;
 }
 
 /* ===== Quick Prompts — 2-column structured grid ===== */
@@ -984,11 +1079,15 @@
   }
 
   .promptInputWrapper {
-    padding: 8px 10px 8px 14px;
+    padding: 10px 12px;
   }
 
   .promptInput {
     font-size: 13px;
+  }
+
+  .promptAttachMenu {
+    min-width: 180px;
   }
 
   .quickItemIcon {
