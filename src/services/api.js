@@ -48,7 +48,7 @@ export async function sendMessage(payload) {
   const body = {
     message: payload.message,
     userTier: 'free',
-    modality: 'text',
+    modality: payload.modality || 'text',
   };
   if (payload.conversationId) body.conversationId = payload.conversationId;
   if (payload.subConversationId) body.subConversationId = payload.subConversationId;
