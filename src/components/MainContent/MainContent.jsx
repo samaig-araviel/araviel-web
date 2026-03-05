@@ -70,6 +70,8 @@ import {
   CpuIcon,
   MapPinIcon,
   SmileIcon,
+  CloudIcon,
+  ExternalLinkIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -147,65 +149,176 @@ const MOOD_OPTIONS = [
   { id: 'calm', label: 'Calm', desc: 'Relaxed and at ease' },
 ];
 
+// Cloud storage providers for file import
+const CLOUD_PROVIDERS = [
+  {
+    id: 'google-drive',
+    name: 'Google Drive',
+    color: '#4285F4',
+    icon: '📁',
+    pickerUrl: 'https://drive.google.com/file/d/',
+  },
+  {
+    id: 'onedrive',
+    name: 'OneDrive',
+    color: '#0078D4',
+    icon: '☁️',
+    pickerUrl: 'https://onedrive.live.com/picker',
+  },
+  {
+    id: 'sharepoint',
+    name: 'SharePoint',
+    color: '#038387',
+    icon: '🏢',
+    pickerUrl: null,
+  },
+  {
+    id: 'dropbox',
+    name: 'Dropbox',
+    color: '#0061FF',
+    icon: '💧',
+    pickerUrl: null,
+  },
+  {
+    id: 'box',
+    name: 'Box',
+    color: '#0061D5',
+    icon: '📦',
+    pickerUrl: null,
+  },
+];
+
 const promptsData = {
   code: {
     title: 'Code',
     icon: CodeIcon,
     items: [
-      { text: 'Debug my code', icon: BugIcon },
-      { text: 'Write a function', icon: CodeIcon },
-      { text: 'Explain this code', icon: LightbulbIcon },
-      { text: 'Optimize performance', icon: ZapIcon },
+      {
+        text: 'Help me debug this error: "TypeError: Cannot read properties of undefined" in my React component',
+        icon: BugIcon,
+      },
+      {
+        text: 'Write a Python function that takes a CSV file and returns a cleaned pandas DataFrame with duplicates removed and missing values handled',
+        icon: CodeIcon,
+      },
+      {
+        text: 'Explain how JavaScript closures work with a practical example I can use in my project',
+        icon: LightbulbIcon,
+      },
+      {
+        text: 'Review my API endpoint for performance bottlenecks and suggest optimizations for handling 10k+ concurrent requests',
+        icon: ZapIcon,
+      },
     ],
   },
   write: {
     title: 'Write',
     icon: PenIcon,
     items: [
-      { text: 'Draft an email', icon: MailIcon },
-      { text: 'Summarize content', icon: FileTextIcon },
-      { text: 'Create marketing copy', icon: CopyIcon },
-      { text: 'Write documentation', icon: ClipboardIcon },
+      {
+        text: 'Draft a professional email to my team announcing a new project timeline with key milestones and deadlines',
+        icon: MailIcon,
+      },
+      {
+        text: 'Summarize this 2000-word article into a concise 3-paragraph executive brief with key takeaways',
+        icon: FileTextIcon,
+      },
+      {
+        text: 'Write compelling landing page copy for a SaaS product that helps teams collaborate on design projects',
+        icon: CopyIcon,
+      },
+      {
+        text: 'Create comprehensive API documentation for a REST endpoint with request/response examples and error codes',
+        icon: ClipboardIcon,
+      },
     ],
   },
   research: {
     title: 'Research',
     icon: SearchIcon,
     items: [
-      { text: 'Find information', icon: SearchIcon },
-      { text: 'Compare alternatives', icon: LayersIcon },
-      { text: 'Analyze market trends', icon: TrendingUpIcon },
-      { text: 'Summarize findings', icon: ClipboardIcon },
+      {
+        text: 'Research the latest advancements in large language models from the past 6 months and summarize the key breakthroughs',
+        icon: SearchIcon,
+      },
+      {
+        text: 'Compare React, Vue, and Svelte for building a large-scale enterprise dashboard — pros, cons, and performance benchmarks',
+        icon: LayersIcon,
+      },
+      {
+        text: 'Analyze the current AI startup landscape: top funded companies, emerging trends, and market opportunities in 2026',
+        icon: TrendingUpIcon,
+      },
+      {
+        text: 'Compile a research brief on the environmental impact of cloud computing with statistics and recent studies',
+        icon: ClipboardIcon,
+      },
     ],
   },
   analyze: {
     title: 'Analyze',
     icon: ChartIcon,
     items: [
-      { text: 'Review this data', icon: EyeIcon },
-      { text: 'Find patterns', icon: PuzzleIcon },
-      { text: 'Generate insights', icon: LightbulbIcon },
-      { text: 'Create a report', icon: ClipboardIcon },
+      {
+        text: 'Analyze this dataset of customer churn rates and identify the top 5 factors driving customer attrition',
+        icon: EyeIcon,
+      },
+      {
+        text: 'Find patterns in my monthly sales data and predict trends for the next quarter using statistical methods',
+        icon: PuzzleIcon,
+      },
+      {
+        text: 'Generate actionable business insights from our user engagement metrics — what should we prioritize next?',
+        icon: LightbulbIcon,
+      },
+      {
+        text: 'Create a comprehensive competitive analysis report comparing our product features against our top 3 competitors',
+        icon: ClipboardIcon,
+      },
     ],
   },
   create: {
     title: 'Create',
     icon: SparkleIcon,
     items: [
-      { text: 'Generate ideas', icon: LightbulbIcon },
-      { text: 'Design a modern UI layout', icon: PuzzleIcon },
-      { text: 'Build a prototype', icon: LayersIcon },
-      { text: 'Create content', icon: SparkleIcon },
+      {
+        text: 'Generate 10 creative startup ideas that combine AI with healthcare to solve real-world problems',
+        icon: LightbulbIcon,
+      },
+      {
+        text: 'Design a modern, accessible dashboard layout for a project management tool with dark mode support',
+        icon: PuzzleIcon,
+      },
+      {
+        text: 'Build a prototype specification for a mobile app that helps users track their daily habits and productivity',
+        icon: LayersIcon,
+      },
+      {
+        text: 'Create a comprehensive content calendar for a tech blog with 12 article ideas, titles, and brief outlines',
+        icon: SparkleIcon,
+      },
     ],
   },
   learn: {
     title: 'Learn',
     icon: BookIcon,
     items: [
-      { text: 'Explain a concept', icon: LightbulbIcon },
-      { text: 'Teach me about this', icon: BookIcon },
-      { text: 'Break down this topic', icon: LayersIcon },
-      { text: 'Quiz me on this', icon: HelpCircleIcon },
+      {
+        text: 'Explain how neural networks learn through backpropagation — use simple analogies and build up to the math',
+        icon: LightbulbIcon,
+      },
+      {
+        text: 'Teach me about distributed systems architecture: CAP theorem, consistency models, and real-world trade-offs',
+        icon: BookIcon,
+      },
+      {
+        text: 'Break down how Git branching strategies work — compare GitFlow, trunk-based development, and GitHub Flow',
+        icon: LayersIcon,
+      },
+      {
+        text: 'Quiz me on data structures and algorithms — start with medium difficulty and adjust based on my answers',
+        icon: HelpCircleIcon,
+      },
     ],
   },
 };
@@ -520,6 +633,7 @@ export default function MainContent() {
   const [showResearchModes, setShowResearchModes] = useState(false);
   const [showToneSubmenu, setShowToneSubmenu] = useState(false);
   const [showMoodSubmenu, setShowMoodSubmenu] = useState(false);
+  const [showCloudSubmenu, setShowCloudSubmenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -574,7 +688,9 @@ export default function MainContent() {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
-        if (showToneSubmenu) {
+        if (showCloudSubmenu) {
+          setShowCloudSubmenu(false);
+        } else if (showToneSubmenu) {
           setShowToneSubmenu(false);
         } else if (showMoodSubmenu) {
           setShowMoodSubmenu(false);
@@ -588,7 +704,7 @@ export default function MainContent() {
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showResearchModes, showToneSubmenu, showMoodSubmenu]);
+  }, [showResearchModes, showToneSubmenu, showMoodSubmenu, showCloudSubmenu]);
 
   // Mobile detection
   useEffect(() => {
@@ -604,6 +720,7 @@ export default function MainContent() {
       setMobileFileSubmenu(false);
       setShowToneSubmenu(false);
       setShowMoodSubmenu(false);
+      setShowCloudSubmenu(false);
     }
   }, [showAttachDropdown]);
 
@@ -702,6 +819,9 @@ export default function MainContent() {
           autoStrategy: autoStrategy || undefined,
           weather: userLocation?.weather || undefined,
           requestFollowUps: true,
+          extendedThinking: extendedThinking || undefined,
+          deepResearch: deepResearch || undefined,
+          googleThinking: googleThinking || undefined,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -941,7 +1061,17 @@ export default function MainContent() {
         setStreamedText('');
       }, 600);
     },
-    [dispatch, currentChatId, userLocation, tone, mood, autoStrategy]
+    [
+      dispatch,
+      currentChatId,
+      userLocation,
+      tone,
+      mood,
+      autoStrategy,
+      extendedThinking,
+      deepResearch,
+      googleThinking,
+    ]
   );
 
   /**
@@ -1096,7 +1226,8 @@ export default function MainContent() {
 
   // Dynamic attach options (label changes based on device)
   const attachOptions = [
-    { id: 'files', label: 'Add files or Photos', icon: FilePlusIcon },
+    { id: 'files', label: 'Upload files or images', icon: FilePlusIcon },
+    { id: 'cloud', label: 'Add files from cloud', icon: CloudIcon },
     { id: 'camera', label: isMobile ? 'Camera' : 'Take a screenshot', icon: CameraIcon },
     { id: 'websearch', label: 'Web Search', icon: GlobeIcon },
     { id: 'research', label: 'Research', icon: BookIcon },
@@ -1267,9 +1398,31 @@ export default function MainContent() {
     dispatch(modeConf.action(!currentValue));
   };
 
+  const handleCloudProviderClick = (provider) => {
+    // Open a file picker or redirect to the cloud provider
+    // For now, show a toast or open the provider's file picker
+    const pickerUrls = {
+      'google-drive': 'https://drive.google.com',
+      onedrive: 'https://onedrive.live.com',
+      sharepoint: 'https://www.office.com/launch/sharepoint',
+      dropbox: 'https://www.dropbox.com/home',
+      box: 'https://app.box.com',
+    };
+    const url = pickerUrls[provider.id];
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+    setShowCloudSubmenu(false);
+    setShowAttachDropdown(false);
+  };
+
   const handleAttachOptionClick = (optionId) => {
     if (optionId === 'websearch') {
       dispatch(setWebSearchEnabled(webSearchEnabled === true ? false : true));
+      return;
+    }
+    if (optionId === 'cloud') {
+      setShowCloudSubmenu(true);
       return;
     }
     if (optionId === 'research') {
@@ -1589,6 +1742,38 @@ export default function MainContent() {
                             );
                           })}
                         </div>
+                      ) : showCloudSubmenu ? (
+                        <div className={styles.attachSubmenu}>
+                          <button
+                            className={styles.attachSubmenuBack}
+                            onClick={() => setShowCloudSubmenu(false)}
+                          >
+                            <ChevronLeftIcon />
+                            <span>Back</span>
+                          </button>
+                          <div className={styles.submenuLabel}>Cloud Storage</div>
+                          {CLOUD_PROVIDERS.map((provider) => (
+                            <button
+                              key={provider.id}
+                              className={styles.cloudProviderOption}
+                              onClick={() => handleCloudProviderClick(provider)}
+                            >
+                              <span
+                                className={styles.cloudProviderIcon}
+                                style={{
+                                  backgroundColor: provider.color + '15',
+                                  color: provider.color,
+                                }}
+                              >
+                                {provider.icon}
+                              </span>
+                              <span className={styles.cloudProviderName}>{provider.name}</span>
+                              <span className={styles.cloudProviderArrow}>
+                                <ExternalLinkIcon />
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       ) : showMoodSubmenu ? (
                         <div className={styles.attachSubmenu}>
                           <button
@@ -1684,6 +1869,7 @@ export default function MainContent() {
                               {(option.id === 'research' ||
                                 option.id === 'tone' ||
                                 option.id === 'mood' ||
+                                option.id === 'cloud' ||
                                 (option.id === 'files' && isMobile)) && (
                                 <span className={styles.attachOptionChevron}>
                                   <ChevronRightIcon />
@@ -1710,31 +1896,7 @@ export default function MainContent() {
                   >
                     <GlobeIcon />
                   </button>
-                  {locationPermission === 'granted' && userLocation?.city ? (
-                    <button
-                      type="button"
-                      className={`${styles.locationPill} ${styles.locationPillActive}`}
-                      onClick={clearLocation}
-                      title={`Location: ${userLocation.city}${
-                        userLocation.region ? ', ' + userLocation.region : ''
-                      } — Click to remove`}
-                      aria-label="Location detected"
-                    >
-                      <MapPinIcon />
-                      <span>{userLocation.city}</span>
-                    </button>
-                  ) : locationPermission !== 'denied' && locationPermission !== 'unavailable' ? (
-                    <button
-                      type="button"
-                      className={styles.locationPill}
-                      onClick={requestLocation}
-                      disabled={isProcessing}
-                      title="Share your location for better local results"
-                      aria-label="Share location"
-                    >
-                      <MapPinIcon />
-                    </button>
-                  ) : null}
+                  {/* Location is detected automatically behind the scenes */}
                 </div>
                 {isProcessing ? (
                   <button
