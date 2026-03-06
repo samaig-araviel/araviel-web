@@ -453,6 +453,13 @@ function extractRemainingText(text, weatherData) {
     'wind chill',
     'heat index',
     'wind speed',
+    'chance of rain',
+    'rain chance',
+    'sunrise',
+    'sunset',
+    'gusts',
+    'wind gusts',
+    'gust',
   ];
   const dayNames = [
     'monday',
@@ -567,6 +574,27 @@ export function extractWeatherData(text) {
   const pressure = extractDetailLine(text, ['pressure', 'barometric']);
   const uvIndex = extractDetailLine(text, ['uv index', 'uv']);
   const dewPoint = extractDetailLine(text, ['dew point']);
+  const chanceOfRain = extractDetailLine(text, [
+    'chance of rain',
+    'rain chance',
+    'precipitation chance',
+    'probability of rain',
+    'chance of precipitation',
+  ]);
+  const sunrise = extractDetailLine(text, ['sunrise']);
+  const sunset = extractDetailLine(text, ['sunset']);
+  const gusts = extractDetailLine(text, ['gusts', 'wind gusts', 'gust']);
+
+  // Min/Max temps
+  let minTemp = extractDetailLine(text, ['low', 'min', 'minimum']);
+  let maxTemp = extractDetailLine(text, ['high', 'max', 'maximum']);
+  // Also try "Low: X / High: Y" or "X°C / Y°C" patterns
+  if (!minTemp || !maxTemp) {
+    const minMaxMatch = text.match(/(?:low|min(?:imum)?)\s*[:\-]?\s*(-?\d+\s*°\s*[CF])/i);
+    if (minMaxMatch) minTemp = minTemp || minMaxMatch[1].replace(/\s/g, '');
+    const maxMatch = text.match(/(?:high|max(?:imum)?)\s*[:\-]?\s*(-?\d+\s*°\s*[CF])/i);
+    if (maxMatch) maxTemp = maxTemp || maxMatch[1].replace(/\s/g, '');
+  }
 
   const weatherData = {
     location,
@@ -582,6 +610,12 @@ export function extractWeatherData(text) {
       pressure,
       uvIndex,
       dewPoint,
+      chanceOfRain,
+      sunrise,
+      sunset,
+      gusts,
+      minTemp,
+      maxTemp,
     },
     periods: periods.length > 0 ? periods : null,
     forecast: forecast.length > 0 ? forecast : null,

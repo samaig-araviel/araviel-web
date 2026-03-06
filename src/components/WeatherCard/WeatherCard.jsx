@@ -2,17 +2,11 @@ import { useMemo } from 'react';
 import { mapConditionToTheme } from './weatherParser';
 import styles from './WeatherCard.module.css';
 
-// ── Weather Icons (inline SVGs) ────────────────────────────────────────────
+// ── Weather Icons (inline SVGs — white strokes for immersive backgrounds) ──
 
 function SunIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <circle cx="16" cy="16" r="6" fill="#FBBF24" />
       <g stroke="#FBBF24" strokeWidth="2" strokeLinecap="round">
         <line x1="16" y1="2" x2="16" y2="6" />
@@ -30,27 +24,18 @@ function SunIcon({ size = 32 }) {
 
 function CloudIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M8 24h16a6 6 0 001.5-11.8A8 8 0 009.2 14 5 5 0 008 24z" fill="#9CA3AF" />
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path
+        d="M8 24h16a6 6 0 001.5-11.8A8 8 0 009.2 14 5 5 0 008 24z"
+        fill="rgba(255,255,255,0.7)"
+      />
     </svg>
   );
 }
 
 function PartlyCloudyIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <circle cx="12" cy="14" r="5" fill="#FBBF24" />
       <g stroke="#FBBF24" strokeWidth="1.5" strokeLinecap="round">
         <line x1="12" y1="4" x2="12" y2="6.5" />
@@ -59,22 +44,22 @@ function PartlyCloudyIcon({ size = 32 }) {
         <line x1="5.3" y1="7.3" x2="7.1" y2="9.1" />
         <line x1="5.3" y1="20.7" x2="7.1" y2="18.9" />
       </g>
-      <path d="M12 26h14a5 5 0 001.2-9.8 6.5 6.5 0 00-12.5-1.2A4 4 0 0012 26z" fill="#9CA3AF" />
+      <path
+        d="M12 26h14a5 5 0 001.2-9.8 6.5 6.5 0 00-12.5-1.2A4 4 0 0012 26z"
+        fill="rgba(255,255,255,0.65)"
+      />
     </svg>
   );
 }
 
 function RainIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M8 18h16a6 6 0 001.5-11.8A8 8 0 009.2 8 5 5 0 008 18z" fill="#60A5FA" />
-      <g stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path
+        d="M8 18h16a6 6 0 001.5-11.8A8 8 0 009.2 8 5 5 0 008 18z"
+        fill="rgba(255,255,255,0.6)"
+      />
+      <g stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round">
         <line x1="11" y1="21" x2="10" y2="25" />
         <line x1="16" y1="21" x2="15" y2="27" />
         <line x1="21" y1="21" x2="20" y2="25" />
@@ -85,15 +70,12 @@ function RainIcon({ size = 32 }) {
 
 function HeavyRainIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M8 16h16a6 6 0 001.5-11.8A8 8 0 009.2 6 5 5 0 008 16z" fill="#3B82F6" />
-      <g stroke="#2563EB" strokeWidth="1.5" strokeLinecap="round">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path
+        d="M8 16h16a6 6 0 001.5-11.8A8 8 0 009.2 6 5 5 0 008 16z"
+        fill="rgba(255,255,255,0.55)"
+      />
+      <g stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round">
         <line x1="9" y1="19" x2="7" y2="26" />
         <line x1="13" y1="19" x2="11" y2="28" />
         <line x1="17" y1="19" x2="15" y2="26" />
@@ -106,15 +88,12 @@ function HeavyRainIcon({ size = 32 }) {
 
 function SnowIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M8 18h16a6 6 0 001.5-11.8A8 8 0 009.2 8 5 5 0 008 18z" fill="#BAE6FD" />
-      <g fill="#60A5FA">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path
+        d="M8 18h16a6 6 0 001.5-11.8A8 8 0 009.2 8 5 5 0 008 18z"
+        fill="rgba(255,255,255,0.65)"
+      />
+      <g fill="rgba(255,255,255,0.9)">
         <circle cx="11" cy="23" r="1.5" />
         <circle cx="16" cy="25" r="1.5" />
         <circle cx="21" cy="22" r="1.5" />
@@ -127,14 +106,11 @@ function SnowIcon({ size = 32 }) {
 
 function StormIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M8 16h16a6 6 0 001.5-11.8A8 8 0 009.2 6 5 5 0 008 16z" fill="#6B7280" />
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <path
+        d="M8 16h16a6 6 0 001.5-11.8A8 8 0 009.2 6 5 5 0 008 16z"
+        fill="rgba(255,255,255,0.5)"
+      />
       <polygon points="17,16 14,23 17,23 15,30 22,20 18,20 21,16" fill="#FBBF24" />
     </svg>
   );
@@ -142,14 +118,8 @@ function StormIcon({ size = 32 }) {
 
 function FogIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <g stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <g stroke="rgba(255,255,255,0.6)" strokeWidth="2" strokeLinecap="round">
         <line x1="6" y1="12" x2="26" y2="12" />
         <line x1="8" y1="17" x2="24" y2="17" />
         <line x1="6" y1="22" x2="26" y2="22" />
@@ -161,14 +131,8 @@ function FogIcon({ size = 32 }) {
 
 function WindyIcon({ size = 32 }) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <g stroke="#6B7280" strokeWidth="2" strokeLinecap="round">
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <g stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round">
         <path d="M4 12h18a3 3 0 10-3-3" fill="none" />
         <path d="M6 18h14a2.5 2.5 0 11-2.5 2.5" fill="none" />
         <path d="M4 24h10a2 2 0 10-2-2" fill="none" />
@@ -189,17 +153,199 @@ const ICON_MAP = {
   windy: WindyIcon,
 };
 
-// ── Detail helpers ─────────────────────────────────────────────────────────
+// ── Mini icons for detail tiles (16px, white strokes) ────────────────────
 
-function DetailItem({ label, value }) {
-  if (!value) return null;
+function WindMini() {
   return (
-    <div className={styles.detailItem}>
-      <span className={styles.detailLabel}>{label}</span>
-      <span className={styles.detailValue}>{value}</span>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M2 6h9a1.5 1.5 0 10-1.5-1.5"
+        stroke="#fff"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M3 9h7a1.2 1.2 0 11-1.2 1.2"
+        stroke="#fff"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M2 12h5a1 1 0 10-1-1"
+        stroke="#fff"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+function HumidityMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 2L4.5 8a3.5 3.5 0 107 0L8 2z" stroke="#fff" strokeWidth="1.2" fill="none" />
+    </svg>
+  );
+}
+
+function PressureMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="5.5" stroke="#fff" strokeWidth="1.2" fill="none" />
+      <path d="M8 5v3l2.5 1.5" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
+function UVMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="8" cy="8" r="3" stroke="#fff" strokeWidth="1.2" fill="none" />
+      <g stroke="#fff" strokeWidth="1" strokeLinecap="round">
+        <line x1="8" y1="1.5" x2="8" y2="3" />
+        <line x1="8" y1="13" x2="8" y2="14.5" />
+        <line x1="1.5" y1="8" x2="3" y2="8" />
+        <line x1="13" y1="8" x2="14.5" y2="8" />
+      </g>
+    </svg>
+  );
+}
+
+function RainChanceMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M5 5h8a3 3 0 00.7-5.9A4 4 0 005.1 1 2.5 2.5 0 005 5z"
+        stroke="#fff"
+        strokeWidth="1"
+        fill="none"
+        transform="translate(-1,3)"
+      />
+      <line x1="6" y1="10" x2="5.5" y2="12.5" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+      <line x1="9" y1="10" x2="8.5" y2="13" stroke="#fff" strokeWidth="1" strokeLinecap="round" />
+      <line
+        x1="12"
+        y1="10"
+        x2="11.5"
+        y2="12.5"
+        stroke="#fff"
+        strokeWidth="1"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function VisibilityMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M1 8s2.5-4 7-4 7 4 7 4-2.5 4-7 4-7-4-7-4z"
+        stroke="#fff"
+        strokeWidth="1.2"
+        fill="none"
+      />
+      <circle cx="8" cy="8" r="2" stroke="#fff" strokeWidth="1.2" fill="none" />
+    </svg>
+  );
+}
+
+function DewPointMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M8 2L5 8.5a3 3 0 106 0L8 2z" stroke="#fff" strokeWidth="1.2" fill="none" />
+      <circle cx="8" cy="10" r="1" fill="#fff" opacity="0.6" />
+    </svg>
+  );
+}
+
+function SunriseMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2 12h12" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M4 12a4 4 0 018 0" stroke="#fff" strokeWidth="1.2" fill="none" />
+      <path d="M8 3v2" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M8 6l0 -2" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SunsetMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M2 12h12" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M4 12a4 4 0 018 0" stroke="#fff" strokeWidth="1.2" fill="none" />
+      <path d="M8 3v2" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+      <path
+        d="M6.5 4.5L8 6l1.5-1.5"
+        stroke="#fff"
+        strokeWidth="1"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+function GustsMini() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path
+        d="M1 7h10a1.5 1.5 0 10-1.5-1.5"
+        stroke="#fff"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d="M3 10h8a1.2 1.2 0 11-1.2 1.2"
+        stroke="#fff"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+const MINI_ICON_MAP = {
+  wind: WindMini,
+  humidity: HumidityMini,
+  pressure: PressureMini,
+  uv: UVMini,
+  rainChance: RainChanceMini,
+  visibility: VisibilityMini,
+  dewPoint: DewPointMini,
+  sunrise: SunriseMini,
+  sunset: SunsetMini,
+  gusts: GustsMini,
+};
+
+// ── Detail Tile ──────────────────────────────────────────────────────────
+
+function DetailTile({ icon, label, value }) {
+  if (!value) return null;
+  const MiniIcon = MINI_ICON_MAP[icon];
+  return (
+    <div className={styles.detailTile}>
+      {MiniIcon && (
+        <div className={styles.detailTileIcon}>
+          <MiniIcon />
+        </div>
+      )}
+      <div className={styles.detailTileContent}>
+        <span className={styles.detailTileLabel}>{label}</span>
+        <span className={styles.detailTileValue}>{value}</span>
+      </div>
     </div>
   );
 }
+
+// ── Period & Forecast helpers ────────────────────────────────────────────
 
 function PeriodChip({ period }) {
   const theme = mapConditionToTheme(inferConditionFromLabel(period.condition));
@@ -245,25 +391,16 @@ function inferConditionFromLabel(label) {
   return null;
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────
+// ── Main Component ──────────────────────────────────────────────────────
 
 export default function WeatherCard({ weatherData, isDark, renderMarkdown }) {
   const { location, date, current, periods, forecast, source, remainingText } = weatherData;
   const theme = useMemo(() => mapConditionToTheme(current?.condition), [current?.condition]);
   const IconComp = ICON_MAP[theme.icon] || CloudIcon;
 
-  const hasDetails =
-    current?.feelsLike ||
-    current?.humidity ||
-    current?.wind ||
-    current?.visibility ||
-    current?.pressure ||
-    current?.uvIndex ||
-    current?.dewPoint;
   const hasPeriods = periods && periods.length > 0;
   const hasForecast = forecast && forecast.length > 0;
 
-  // Fallback display values
   const displayLocation = location || 'Current Weather';
   const displayDate =
     date ||
@@ -274,44 +411,65 @@ export default function WeatherCard({ weatherData, isDark, renderMarkdown }) {
       day: 'numeric',
     });
 
+  // Build detail tiles array from available data
+  const details = [
+    { icon: 'wind', label: 'Wind', value: current?.wind },
+    { icon: 'humidity', label: 'Humidity', value: current?.humidity },
+    { icon: 'pressure', label: 'Pressure', value: current?.pressure },
+    { icon: 'uv', label: 'UV Index', value: current?.uvIndex },
+    { icon: 'rainChance', label: 'Rain Chance', value: current?.chanceOfRain },
+    { icon: 'visibility', label: 'Visibility', value: current?.visibility },
+    { icon: 'dewPoint', label: 'Dew Point', value: current?.dewPoint },
+    { icon: 'gusts', label: 'Gusts', value: current?.gusts },
+    { icon: 'sunrise', label: 'Sunrise', value: current?.sunrise },
+    { icon: 'sunset', label: 'Sunset', value: current?.sunset },
+  ].filter((d) => d.value);
+
+  const hasDetails = details.length > 0;
+
   return (
     <>
       <div
         className={`${styles.weatherCard} ${styles[`gradient_${theme.gradient}`] || ''}`}
         data-theme-mode={isDark ? 'dark' : 'light'}
       >
-        {/* Header */}
-        <div className={styles.header}>
-          <div className={styles.headerIcon}>
-            <IconComp size={28} />
+        {/* Location & Date bar */}
+        <div className={styles.locationBar}>
+          <h3 className={styles.location}>{displayLocation}</h3>
+          <span className={styles.date}>{displayDate}</span>
+        </div>
+
+        {/* Hero: icon + temp + condition + side info */}
+        <div className={styles.heroSection}>
+          <div className={styles.heroIcon}>
+            <IconComp size={60} />
           </div>
-          <div className={styles.headerText}>
-            <h3 className={styles.location}>{displayLocation}</h3>
-            <span className={styles.date}>{displayDate}</span>
+          <div className={styles.heroCenter}>
+            {current?.temp && <span className={styles.heroTemp}>{current.temp}</span>}
+            {current?.altTemp && <span className={styles.heroAltTemp}>{current.altTemp}</span>}
+            {current?.condition && (
+              <span className={styles.heroCondition}>{current.condition}</span>
+            )}
+          </div>
+          <div className={styles.heroSide}>
+            {current?.feelsLike && (
+              <span className={styles.feelsLike}>Feels like {current.feelsLike}</span>
+            )}
+            {(current?.minTemp || current?.maxTemp) && (
+              <div className={styles.minMaxRow}>
+                {current.maxTemp && <span>H: {current.maxTemp}</span>}
+                {current.minTemp && <span>L: {current.minTemp}</span>}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Main temperature */}
-        {current?.temp && (
-          <div className={styles.mainTemp}>
-            <div className={styles.tempRow}>
-              <span className={styles.temperature}>{current.temp}</span>
-              {current.altTemp && <span className={styles.altTemp}>({current.altTemp})</span>}
-            </div>
-            {current.condition && <span className={styles.condition}>{current.condition}</span>}
-          </div>
-        )}
-
-        {/* Details row */}
+        {/* Detail grid */}
         {hasDetails && (
-          <div className={styles.details}>
-            <DetailItem label="Feels like" value={current.feelsLike} />
-            <DetailItem label="Humidity" value={current.humidity} />
-            <DetailItem label="Wind" value={current.wind} />
-            <DetailItem label="Visibility" value={current.visibility} />
-            <DetailItem label="Pressure" value={current.pressure} />
-            <DetailItem label="UV Index" value={current.uvIndex} />
-            <DetailItem label="Dew Point" value={current.dewPoint} />
+          <div className={styles.detailGrid}>
+            {details.map((d) => (
+              <DetailTile key={d.icon} icon={d.icon} label={d.label} value={d.value} />
+            ))}
           </div>
         )}
 
@@ -333,11 +491,11 @@ export default function WeatherCard({ weatherData, isDark, renderMarkdown }) {
           </div>
         )}
 
-        {/* Source attribution */}
+        {/* Source */}
         {source && <div className={styles.source}>{source}</div>}
       </div>
 
-      {/* Remaining text (news, articles, sources, follow-up questions) */}
+      {/* Remaining text (news, articles, links) */}
       {remainingText && renderMarkdown && (
         <div className={styles.remainingContent}>{renderMarkdown(remainingText)}</div>
       )}
