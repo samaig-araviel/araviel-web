@@ -52,6 +52,8 @@ import cpp from 'highlight.js/lib/languages/cpp';
 import mermaid from 'mermaid';
 import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import AravielChart from '../AravielChart/AravielChart';
+import WeatherCard from '../WeatherCard';
+import { detectWeatherResponse, extractWeatherData } from '../WeatherCard/weatherParser';
 import styles from './MessageList.module.css';
 
 // Initialize mermaid with sensible defaults
@@ -3914,6 +3916,13 @@ function Message({
     message.generatedImages,
   ]);
 
+  // Detect weather responses and extract structured data for rich rendering
+  const weatherData = useMemo(() => {
+    if (isUser || isStreaming || !displayText) return null;
+    if (!detectWeatherResponse(displayText)) return null;
+    return extractWeatherData(displayText);
+  }, [isUser, isStreaming, displayText]);
+
   return (
     <div
       className={`${styles.message} ${isUser ? styles.userMessage : styles.assistantMessage}`}
@@ -4019,6 +4028,8 @@ function Message({
       <div className={styles.messageContent} onMouseUp={handleMouseUp}>
         {isUser ? (
           <UserPrompt content={message.content} onEdit={onEditPrompt} />
+        ) : weatherData ? (
+          <WeatherCard weatherData={weatherData} isDark={isDark} />
         ) : (
           <div className={styles.markdownContent} ref={markdownContentRef}>
             {renderMarkdown(displayText)}
