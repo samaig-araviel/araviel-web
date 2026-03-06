@@ -4029,7 +4029,13 @@ function Message({
         {isUser ? (
           <UserPrompt content={message.content} onEdit={onEditPrompt} />
         ) : weatherData ? (
-          <WeatherCard weatherData={weatherData} isDark={isDark} />
+          <div className={styles.markdownContent} ref={markdownContentRef}>
+            <WeatherCard
+              weatherData={weatherData}
+              isDark={isDark}
+              renderMarkdown={renderMarkdown}
+            />
+          </div>
         ) : (
           <div className={styles.markdownContent} ref={markdownContentRef}>
             {renderMarkdown(displayText)}

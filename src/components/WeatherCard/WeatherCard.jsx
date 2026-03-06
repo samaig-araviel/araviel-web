@@ -202,16 +202,14 @@ function DetailItem({ label, value }) {
 }
 
 function PeriodChip({ period }) {
-  const theme = mapConditionToTheme(
-    period.condition ? inferConditionFromLabel(period.condition) : null
-  );
+  const theme = mapConditionToTheme(inferConditionFromLabel(period.condition));
   const IconComp = ICON_MAP[theme.icon] || CloudIcon;
   return (
     <div className={styles.periodChip}>
       <IconComp size={18} />
       <div className={styles.periodInfo}>
         <span className={styles.periodLabel}>{period.label}</span>
-        <span className={styles.periodTemp}>{period.temp || '--'}</span>
+        {period.temp && <span className={styles.periodTemp}>{period.temp}</span>}
         {period.condition && <span className={styles.periodCondition}>{period.condition}</span>}
       </div>
     </div>
@@ -231,7 +229,6 @@ function ForecastDay({ item }) {
   );
 }
 
-// Try to map a period condition label back to a canonical condition
 function inferConditionFromLabel(label) {
   if (!label) return null;
   const lower = label.toLowerCase();
@@ -250,67 +247,100 @@ function inferConditionFromLabel(label) {
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
-export default function WeatherCard({ weatherData, isDark }) {
-  const { location, date, current, periods, forecast, source } = weatherData;
+export default function WeatherCard({ weatherData, isDark, renderMarkdown }) {
+  const { location, date, current, periods, forecast, source, remainingText } = weatherData;
   const theme = useMemo(() => mapConditionToTheme(current?.condition), [current?.condition]);
   const IconComp = ICON_MAP[theme.icon] || CloudIcon;
 
-  const hasDetails = current?.feelsLike || current?.humidity || current?.wind;
+  const hasDetails =
+    current?.feelsLike ||
+    current?.humidity ||
+    current?.wind ||
+    current?.visibility ||
+    current?.pressure ||
+    current?.uvIndex ||
+    current?.dewPoint;
   const hasPeriods = periods && periods.length > 0;
   const hasForecast = forecast && forecast.length > 0;
 
+  // Fallback display values
+  const displayLocation = location || 'Current Weather';
+  const displayDate =
+    date ||
+    new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
   return (
-    <div
-      className={`${styles.weatherCard} ${styles[`gradient_${theme.gradient}`]}`}
-      data-theme-mode={isDark ? 'dark' : 'light'}
-    >
-      {/* Header */}
-      <div className={styles.header}>
-        <div className={styles.headerIcon}>
-          <IconComp size={40} />
+    <>
+      <div
+        className={`${styles.weatherCard} ${styles[`gradient_${theme.gradient}`] || ''}`}
+        data-theme-mode={isDark ? 'dark' : 'light'}
+      >
+        {/* Header */}
+        <div className={styles.header}>
+          <div className={styles.headerIcon}>
+            <IconComp size={28} />
+          </div>
+          <div className={styles.headerText}>
+            <h3 className={styles.location}>{displayLocation}</h3>
+            <span className={styles.date}>{displayDate}</span>
+          </div>
         </div>
-        <div className={styles.headerText}>
-          {location && <h3 className={styles.location}>{location}</h3>}
-          {date && <span className={styles.date}>{date}</span>}
-        </div>
+
+        {/* Main temperature */}
+        {current?.temp && (
+          <div className={styles.mainTemp}>
+            <div className={styles.tempRow}>
+              <span className={styles.temperature}>{current.temp}</span>
+              {current.altTemp && <span className={styles.altTemp}>({current.altTemp})</span>}
+            </div>
+            {current.condition && <span className={styles.condition}>{current.condition}</span>}
+          </div>
+        )}
+
+        {/* Details row */}
+        {hasDetails && (
+          <div className={styles.details}>
+            <DetailItem label="Feels like" value={current.feelsLike} />
+            <DetailItem label="Humidity" value={current.humidity} />
+            <DetailItem label="Wind" value={current.wind} />
+            <DetailItem label="Visibility" value={current.visibility} />
+            <DetailItem label="Pressure" value={current.pressure} />
+            <DetailItem label="UV Index" value={current.uvIndex} />
+            <DetailItem label="Dew Point" value={current.dewPoint} />
+          </div>
+        )}
+
+        {/* Time periods */}
+        {hasPeriods && (
+          <div className={styles.periods}>
+            {periods.map((p, i) => (
+              <PeriodChip key={i} period={p} />
+            ))}
+          </div>
+        )}
+
+        {/* Multi-day forecast */}
+        {hasForecast && (
+          <div className={styles.forecast}>
+            {forecast.map((f, i) => (
+              <ForecastDay key={i} item={f} />
+            ))}
+          </div>
+        )}
+
+        {/* Source attribution */}
+        {source && <div className={styles.source}>{source}</div>}
       </div>
 
-      {/* Main temperature */}
-      <div className={styles.mainTemp}>
-        <span className={styles.temperature}>{current?.temp || '--'}</span>
-        {current?.altTemp && <span className={styles.altTemp}>({current.altTemp})</span>}
-        {current?.condition && <span className={styles.condition}>{current.condition}</span>}
-      </div>
-
-      {/* Details row */}
-      {hasDetails && (
-        <div className={styles.details}>
-          <DetailItem label="Feels like" value={current.feelsLike} />
-          <DetailItem label="Humidity" value={current.humidity} />
-          <DetailItem label="Wind" value={current.wind} />
-        </div>
+      {/* Remaining text (news, articles, sources, follow-up questions) */}
+      {remainingText && renderMarkdown && (
+        <div className={styles.remainingContent}>{renderMarkdown(remainingText)}</div>
       )}
-
-      {/* Time periods (afternoon, overnight, etc.) */}
-      {hasPeriods && (
-        <div className={styles.periods}>
-          {periods.map((p, i) => (
-            <PeriodChip key={i} period={p} />
-          ))}
-        </div>
-      )}
-
-      {/* Multi-day forecast */}
-      {hasForecast && (
-        <div className={styles.forecast}>
-          {forecast.map((f, i) => (
-            <ForecastDay key={i} item={f} />
-          ))}
-        </div>
-      )}
-
-      {/* Source attribution */}
-      {source && <div className={styles.source}>{source}</div>}
-    </div>
+    </>
   );
 }
