@@ -19,7 +19,6 @@ import {
   SearchIcon,
   StarIcon,
   ArchiveIcon,
-  FlagIcon,
   TrashIcon,
   CloseIcon,
   ChatIcon,
@@ -42,6 +41,7 @@ export default function ConversationsView() {
 
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [starredIds, setStarredIds] = useState(() => {
     try {
@@ -63,7 +63,6 @@ export default function ConversationsView() {
   const observerRef = useRef(null);
   const sentinelRef = useRef(null);
 
-  // Persist starred/archived to localStorage
   useEffect(() => {
     localStorage.setItem('araviel-starred-chats', JSON.stringify([...starredIds]));
   }, [starredIds]);
@@ -72,7 +71,6 @@ export default function ConversationsView() {
     localStorage.setItem('araviel-archived-chats', JSON.stringify([...archivedIds]));
   }, [archivedIds]);
 
-  // Load conversations on mount
   const loadConversations = useCallback(
     async (offset = 0) => {
       dispatch(setConversationsLoading(true));
@@ -96,7 +94,6 @@ export default function ConversationsView() {
     loadConversations(0);
   }, [loadConversations]);
 
-  // Infinite scroll with IntersectionObserver
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
 
@@ -121,6 +118,10 @@ export default function ConversationsView() {
   }, [conversations.length, conversationsTotal, conversationsLoading, loadConversations]);
 
   const handleChatClick = async (chatId) => {
+    if (selectMode) {
+      toggleSelect(chatId);
+      return;
+    }
     dispatch(setCurrentChat(chatId));
     dispatch(setActiveItem('home'));
     try {
@@ -190,7 +191,10 @@ export default function ConversationsView() {
     });
   };
 
-  const clearSelection = () => setSelectedIds(new Set());
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
 
   const toggleStar = (ids) => {
     setStarredIds((prev) => {
@@ -205,7 +209,7 @@ export default function ConversationsView() {
       });
       return next;
     });
-    clearSelection();
+    exitSelectMode();
   };
 
   const toggleArchive = (ids) => {
@@ -221,7 +225,7 @@ export default function ConversationsView() {
       });
       return next;
     });
-    clearSelection();
+    exitSelectMode();
   };
 
   const handleBulkDelete = () => {
@@ -229,7 +233,6 @@ export default function ConversationsView() {
   };
 
   const confirmBulkDelete = () => {
-    // For now, just clear selection and remove from starred/archived
     setStarredIds((prev) => {
       const next = new Set(prev);
       selectedIds.forEach((id) => next.delete(id));
@@ -241,17 +244,14 @@ export default function ConversationsView() {
       return next;
     });
     setShowDeleteConfirm(false);
-    clearSelection();
+    exitSelectMode();
   };
 
-  // Filter conversations based on tab and search
   const filteredConversations = conversations.filter((chat) => {
-    // Tab filter
     if (activeTab === 'starred' && !starredIds.has(chat.id)) return false;
     if (activeTab === 'archived' && !archivedIds.has(chat.id)) return false;
     if (activeTab === 'all' && archivedIds.has(chat.id)) return false;
 
-    // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return chat.title?.toLowerCase().includes(q);
@@ -259,7 +259,28 @@ export default function ConversationsView() {
     return true;
   });
 
+  const selectAll = () => {
+    setSelectedIds(new Set(filteredConversations.map((c) => c.id)));
+  };
+
   const hasSelection = selectedIds.size > 0;
+
+  const formatRelativeTime = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -283,7 +304,7 @@ export default function ConversationsView() {
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>
-          <h1 className={styles.title}>Conversations</h1>
+          <h1 className={styles.title}>Chats</h1>
           <button
             className={styles.newChatBtn}
             onClick={() => {
@@ -304,7 +325,7 @@ export default function ConversationsView() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search your conversations..."
+            placeholder="Search your chats..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -319,36 +340,85 @@ export default function ConversationsView() {
           )}
         </div>
 
-        {/* Tabs */}
-        <div className={styles.tabs}>
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                clearSelection();
-              }}
-            >
-              {tab.label}
-              {tab.id === 'starred' && starredIds.size > 0 && (
-                <span className={styles.tabBadge}>{starredIds.size}</span>
-              )}
-              {tab.id === 'archived' && archivedIds.size > 0 && (
-                <span className={styles.tabBadge}>{archivedIds.size}</span>
-              )}
-            </button>
-          ))}
+        {/* Toolbar: Tabs + Select toggle */}
+        <div className={styles.toolbar}>
+          <div className={styles.tabs}>
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  exitSelectMode();
+                }}
+              >
+                {tab.label}
+                {tab.id === 'starred' && starredIds.size > 0 && (
+                  <span className={styles.tabBadge}>{starredIds.size}</span>
+                )}
+                {tab.id === 'archived' && archivedIds.size > 0 && (
+                  <span className={styles.tabBadge}>{archivedIds.size}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          <button
+            className={`${styles.selectToggle} ${selectMode ? styles.selectToggleActive : ''}`}
+            onClick={() => {
+              if (selectMode) {
+                exitSelectMode();
+              } else {
+                setSelectMode(true);
+              }
+            }}
+          >
+            {selectMode ? 'Cancel' : 'Select'}
+          </button>
         </div>
 
-        {/* Selection info bar */}
-        {hasSelection && (
+        {/* Selection action bar */}
+        {selectMode && (
           <div className={styles.selectionBar}>
-            <span className={styles.selectionCount}>{selectedIds.size} selected</span>
+            <div className={styles.selectionLeft}>
+              <span className={styles.selectionCount}>
+                {selectedIds.size} selected
+              </span>
+              {selectedIds.size < filteredConversations.length && (
+                <button className={styles.selectAllBtn} onClick={selectAll}>
+                  Select all
+                </button>
+              )}
+            </div>
+            <div className={styles.selectionActions}>
+              <button
+                className={styles.selectionAction}
+                onClick={() => hasSelection && toggleStar(selectedIds)}
+                disabled={!hasSelection}
+                title="Star"
+              >
+                <StarIcon />
+              </button>
+              <button
+                className={styles.selectionAction}
+                onClick={() => hasSelection && toggleArchive(selectedIds)}
+                disabled={!hasSelection}
+                title={activeTab === 'archived' ? 'Unarchive' : 'Archive'}
+              >
+                <ArchiveIcon />
+              </button>
+              <button
+                className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                onClick={() => hasSelection && handleBulkDelete()}
+                disabled={!hasSelection}
+                title="Delete"
+              >
+                <TrashIcon />
+              </button>
+            </div>
             <button
               className={styles.selectionClose}
-              onClick={clearSelection}
-              aria-label="Clear selection"
+              onClick={exitSelectMode}
+              aria-label="Exit selection"
             >
               <CloseIcon />
             </button>
@@ -359,72 +429,85 @@ export default function ConversationsView() {
         <div className={styles.list} ref={listRef}>
           {conversationsLoading && conversations.length === 0 ? (
             <div className={styles.skeleton}>
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className={styles.skeletonItem}>
-                  <div className={styles.skeletonCheckbox} />
                   <div className={styles.skeletonContent}>
-                    <div className={styles.skeletonTitle} />
-                    <div className={styles.skeletonSub} />
+                    <div className={styles.skeletonTitle} style={{ width: `${45 + (i * 11) % 30}%` }} />
+                    <div className={styles.skeletonSub} style={{ width: `${25 + (i * 7) % 20}%` }} />
                   </div>
                 </div>
               ))}
             </div>
           ) : filteredConversations.length > 0 ? (
             <>
-              {filteredConversations.map((chat) => (
-                <div
-                  key={chat.id}
-                  className={`${styles.item} ${
-                    selectedIds.has(chat.id) ? styles.itemSelected : ''
-                  } ${currentChatId === chat.id ? styles.itemCurrent : ''}`}
-                >
-                  <button
-                    className={styles.itemCheckbox}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleSelect(chat.id);
-                    }}
-                    aria-label={selectedIds.has(chat.id) ? 'Deselect' : 'Select'}
+              {filteredConversations.map((chat) => {
+                const isSelected = selectedIds.has(chat.id);
+                const isCurrent = currentChatId === chat.id;
+                const isStarred = starredIds.has(chat.id);
+
+                return (
+                  <div
+                    key={chat.id}
+                    className={`${styles.item} ${isSelected ? styles.itemSelected : ''} ${
+                      isCurrent && !selectMode ? styles.itemCurrent : ''
+                    }`}
+                    onClick={() => handleChatClick(chat.id)}
                   >
-                    <div
-                      className={`${styles.checkbox} ${
-                        selectedIds.has(chat.id) ? styles.checkboxChecked : ''
-                      }`}
-                    >
-                      {selectedIds.has(chat.id) && (
-                        <svg
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
+                    {selectMode && (
+                      <div className={styles.checkboxArea}>
+                        <div
+                          className={`${styles.checkbox} ${
+                            isSelected ? styles.checkboxChecked : ''
+                          }`}
                         >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                  <button className={styles.itemContent} onClick={() => handleChatClick(chat.id)}>
-                    <div className={styles.itemMain}>
-                      <span className={styles.itemTitle}>{chat.title || 'Untitled'}</span>
-                      {starredIds.has(chat.id) && (
-                        <span className={styles.itemStar}>
-                          <StarIcon filled />
+                          {isSelected && (
+                            <svg
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    <div className={styles.itemBody}>
+                      <div className={styles.itemTop}>
+                        <span className={styles.itemTitle}>
+                          {chat.title || 'Untitled'}
                         </span>
-                      )}
+                        {isStarred && (
+                          <span className={styles.itemStarBadge}>
+                            <StarIcon filled />
+                          </span>
+                        )}
+                      </div>
+                      <span className={styles.itemMeta}>
+                        Last message {formatRelativeTime(chat.updatedAt || chat.createdAt)}
+                      </span>
                     </div>
-                    <span className={styles.itemDate}>
+                    <span className={styles.itemTime}>
                       {formatDate(chat.updatedAt || chat.createdAt)}
                     </span>
-                  </button>
-                </div>
-              ))}
-              {/* Sentinel for infinite scroll */}
+                  </div>
+                );
+              })}
               <div ref={sentinelRef} className={styles.sentinel}>
-                {conversationsLoading && <div className={styles.loadingMore}>Loading more...</div>}
+                {conversationsLoading && (
+                  <div className={styles.loadingMore}>
+                    <div className={styles.loadingDots}>
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           ) : (
@@ -434,29 +517,41 @@ export default function ConversationsView() {
               </div>
               <h3 className={styles.emptyTitle}>
                 {activeTab === 'starred'
-                  ? 'No starred conversations'
+                  ? 'No starred chats'
                   : activeTab === 'archived'
-                  ? 'No archived conversations'
+                  ? 'No archived chats'
                   : searchQuery
                   ? 'No results found'
-                  : 'No conversations yet'}
+                  : 'No chats yet'}
               </h3>
               <p className={styles.emptyDesc}>
                 {activeTab === 'starred'
-                  ? 'Star conversations from the menu to find them quickly here.'
+                  ? 'Star your important conversations to find them quickly.'
                   : activeTab === 'archived'
                   ? 'Archived conversations will appear here.'
                   : searchQuery
                   ? 'Try a different search term.'
                   : 'Start a new chat to begin a conversation.'}
               </p>
+              {!searchQuery && activeTab === 'all' && (
+                <button
+                  className={styles.emptyAction}
+                  onClick={() => {
+                    dispatch(createNewChat());
+                    dispatch(setActiveItem('home'));
+                  }}
+                >
+                  <PlusIcon />
+                  <span>New chat</span>
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Floating action bar */}
-      {hasSelection && (
+      {/* Floating action bar for selections */}
+      {hasSelection && !selectMode && (
         <div className={styles.floatingBar}>
           <div className={styles.floatingBarInner}>
             <button
@@ -496,11 +591,11 @@ export default function ConversationsView() {
               <TrashIcon />
             </div>
             <h3 className={styles.confirmTitle}>
-              Delete {selectedIds.size} conversation{selectedIds.size > 1 ? 's' : ''}?
+              Delete {selectedIds.size} chat{selectedIds.size > 1 ? 's' : ''}?
             </h3>
             <p className={styles.confirmDesc}>
-              This will permanently delete the selected conversation
-              {selectedIds.size > 1 ? 's' : ''} and all messages. This cannot be undone.
+              This action is permanent and cannot be undone. All messages in the selected
+              chat{selectedIds.size > 1 ? 's' : ''} will be lost.
             </p>
             <div className={styles.confirmActions}>
               <button
