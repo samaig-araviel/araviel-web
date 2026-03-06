@@ -10,31 +10,32 @@
 
 .inner {
   width: 100%;
-  max-width: 680px;
-  padding: 40px 24px 120px;
+  max-width: 720px;
+  padding: 48px 28px 120px;
   display: flex;
   flex-direction: column;
 }
 
+/* Header */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 26px;
+  font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .newChatBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 7px;
+  padding: 9px 16px;
   border-radius: 10px;
   border: 1px solid var(--border-color);
   background-color: var(--bg-secondary);
@@ -42,13 +43,19 @@
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .newChatBtn:hover {
   background-color: var(--bg-hover);
   color: var(--text-primary);
   border-color: var(--text-muted);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.newChatBtn:active {
+  transform: translateY(0);
 }
 
 .newChatBtn svg {
@@ -59,7 +66,7 @@
 /* Search */
 .searchWrapper {
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .searchIcon {
@@ -79,14 +86,14 @@
 
 .searchInput {
   width: 100%;
-  padding: 10px 40px 10px 40px;
+  padding: 11px 40px 11px 42px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   font-size: 14px;
   color: var(--text-primary);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .searchInput::placeholder {
@@ -95,7 +102,8 @@
 
 .searchInput:focus {
   border-color: var(--text-muted);
-  box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.08);
+  background-color: var(--bg-primary);
+  box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.06);
 }
 
 .searchClear {
@@ -111,9 +119,14 @@
   color: var(--text-muted);
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.15s ease;
   background: transparent;
   border: none;
+}
+
+.searchClear svg {
+  width: 14px;
+  height: 14px;
 }
 
 .searchClear:hover {
@@ -121,23 +134,30 @@
   color: var(--text-secondary);
 }
 
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 /* Tabs */
 .tabs {
   display: flex;
   gap: 2px;
-  margin-bottom: 16px;
   background-color: var(--bg-secondary);
   border-radius: 10px;
   padding: 3px;
 }
 
 .tab {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 7px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
@@ -145,7 +165,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .tab:hover {
@@ -155,7 +175,7 @@
 .tabActive {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.02);
 }
 
 .tabBadge {
@@ -174,27 +194,132 @@
   color: var(--text-secondary);
 }
 
+/* Select toggle */
+.selectToggle {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.selectToggle:hover {
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+}
+
+.selectToggleActive {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
 /* Selection bar */
 .selectionBar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border-radius: 10px;
+  gap: 12px;
+  padding: 8px 12px 8px 16px;
+  margin-bottom: 12px;
+  border-radius: 12px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.selectionLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
 }
 
 .selectionCount {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.selectAllBtn {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 0.15s ease;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 2px;
+}
+
+.selectAllBtn:hover {
+  color: var(--text-primary);
+  text-decoration-color: var(--text-muted);
+}
+
+.selectionActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.selectionAction {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.selectionAction:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.selectionAction:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.selectionAction svg {
+  width: 15px;
+  height: 15px;
+}
+
+.selectionActionDanger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
 }
 
 .selectionClose {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -203,7 +328,13 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.selectionClose svg {
+  width: 14px;
+  height: 14px;
 }
 
 .selectionClose:hover {
@@ -215,15 +346,18 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
+/* Item */
 .item {
   display: flex;
   align-items: center;
   gap: 0;
-  border-radius: 10px;
-  transition: background-color 0.12s ease;
+  padding: 14px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  position: relative;
 }
 
 .item:hover {
@@ -234,21 +368,22 @@
   background-color: var(--bg-active);
 }
 
+.itemSelected:hover {
+  background-color: var(--bg-active);
+}
+
 .itemCurrent {
   background-color: var(--bg-active);
 }
 
-.itemCheckbox {
-  width: 40px;
-  height: 100%;
+/* Checkbox in select mode */
+.checkboxArea {
+  width: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 12px 0 12px 12px;
+  margin-right: 4px;
 }
 
 .checkbox {
@@ -259,7 +394,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.12s ease;
+  transition: all 0.15s ease;
   color: transparent;
 }
 
@@ -273,52 +408,55 @@
   color: var(--bg-primary);
 }
 
-.itemContent {
+/* Item body - two lines */
+.itemBody {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px 12px 8px;
   min-width: 0;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.itemMain {
+.itemTop {
   display: flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
-  flex: 1;
 }
 
 .itemTitle {
   font-size: 14px;
+  font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.3;
 }
 
-.itemStar {
+.itemStarBadge {
   color: #f59e0b;
   flex-shrink: 0;
   display: flex;
 }
 
-.itemStar svg {
+.itemStarBadge svg {
   width: 12px;
   height: 12px;
 }
 
-.itemDate {
+.itemMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.itemTime {
   font-size: 12px;
   color: var(--text-muted);
   flex-shrink: 0;
   white-space: nowrap;
+  margin-left: 16px;
 }
 
 /* Sentinel / loading */
@@ -327,46 +465,66 @@
 }
 
 .loadingMore {
-  padding: 16px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-muted);
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.loadingDots {
+  display: flex;
+  gap: 6px;
+}
+
+.loadingDots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  animation: dotPulse 1.2s ease-in-out infinite;
+}
+
+.loadingDots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.loadingDots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Skeleton */
 .skeleton {
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .skeletonItem {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 10px;
-}
-
-.skeletonCheckbox {
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: var(--bg-secondary);
-  flex-shrink: 0;
+  padding: 16px 16px;
+  border-radius: 12px;
 }
 
 .skeletonContent {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .skeletonTitle {
   height: 14px;
-  width: 60%;
-  border-radius: 6px;
+  border-radius: 7px;
   background: linear-gradient(
     90deg,
     var(--bg-secondary) 25%,
@@ -379,8 +537,7 @@
 
 .skeletonSub {
   height: 10px;
-  width: 30%;
-  border-radius: 6px;
+  border-radius: 5px;
   background: linear-gradient(
     90deg,
     var(--bg-secondary) 25%,
@@ -389,6 +546,7 @@
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
+  animation-delay: 0.1s;
 }
 
 @keyframes shimmer {
@@ -406,39 +564,66 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 72px 24px;
   text-align: center;
 }
 
 .emptyIcon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 14px;
   background-color: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .emptyIcon svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 .emptyTitle {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .emptyDesc {
   font-size: 13px;
   color: var(--text-muted);
-  max-width: 280px;
-  line-height: 1.5;
+  max-width: 300px;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.emptyAction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.emptyAction:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.emptyAction svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Floating action bar */
@@ -470,7 +655,7 @@
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 14px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .floatingAction {
@@ -485,7 +670,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.15s ease;
   white-space: nowrap;
 }
 
@@ -519,8 +704,8 @@
 .confirmOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -545,7 +730,7 @@
   max-width: 380px;
   width: 90%;
   text-align: center;
-  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: confirmDialogIn 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -561,15 +746,20 @@
 }
 
 .confirmIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(239, 68, 68, 0.1);
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.08);
   color: #ef4444;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
+}
+
+.confirmIcon svg {
+  width: 20px;
+  height: 20px;
 }
 
 .confirmTitle {
@@ -582,8 +772,8 @@
 .confirmDesc {
   font-size: 13px;
   color: var(--text-secondary);
-  line-height: 1.5;
-  margin-bottom: 20px;
+  line-height: 1.6;
+  margin-bottom: 24px;
 }
 
 .confirmActions {
@@ -601,7 +791,7 @@
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   cursor: pointer;
-  transition: background-color 0.12s ease;
+  transition: background-color 0.15s ease;
 }
 
 .confirmCancelBtn:hover {
@@ -618,7 +808,7 @@
   color: white;
   border: none;
   cursor: pointer;
-  transition: background-color 0.12s ease, transform 0.1s ease;
+  transition: background-color 0.15s ease, transform 0.1s ease;
 }
 
 .confirmDeleteBtn:hover {
@@ -636,7 +826,32 @@
   }
 
   .title {
-    font-size: 20px;
+    font-size: 22px;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tabs {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tab {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .selectToggle {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .item {
+    padding: 12px 12px;
+    border-radius: 10px;
   }
 
   .floatingBarInner {
@@ -659,12 +874,35 @@
     height: 17px;
   }
 
-  .tabs {
-    border-radius: 8px;
+  .selectionBar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 10px;
   }
 
-  .tab {
-    padding: 6px 8px;
-    font-size: 12px;
+  .selectionActions {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inner {
+    padding: 20px 12px 120px;
+  }
+
+  .header {
+    margin-bottom: 20px;
+  }
+
+  .newChatBtn span {
+    display: none;
+  }
+
+  .newChatBtn {
+    padding: 9px;
+    border-radius: 10px;
   }
 }
