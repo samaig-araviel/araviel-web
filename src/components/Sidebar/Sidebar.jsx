@@ -26,6 +26,7 @@ import {
   PlusIcon,
   ChevronLeftIcon,
   ChevronDownIcon,
+  ChevronRightIcon,
   ChatIcon,
   UserIcon,
   SunIcon,
@@ -42,6 +43,8 @@ import {
   EditIcon,
   ArchiveIcon,
   TrashIcon,
+  DownloadIcon,
+  LinkIcon,
 } from '../Icons';
 import styles from './Sidebar.module.css';
 
@@ -79,6 +82,57 @@ function groupConversationsByTime(conversations) {
   return groups;
 }
 
+function useDropdownPosition(menuOpenId) {
+  const [dropdownStyle, setDropdownStyle] = useState({});
+  const [shareSubStyle, setShareSubStyle] = useState({});
+  const menuBtnRef = useRef(null);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpenId || !menuBtnRef.current) return;
+    const btn = menuBtnRef.current;
+    const rect = btn.getBoundingClientRect();
+    const menuHeight = 190; // approximate dropdown height
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUpward = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
+
+    const newStyle = {};
+    if (openUpward) {
+      newStyle.bottom = '100%';
+      newStyle.top = 'auto';
+      newStyle.marginBottom = '4px';
+    } else {
+      newStyle.top = '100%';
+      newStyle.bottom = 'auto';
+      newStyle.marginTop = '4px';
+    }
+
+    // Horizontal: keep within sidebar
+    newStyle.right = '0';
+    newStyle.left = 'auto';
+
+    setDropdownStyle(newStyle);
+
+    // Share submenu positioning
+    const subMenuHeight = 90;
+    const subSpaceBelow = window.innerHeight - rect.bottom;
+    const subStyle = {};
+    if (subSpaceBelow < subMenuHeight + 40 && spaceAbove > subSpaceBelow) {
+      subStyle.bottom = '0';
+      subStyle.top = 'auto';
+    } else {
+      subStyle.top = '0';
+      subStyle.bottom = 'auto';
+    }
+    subStyle.left = '100%';
+    subStyle.marginLeft = '4px';
+    setShareSubStyle(subStyle);
+  }, [menuOpenId]);
+
+  return { dropdownStyle, shareSubStyle, menuBtnRef, menuRef };
+}
+
 export default function Sidebar() {
   const dispatch = useDispatch();
   const collapsed = useSelector(selectSidebarCollapsed);
@@ -91,11 +145,15 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [recentsExpanded, setRecentsExpanded] = useState(true);
   const [menuOpenId, setMenuOpenId] = useState(null);
+  const [shareSubOpen, setShareSubOpen] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
-  const menuRef = useRef(null);
-  const menuBtnRef = useRef(null);
+  const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const renameInputRef = useRef(null);
+
+  const { dropdownStyle, shareSubStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
 
   const groupedConversations = useMemo(
     () => groupConversationsByTime(conversations),
@@ -175,8 +233,6 @@ export default function Sidebar() {
           // Restore generatedImages from backend or localStorage
           let generatedImages = msg.generatedImages || [];
           if (generatedImages.length === 0) {
-            // Match images from localStorage by checking if image was created
-            // near this message's timestamp (within 30s window)
             const msgTime = new Date(msg.createdAt).getTime();
             const matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
             if (matched.length > 0) {
@@ -280,10 +336,17 @@ export default function Sidebar() {
         !menuBtnRef.current.contains(e.target)
       ) {
         setMenuOpenId(null);
+        setShareSubOpen(false);
       }
     };
     const handleEscape = (e) => {
-      if (e.key === 'Escape') setMenuOpenId(null);
+      if (e.key === 'Escape') {
+        if (shareSubOpen) {
+          setShareSubOpen(false);
+        } else {
+          setMenuOpenId(null);
+        }
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
@@ -291,7 +354,7 @@ export default function Sidebar() {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [menuOpenId]);
+  }, [menuOpenId, shareSubOpen, menuBtnRef, menuRef]);
 
   // Focus rename input when renaming starts
   useEffect(() => {
@@ -301,13 +364,19 @@ export default function Sidebar() {
     }
   }, [renamingId]);
 
+  const closeMenu = () => {
+    setMenuOpenId(null);
+    setShareSubOpen(false);
+  };
+
   const handleMenuToggle = (e, chatId) => {
     e.stopPropagation();
+    setShareSubOpen(false);
     setMenuOpenId((prev) => (prev === chatId ? null : chatId));
   };
 
   const handleRename = (chat) => {
-    setMenuOpenId(null);
+    closeMenu();
     setRenamingId(chat.id);
     setRenameValue(chat.title || '');
   };
@@ -315,7 +384,6 @@ export default function Sidebar() {
   const handleRenameSubmit = (chatId) => {
     const trimmed = renameValue.trim();
     if (trimmed) {
-      // Update title locally in Redux store
       dispatch(
         setConversations({
           conversations: conversations.map((c) => (c.id === chatId ? { ...c, title: trimmed } : c)),
@@ -337,14 +405,58 @@ export default function Sidebar() {
     }
   };
 
-  const handleShare = (chatId) => {
-    setMenuOpenId(null);
-    const url = `${window.location.origin}/chat/${chatId}`;
+  const handleShareLink = (chatId) => {
+    closeMenu();
+    setShareLinkConfirm(chatId);
+  };
+
+  const confirmShareLink = () => {
+    const url = `${window.location.origin}/chat/${shareLinkConfirm}`;
     navigator.clipboard?.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => {
+      setShareLinkConfirm(null);
+      setLinkCopied(false);
+    }, 1500);
+  };
+
+  const handleSharePdf = (chatId) => {
+    closeMenu();
+    const chat = conversations.find((c) => c.id === chatId);
+    const title = chat?.title || 'conversation';
+    // Create a simple PDF-style download using a printable HTML document
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #333; }
+            h1 { font-size: 22px; margin-bottom: 8px; }
+            .meta { color: #888; font-size: 13px; margin-bottom: 32px; }
+            .message { margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; }
+            .user { background: #f0f0f0; }
+            .assistant { background: #e8f4fd; }
+            .role { font-weight: 600; font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 6px; }
+            .content { white-space: pre-wrap; line-height: 1.6; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p class="meta">Exported from Araviel</p>
+          <p style="color:#888;font-size:13px;">Use your browser's Print dialog to save as PDF.</p>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      setTimeout(() => printWindow.print(), 300);
+    }
   };
 
   const handleArchive = (chatId) => {
-    setMenuOpenId(null);
+    closeMenu();
     try {
       const archived = new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
       if (archived.has(chatId)) {
@@ -358,16 +470,19 @@ export default function Sidebar() {
     }
   };
 
-  const handleDelete = (chatId) => {
-    setMenuOpenId(null);
-    // Remove from conversations list
+  const handleDeleteRequest = (chatId) => {
+    closeMenu();
+    setDeleteConfirm(chatId);
+  };
+
+  const confirmDelete = () => {
+    const chatId = deleteConfirm;
     dispatch(
       setConversations({
         conversations: conversations.filter((c) => c.id !== chatId),
         total: Math.max(0, conversationsTotal - 1),
       })
     );
-    // Clean up from starred/archived
     try {
       const starred = new Set(JSON.parse(localStorage.getItem('araviel-starred-chats') || '[]'));
       const archived = new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
@@ -378,6 +493,7 @@ export default function Sidebar() {
     } catch {
       // Silently fail
     }
+    setDeleteConfirm(null);
   };
 
   return (
@@ -542,17 +658,54 @@ export default function Sidebar() {
                               <MoreVerticalIcon />
                             </button>
                             {menuOpenId === chat.id && (
-                              <div ref={menuRef} className={styles.chatDropdown}>
-                                <button
-                                  className={styles.chatDropdownItem}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleShare(chat.id);
-                                  }}
+                              <div
+                                ref={menuRef}
+                                className={styles.chatDropdown}
+                                style={dropdownStyle}
+                              >
+                                <div
+                                  className={styles.chatDropdownItemWithSub}
+                                  onMouseEnter={() => setShareSubOpen(true)}
+                                  onMouseLeave={() => setShareSubOpen(false)}
                                 >
-                                  <ShareIcon />
-                                  <span>Share</span>
-                                </button>
+                                  <button
+                                    className={styles.chatDropdownItem}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setShareSubOpen((v) => !v);
+                                    }}
+                                  >
+                                    <ShareIcon />
+                                    <span>Share</span>
+                                    <span className={styles.chatDropdownChevron}>
+                                      <ChevronRightIcon />
+                                    </span>
+                                  </button>
+                                  {shareSubOpen && (
+                                    <div className={styles.chatSubDropdown} style={shareSubStyle}>
+                                      <button
+                                        className={styles.chatDropdownItem}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleSharePdf(chat.id);
+                                        }}
+                                      >
+                                        <DownloadIcon />
+                                        <span>Share as PDF</span>
+                                      </button>
+                                      <button
+                                        className={styles.chatDropdownItem}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleShareLink(chat.id);
+                                        }}
+                                      >
+                                        <LinkIcon />
+                                        <span>Share link</span>
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
                                 <button
                                   className={styles.chatDropdownItem}
                                   onClick={(e) => {
@@ -578,7 +731,7 @@ export default function Sidebar() {
                                   className={`${styles.chatDropdownItem} ${styles.chatDropdownItemDanger}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDelete(chat.id);
+                                    handleDeleteRequest(chat.id);
                                   }}
                                 >
                                   <TrashIcon />
@@ -646,6 +799,54 @@ export default function Sidebar() {
           </div>
         </div>
       </aside>
+
+      {/* Share Link confirmation dialog */}
+      {shareLinkConfirm && (
+        <div className={styles.confirmOverlay} onClick={() => setShareLinkConfirm(null)}>
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIconShare}>
+              <LinkIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Share this conversation?</h3>
+            <p className={styles.confirmDesc}>
+              A shareable link will be copied to your clipboard. Anyone with this link will be able
+              to view the conversation.
+            </p>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmCancelBtn} onClick={() => setShareLinkConfirm(null)}>
+                Cancel
+              </button>
+              <button className={styles.confirmShareBtn} onClick={confirmShareLink}>
+                {linkCopied ? 'Copied!' : 'Copy link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      {deleteConfirm && (
+        <div className={styles.confirmOverlay} onClick={() => setDeleteConfirm(null)}>
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIconDanger}>
+              <TrashIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Delete this chat?</h3>
+            <p className={styles.confirmDesc}>
+              This action is permanent and cannot be undone. All messages in this conversation will
+              be lost.
+            </p>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmCancelBtn} onClick={() => setDeleteConfirm(null)}>
+                Cancel
+              </button>
+              <button className={styles.confirmDeleteBtn} onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
