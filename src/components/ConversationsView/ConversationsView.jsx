@@ -13,7 +13,17 @@ import {
   createNewChat,
 } from '../../store/slices/chatSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { fetchConversations, fetchConversationMessages } from '../../services/api';
+import {
+  fetchConversations,
+  fetchConversationMessages,
+  fetchImportedConversations,
+  fetchImportedConversationMessages,
+  importConversations as importConversationsApi,
+  updateImportedConversation,
+  bulkUpdateImportedConversations,
+  deleteImportedConversation,
+  bulkDeleteImportedConversations,
+} from '../../services/api';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import {
   SearchIcon,
@@ -275,20 +285,7 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive } 
   };
 }
 
-const IMPORTED_STORAGE_KEY = 'araviel-imported-conversations';
 const IMPORTED_CONTEXT_KEY = 'araviel-imported-context-providers';
-
-function loadImportedConversations() {
-  try {
-    return JSON.parse(localStorage.getItem(IMPORTED_STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveImportedConversations(conversations) {
-  localStorage.setItem(IMPORTED_STORAGE_KEY, JSON.stringify(conversations));
-}
 
 function getImportedProviders(conversations) {
   const providerMap = new Map();
@@ -329,22 +326,9 @@ export default function ConversationsView() {
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [importedConversations, setImportedConversations] = useState(loadImportedConversations);
+  const [importedConversations, setImportedConversations] = useState([]);
+  const [importedLoading, setImportedLoading] = useState(false);
   const [activeImportProvider, setActiveImportProvider] = useState('all');
-  const [importedStarredIds, setImportedStarredIds] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('araviel-imported-starred') || '[]'));
-    } catch {
-      return new Set();
-    }
-  });
-  const [importedArchivedIds, setImportedArchivedIds] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('araviel-imported-archived') || '[]'));
-    } catch {
-      return new Set();
-    }
-  });
   // Per-provider context settings: { chatgpt: true, claude: false, ... }
   const [contextProviders, setContextProviders] = useState(() => {
     try {
@@ -384,25 +368,41 @@ export default function ConversationsView() {
     [importedProviders]
   );
 
-  const handleImportConversations = useCallback((newConversations, providerId, importMode) => {
-    setImportedConversations((prev) => {
-      let updated;
-      if (importMode === 'replace') {
-        // Replace: remove all existing from this provider, add new
-        const filtered = prev.filter((c) => c.provider !== providerId);
-        updated = [...filtered, ...newConversations];
-      } else {
-        // Add: merge by deduplicating on ID, keeping new over old
-        const existingIds = new Set(newConversations.map((c) => c.id));
-        const kept = prev.filter((c) => c.provider !== providerId || !existingIds.has(c.id));
-        updated = [...kept, ...newConversations];
-      }
-      saveImportedConversations(updated);
-      return updated;
-    });
-    setActiveSection('imported');
-    setActiveImportProvider(providerId);
+  const loadImportedConversations = useCallback(async () => {
+    setImportedLoading(true);
+    try {
+      const data = await fetchImportedConversations({ archived: false });
+      setImportedConversations(data.conversations || []);
+    } catch {
+      // Silently fail — API may not be ready yet
+    } finally {
+      setImportedLoading(false);
+    }
   }, []);
+
+  const handleImportConversations = useCallback(
+    async (newConversations, providerId) => {
+      try {
+        const payload = newConversations.map((c) => ({
+          externalId: c.externalId,
+          title: c.title,
+          provider: c.provider,
+          providerName: c.providerName,
+          messages: c.messages,
+          messageCount: c.messageCount,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+        }));
+        await importConversationsApi(payload);
+        await loadImportedConversations();
+      } catch {
+        // Silently fail
+      }
+      setActiveSection('imported');
+      setActiveImportProvider(providerId);
+    },
+    [loadImportedConversations]
+  );
 
   const toggleProviderContext = useCallback((providerId) => {
     setContextProviders((prev) => {
@@ -412,12 +412,8 @@ export default function ConversationsView() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('araviel-imported-starred', JSON.stringify([...importedStarredIds]));
-  }, [importedStarredIds]);
-
-  useEffect(() => {
-    localStorage.setItem('araviel-imported-archived', JSON.stringify([...importedArchivedIds]));
-  }, [importedArchivedIds]);
+    loadImportedConversations();
+  }, [loadImportedConversations]);
 
   useEffect(() => {
     localStorage.setItem(IMPORTED_CONTEXT_KEY, JSON.stringify(contextProviders));
@@ -634,102 +630,98 @@ export default function ConversationsView() {
   const filteredImportedConversations = useMemo(() => {
     return importedConversations.filter((chat) => {
       if (activeImportProvider !== 'all' && chat.provider !== activeImportProvider) return false;
-      if (importedArchivedIds.has(chat.id)) return false;
+      if (chat.isArchived) return false;
       if (searchQuery.trim()) {
         return chat.title?.toLowerCase().includes(searchQuery.toLowerCase());
       }
       return true;
     });
-  }, [importedConversations, activeImportProvider, importedArchivedIds, searchQuery]);
+  }, [importedConversations, activeImportProvider, searchQuery]);
 
   const groupedImportedConversations = useMemo(
     () => groupConversationsByTime(filteredImportedConversations),
     [filteredImportedConversations]
   );
 
-  const handleImportedChatClick = (chat) => {
+  const handleImportedChatClick = async (chat) => {
     if (selectMode) {
       toggleSelect(chat.id);
       return;
     }
-    // Load imported chat messages into the main view
     dispatch(setCurrentChat(chat.id));
     dispatch(setActiveItem('home'));
-    const mappedMessages = (chat.messages || []).map((msg) => ({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content,
-      timestamp: new Date(msg.createdAt).getTime(),
-      ...(msg.role === 'assistant' && {
-        modelName: chat.providerName,
-        provider: chat.provider,
-      }),
-    }));
-    dispatch(setMessages(mappedMessages));
+    dispatch(setMessages([]));
+    try {
+      const data = await fetchImportedConversationMessages(chat.id);
+      const mappedMessages = (data.messages || []).map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: new Date(msg.createdAt).getTime(),
+        ...(msg.role === 'assistant' && {
+          modelName: chat.providerName,
+          provider: chat.provider,
+        }),
+      }));
+      dispatch(setMessages(mappedMessages));
+    } catch {
+      // Silently fail
+    }
   };
 
-  const handleDeleteImported = (chatId) => {
-    setImportedConversations((prev) => {
-      const updated = prev.filter((c) => c.id !== chatId);
-      saveImportedConversations(updated);
-      return updated;
-    });
-    setImportedStarredIds((prev) => {
-      const next = new Set(prev);
-      next.delete(chatId);
-      return next;
-    });
-    setImportedArchivedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(chatId);
-      return next;
-    });
+  const handleDeleteImported = async (chatId) => {
+    setImportedConversations((prev) => prev.filter((c) => c.id !== chatId));
+    try {
+      await deleteImportedConversation(chatId);
+    } catch {
+      loadImportedConversations();
+    }
   };
 
-  const handleBulkDeleteImported = () => {
-    setImportedConversations((prev) => {
-      const updated = prev.filter((c) => !selectedIds.has(c.id));
-      saveImportedConversations(updated);
-      return updated;
-    });
-    setImportedStarredIds((prev) => {
-      const next = new Set(prev);
-      selectedIds.forEach((id) => next.delete(id));
-      return next;
-    });
-    setImportedArchivedIds((prev) => {
-      const next = new Set(prev);
-      selectedIds.forEach((id) => next.delete(id));
-      return next;
-    });
+  const handleBulkDeleteImported = async () => {
+    const idsToDelete = [...selectedIds];
+    setImportedConversations((prev) => prev.filter((c) => !selectedIds.has(c.id)));
     setShowDeleteConfirm(false);
     exitSelectMode();
+    try {
+      await bulkDeleteImportedConversations(idsToDelete);
+    } catch {
+      loadImportedConversations();
+    }
   };
 
-  const toggleImportedStar = (ids) => {
-    setImportedStarredIds((prev) => {
-      const next = new Set(prev);
-      const allStarred = [...ids].every((id) => next.has(id));
-      ids.forEach((id) => {
-        if (allStarred) next.delete(id);
-        else next.add(id);
-      });
-      return next;
-    });
+  const toggleImportedStar = async (ids) => {
+    const idList = [...ids];
+    const allStarred = idList.every(
+      (id) => importedConversations.find((c) => c.id === id)?.isStarred
+    );
+    const newVal = !allStarred;
+    setImportedConversations((prev) =>
+      prev.map((c) => (ids.has(c.id) ? { ...c, isStarred: newVal } : c))
+    );
     exitSelectMode();
+    try {
+      await bulkUpdateImportedConversations(idList, { isStarred: newVal });
+    } catch {
+      loadImportedConversations();
+    }
   };
 
-  const toggleImportedArchive = (ids) => {
-    setImportedArchivedIds((prev) => {
-      const next = new Set(prev);
-      const allArchived = [...ids].every((id) => next.has(id));
-      ids.forEach((id) => {
-        if (allArchived) next.delete(id);
-        else next.add(id);
-      });
-      return next;
-    });
+  const toggleImportedArchive = async (ids) => {
+    const idList = [...ids];
+    const allArchived = idList.every(
+      (id) => importedConversations.find((c) => c.id === id)?.isArchived
+    );
+    const newVal = !allArchived;
+    setImportedConversations((prev) =>
+      prev.map((c) => (ids.has(c.id) ? { ...c, isArchived: newVal } : c))
+    );
     exitSelectMode();
+    try {
+      await bulkUpdateImportedConversations(idList, { isArchived: newVal });
+    } catch {
+      loadImportedConversations();
+    }
   };
 
   const hasSelection = selectedIds.size > 0;
@@ -831,7 +823,7 @@ export default function ConversationsView() {
   const renderConversationItem = (chat, { isImported = false } = {}) => {
     const isSelected = selectedIds.has(chat.id);
     const isCurrent = currentChatId === chat.id;
-    const isStarred = isImported ? importedStarredIds.has(chat.id) : starredIds.has(chat.id);
+    const isStarred = isImported ? !!chat.isStarred : starredIds.has(chat.id);
     const isRenaming = menu.renamingId === chat.id;
     const ProviderLogo = isImported ? getProviderLogo(chat.provider) : null;
 
