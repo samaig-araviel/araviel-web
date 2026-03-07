@@ -65,8 +65,8 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
-  color: #8b5cf6;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.1), rgba(245, 158, 11, 0.1));
+  color: #d97706;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -140,8 +140,8 @@
 }
 
 .stepDotActive {
-  background-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  background-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15);
 }
 
 .stepDotCompleted {
@@ -157,7 +157,7 @@
 }
 
 .stepLineActive {
-  background-color: #8b5cf6;
+  background-color: #d97706;
 }
 
 /* Provider grid */
@@ -187,14 +187,14 @@
 }
 
 .providerCardSelected {
-  border-color: #8b5cf6;
-  background-color: rgba(139, 92, 246, 0.04);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
+  border-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.04);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.08);
 }
 
 .providerCardSelected:hover {
-  border-color: #8b5cf6;
-  background-color: rgba(139, 92, 246, 0.06);
+  border-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.06);
 }
 
 .providerLogo {
@@ -319,6 +319,99 @@
   color: var(--text-primary);
 }
 
+/* Import mode chooser */
+.importModeSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.importModeLabel {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-primary);
+}
+
+.importModeSublabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.importModeOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.importModeOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color);
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.importModeOption:hover {
+  border-color: var(--text-muted);
+  background-color: var(--bg-hover);
+}
+
+.importModeOptionSelected {
+  border-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.04);
+}
+
+.importModeRadio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.importModeOptionSelected .importModeRadio {
+  border-color: #d97706;
+}
+
+.importModeRadioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: transparent;
+  transition: all 0.15s ease;
+}
+
+.importModeOptionSelected .importModeRadioDot {
+  background-color: #d97706;
+}
+
+.importModeText {
+  flex: 1;
+}
+
+.importModeTitle {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-primary);
+}
+
+.importModeDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  line-height: 1.4;
+}
+
 /* File upload area */
 .uploadArea {
   display: flex;
@@ -341,8 +434,8 @@
 }
 
 .uploadAreaDragging {
-  border-color: #8b5cf6;
-  background-color: rgba(139, 92, 246, 0.04);
+  border-color: #d97706;
+  background-color: rgba(217, 119, 6, 0.04);
   border-style: solid;
 }
 
@@ -375,7 +468,7 @@
 }
 
 .uploadBrowse {
-  color: #8b5cf6;
+  color: #d97706;
   font-weight: 550;
   text-decoration: underline;
   text-decoration-color: transparent;
@@ -384,7 +477,7 @@
 }
 
 .uploadArea:hover .uploadBrowse {
-  text-decoration-color: #8b5cf6;
+  text-decoration-color: #d97706;
 }
 
 /* File selected state */
@@ -472,7 +565,7 @@
   width: 48px;
   height: 48px;
   border: 3px solid var(--border-color);
-  border-top-color: #8b5cf6;
+  border-top-color: #d97706;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -605,17 +698,17 @@
   border-radius: 10px;
   font-size: 13px;
   font-weight: 550;
-  background-color: #8b5cf6;
-  color: white;
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
   border: none;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .nextBtn:hover:not(:disabled) {
-  background-color: #7c3aed;
+  opacity: 0.88;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
+  box-shadow: var(--shadow-lg);
 }
 
 .nextBtn:active:not(:disabled) {
@@ -637,15 +730,15 @@
   border-radius: 10px;
   font-size: 13px;
   font-weight: 550;
-  background-color: #22c55e;
-  color: white;
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
   border: none;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .doneBtn:hover {
-  background-color: #16a34a;
+  opacity: 0.88;
 }
 
 /* Mobile */

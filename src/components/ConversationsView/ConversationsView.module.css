@@ -214,48 +214,86 @@
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 10px;
-  background-color: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
+  background-color: rgba(217, 119, 6, 0.1);
+  color: #d97706;
   min-width: 18px;
   text-align: center;
 }
 
 .sectionTabActive .sectionBadge {
-  background-color: rgba(139, 92, 246, 0.12);
-  color: #7c3aed;
+  background-color: rgba(217, 119, 6, 0.12);
+  color: #b45309;
 }
 
-/* Context toggle */
-.contextToggle {
+/* Per-provider context toggles */
+.contextToggles {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 16px;
+  flex-direction: column;
+  gap: 0;
   margin-bottom: 16px;
   border-radius: 12px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
+  overflow: hidden;
 }
 
-.contextToggleText {
+.contextTogglesHeader {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 14px 16px 10px;
+}
+
+.contextTogglesTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contextTogglesDesc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.contextToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.contextToggleProvider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: 1;
   min-width: 0;
 }
 
-.contextToggleLabel {
-  font-size: 13px;
-  font-weight: 550;
-  color: var(--text-primary);
+.contextToggleIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-hover);
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
-.contextToggleDesc {
-  font-size: 11px;
-  color: var(--text-muted);
-  line-height: 1.4;
+.contextToggleIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.contextToggleLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .toggleSwitch {
@@ -276,13 +314,13 @@
 }
 
 .toggleSwitchActive {
-  background-color: #8b5cf6;
-  border-color: #8b5cf6;
+  background-color: #d97706;
+  border-color: #d97706;
 }
 
 .toggleSwitchActive:hover {
-  background-color: #7c3aed;
-  border-color: #7c3aed;
+  background-color: #b45309;
+  border-color: #b45309;
 }
 
 .toggleKnob {
