@@ -225,118 +225,128 @@
   color: #b45309;
 }
 
-/* Per-provider context toggles */
-.contextToggles {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-bottom: 16px;
-  border-radius: 12px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-}
-
-.contextTogglesHeader {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px 10px;
-}
-
-.contextTogglesTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.contextTogglesDesc {
-  font-size: 11px;
-  color: var(--text-muted);
-  line-height: 1.4;
-}
-
-.contextToggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border-color);
-}
-
-.contextToggleProvider {
+/* Context bar — compact inline row */
+.contextBar {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
-  min-width: 0;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  min-height: 40px;
 }
 
-.contextToggleIcon {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+.contextBarLabel {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background-color: var(--bg-hover);
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-muted);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   flex-shrink: 0;
 }
 
-.contextToggleIcon svg {
-  width: 14px;
-  height: 14px;
+.contextBarLabel svg {
+  width: 13px;
+  height: 13px;
+  opacity: 0.7;
 }
 
-.contextToggleLabel {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.toggleSwitch {
-  width: 44px;
-  height: 24px;
-  border-radius: 12px;
-  background-color: var(--bg-hover);
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  padding: 0;
-}
-
-.toggleSwitch:hover {
-  border-color: var(--text-muted);
-}
-
-.toggleSwitchActive {
-  background-color: #d97706;
-  border-color: #d97706;
-}
-
-.toggleSwitchActive:hover {
-  background-color: #b45309;
-  border-color: #b45309;
-}
-
-.toggleKnob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
+.contextBarDivider {
+  width: 1px;
   height: 18px;
-  border-radius: 50%;
-  background-color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+  background-color: var(--border-color);
+  flex-shrink: 0;
 }
 
-.toggleSwitchActive .toggleKnob {
-  transform: translateX(20px);
+.contextBarChips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.contextBarChips::-webkit-scrollbar {
+  display: none;
+}
+
+.contextChip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 7px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background-color: var(--bg-hover);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.contextChip:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+.contextChip svg {
+  width: 13px;
+  height: 13px;
+}
+
+.contextChipActive {
+  background-color: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+  border-color: rgba(217, 119, 6, 0.25);
+}
+
+.contextChipActive:hover {
+  background-color: rgba(217, 119, 6, 0.18);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.contextChipDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  flex-shrink: 0;
+  transition: background-color 0.18s ease;
+  opacity: 0.4;
+}
+
+.contextChipActive .contextChipDot {
+  background-color: #d97706;
+  opacity: 1;
+}
+
+/* Provider filter — scrollable row */
+.providerFilters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.providerFilters::-webkit-scrollbar {
+  display: none;
 }
 
 /* Provider icon on imported items */
@@ -1373,8 +1383,18 @@
     gap: 4px;
   }
 
-  .contextToggle {
-    padding: 12px 14px;
+  .contextBar {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .contextBarLabel span {
+    display: none;
+  }
+
+  .contextChip {
+    padding: 3px 8px 3px 6px;
+    font-size: 11px;
   }
 }
 

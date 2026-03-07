@@ -88,7 +88,7 @@ const PROVIDERS = [
   },
 ];
 
-function parseConversationsFile(file, providerId) {
+function parseConversationsFile(file, providerId, providerName) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -130,7 +130,8 @@ function parseConversationsFile(file, providerId) {
             id: `imported-${providerId}-${conv.id || conv.uuid || crypto.randomUUID()}`,
             title: conv.title || conv.name || conv.topic || 'Untitled Conversation',
             provider: providerId,
-            providerName: PROVIDERS.find((p) => p.id === providerId)?.name || providerId,
+            providerName:
+              providerName || PROVIDERS.find((p) => p.id === providerId)?.name || providerId,
             createdAt:
               conv.created_at || conv.createdAt || conv.create_time
                 ? new Date(
@@ -246,13 +247,62 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
   const [error, setError] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
   const [importMode, setImportMode] = useState('add'); // 'add' or 'replace'
+  const [customProviderName, setCustomProviderName] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
   const fileInputRef = useRef(null);
+  const customInputRef = useRef(null);
 
-  const provider = PROVIDERS.find((p) => p.id === selectedProvider);
+  const customProvider = customProviderName.trim()
+    ? {
+        id: customProviderName.trim().toLowerCase().replace(/\s+/g, '-'),
+        name: customProviderName.trim(),
+        format: 'JSON export',
+        Logo: ({ size }) => (
+          <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M8 12h8" />
+            <path d="M12 8v8" />
+          </svg>
+        ),
+        color: '#6b7280',
+        bgColor: 'rgba(107, 114, 128, 0.08)',
+        instructions: [
+          { text: `Export your conversations from <strong>${customProviderName.trim()}</strong>` },
+          { text: 'The export should be a <code>.json</code> file' },
+          { text: 'Each conversation should have a title and messages array' },
+          { text: 'Messages should have a role (user/assistant) and content' },
+          { text: 'Upload the JSON file below' },
+        ],
+        isCustom: true,
+      }
+    : null;
+
+  const allProviders = customProvider ? [...PROVIDERS, customProvider] : PROVIDERS;
+
+  const provider = allProviders.find((p) => p.id === selectedProvider);
   const hasExistingData = existingProviders.includes(selectedProvider);
 
   const handleProviderSelect = (providerId) => {
     setSelectedProvider(providerId);
+    setFile(null);
+    setError(null);
+    setImportMode('add');
+    setShowCustomInput(false);
+  };
+
+  const handleCustomProviderConfirm = () => {
+    if (!customProviderName.trim()) return;
+    const id = customProviderName.trim().toLowerCase().replace(/\s+/g, '-');
+    setSelectedProvider(id);
     setFile(null);
     setError(null);
     setImportMode('add');
@@ -283,7 +333,7 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
     setError(null);
 
     try {
-      const conversations = await parseConversationsFile(file, selectedProvider);
+      const conversations = await parseConversationsFile(file, selectedProvider, provider?.name);
       setImportedCount(conversations.length);
       onImport(conversations, selectedProvider, importMode);
       setStep(3);
@@ -364,6 +414,96 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
                   </button>
                 );
               })}
+              {/* Custom provider */}
+              {!showCustomInput ? (
+                <button
+                  className={`${styles.providerCard} ${
+                    customProvider && selectedProvider === customProvider.id
+                      ? styles.providerCardSelected
+                      : ''
+                  }`}
+                  onClick={() => {
+                    setShowCustomInput(true);
+                    setTimeout(() => customInputRef.current?.focus(), 50);
+                  }}
+                >
+                  <div
+                    className={styles.providerLogo}
+                    style={{ backgroundColor: 'rgba(107, 114, 128, 0.08)', color: '#6b7280' }}
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v8" />
+                      <path d="M8 12h8" />
+                    </svg>
+                  </div>
+                  <div className={styles.providerInfo}>
+                    <div className={styles.providerName}>Other</div>
+                    <div className={styles.providerFormat}>Any JSON export</div>
+                  </div>
+                </button>
+              ) : (
+                <div
+                  className={`${styles.providerCard} ${styles.customProviderCard} ${
+                    customProvider && selectedProvider === customProvider.id
+                      ? styles.providerCardSelected
+                      : ''
+                  }`}
+                >
+                  <div
+                    className={styles.providerLogo}
+                    style={{ backgroundColor: 'rgba(107, 114, 128, 0.08)', color: '#6b7280' }}
+                  >
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M12 8v8" />
+                      <path d="M8 12h8" />
+                    </svg>
+                  </div>
+                  <div className={styles.customProviderInput}>
+                    <input
+                      ref={customInputRef}
+                      className={styles.customInput}
+                      placeholder="Provider name..."
+                      value={customProviderName}
+                      onChange={(e) => setCustomProviderName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleCustomProviderConfirm();
+                        if (e.key === 'Escape') {
+                          setShowCustomInput(false);
+                          setCustomProviderName('');
+                        }
+                      }}
+                    />
+                    <button
+                      className={styles.customConfirmBtn}
+                      onClick={handleCustomProviderConfirm}
+                      disabled={!customProviderName.trim()}
+                      aria-label="Confirm"
+                    >
+                      <ChevronRightIcon />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

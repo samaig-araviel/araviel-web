@@ -73,7 +73,7 @@ function groupConversationsByTime(conversations) {
   return groups;
 }
 
-function useItemMenu(conversations, conversationsTotal, dispatch) {
+function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive } = {}) {
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({});
   const [renamingId, setRenamingId] = useState(null);
@@ -203,16 +203,22 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
 
   const handleArchive = (chatId) => {
     closeMenu();
-    try {
-      const archived = new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
-      if (archived.has(chatId)) {
-        archived.delete(chatId);
-      } else {
-        archived.add(chatId);
+    if (onArchive) {
+      onArchive(chatId);
+    } else {
+      try {
+        const archived = new Set(
+          JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]')
+        );
+        if (archived.has(chatId)) {
+          archived.delete(chatId);
+        } else {
+          archived.add(chatId);
+        }
+        localStorage.setItem('araviel-archived-chats', JSON.stringify([...archived]));
+      } catch {
+        // Silently fail
       }
-      localStorage.setItem('araviel-archived-chats', JSON.stringify([...archived]));
-    } catch {
-      // Silently fail
     }
   };
 
@@ -352,7 +358,21 @@ export default function ConversationsView() {
   const observerRef = useRef(null);
   const sentinelRef = useRef(null);
 
-  const menu = useItemMenu(conversations, conversationsTotal, dispatch);
+  const handleSingleArchive = useCallback((chatId) => {
+    setArchivedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(chatId)) {
+        next.delete(chatId);
+      } else {
+        next.add(chatId);
+      }
+      return next;
+    });
+  }, []);
+
+  const menu = useItemMenu(conversations, conversationsTotal, dispatch, {
+    onArchive: handleSingleArchive,
+  });
 
   const importedProviders = useMemo(
     () => getImportedProviders(importedConversations),
@@ -1159,7 +1179,7 @@ export default function ConversationsView() {
             {/* Provider filter tabs */}
             {importedProviders.length > 0 && (
               <div className={styles.toolbar}>
-                <div className={styles.tabs}>
+                <div className={styles.providerFilters}>
                   <button
                     className={`${styles.tab} ${
                       activeImportProvider === 'all' ? styles.tabActive : ''
@@ -1209,39 +1229,49 @@ export default function ConversationsView() {
               </div>
             )}
 
-            {/* Per-provider context toggles */}
+            {/* Compact context bar */}
             {importedProviders.length > 0 && (
-              <div className={styles.contextToggles}>
-                <div className={styles.contextTogglesHeader}>
-                  <span className={styles.contextTogglesTitle}>Include in context</span>
-                  <span className={styles.contextTogglesDesc}>
-                    Choose which provider chats Araviel can reference for better responses
-                  </span>
-                </div>
-                {importedProviders.map((p) => {
-                  const ProviderLogo = getProviderLogo(p.id);
-                  const isEnabled = !!contextProviders[p.id];
-                  return (
-                    <div key={p.id} className={styles.contextToggle}>
-                      <div className={styles.contextToggleProvider}>
-                        <span className={styles.contextToggleIcon}>
-                          <ProviderLogo size={16} />
-                        </span>
-                        <span className={styles.contextToggleLabel}>{p.name}</span>
-                      </div>
+              <div className={styles.contextBar}>
+                <span className={styles.contextBarLabel}>
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                  </svg>
+                  <span>Context</span>
+                </span>
+                <div className={styles.contextBarDivider} />
+                <div className={styles.contextBarChips}>
+                  {(activeImportProvider === 'all'
+                    ? importedProviders
+                    : importedProviders.filter((p) => p.id === activeImportProvider)
+                  ).map((p) => {
+                    const ProviderLogo = getProviderLogo(p.id);
+                    const isEnabled = !!contextProviders[p.id];
+                    return (
                       <button
-                        className={`${styles.toggleSwitch} ${
-                          isEnabled ? styles.toggleSwitchActive : ''
+                        key={p.id}
+                        className={`${styles.contextChip} ${
+                          isEnabled ? styles.contextChipActive : ''
                         }`}
                         onClick={() => toggleProviderContext(p.id)}
-                        role="switch"
-                        aria-checked={isEnabled}
+                        title={isEnabled ? `Disable ${p.name} context` : `Enable ${p.name} context`}
                       >
-                        <span className={styles.toggleKnob} />
+                        <ProviderLogo size={13} />
+                        <span>{p.name}</span>
+                        <span className={styles.contextChipDot} />
                       </button>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
 
