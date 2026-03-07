@@ -26,7 +26,6 @@ import {
   PlusIcon,
   ChevronLeftIcon,
   ChevronDownIcon,
-  ChevronRightIcon,
   ChatIcon,
   UserIcon,
   SunIcon,
@@ -43,7 +42,6 @@ import {
   EditIcon,
   ArchiveIcon,
   TrashIcon,
-  DownloadIcon,
   LinkIcon,
 } from '../Icons';
 import styles from './Sidebar.module.css';
@@ -84,7 +82,6 @@ function groupConversationsByTime(conversations) {
 
 function useDropdownPosition(menuOpenId) {
   const [dropdownStyle, setDropdownStyle] = useState({});
-  const [shareSubStyle, setShareSubStyle] = useState({});
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -92,7 +89,7 @@ function useDropdownPosition(menuOpenId) {
     if (!menuOpenId || !menuBtnRef.current) return;
     const btn = menuBtnRef.current;
     const rect = btn.getBoundingClientRect();
-    const menuHeight = 190; // approximate dropdown height
+    const menuHeight = 170;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
     const openUpward = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
@@ -108,29 +105,13 @@ function useDropdownPosition(menuOpenId) {
       newStyle.marginTop = '4px';
     }
 
-    // Horizontal: keep within sidebar
     newStyle.right = '0';
     newStyle.left = 'auto';
 
     setDropdownStyle(newStyle);
-
-    // Share submenu positioning
-    const subMenuHeight = 90;
-    const subSpaceBelow = window.innerHeight - rect.bottom;
-    const subStyle = {};
-    if (subSpaceBelow < subMenuHeight + 40 && spaceAbove > subSpaceBelow) {
-      subStyle.bottom = '0';
-      subStyle.top = 'auto';
-    } else {
-      subStyle.top = '0';
-      subStyle.bottom = 'auto';
-    }
-    subStyle.left = '100%';
-    subStyle.marginLeft = '4px';
-    setShareSubStyle(subStyle);
   }, [menuOpenId]);
 
-  return { dropdownStyle, shareSubStyle, menuBtnRef, menuRef };
+  return { dropdownStyle, menuBtnRef, menuRef };
 }
 
 export default function Sidebar() {
@@ -145,7 +126,6 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [recentsExpanded, setRecentsExpanded] = useState(true);
   const [menuOpenId, setMenuOpenId] = useState(null);
-  const [shareSubOpen, setShareSubOpen] = useState(false);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
   const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
@@ -153,7 +133,7 @@ export default function Sidebar() {
   const [linkCopied, setLinkCopied] = useState(false);
   const renameInputRef = useRef(null);
 
-  const { dropdownStyle, shareSubStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
+  const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
 
   const groupedConversations = useMemo(
     () => groupConversationsByTime(conversations),
@@ -336,17 +316,10 @@ export default function Sidebar() {
         !menuBtnRef.current.contains(e.target)
       ) {
         setMenuOpenId(null);
-        setShareSubOpen(false);
       }
     };
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        if (shareSubOpen) {
-          setShareSubOpen(false);
-        } else {
-          setMenuOpenId(null);
-        }
-      }
+      if (e.key === 'Escape') setMenuOpenId(null);
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
@@ -354,7 +327,7 @@ export default function Sidebar() {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [menuOpenId, shareSubOpen, menuBtnRef, menuRef]);
+  }, [menuOpenId, menuBtnRef, menuRef]);
 
   // Focus rename input when renaming starts
   useEffect(() => {
@@ -366,12 +339,10 @@ export default function Sidebar() {
 
   const closeMenu = () => {
     setMenuOpenId(null);
-    setShareSubOpen(false);
   };
 
   const handleMenuToggle = (e, chatId) => {
     e.stopPropagation();
-    setShareSubOpen(false);
     setMenuOpenId((prev) => (prev === chatId ? null : chatId));
   };
 
@@ -418,41 +389,6 @@ export default function Sidebar() {
       setShareLinkConfirm(null);
       setLinkCopied(false);
     }, 1500);
-  };
-
-  const handleSharePdf = (chatId) => {
-    closeMenu();
-    const chat = conversations.find((c) => c.id === chatId);
-    const title = chat?.title || 'conversation';
-    // Create a simple PDF-style download using a printable HTML document
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #333; }
-            h1 { font-size: 22px; margin-bottom: 8px; }
-            .meta { color: #888; font-size: 13px; margin-bottom: 32px; }
-            .message { margin-bottom: 20px; padding: 12px 16px; border-radius: 8px; }
-            .user { background: #f0f0f0; }
-            .assistant { background: #e8f4fd; }
-            .role { font-weight: 600; font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 6px; }
-            .content { white-space: pre-wrap; line-height: 1.6; }
-          </style>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          <p class="meta">Exported from Araviel</p>
-          <p style="color:#888;font-size:13px;">Use your browser's Print dialog to save as PDF.</p>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      setTimeout(() => printWindow.print(), 300);
-    }
   };
 
   const handleArchive = (chatId) => {
@@ -663,49 +599,16 @@ export default function Sidebar() {
                                 className={styles.chatDropdown}
                                 style={dropdownStyle}
                               >
-                                <div
-                                  className={styles.chatDropdownItemWithSub}
-                                  onMouseEnter={() => setShareSubOpen(true)}
-                                  onMouseLeave={() => setShareSubOpen(false)}
+                                <button
+                                  className={styles.chatDropdownItem}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleShareLink(chat.id);
+                                  }}
                                 >
-                                  <button
-                                    className={styles.chatDropdownItem}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setShareSubOpen((v) => !v);
-                                    }}
-                                  >
-                                    <ShareIcon />
-                                    <span>Share</span>
-                                    <span className={styles.chatDropdownChevron}>
-                                      <ChevronRightIcon />
-                                    </span>
-                                  </button>
-                                  {shareSubOpen && (
-                                    <div className={styles.chatSubDropdown} style={shareSubStyle}>
-                                      <button
-                                        className={styles.chatDropdownItem}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleSharePdf(chat.id);
-                                        }}
-                                      >
-                                        <DownloadIcon />
-                                        <span>Share as PDF</span>
-                                      </button>
-                                      <button
-                                        className={styles.chatDropdownItem}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleShareLink(chat.id);
-                                        }}
-                                      >
-                                        <LinkIcon />
-                                        <span>Share link</span>
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
+                                  <ShareIcon />
+                                  <span>Share</span>
+                                </button>
                                 <button
                                   className={styles.chatDropdownItem}
                                   onClick={(e) => {

@@ -26,8 +26,6 @@ import {
   MoreVerticalIcon,
   ShareIcon,
   EditIcon,
-  ChevronRightIcon,
-  DownloadIcon,
   LinkIcon,
 } from '../Icons';
 import styles from './ConversationsView.module.css';
@@ -74,9 +72,7 @@ function groupConversationsByTime(conversations) {
 
 function useItemMenu(conversations, conversationsTotal, dispatch) {
   const [menuOpenId, setMenuOpenId] = useState(null);
-  const [shareSubOpen, setShareSubOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({});
-  const [shareSubPosition, setShareSubPosition] = useState({});
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
   const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
@@ -86,15 +82,12 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
   const menuBtnRef = useRef(null);
   const renameInputRef = useRef(null);
 
-  // Calculate dropdown position based on trigger button
   const computePosition = useCallback((btnEl) => {
     if (!btnEl) return;
     const rect = btnEl.getBoundingClientRect();
-    const menuHeight = 200;
-    const menuWidth = 180;
+    const menuHeight = 170;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const spaceRight = window.innerWidth - rect.right;
 
     const pos = {};
     if (spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow) {
@@ -107,43 +100,14 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
       pos.marginTop = '4px';
     }
 
-    if (spaceRight < menuWidth) {
-      pos.right = '0';
-      pos.left = 'auto';
-    } else {
-      pos.right = '0';
-      pos.left = 'auto';
-    }
-
+    pos.right = '0';
+    pos.left = 'auto';
     setMenuPosition(pos);
-
-    // Share submenu
-    const subH = 90;
-    const subPos = {};
-    if (spaceBelow < subH + 40 && spaceAbove > spaceBelow) {
-      subPos.bottom = '0';
-      subPos.top = 'auto';
-    } else {
-      subPos.top = '0';
-      subPos.bottom = 'auto';
-    }
-
-    if (spaceRight < menuWidth + 170) {
-      subPos.right = '100%';
-      subPos.left = 'auto';
-      subPos.marginRight = '4px';
-    } else {
-      subPos.left = '100%';
-      subPos.right = 'auto';
-      subPos.marginLeft = '4px';
-    }
-    setShareSubPosition(subPos);
   }, []);
 
   const handleMenuToggle = useCallback(
     (e, chatId) => {
       e.stopPropagation();
-      setShareSubOpen(false);
       if (menuOpenId === chatId) {
         setMenuOpenId(null);
       } else {
@@ -154,7 +118,6 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
     [menuOpenId, computePosition]
   );
 
-  // Close menu on outside click or Escape
   useEffect(() => {
     if (!menuOpenId) return;
     const handleClickOutside = (e) => {
@@ -165,17 +128,10 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
         !menuBtnRef.current.contains(e.target)
       ) {
         setMenuOpenId(null);
-        setShareSubOpen(false);
       }
     };
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        if (shareSubOpen) {
-          setShareSubOpen(false);
-        } else {
-          setMenuOpenId(null);
-        }
-      }
+      if (e.key === 'Escape') setMenuOpenId(null);
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEscape);
@@ -183,7 +139,7 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [menuOpenId, shareSubOpen]);
+  }, [menuOpenId]);
 
   // Focus rename input
   useEffect(() => {
@@ -195,7 +151,6 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
 
   const closeMenu = () => {
     setMenuOpenId(null);
-    setShareSubOpen(false);
   };
 
   const handleRename = (chat) => {
@@ -243,35 +198,6 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
     }, 1500);
   };
 
-  const handleSharePdf = (chatId) => {
-    closeMenu();
-    const chat = conversations.find((c) => c.id === chatId);
-    const title = chat?.title || 'conversation';
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #333; }
-            h1 { font-size: 22px; margin-bottom: 8px; }
-            .meta { color: #888; font-size: 13px; margin-bottom: 32px; }
-          </style>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          <p class="meta">Exported from Araviel</p>
-          <p style="color:#888;font-size:13px;">Use your browser's Print dialog to save as PDF.</p>
-        </body>
-        </html>
-      `);
-      printWindow.document.close();
-      setTimeout(() => printWindow.print(), 300);
-    }
-  };
-
   const handleArchive = (chatId) => {
     closeMenu();
     try {
@@ -315,10 +241,7 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
 
   return {
     menuOpenId,
-    shareSubOpen,
-    setShareSubOpen,
     menuPosition,
-    shareSubPosition,
     renamingId,
     renameValue,
     setRenameValue,
@@ -336,7 +259,6 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
     handleRenameKeyDown,
     handleShareLink,
     confirmShareLink,
-    handleSharePdf,
     handleArchive,
     handleDeleteRequest,
     confirmDelete,
@@ -632,49 +554,16 @@ export default function ConversationsView() {
       </button>
       {menu.menuOpenId === chat.id && (
         <div ref={menu.menuRef} className={styles.itemDropdown} style={menu.menuPosition}>
-          <div
-            className={styles.itemDropdownItemWithSub}
-            onMouseEnter={() => menu.setShareSubOpen(true)}
-            onMouseLeave={() => menu.setShareSubOpen(false)}
+          <button
+            className={styles.itemDropdownItem}
+            onClick={(e) => {
+              e.stopPropagation();
+              menu.handleShareLink(chat.id);
+            }}
           >
-            <button
-              className={styles.itemDropdownItem}
-              onClick={(e) => {
-                e.stopPropagation();
-                menu.setShareSubOpen((v) => !v);
-              }}
-            >
-              <ShareIcon />
-              <span>Share</span>
-              <span className={styles.itemDropdownChevron}>
-                <ChevronRightIcon />
-              </span>
-            </button>
-            {menu.shareSubOpen && (
-              <div className={styles.itemSubDropdown} style={menu.shareSubPosition}>
-                <button
-                  className={styles.itemDropdownItem}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    menu.handleSharePdf(chat.id);
-                  }}
-                >
-                  <DownloadIcon />
-                  <span>Share as PDF</span>
-                </button>
-                <button
-                  className={styles.itemDropdownItem}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    menu.handleShareLink(chat.id);
-                  }}
-                >
-                  <LinkIcon />
-                  <span>Share link</span>
-                </button>
-              </div>
-            )}
-          </div>
+            <ShareIcon />
+            <span>Share</span>
+          </button>
           <button
             className={styles.itemDropdownItem}
             onClick={(e) => {
