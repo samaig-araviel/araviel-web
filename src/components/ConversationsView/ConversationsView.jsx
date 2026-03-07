@@ -27,7 +27,10 @@ import {
   ShareIcon,
   EditIcon,
   LinkIcon,
+  ImportIcon,
 } from '../Icons';
+import { getProviderLogo } from '../ProviderLogos';
+import ImportConversationsModal from '../ImportConversationsModal';
 import styles from './ConversationsView.module.css';
 
 const TABS = [
@@ -266,6 +269,31 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
   };
 }
 
+const IMPORTED_STORAGE_KEY = 'araviel-imported-conversations';
+const IMPORTED_CONTEXT_KEY = 'araviel-imported-context-enabled';
+
+function loadImportedConversations() {
+  try {
+    return JSON.parse(localStorage.getItem(IMPORTED_STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function saveImportedConversations(conversations) {
+  localStorage.setItem(IMPORTED_STORAGE_KEY, JSON.stringify(conversations));
+}
+
+function getImportedProviders(conversations) {
+  const providerMap = new Map();
+  for (const conv of conversations) {
+    if (!providerMap.has(conv.provider)) {
+      providerMap.set(conv.provider, conv.providerName || conv.provider);
+    }
+  }
+  return [...providerMap.entries()].map(([id, name]) => ({ id, name }));
+}
+
 export default function ConversationsView() {
   const dispatch = useDispatch();
   const conversations = useSelector(selectConversations);
@@ -273,6 +301,8 @@ export default function ConversationsView() {
   const conversationsLoading = useSelector(selectConversationsLoading);
   const currentChatId = useSelector(selectCurrentChatId);
 
+  // Section: 'my-chats' or 'imported'
+  const [activeSection, setActiveSection] = useState('my-chats');
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectMode, setSelectMode] = useState(false);
@@ -292,12 +322,65 @@ export default function ConversationsView() {
     }
   });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importedConversations, setImportedConversations] = useState(loadImportedConversations);
+  const [activeImportProvider, setActiveImportProvider] = useState('all');
+  const [importedStarredIds, setImportedStarredIds] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('araviel-imported-starred') || '[]'));
+    } catch {
+      return new Set();
+    }
+  });
+  const [importedArchivedIds, setImportedArchivedIds] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('araviel-imported-archived') || '[]'));
+    } catch {
+      return new Set();
+    }
+  });
+  const [useForContext, setUseForContext] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(IMPORTED_CONTEXT_KEY) || 'false');
+    } catch {
+      return false;
+    }
+  });
 
   const listRef = useRef(null);
   const observerRef = useRef(null);
   const sentinelRef = useRef(null);
 
   const menu = useItemMenu(conversations, conversationsTotal, dispatch);
+
+  const importedProviders = useMemo(
+    () => getImportedProviders(importedConversations),
+    [importedConversations]
+  );
+
+  const handleImportConversations = useCallback((newConversations, providerId) => {
+    setImportedConversations((prev) => {
+      // Remove existing conversations from same provider to avoid duplicates
+      const filtered = prev.filter((c) => c.provider !== providerId);
+      const updated = [...filtered, ...newConversations];
+      saveImportedConversations(updated);
+      return updated;
+    });
+    setActiveSection('imported');
+    setActiveImportProvider(providerId);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('araviel-imported-starred', JSON.stringify([...importedStarredIds]));
+  }, [importedStarredIds]);
+
+  useEffect(() => {
+    localStorage.setItem('araviel-imported-archived', JSON.stringify([...importedArchivedIds]));
+  }, [importedArchivedIds]);
+
+  useEffect(() => {
+    localStorage.setItem(IMPORTED_CONTEXT_KEY, JSON.stringify(useForContext));
+  }, [useForContext]);
 
   useEffect(() => {
     localStorage.setItem('araviel-starred-chats', JSON.stringify([...starredIds]));
@@ -501,7 +584,111 @@ export default function ConversationsView() {
   );
 
   const selectAll = () => {
-    setSelectedIds(new Set(filteredConversations.map((c) => c.id)));
+    const source =
+      activeSection === 'imported' ? filteredImportedConversations : filteredConversations;
+    setSelectedIds(new Set(source.map((c) => c.id)));
+  };
+
+  // Imported conversations filtering
+  const filteredImportedConversations = useMemo(() => {
+    return importedConversations.filter((chat) => {
+      if (activeImportProvider !== 'all' && chat.provider !== activeImportProvider) return false;
+      if (importedArchivedIds.has(chat.id)) return false;
+      if (searchQuery.trim()) {
+        return chat.title?.toLowerCase().includes(searchQuery.toLowerCase());
+      }
+      return true;
+    });
+  }, [importedConversations, activeImportProvider, importedArchivedIds, searchQuery]);
+
+  const groupedImportedConversations = useMemo(
+    () => groupConversationsByTime(filteredImportedConversations),
+    [filteredImportedConversations]
+  );
+
+  const handleImportedChatClick = (chat) => {
+    if (selectMode) {
+      toggleSelect(chat.id);
+      return;
+    }
+    // Load imported chat messages into the main view
+    dispatch(setCurrentChat(chat.id));
+    dispatch(setActiveItem('home'));
+    const mappedMessages = (chat.messages || []).map((msg) => ({
+      id: msg.id,
+      role: msg.role,
+      content: msg.content,
+      timestamp: new Date(msg.createdAt).getTime(),
+      ...(msg.role === 'assistant' && {
+        modelName: chat.providerName,
+        provider: chat.provider,
+      }),
+    }));
+    dispatch(setMessages(mappedMessages));
+  };
+
+  const handleDeleteImported = (chatId) => {
+    setImportedConversations((prev) => {
+      const updated = prev.filter((c) => c.id !== chatId);
+      saveImportedConversations(updated);
+      return updated;
+    });
+    setImportedStarredIds((prev) => {
+      const next = new Set(prev);
+      next.delete(chatId);
+      return next;
+    });
+    setImportedArchivedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(chatId);
+      return next;
+    });
+  };
+
+  const handleBulkDeleteImported = () => {
+    setImportedConversations((prev) => {
+      const updated = prev.filter((c) => !selectedIds.has(c.id));
+      saveImportedConversations(updated);
+      return updated;
+    });
+    setImportedStarredIds((prev) => {
+      const next = new Set(prev);
+      selectedIds.forEach((id) => next.delete(id));
+      return next;
+    });
+    setImportedArchivedIds((prev) => {
+      const next = new Set(prev);
+      selectedIds.forEach((id) => next.delete(id));
+      return next;
+    });
+    setShowDeleteConfirm(false);
+    exitSelectMode();
+  };
+
+  const toggleImportedStar = (ids) => {
+    setImportedStarredIds((prev) => {
+      const next = new Set(prev);
+      const allStarred = [...ids].every((id) => next.has(id));
+      ids.forEach((id) => {
+        if (allStarred) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+    exitSelectMode();
+  };
+
+  const toggleImportedArchive = (ids) => {
+    setImportedArchivedIds((prev) => {
+      const next = new Set(prev);
+      const allArchived = [...ids].every((id) => next.has(id));
+      ids.forEach((id) => {
+        if (allArchived) next.delete(id);
+        else next.add(id);
+      });
+      return next;
+    });
+    exitSelectMode();
   };
 
   const hasSelection = selectedIds.size > 0;
@@ -600,21 +787,159 @@ export default function ConversationsView() {
     </>
   );
 
+  const renderConversationItem = (chat, { isImported = false } = {}) => {
+    const isSelected = selectedIds.has(chat.id);
+    const isCurrent = currentChatId === chat.id;
+    const isStarred = isImported ? importedStarredIds.has(chat.id) : starredIds.has(chat.id);
+    const isRenaming = menu.renamingId === chat.id;
+    const ProviderLogo = isImported ? getProviderLogo(chat.provider) : null;
+
+    return (
+      <div
+        key={chat.id}
+        className={`${styles.item} ${isSelected ? styles.itemSelected : ''} ${
+          isCurrent && !selectMode ? styles.itemCurrent : ''
+        }`}
+        onClick={() => {
+          if (isRenaming) return;
+          if (isImported) handleImportedChatClick(chat);
+          else handleChatClick(chat.id);
+        }}
+      >
+        {selectMode && (
+          <div className={styles.checkboxArea}>
+            <div className={`${styles.checkbox} ${isSelected ? styles.checkboxChecked : ''}`}>
+              {isSelected && (
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+          </div>
+        )}
+        {isImported && ProviderLogo && (
+          <div className={styles.itemProviderIcon}>
+            <ProviderLogo size={16} />
+          </div>
+        )}
+        <div className={styles.itemBody}>
+          <div className={styles.itemTop}>
+            {isRenaming ? (
+              <input
+                ref={menu.renameInputRef}
+                className={styles.itemRenameInput}
+                value={menu.renameValue}
+                onChange={(e) => menu.setRenameValue(e.target.value)}
+                onKeyDown={(e) => menu.handleRenameKeyDown(e, chat.id)}
+                onBlur={() => menu.handleRenameSubmit(chat.id)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <>
+                <span className={styles.itemTitle}>{chat.title || 'Untitled'}</span>
+                {isStarred && (
+                  <span className={styles.itemStarBadge}>
+                    <StarIcon filled />
+                  </span>
+                )}
+              </>
+            )}
+          </div>
+          <span className={styles.itemMeta}>
+            {isImported
+              ? `From ${chat.providerName} \u00B7 ${formatRelativeTime(
+                  chat.updatedAt || chat.createdAt
+                )}`
+              : `Last message ${formatRelativeTime(chat.updatedAt || chat.createdAt)}`}
+          </span>
+        </div>
+        <span className={styles.itemTime}>{formatDate(chat.updatedAt || chat.createdAt)}</span>
+        {!selectMode && !isImported && renderItemMenu(chat)}
+        {!selectMode && isImported && (
+          <button
+            className={`${styles.itemMenuBtn} ${styles.itemMenuBtnVisible}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteImported(chat.id);
+            }}
+            aria-label="Delete imported chat"
+            title="Delete"
+          >
+            <TrashIcon />
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const isImportedSection = activeSection === 'imported';
+  const currentFilteredList = isImportedSection
+    ? filteredImportedConversations
+    : filteredConversations;
+
   return (
     <div className={styles.page}>
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>
           <h1 className={styles.title}>Chats</h1>
+          <div className={styles.headerActions}>
+            <button className={styles.importBtn} onClick={() => setShowImportModal(true)}>
+              <ImportIcon />
+              <span>Import</span>
+            </button>
+            <button
+              className={styles.newChatBtn}
+              onClick={() => {
+                dispatch(createNewChat());
+                dispatch(setActiveItem('home'));
+              }}
+            >
+              <PlusIcon />
+              <span>New chat</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Section switcher */}
+        <div className={styles.sectionSwitcher}>
           <button
-            className={styles.newChatBtn}
+            className={`${styles.sectionTab} ${
+              activeSection === 'my-chats' ? styles.sectionTabActive : ''
+            }`}
             onClick={() => {
-              dispatch(createNewChat());
-              dispatch(setActiveItem('home'));
+              setActiveSection('my-chats');
+              exitSelectMode();
+              setSearchQuery('');
             }}
           >
-            <PlusIcon />
-            <span>New chat</span>
+            <ChatIcon />
+            <span>My Chats</span>
+          </button>
+          <button
+            className={`${styles.sectionTab} ${
+              activeSection === 'imported' ? styles.sectionTabActive : ''
+            }`}
+            onClick={() => {
+              setActiveSection('imported');
+              exitSelectMode();
+              setSearchQuery('');
+            }}
+          >
+            <ImportIcon />
+            <span>Imported Chats</span>
+            {importedConversations.length > 0 && (
+              <span className={styles.sectionBadge}>{importedConversations.length}</span>
+            )}
           </button>
         </div>
 
@@ -626,7 +951,7 @@ export default function ConversationsView() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder="Search your chats..."
+            placeholder={isImportedSection ? 'Search imported chats...' : 'Search your chats...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -641,237 +966,330 @@ export default function ConversationsView() {
           )}
         </div>
 
-        {/* Toolbar: Tabs + Select toggle */}
-        <div className={styles.toolbar}>
-          <div className={styles.tabs}>
-            {TABS.map((tab) => (
+        {/* My Chats Section */}
+        {!isImportedSection && (
+          <>
+            {/* Toolbar: Tabs + Select toggle */}
+            <div className={styles.toolbar}>
+              <div className={styles.tabs}>
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.id}
+                    className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      exitSelectMode();
+                    }}
+                  >
+                    {tab.label}
+                    {tab.id === 'starred' && starredIds.size > 0 && (
+                      <span className={styles.tabBadge}>{starredIds.size}</span>
+                    )}
+                    {tab.id === 'archived' && archivedIds.size > 0 && (
+                      <span className={styles.tabBadge}>{archivedIds.size}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
               <button
-                key={tab.id}
-                className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
+                className={`${styles.selectToggle} ${selectMode ? styles.selectToggleActive : ''}`}
                 onClick={() => {
-                  setActiveTab(tab.id);
-                  exitSelectMode();
+                  if (selectMode) {
+                    exitSelectMode();
+                  } else {
+                    setSelectMode(true);
+                  }
                 }}
               >
-                {tab.label}
-                {tab.id === 'starred' && starredIds.size > 0 && (
-                  <span className={styles.tabBadge}>{starredIds.size}</span>
-                )}
-                {tab.id === 'archived' && archivedIds.size > 0 && (
-                  <span className={styles.tabBadge}>{archivedIds.size}</span>
-                )}
+                {selectMode ? 'Cancel' : 'Select'}
               </button>
-            ))}
-          </div>
-          <button
-            className={`${styles.selectToggle} ${selectMode ? styles.selectToggleActive : ''}`}
-            onClick={() => {
-              if (selectMode) {
-                exitSelectMode();
-              } else {
-                setSelectMode(true);
-              }
-            }}
-          >
-            {selectMode ? 'Cancel' : 'Select'}
-          </button>
-        </div>
+            </div>
 
-        {/* Selection action bar */}
-        {selectMode && (
-          <div className={styles.selectionBar}>
-            <div className={styles.selectionLeft}>
-              <span className={styles.selectionCount}>{selectedIds.size} selected</span>
-              {selectedIds.size < filteredConversations.length && (
-                <button className={styles.selectAllBtn} onClick={selectAll}>
-                  Select all
+            {/* Selection action bar */}
+            {selectMode && (
+              <div className={styles.selectionBar}>
+                <div className={styles.selectionLeft}>
+                  <span className={styles.selectionCount}>{selectedIds.size} selected</span>
+                  {selectedIds.size < filteredConversations.length && (
+                    <button className={styles.selectAllBtn} onClick={selectAll}>
+                      Select all
+                    </button>
+                  )}
+                </div>
+                <div className={styles.selectionActions}>
+                  <button
+                    className={styles.selectionAction}
+                    onClick={() => hasSelection && toggleStar(selectedIds)}
+                    disabled={!hasSelection}
+                    title="Star"
+                  >
+                    <StarIcon />
+                  </button>
+                  <button
+                    className={styles.selectionAction}
+                    onClick={() => hasSelection && toggleArchive(selectedIds)}
+                    disabled={!hasSelection}
+                    title={activeTab === 'archived' ? 'Unarchive' : 'Archive'}
+                  >
+                    <ArchiveIcon />
+                  </button>
+                  <button
+                    className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                    onClick={() => hasSelection && handleBulkDelete()}
+                    disabled={!hasSelection}
+                    title="Delete"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+                <button
+                  className={styles.selectionClose}
+                  onClick={exitSelectMode}
+                  aria-label="Exit selection"
+                >
+                  <CloseIcon />
                 </button>
+              </div>
+            )}
+
+            {/* Conversation list */}
+            <div className={styles.list} ref={listRef}>
+              {conversationsLoading && conversations.length === 0 ? (
+                <div className={styles.skeleton}>
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <div key={i} className={styles.skeletonItem}>
+                      <div className={styles.skeletonContent}>
+                        <div
+                          className={styles.skeletonTitle}
+                          style={{ width: `${45 + ((i * 11) % 30)}%` }}
+                        />
+                        <div
+                          className={styles.skeletonSub}
+                          style={{ width: `${25 + ((i * 7) % 20)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : groupedFilteredConversations.length > 0 ? (
+                <>
+                  {groupedFilteredConversations.map((group) => (
+                    <div key={group.label} className={styles.timeGroup}>
+                      <div className={styles.timeGroupLabel}>{group.label}</div>
+                      {group.items.map((chat) => renderConversationItem(chat))}
+                    </div>
+                  ))}
+                  <div ref={sentinelRef} className={styles.sentinel}>
+                    {conversationsLoading && (
+                      <div className={styles.loadingMore}>
+                        <div className={styles.loadingDots}>
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className={styles.empty}>
+                  <div className={styles.emptyIcon}>
+                    <ChatIcon />
+                  </div>
+                  <h3 className={styles.emptyTitle}>
+                    {activeTab === 'starred'
+                      ? 'No starred chats'
+                      : activeTab === 'archived'
+                      ? 'No archived chats'
+                      : searchQuery
+                      ? 'No results found'
+                      : 'No chats yet'}
+                  </h3>
+                  <p className={styles.emptyDesc}>
+                    {activeTab === 'starred'
+                      ? 'Star your important conversations to find them quickly.'
+                      : activeTab === 'archived'
+                      ? 'Archived conversations will appear here.'
+                      : searchQuery
+                      ? 'Try a different search term.'
+                      : 'Start a new chat to begin a conversation.'}
+                  </p>
+                  {!searchQuery && activeTab === 'all' && (
+                    <button
+                      className={styles.emptyAction}
+                      onClick={() => {
+                        dispatch(createNewChat());
+                        dispatch(setActiveItem('home'));
+                      }}
+                    >
+                      <PlusIcon />
+                      <span>New chat</span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-            <div className={styles.selectionActions}>
-              <button
-                className={styles.selectionAction}
-                onClick={() => hasSelection && toggleStar(selectedIds)}
-                disabled={!hasSelection}
-                title="Star"
-              >
-                <StarIcon />
-              </button>
-              <button
-                className={styles.selectionAction}
-                onClick={() => hasSelection && toggleArchive(selectedIds)}
-                disabled={!hasSelection}
-                title={activeTab === 'archived' ? 'Unarchive' : 'Archive'}
-              >
-                <ArchiveIcon />
-              </button>
-              <button
-                className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
-                onClick={() => hasSelection && handleBulkDelete()}
-                disabled={!hasSelection}
-                title="Delete"
-              >
-                <TrashIcon />
-              </button>
-            </div>
-            <button
-              className={styles.selectionClose}
-              onClick={exitSelectMode}
-              aria-label="Exit selection"
-            >
-              <CloseIcon />
-            </button>
-          </div>
+          </>
         )}
 
-        {/* Conversation list */}
-        <div className={styles.list} ref={listRef}>
-          {conversationsLoading && conversations.length === 0 ? (
-            <div className={styles.skeleton}>
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className={styles.skeletonItem}>
-                  <div className={styles.skeletonContent}>
-                    <div
-                      className={styles.skeletonTitle}
-                      style={{ width: `${45 + ((i * 11) % 30)}%` }}
-                    />
-                    <div
-                      className={styles.skeletonSub}
-                      style={{ width: `${25 + ((i * 7) % 20)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : groupedFilteredConversations.length > 0 ? (
-            <>
-              {groupedFilteredConversations.map((group) => (
-                <div key={group.label} className={styles.timeGroup}>
-                  <div className={styles.timeGroupLabel}>{group.label}</div>
-                  {group.items.map((chat) => {
-                    const isSelected = selectedIds.has(chat.id);
-                    const isCurrent = currentChatId === chat.id;
-                    const isStarred = starredIds.has(chat.id);
-                    const isRenaming = menu.renamingId === chat.id;
-
+        {/* Imported Chats Section */}
+        {isImportedSection && (
+          <>
+            {/* Provider filter tabs */}
+            {importedProviders.length > 0 && (
+              <div className={styles.toolbar}>
+                <div className={styles.tabs}>
+                  <button
+                    className={`${styles.tab} ${
+                      activeImportProvider === 'all' ? styles.tabActive : ''
+                    }`}
+                    onClick={() => {
+                      setActiveImportProvider('all');
+                      exitSelectMode();
+                    }}
+                  >
+                    All
+                    <span className={styles.tabBadge}>{importedConversations.length}</span>
+                  </button>
+                  {importedProviders.map((p) => {
+                    const count = importedConversations.filter((c) => c.provider === p.id).length;
+                    const ProviderLogo = getProviderLogo(p.id);
                     return (
-                      <div
-                        key={chat.id}
-                        className={`${styles.item} ${isSelected ? styles.itemSelected : ''} ${
-                          isCurrent && !selectMode ? styles.itemCurrent : ''
+                      <button
+                        key={p.id}
+                        className={`${styles.tab} ${
+                          activeImportProvider === p.id ? styles.tabActive : ''
                         }`}
-                        onClick={() => !isRenaming && handleChatClick(chat.id)}
+                        onClick={() => {
+                          setActiveImportProvider(p.id);
+                          exitSelectMode();
+                        }}
                       >
-                        {selectMode && (
-                          <div className={styles.checkboxArea}>
-                            <div
-                              className={`${styles.checkbox} ${
-                                isSelected ? styles.checkboxChecked : ''
-                              }`}
-                            >
-                              {isSelected && (
-                                <svg
-                                  width="10"
-                                  height="10"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="3"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        <div className={styles.itemBody}>
-                          <div className={styles.itemTop}>
-                            {isRenaming ? (
-                              <input
-                                ref={menu.renameInputRef}
-                                className={styles.itemRenameInput}
-                                value={menu.renameValue}
-                                onChange={(e) => menu.setRenameValue(e.target.value)}
-                                onKeyDown={(e) => menu.handleRenameKeyDown(e, chat.id)}
-                                onBlur={() => menu.handleRenameSubmit(chat.id)}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                            ) : (
-                              <>
-                                <span className={styles.itemTitle}>{chat.title || 'Untitled'}</span>
-                                {isStarred && (
-                                  <span className={styles.itemStarBadge}>
-                                    <StarIcon filled />
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </div>
-                          <span className={styles.itemMeta}>
-                            Last message {formatRelativeTime(chat.updatedAt || chat.createdAt)}
-                          </span>
-                        </div>
-                        <span className={styles.itemTime}>
-                          {formatDate(chat.updatedAt || chat.createdAt)}
+                        <span className={styles.tabProviderIcon}>
+                          <ProviderLogo size={14} />
                         </span>
-                        {!selectMode && renderItemMenu(chat)}
-                      </div>
+                        {p.name}
+                        <span className={styles.tabBadge}>{count}</span>
+                      </button>
                     );
                   })}
                 </div>
-              ))}
-              <div ref={sentinelRef} className={styles.sentinel}>
-                {conversationsLoading && (
-                  <div className={styles.loadingMore}>
-                    <div className={styles.loadingDots}>
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className={styles.empty}>
-              <div className={styles.emptyIcon}>
-                <ChatIcon />
-              </div>
-              <h3 className={styles.emptyTitle}>
-                {activeTab === 'starred'
-                  ? 'No starred chats'
-                  : activeTab === 'archived'
-                  ? 'No archived chats'
-                  : searchQuery
-                  ? 'No results found'
-                  : 'No chats yet'}
-              </h3>
-              <p className={styles.emptyDesc}>
-                {activeTab === 'starred'
-                  ? 'Star your important conversations to find them quickly.'
-                  : activeTab === 'archived'
-                  ? 'Archived conversations will appear here.'
-                  : searchQuery
-                  ? 'Try a different search term.'
-                  : 'Start a new chat to begin a conversation.'}
-              </p>
-              {!searchQuery && activeTab === 'all' && (
                 <button
-                  className={styles.emptyAction}
+                  className={`${styles.selectToggle} ${
+                    selectMode ? styles.selectToggleActive : ''
+                  }`}
                   onClick={() => {
-                    dispatch(createNewChat());
-                    dispatch(setActiveItem('home'));
+                    if (selectMode) exitSelectMode();
+                    else setSelectMode(true);
                   }}
                 >
-                  <PlusIcon />
-                  <span>New chat</span>
+                  {selectMode ? 'Cancel' : 'Select'}
                 </button>
+              </div>
+            )}
+
+            {/* Context toggle */}
+            {importedConversations.length > 0 && (
+              <div className={styles.contextToggle}>
+                <div className={styles.contextToggleText}>
+                  <span className={styles.contextToggleLabel}>Use for context</span>
+                  <span className={styles.contextToggleDesc}>
+                    Let Araviel reference your imported chats for more relevant responses
+                  </span>
+                </div>
+                <button
+                  className={`${styles.toggleSwitch} ${
+                    useForContext ? styles.toggleSwitchActive : ''
+                  }`}
+                  onClick={() => setUseForContext((v) => !v)}
+                  role="switch"
+                  aria-checked={useForContext}
+                >
+                  <span className={styles.toggleKnob} />
+                </button>
+              </div>
+            )}
+
+            {/* Selection action bar for imported */}
+            {selectMode && (
+              <div className={styles.selectionBar}>
+                <div className={styles.selectionLeft}>
+                  <span className={styles.selectionCount}>{selectedIds.size} selected</span>
+                  {selectedIds.size < filteredImportedConversations.length && (
+                    <button className={styles.selectAllBtn} onClick={selectAll}>
+                      Select all
+                    </button>
+                  )}
+                </div>
+                <div className={styles.selectionActions}>
+                  <button
+                    className={styles.selectionAction}
+                    onClick={() => hasSelection && toggleImportedStar(selectedIds)}
+                    disabled={!hasSelection}
+                    title="Star"
+                  >
+                    <StarIcon />
+                  </button>
+                  <button
+                    className={styles.selectionAction}
+                    onClick={() => hasSelection && toggleImportedArchive(selectedIds)}
+                    disabled={!hasSelection}
+                    title="Archive"
+                  >
+                    <ArchiveIcon />
+                  </button>
+                  <button
+                    className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                    onClick={() => hasSelection && handleBulkDelete()}
+                    disabled={!hasSelection}
+                    title="Delete"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+                <button
+                  className={styles.selectionClose}
+                  onClick={exitSelectMode}
+                  aria-label="Exit selection"
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+            )}
+
+            {/* Imported conversations list */}
+            <div className={styles.list}>
+              {groupedImportedConversations.length > 0 ? (
+                groupedImportedConversations.map((group) => (
+                  <div key={group.label} className={styles.timeGroup}>
+                    <div className={styles.timeGroupLabel}>{group.label}</div>
+                    {group.items.map((chat) => renderConversationItem(chat, { isImported: true }))}
+                  </div>
+                ))
+              ) : (
+                <div className={styles.empty}>
+                  <div className={styles.emptyIcon}>
+                    <ImportIcon />
+                  </div>
+                  <h3 className={styles.emptyTitle}>
+                    {searchQuery ? 'No results found' : 'No imported chats yet'}
+                  </h3>
+                  <p className={styles.emptyDesc}>
+                    {searchQuery
+                      ? 'Try a different search term.'
+                      : 'Bring your conversations from ChatGPT, Claude, Gemini, and more.'}
+                  </p>
+                  {!searchQuery && (
+                    <button className={styles.emptyAction} onClick={() => setShowImportModal(true)}>
+                      <ImportIcon />
+                      <span>Import conversations</span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
 
       {/* Floating action bar for selections */}
@@ -880,7 +1298,9 @@ export default function ConversationsView() {
           <div className={styles.floatingBarInner}>
             <button
               className={styles.floatingAction}
-              onClick={() => toggleStar(selectedIds)}
+              onClick={() =>
+                isImportedSection ? toggleImportedStar(selectedIds) : toggleStar(selectedIds)
+              }
               title="Star"
             >
               <StarIcon />
@@ -888,16 +1308,21 @@ export default function ConversationsView() {
             </button>
             <button
               className={styles.floatingAction}
-              onClick={() => toggleArchive(selectedIds)}
-              title={activeTab === 'archived' ? 'Unarchive' : 'Archive'}
+              onClick={() =>
+                isImportedSection ? toggleImportedArchive(selectedIds) : toggleArchive(selectedIds)
+              }
+              title="Archive"
             >
               <ArchiveIcon />
-              <span>{activeTab === 'archived' ? 'Unarchive' : 'Archive'}</span>
+              <span>Archive</span>
             </button>
             <div className={styles.floatingDivider} />
             <button
               className={`${styles.floatingAction} ${styles.floatingActionDanger}`}
-              onClick={handleBulkDelete}
+              onClick={() => {
+                if (isImportedSection) handleBulkDelete();
+                else handleBulkDelete();
+              }}
               title="Delete"
             >
               <TrashIcon />
@@ -928,7 +1353,10 @@ export default function ConversationsView() {
               >
                 Cancel
               </button>
-              <button className={styles.confirmDeleteBtn} onClick={confirmBulkDelete}>
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={isImportedSection ? handleBulkDeleteImported : confirmBulkDelete}
+              >
                 Delete
               </button>
             </div>
@@ -988,6 +1416,14 @@ export default function ConversationsView() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Import conversations modal */}
+      {showImportModal && (
+        <ImportConversationsModal
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportConversations}
+        />
       )}
     </div>
   );
