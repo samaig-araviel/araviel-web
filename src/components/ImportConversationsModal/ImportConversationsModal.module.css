@@ -224,6 +224,72 @@
   margin-top: 1px;
 }
 
+/* Custom provider card */
+.customProviderCard {
+  cursor: default;
+}
+
+.customProviderInput {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.customInput {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 7px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.customInput::placeholder {
+  color: var(--text-muted);
+}
+
+.customInput:focus {
+  border-color: var(--text-muted);
+}
+
+.customConfirmBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.customConfirmBtn:hover:not(:disabled) {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  border-color: transparent;
+}
+
+.customConfirmBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.customConfirmBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Instructions step */
 .instructions {
   display: flex;
