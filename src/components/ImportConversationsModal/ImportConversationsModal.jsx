@@ -200,21 +200,24 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ImportConversationsModal({ onClose, onImport }) {
+export default function ImportConversationsModal({ onClose, onImport, existingProviders = [] }) {
   const [step, setStep] = useState(0); // 0 = pick provider, 1 = instructions + upload, 2 = importing, 3 = success
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
+  const [importMode, setImportMode] = useState('add'); // 'add' or 'replace'
   const fileInputRef = useRef(null);
 
   const provider = PROVIDERS.find((p) => p.id === selectedProvider);
+  const hasExistingData = existingProviders.includes(selectedProvider);
 
   const handleProviderSelect = (providerId) => {
     setSelectedProvider(providerId);
     setFile(null);
     setError(null);
+    setImportMode('add');
   };
 
   const handleFileDrop = useCallback((e) => {
@@ -244,7 +247,7 @@ export default function ImportConversationsModal({ onClose, onImport }) {
     try {
       const conversations = await parseConversationsFile(file, selectedProvider);
       setImportedCount(conversations.length);
-      onImport(conversations, selectedProvider);
+      onImport(conversations, selectedProvider, importMode);
       setStep(3);
     } catch (err) {
       setError(err.message);
@@ -347,6 +350,52 @@ export default function ImportConversationsModal({ onClose, onImport }) {
                   </div>
                 ))}
               </div>
+
+              {/* Import mode chooser — only shown if provider already has data */}
+              {hasExistingData && (
+                <div className={styles.importModeSection}>
+                  <div className={styles.importModeLabel}>
+                    You already have {provider.name} chats imported
+                  </div>
+                  <div className={styles.importModeSublabel}>
+                    How would you like to handle this import?
+                  </div>
+                  <div className={styles.importModeOptions}>
+                    <button
+                      className={`${styles.importModeOption} ${
+                        importMode === 'add' ? styles.importModeOptionSelected : ''
+                      }`}
+                      onClick={() => setImportMode('add')}
+                    >
+                      <div className={styles.importModeRadio}>
+                        <div className={styles.importModeRadioDot} />
+                      </div>
+                      <div className={styles.importModeText}>
+                        <div className={styles.importModeTitle}>Add new conversations</div>
+                        <div className={styles.importModeDesc}>
+                          Keep your existing chats and add new ones from this file
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      className={`${styles.importModeOption} ${
+                        importMode === 'replace' ? styles.importModeOptionSelected : ''
+                      }`}
+                      onClick={() => setImportMode('replace')}
+                    >
+                      <div className={styles.importModeRadio}>
+                        <div className={styles.importModeRadioDot} />
+                      </div>
+                      <div className={styles.importModeText}>
+                        <div className={styles.importModeTitle}>Start fresh</div>
+                        <div className={styles.importModeDesc}>
+                          Replace all existing {provider.name} chats with this file
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* File upload */}
               {!file ? (

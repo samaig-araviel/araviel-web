@@ -270,7 +270,7 @@ function useItemMenu(conversations, conversationsTotal, dispatch) {
 }
 
 const IMPORTED_STORAGE_KEY = 'araviel-imported-conversations';
-const IMPORTED_CONTEXT_KEY = 'araviel-imported-context-enabled';
+const IMPORTED_CONTEXT_KEY = 'araviel-imported-context-providers';
 
 function loadImportedConversations() {
   try {
@@ -339,11 +339,12 @@ export default function ConversationsView() {
       return new Set();
     }
   });
-  const [useForContext, setUseForContext] = useState(() => {
+  // Per-provider context settings: { chatgpt: true, claude: false, ... }
+  const [contextProviders, setContextProviders] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem(IMPORTED_CONTEXT_KEY) || 'false');
+      return JSON.parse(localStorage.getItem(IMPORTED_CONTEXT_KEY) || '{}');
     } catch {
-      return false;
+      return {};
     }
   });
 
@@ -358,16 +359,36 @@ export default function ConversationsView() {
     [importedConversations]
   );
 
-  const handleImportConversations = useCallback((newConversations, providerId) => {
+  const existingProviderIds = useMemo(
+    () => importedProviders.map((p) => p.id),
+    [importedProviders]
+  );
+
+  const handleImportConversations = useCallback((newConversations, providerId, importMode) => {
     setImportedConversations((prev) => {
-      // Remove existing conversations from same provider to avoid duplicates
-      const filtered = prev.filter((c) => c.provider !== providerId);
-      const updated = [...filtered, ...newConversations];
+      let updated;
+      if (importMode === 'replace') {
+        // Replace: remove all existing from this provider, add new
+        const filtered = prev.filter((c) => c.provider !== providerId);
+        updated = [...filtered, ...newConversations];
+      } else {
+        // Add: merge by deduplicating on ID, keeping new over old
+        const existingIds = new Set(newConversations.map((c) => c.id));
+        const kept = prev.filter((c) => c.provider !== providerId || !existingIds.has(c.id));
+        updated = [...kept, ...newConversations];
+      }
       saveImportedConversations(updated);
       return updated;
     });
     setActiveSection('imported');
     setActiveImportProvider(providerId);
+  }, []);
+
+  const toggleProviderContext = useCallback((providerId) => {
+    setContextProviders((prev) => {
+      const updated = { ...prev, [providerId]: !prev[providerId] };
+      return updated;
+    });
   }, []);
 
   useEffect(() => {
@@ -379,8 +400,8 @@ export default function ConversationsView() {
   }, [importedArchivedIds]);
 
   useEffect(() => {
-    localStorage.setItem(IMPORTED_CONTEXT_KEY, JSON.stringify(useForContext));
-  }, [useForContext]);
+    localStorage.setItem(IMPORTED_CONTEXT_KEY, JSON.stringify(contextProviders));
+  }, [contextProviders]);
 
   useEffect(() => {
     localStorage.setItem('araviel-starred-chats', JSON.stringify([...starredIds]));
@@ -1188,25 +1209,39 @@ export default function ConversationsView() {
               </div>
             )}
 
-            {/* Context toggle */}
-            {importedConversations.length > 0 && (
-              <div className={styles.contextToggle}>
-                <div className={styles.contextToggleText}>
-                  <span className={styles.contextToggleLabel}>Use for context</span>
-                  <span className={styles.contextToggleDesc}>
-                    Let Araviel reference your imported chats for more relevant responses
+            {/* Per-provider context toggles */}
+            {importedProviders.length > 0 && (
+              <div className={styles.contextToggles}>
+                <div className={styles.contextTogglesHeader}>
+                  <span className={styles.contextTogglesTitle}>Include in context</span>
+                  <span className={styles.contextTogglesDesc}>
+                    Choose which provider chats Araviel can reference for better responses
                   </span>
                 </div>
-                <button
-                  className={`${styles.toggleSwitch} ${
-                    useForContext ? styles.toggleSwitchActive : ''
-                  }`}
-                  onClick={() => setUseForContext((v) => !v)}
-                  role="switch"
-                  aria-checked={useForContext}
-                >
-                  <span className={styles.toggleKnob} />
-                </button>
+                {importedProviders.map((p) => {
+                  const ProviderLogo = getProviderLogo(p.id);
+                  const isEnabled = !!contextProviders[p.id];
+                  return (
+                    <div key={p.id} className={styles.contextToggle}>
+                      <div className={styles.contextToggleProvider}>
+                        <span className={styles.contextToggleIcon}>
+                          <ProviderLogo size={16} />
+                        </span>
+                        <span className={styles.contextToggleLabel}>{p.name}</span>
+                      </div>
+                      <button
+                        className={`${styles.toggleSwitch} ${
+                          isEnabled ? styles.toggleSwitchActive : ''
+                        }`}
+                        onClick={() => toggleProviderContext(p.id)}
+                        role="switch"
+                        aria-checked={isEnabled}
+                      >
+                        <span className={styles.toggleKnob} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -1423,6 +1458,7 @@ export default function ConversationsView() {
         <ImportConversationsModal
           onClose={() => setShowImportModal(false)}
           onImport={handleImportConversations}
+          existingProviders={existingProviderIds}
         />
       )}
     </div>
