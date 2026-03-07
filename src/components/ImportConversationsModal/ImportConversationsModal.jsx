@@ -98,55 +98,70 @@ function parseConversationsFile(file, providerId, providerName) {
 
         if (providerId === 'chatgpt') {
           const items = Array.isArray(data) ? data : data.conversations || data;
-          conversations = (Array.isArray(items) ? items : []).map((conv) => ({
-            id: `imported-chatgpt-${conv.id || crypto.randomUUID()}`,
-            title: conv.title || 'Untitled Conversation',
-            provider: 'chatgpt',
-            providerName: 'ChatGPT',
-            createdAt: conv.create_time
-              ? new Date(conv.create_time * 1000).toISOString()
-              : new Date().toISOString(),
-            updatedAt: conv.update_time
-              ? new Date(conv.update_time * 1000).toISOString()
-              : new Date().toISOString(),
-            messages: extractChatGPTMessages(conv),
-            imported: true,
-          }));
+          conversations = (Array.isArray(items) ? items : []).map((conv) => {
+            const externalId = conv.id || null;
+            const messages = extractChatGPTMessages(conv);
+            return {
+              id: `imported-chatgpt-${externalId || crypto.randomUUID()}`,
+              externalId,
+              title: conv.title || 'Untitled Conversation',
+              provider: 'chatgpt',
+              providerName: 'ChatGPT',
+              createdAt: conv.create_time
+                ? new Date(conv.create_time * 1000).toISOString()
+                : new Date().toISOString(),
+              updatedAt: conv.update_time
+                ? new Date(conv.update_time * 1000).toISOString()
+                : new Date().toISOString(),
+              messages,
+              messageCount: messages.length,
+            };
+          });
         } else if (providerId === 'claude') {
           const items = Array.isArray(data) ? data : data.conversations || data;
-          conversations = (Array.isArray(items) ? items : []).map((conv) => ({
-            id: `imported-claude-${conv.uuid || conv.id || crypto.randomUUID()}`,
-            title: conv.name || conv.title || 'Untitled Conversation',
-            provider: 'claude',
-            providerName: 'Claude',
-            createdAt: conv.created_at || conv.createdAt || new Date().toISOString(),
-            updatedAt: conv.updated_at || conv.updatedAt || new Date().toISOString(),
-            messages: extractClaudeMessages(conv),
-            imported: true,
-          }));
+          conversations = (Array.isArray(items) ? items : []).map((conv) => {
+            const externalId = conv.uuid || conv.id || null;
+            const messages = extractClaudeMessages(conv);
+            return {
+              id: `imported-claude-${externalId || crypto.randomUUID()}`,
+              externalId,
+              title: conv.name || conv.title || 'Untitled Conversation',
+              provider: 'claude',
+              providerName: 'Claude',
+              createdAt: conv.created_at || conv.createdAt || new Date().toISOString(),
+              updatedAt: conv.updated_at || conv.updatedAt || new Date().toISOString(),
+              messages,
+              messageCount: messages.length,
+            };
+          });
         } else {
           const items = Array.isArray(data) ? data : data.conversations || data.chats || data;
-          conversations = (Array.isArray(items) ? items : []).map((conv) => ({
-            id: `imported-${providerId}-${conv.id || conv.uuid || crypto.randomUUID()}`,
-            title: conv.title || conv.name || conv.topic || 'Untitled Conversation',
-            provider: providerId,
-            providerName:
-              providerName || PROVIDERS.find((p) => p.id === providerId)?.name || providerId,
-            createdAt:
-              conv.created_at || conv.createdAt || conv.create_time
-                ? new Date(
-                    conv.created_at || conv.createdAt || conv.create_time * 1000
-                  ).toISOString()
-                : new Date().toISOString(),
-            updatedAt:
-              conv.updated_at || conv.updatedAt || conv.update_time
-                ? new Date(
-                    conv.updated_at || conv.updatedAt || conv.update_time * 1000
-                  ).toISOString()
-                : new Date().toISOString(),
-            messages: extractGenericMessages(conv),
-            imported: true,
-          }));
+          conversations = (Array.isArray(items) ? items : []).map((conv) => {
+            const externalId = conv.id || conv.uuid || null;
+            const messages = extractGenericMessages(conv);
+            return {
+              id: `imported-${providerId}-${externalId || crypto.randomUUID()}`,
+              externalId,
+              title: conv.title || conv.name || conv.topic || 'Untitled Conversation',
+              provider: providerId,
+              providerName:
+                providerName || PROVIDERS.find((p) => p.id === providerId)?.name || providerId,
+              createdAt:
+                conv.created_at || conv.createdAt || conv.create_time
+                  ? new Date(
+                      conv.created_at || conv.createdAt || conv.create_time * 1000
+                    ).toISOString()
+                  : new Date().toISOString(),
+              updatedAt:
+                conv.updated_at || conv.updatedAt || conv.update_time
+                  ? new Date(
+                      conv.updated_at || conv.updatedAt || conv.update_time * 1000
+                    ).toISOString()
+                  : new Date().toISOString(),
+              messages,
+              messageCount: messages.length,
+            };
+          });
         }
 
         if (conversations.length === 0) {
