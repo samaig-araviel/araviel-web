@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   selectConversations,
@@ -31,6 +31,40 @@ const TABS = [
   { id: 'starred', label: 'Starred' },
   { id: 'archived', label: 'Archived' },
 ];
+
+function groupConversationsByTime(conversations) {
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday);
+  startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+  const startOf7Days = new Date(startOfToday);
+  startOf7Days.setDate(startOf7Days.getDate() - 7);
+  const startOf30Days = new Date(startOfToday);
+  startOf30Days.setDate(startOf30Days.getDate() - 30);
+
+  const groups = [];
+  const buckets = {
+    Today: [],
+    Yesterday: [],
+    'Previous 7 Days': [],
+    'Previous 30 Days': [],
+    Older: [],
+  };
+
+  for (const chat of conversations) {
+    const d = new Date(chat.updatedAt || chat.createdAt);
+    if (d >= startOfToday) buckets.Today.push(chat);
+    else if (d >= startOfYesterday) buckets.Yesterday.push(chat);
+    else if (d >= startOf7Days) buckets['Previous 7 Days'].push(chat);
+    else if (d >= startOf30Days) buckets['Previous 30 Days'].push(chat);
+    else buckets.Older.push(chat);
+  }
+
+  for (const [label, items] of Object.entries(buckets)) {
+    if (items.length > 0) groups.push({ label, items });
+  }
+  return groups;
+}
 
 export default function ConversationsView() {
   const dispatch = useDispatch();
@@ -259,6 +293,11 @@ export default function ConversationsView() {
     return true;
   });
 
+  const groupedFilteredConversations = useMemo(
+    () => groupConversationsByTime(filteredConversations),
+    [filteredConversations]
+  );
+
   const selectAll = () => {
     setSelectedIds(new Set(filteredConversations.map((c) => c.id)));
   };
@@ -380,9 +419,7 @@ export default function ConversationsView() {
         {selectMode && (
           <div className={styles.selectionBar}>
             <div className={styles.selectionLeft}>
-              <span className={styles.selectionCount}>
-                {selectedIds.size} selected
-              </span>
+              <span className={styles.selectionCount}>{selectedIds.size} selected</span>
               {selectedIds.size < filteredConversations.length && (
                 <button className={styles.selectAllBtn} onClick={selectAll}>
                   Select all
@@ -432,72 +469,81 @@ export default function ConversationsView() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div key={i} className={styles.skeletonItem}>
                   <div className={styles.skeletonContent}>
-                    <div className={styles.skeletonTitle} style={{ width: `${45 + (i * 11) % 30}%` }} />
-                    <div className={styles.skeletonSub} style={{ width: `${25 + (i * 7) % 20}%` }} />
+                    <div
+                      className={styles.skeletonTitle}
+                      style={{ width: `${45 + ((i * 11) % 30)}%` }}
+                    />
+                    <div
+                      className={styles.skeletonSub}
+                      style={{ width: `${25 + ((i * 7) % 20)}%` }}
+                    />
                   </div>
                 </div>
               ))}
             </div>
-          ) : filteredConversations.length > 0 ? (
+          ) : groupedFilteredConversations.length > 0 ? (
             <>
-              {filteredConversations.map((chat) => {
-                const isSelected = selectedIds.has(chat.id);
-                const isCurrent = currentChatId === chat.id;
-                const isStarred = starredIds.has(chat.id);
+              {groupedFilteredConversations.map((group) => (
+                <div key={group.label} className={styles.timeGroup}>
+                  <div className={styles.timeGroupLabel}>{group.label}</div>
+                  {group.items.map((chat) => {
+                    const isSelected = selectedIds.has(chat.id);
+                    const isCurrent = currentChatId === chat.id;
+                    const isStarred = starredIds.has(chat.id);
 
-                return (
-                  <div
-                    key={chat.id}
-                    className={`${styles.item} ${isSelected ? styles.itemSelected : ''} ${
-                      isCurrent && !selectMode ? styles.itemCurrent : ''
-                    }`}
-                    onClick={() => handleChatClick(chat.id)}
-                  >
-                    {selectMode && (
-                      <div className={styles.checkboxArea}>
-                        <div
-                          className={`${styles.checkbox} ${
-                            isSelected ? styles.checkboxChecked : ''
-                          }`}
-                        >
-                          {isSelected && (
-                            <svg
-                              width="10"
-                              height="10"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
+                    return (
+                      <div
+                        key={chat.id}
+                        className={`${styles.item} ${isSelected ? styles.itemSelected : ''} ${
+                          isCurrent && !selectMode ? styles.itemCurrent : ''
+                        }`}
+                        onClick={() => handleChatClick(chat.id)}
+                      >
+                        {selectMode && (
+                          <div className={styles.checkboxArea}>
+                            <div
+                              className={`${styles.checkbox} ${
+                                isSelected ? styles.checkboxChecked : ''
+                              }`}
                             >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div className={styles.itemBody}>
-                      <div className={styles.itemTop}>
-                        <span className={styles.itemTitle}>
-                          {chat.title || 'Untitled'}
-                        </span>
-                        {isStarred && (
-                          <span className={styles.itemStarBadge}>
-                            <StarIcon filled />
-                          </span>
+                              {isSelected && (
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              )}
+                            </div>
+                          </div>
                         )}
+                        <div className={styles.itemBody}>
+                          <div className={styles.itemTop}>
+                            <span className={styles.itemTitle}>{chat.title || 'Untitled'}</span>
+                            {isStarred && (
+                              <span className={styles.itemStarBadge}>
+                                <StarIcon filled />
+                              </span>
+                            )}
+                          </div>
+                          <span className={styles.itemMeta}>
+                            Last message {formatRelativeTime(chat.updatedAt || chat.createdAt)}
+                          </span>
+                        </div>
+                        <span className={styles.itemTime}>
+                          {formatDate(chat.updatedAt || chat.createdAt)}
+                        </span>
                       </div>
-                      <span className={styles.itemMeta}>
-                        Last message {formatRelativeTime(chat.updatedAt || chat.createdAt)}
-                      </span>
-                    </div>
-                    <span className={styles.itemTime}>
-                      {formatDate(chat.updatedAt || chat.createdAt)}
-                    </span>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              ))}
               <div ref={sentinelRef} className={styles.sentinel}>
                 {conversationsLoading && (
                   <div className={styles.loadingMore}>
@@ -594,8 +640,8 @@ export default function ConversationsView() {
               Delete {selectedIds.size} chat{selectedIds.size > 1 ? 's' : ''}?
             </h3>
             <p className={styles.confirmDesc}>
-              This action is permanent and cannot be undone. All messages in the selected
-              chat{selectedIds.size > 1 ? 's' : ''} will be lost.
+              This action is permanent and cannot be undone. All messages in the selected chat
+              {selectedIds.size > 1 ? 's' : ''} will be lost.
             </p>
             <div className={styles.confirmActions}>
               <button
