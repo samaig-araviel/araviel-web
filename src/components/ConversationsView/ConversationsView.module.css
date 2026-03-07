@@ -350,20 +350,29 @@
 
 /* Time groups */
 .timeGroup {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .timeGroupLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 16px 16px 6px;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+  padding: 20px 16px 8px;
+}
+
+.timeGroupLabel::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--border-color);
 }
 
 .timeGroup:first-child .timeGroupLabel {
-  padding-top: 4px;
+  padding-top: 8px;
 }
 
 /* Item */
