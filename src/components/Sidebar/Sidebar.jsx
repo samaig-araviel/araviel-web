@@ -131,6 +131,13 @@ export default function Sidebar() {
   const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [archivedIds, setArchivedIds] = useState(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
+    } catch {
+      return new Set();
+    }
+  });
   const renameInputRef = useRef(null);
 
   const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
@@ -394,13 +401,14 @@ export default function Sidebar() {
   const handleArchive = (chatId) => {
     closeMenu();
     try {
-      const archived = new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
-      if (archived.has(chatId)) {
-        archived.delete(chatId);
+      const next = new Set(archivedIds);
+      if (next.has(chatId)) {
+        next.delete(chatId);
       } else {
-        archived.add(chatId);
+        next.add(chatId);
       }
-      localStorage.setItem('araviel-archived-chats', JSON.stringify([...archived]));
+      setArchivedIds(next);
+      localStorage.setItem('araviel-archived-chats', JSON.stringify([...next]));
     } catch {
       // Silently fail
     }
@@ -627,7 +635,7 @@ export default function Sidebar() {
                                   }}
                                 >
                                   <ArchiveIcon />
-                                  <span>Archive</span>
+                                  <span>{archivedIds.has(chat.id) ? 'Move to Chats' : 'Archive'}</span>
                                 </button>
                                 <div className={styles.chatDropdownDivider} />
                                 <button

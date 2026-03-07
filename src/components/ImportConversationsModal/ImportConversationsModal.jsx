@@ -112,6 +112,18 @@ function parseConversationsFile(file, providerId) {
             messages: extractChatGPTMessages(conv),
             imported: true,
           }));
+        } else if (providerId === 'claude') {
+          const items = Array.isArray(data) ? data : data.conversations || data;
+          conversations = (Array.isArray(items) ? items : []).map((conv) => ({
+            id: `imported-claude-${conv.uuid || conv.id || crypto.randomUUID()}`,
+            title: conv.name || conv.title || 'Untitled Conversation',
+            provider: 'claude',
+            providerName: 'Claude',
+            createdAt: conv.created_at || conv.createdAt || new Date().toISOString(),
+            updatedAt: conv.updated_at || conv.updatedAt || new Date().toISOString(),
+            messages: extractClaudeMessages(conv),
+            imported: true,
+          }));
         } else {
           const items = Array.isArray(data) ? data : data.conversations || data.chats || data;
           conversations = (Array.isArray(items) ? items : []).map((conv) => ({
@@ -176,6 +188,32 @@ function extractChatGPTMessages(conv) {
     });
   }
   return messages;
+}
+
+function extractClaudeMessages(conv) {
+  const msgs = conv.chat_messages || [];
+  if (!Array.isArray(msgs)) return [];
+  return msgs
+    .filter((msg) => msg.sender === 'human' || msg.sender === 'assistant')
+    .map((msg) => {
+      let text = '';
+      if (Array.isArray(msg.content)) {
+        text = msg.content
+          .filter((block) => block.type === 'text' && block.text)
+          .map((block) => block.text)
+          .join('\n\n');
+      }
+      if (!text) {
+        text = msg.text || '';
+      }
+      return {
+        id: msg.uuid || crypto.randomUUID(),
+        role: msg.sender === 'human' ? 'user' : 'assistant',
+        content: text,
+        createdAt: msg.created_at || new Date().toISOString(),
+      };
+    })
+    .filter((m) => m.content.trim());
 }
 
 function extractGenericMessages(conv) {
