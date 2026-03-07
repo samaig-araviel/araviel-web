@@ -790,7 +790,7 @@ export default function ConversationsView() {
             }}
           >
             <ArchiveIcon />
-            <span>Archive</span>
+            <span>{archivedIds.has(chat.id) ? 'Move to Chats' : 'Archive'}</span>
           </button>
           <div className={styles.itemDropdownDivider} />
           <button
@@ -1050,7 +1050,7 @@ export default function ConversationsView() {
                     className={styles.selectionAction}
                     onClick={() => hasSelection && toggleArchive(selectedIds)}
                     disabled={!hasSelection}
-                    title={activeTab === 'archived' ? 'Unarchive' : 'Archive'}
+                    title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
                   >
                     <ArchiveIcon />
                   </button>
@@ -1269,7 +1269,7 @@ export default function ConversationsView() {
                     className={styles.selectionAction}
                     onClick={() => hasSelection && toggleImportedArchive(selectedIds)}
                     disabled={!hasSelection}
-                    title="Archive"
+                    title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
                   >
                     <ArchiveIcon />
                   </button>
@@ -1346,10 +1346,10 @@ export default function ConversationsView() {
               onClick={() =>
                 isImportedSection ? toggleImportedArchive(selectedIds) : toggleArchive(selectedIds)
               }
-              title="Archive"
+              title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
             >
               <ArchiveIcon />
-              <span>Archive</span>
+              <span>{activeTab === 'archived' ? 'Move to Chats' : 'Archive'}</span>
             </button>
             <div className={styles.floatingDivider} />
             <button
