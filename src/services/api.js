@@ -182,3 +182,110 @@ export async function checkHealth() {
   if (!res.ok) throw new Error(`Health check failed: ${res.status}`);
   return res.json();
 }
+
+// ─── Imported Conversations ─────────────────────────────────────────────────
+
+/**
+ * Bulk import conversations from external providers.
+ * @param {Array<object>} conversations
+ * @returns {Promise<{ imported: number, skipped: number, conversations: Array }>}
+ */
+export async function importConversations(conversations) {
+  const res = await fetch(`${API_BASE}/api/imported-conversations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ conversations }),
+  });
+  if (!res.ok) throw new Error(`Failed to import conversations: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Fetch imported conversations (metadata only, no messages).
+ * @param {object} [params]
+ * @param {string} [params.provider]
+ * @param {boolean} [params.archived]
+ * @param {boolean} [params.starred]
+ * @returns {Promise<{ conversations: Array }>}
+ */
+export async function fetchImportedConversations(params = {}) {
+  const query = new URLSearchParams();
+  if (params.provider) query.set('provider', params.provider);
+  if (params.archived !== undefined) query.set('archived', String(params.archived));
+  if (params.starred !== undefined) query.set('starred', String(params.starred));
+  const qs = query.toString();
+  const res = await fetch(`${API_BASE}/api/imported-conversations${qs ? `?${qs}` : ''}`);
+  if (!res.ok) throw new Error(`Failed to fetch imported conversations: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Fetch decrypted messages for an imported conversation.
+ * @param {string} conversationId
+ * @returns {Promise<{ messages: Array }>}
+ */
+export async function fetchImportedConversationMessages(conversationId) {
+  const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}/messages`);
+  if (!res.ok) throw new Error(`Failed to fetch imported messages: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Update an imported conversation's metadata.
+ * @param {string} conversationId
+ * @param {object} updates - { title?, isStarred?, isArchived? }
+ * @returns {Promise<object>}
+ */
+export async function updateImportedConversation(conversationId, updates) {
+  const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`Failed to update imported conversation: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Bulk update imported conversations.
+ * @param {string[]} ids
+ * @param {object} updates - { isStarred?, isArchived? }
+ * @returns {Promise<{ updated: number }>}
+ */
+export async function bulkUpdateImportedConversations(ids, updates) {
+  const res = await fetch(`${API_BASE}/api/imported-conversations/bulk`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids, updates }),
+  });
+  if (!res.ok) throw new Error(`Failed to bulk update imported conversations: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Soft-delete an imported conversation.
+ * @param {string} conversationId
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function deleteImportedConversation(conversationId) {
+  const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Failed to delete imported conversation: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Bulk soft-delete imported conversations.
+ * @param {string[]} ids
+ * @returns {Promise<{ deleted: number }>}
+ */
+export async function bulkDeleteImportedConversations(ids) {
+  const res = await fetch(`${API_BASE}/api/imported-conversations/bulk`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw new Error(`Failed to bulk delete imported conversations: ${res.status}`);
+  return res.json();
+}
