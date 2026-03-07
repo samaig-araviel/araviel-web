@@ -60,6 +60,24 @@ export const PerplexityLogo = ({ size = 18 }) => (
   </svg>
 );
 
+export const XAILogo = ({ size = 18 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M2 3l8.5 9.5M22 3L9.5 18 2 21l7-3L22 3zM22 21l-9.5-8.5"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 /**
  * Get the logo component for a given provider ID.
  */
@@ -69,6 +87,7 @@ export function getProviderLogo(providerId) {
     openai: OpenAILogo,
     google: GoogleLogo,
     perplexity: PerplexityLogo,
+    xai: XAILogo,
   };
   return logos[providerId] || AnthropicLogo;
 }
