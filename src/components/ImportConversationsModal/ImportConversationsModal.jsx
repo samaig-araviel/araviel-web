@@ -8,7 +8,10 @@ import {
 } from '../Icons';
 import { AnthropicLogo, OpenAILogo, GoogleLogo, PerplexityLogo, XAILogo } from '../ProviderLogos';
 import { FileTextIcon } from '../Icons';
+import { parseConversationsFile } from '../../services/conversationParsers';
 import styles from './ImportConversationsModal.module.css';
+
+// ── Provider registry ───────────────────────────────────────────────────────
 
 const PROVIDERS = [
   {
@@ -88,167 +91,7 @@ const PROVIDERS = [
   },
 ];
 
-function parseConversationsFile(file, providerId, providerName) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        let conversations = [];
-
-        if (providerId === 'chatgpt') {
-          const items = Array.isArray(data) ? data : data.conversations || data;
-          conversations = (Array.isArray(items) ? items : []).map((conv) => {
-            const externalId = conv.id || null;
-            const messages = extractChatGPTMessages(conv);
-            return {
-              id: `imported-chatgpt-${externalId || crypto.randomUUID()}`,
-              externalId,
-              title: conv.title || 'Untitled Conversation',
-              provider: 'chatgpt',
-              providerName: 'ChatGPT',
-              createdAt: conv.create_time
-                ? new Date(conv.create_time * 1000).toISOString()
-                : new Date().toISOString(),
-              updatedAt: conv.update_time
-                ? new Date(conv.update_time * 1000).toISOString()
-                : new Date().toISOString(),
-              messages,
-              messageCount: messages.length,
-            };
-          });
-        } else if (providerId === 'claude') {
-          const items = Array.isArray(data) ? data : data.conversations || data;
-          conversations = (Array.isArray(items) ? items : []).map((conv) => {
-            const externalId = conv.uuid || conv.id || null;
-            const messages = extractClaudeMessages(conv);
-            return {
-              id: `imported-claude-${externalId || crypto.randomUUID()}`,
-              externalId,
-              title: conv.name || conv.title || 'Untitled Conversation',
-              provider: 'claude',
-              providerName: 'Claude',
-              createdAt: conv.created_at || conv.createdAt || new Date().toISOString(),
-              updatedAt: conv.updated_at || conv.updatedAt || new Date().toISOString(),
-              messages,
-              messageCount: messages.length,
-            };
-          });
-        } else {
-          const items = Array.isArray(data) ? data : data.conversations || data.chats || data;
-          conversations = (Array.isArray(items) ? items : []).map((conv) => {
-            const externalId = conv.id || conv.uuid || null;
-            const messages = extractGenericMessages(conv);
-            return {
-              id: `imported-${providerId}-${externalId || crypto.randomUUID()}`,
-              externalId,
-              title: conv.title || conv.name || conv.topic || 'Untitled Conversation',
-              provider: providerId,
-              providerName:
-                providerName || PROVIDERS.find((p) => p.id === providerId)?.name || providerId,
-              createdAt:
-                conv.created_at || conv.createdAt || conv.create_time
-                  ? new Date(
-                      conv.created_at || conv.createdAt || conv.create_time * 1000
-                    ).toISOString()
-                  : new Date().toISOString(),
-              updatedAt:
-                conv.updated_at || conv.updatedAt || conv.update_time
-                  ? new Date(
-                      conv.updated_at || conv.updatedAt || conv.update_time * 1000
-                    ).toISOString()
-                  : new Date().toISOString(),
-              messages,
-              messageCount: messages.length,
-            };
-          });
-        }
-
-        conversations = conversations.filter(c => c.messages.length > 0);
-
-        if (conversations.length === 0) {
-          reject(
-            new Error(
-              'No conversations found in this file. Please check you selected the correct file.'
-            )
-          );
-          return;
-        }
-
-        resolve(conversations);
-      } catch {
-        reject(new Error("Unable to read this file. Please make sure it's a valid JSON export."));
-      }
-    };
-    reader.onerror = () => reject(new Error('Failed to read the file. Please try again.'));
-    reader.readAsText(file);
-  });
-}
-
-function extractChatGPTMessages(conv) {
-  if (!conv.mapping) return [];
-  const messages = [];
-  for (const node of Object.values(conv.mapping)) {
-    const msg = node.message;
-    if (!msg || !msg.content?.parts) continue;
-    const content = msg.content.parts.filter((p) => typeof p === 'string').join('\n');
-    if (!content.trim()) continue;
-    const role =
-      msg.author?.role === 'assistant' ? 'assistant' : msg.author?.role === 'user' ? 'user' : null;
-    if (!role) continue;
-    messages.push({
-      id: msg.id || crypto.randomUUID(),
-      role,
-      content,
-      createdAt: msg.create_time
-        ? new Date(msg.create_time * 1000).toISOString()
-        : new Date().toISOString(),
-    });
-  }
-  return messages;
-}
-
-function extractClaudeMessages(conv) {
-  const msgs = conv.chat_messages || [];
-  if (!Array.isArray(msgs)) return [];
-  return msgs
-    .filter((msg) => msg.sender === 'human' || msg.sender === 'assistant')
-    .map((msg) => {
-      let text = '';
-      if (Array.isArray(msg.content)) {
-        text = msg.content
-          .filter((block) => block.type === 'text' && block.text)
-          .map((block) => block.text)
-          .join('\n\n');
-      }
-      if (!text) {
-        text = msg.text || '';
-      }
-      return {
-        id: msg.uuid || crypto.randomUUID(),
-        role: msg.sender === 'human' ? 'user' : 'assistant',
-        content: text,
-        createdAt: msg.created_at || new Date().toISOString(),
-      };
-    })
-    .filter((m) => m.content.trim());
-}
-
-function extractGenericMessages(conv) {
-  const msgs = conv.messages || conv.chat_messages || conv.conversation || [];
-  if (!Array.isArray(msgs)) return [];
-  return msgs
-    .map((msg) => ({
-      id: msg.id || msg.uuid || crypto.randomUUID(),
-      role:
-        msg.role === 'assistant' || msg.sender === 'assistant' || msg.sender === 'bot'
-          ? 'assistant'
-          : 'user',
-      content: msg.content || msg.text || msg.message || '',
-      createdAt: msg.created_at || msg.createdAt || msg.timestamp || new Date().toISOString(),
-    }))
-    .filter((m) => m.content.trim());
-}
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatFileSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
@@ -256,57 +99,84 @@ function formatFileSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function buildCustomProvider(name) {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  return {
+    id: trimmed.toLowerCase().replace(/\s+/g, '-'),
+    name: trimmed,
+    format: 'JSON export',
+    Logo: ({ size }) => (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 12h8" />
+        <path d="M12 8v8" />
+      </svg>
+    ),
+    color: '#6b7280',
+    bgColor: 'rgba(107, 114, 128, 0.08)',
+    instructions: [
+      { text: `Export your conversations from <strong>${trimmed}</strong>` },
+      { text: 'The export should be a <code>.json</code> file' },
+      { text: 'Each conversation should have a title and messages array' },
+      { text: 'Messages should have a role (user/assistant) and content' },
+      { text: 'Upload the JSON file below' },
+    ],
+    isCustom: true,
+  };
+}
+
+// ── Custom provider "Other" card ────────────────────────────────────────────
+
+function OtherProviderIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 8v8" />
+      <path d="M8 12h8" />
+    </svg>
+  );
+}
+
+// ── Component ───────────────────────────────────────────────────────────────
+
 export default function ImportConversationsModal({ onClose, onImport, existingProviders = [] }) {
-  const [step, setStep] = useState(0); // 0 = pick provider, 1 = instructions + upload, 2 = importing, 3 = success
+  const [step, setStep] = useState(0);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [file, setFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState(null);
   const [importedCount, setImportedCount] = useState(0);
-  const [importMode, setImportMode] = useState('add'); // 'add' or 'replace'
+  const [importMode, setImportMode] = useState('add');
   const [customProviderName, setCustomProviderName] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
   const fileInputRef = useRef(null);
   const customInputRef = useRef(null);
 
-  const customProvider = customProviderName.trim()
-    ? {
-        id: customProviderName.trim().toLowerCase().replace(/\s+/g, '-'),
-        name: customProviderName.trim(),
-        format: 'JSON export',
-        Logo: ({ size }) => (
-          <svg
-            width={size}
-            height={size}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 12h8" />
-            <path d="M12 8v8" />
-          </svg>
-        ),
-        color: '#6b7280',
-        bgColor: 'rgba(107, 114, 128, 0.08)',
-        instructions: [
-          { text: `Export your conversations from <strong>${customProviderName.trim()}</strong>` },
-          { text: 'The export should be a <code>.json</code> file' },
-          { text: 'Each conversation should have a title and messages array' },
-          { text: 'Messages should have a role (user/assistant) and content' },
-          { text: 'Upload the JSON file below' },
-        ],
-        isCustom: true,
-      }
-    : null;
-
+  const customProvider = buildCustomProvider(customProviderName);
   const allProviders = customProvider ? [...PROVIDERS, customProvider] : PROVIDERS;
-
   const provider = allProviders.find((p) => p.id === selectedProvider);
   const hasExistingData = existingProviders.includes(selectedProvider);
+
+  // ── Handlers ────────────────────────────────────────────────────────────
 
   const handleProviderSelect = (providerId) => {
     setSelectedProvider(providerId);
@@ -360,6 +230,8 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
     }
   };
 
+  // ── Render helpers ──────────────────────────────────────────────────────
+
   const renderStepIndicator = () => (
     <div className={styles.steps}>
       <div
@@ -377,6 +249,230 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
       <div className={`${styles.stepDot} ${step >= 3 ? styles.stepDotActive : ''}`} />
     </div>
   );
+
+  const renderProviderSelection = () => (
+    <div className={styles.providerGrid}>
+      {PROVIDERS.map((p) => {
+        const Logo = p.Logo;
+        return (
+          <button
+            key={p.id}
+            className={`${styles.providerCard} ${
+              selectedProvider === p.id ? styles.providerCardSelected : ''
+            }`}
+            onClick={() => handleProviderSelect(p.id)}
+          >
+            <div
+              className={styles.providerLogo}
+              style={{ backgroundColor: p.bgColor, color: p.color }}
+            >
+              <Logo size={20} />
+            </div>
+            <div className={styles.providerInfo}>
+              <div className={styles.providerName}>{p.name}</div>
+              <div className={styles.providerFormat}>{p.format}</div>
+            </div>
+          </button>
+        );
+      })}
+
+      {/* Custom provider */}
+      {!showCustomInput ? (
+        <button
+          className={`${styles.providerCard} ${
+            customProvider && selectedProvider === customProvider.id
+              ? styles.providerCardSelected
+              : ''
+          }`}
+          onClick={() => {
+            setShowCustomInput(true);
+            setTimeout(() => customInputRef.current?.focus(), 50);
+          }}
+        >
+          <div
+            className={styles.providerLogo}
+            style={{ backgroundColor: 'rgba(107, 114, 128, 0.08)', color: '#6b7280' }}
+          >
+            <OtherProviderIcon />
+          </div>
+          <div className={styles.providerInfo}>
+            <div className={styles.providerName}>Other</div>
+            <div className={styles.providerFormat}>Any JSON export</div>
+          </div>
+        </button>
+      ) : (
+        <div
+          className={`${styles.providerCard} ${styles.customProviderCard} ${
+            customProvider && selectedProvider === customProvider.id
+              ? styles.providerCardSelected
+              : ''
+          }`}
+        >
+          <div
+            className={styles.providerLogo}
+            style={{ backgroundColor: 'rgba(107, 114, 128, 0.08)', color: '#6b7280' }}
+          >
+            <OtherProviderIcon />
+          </div>
+          <div className={styles.customProviderInput}>
+            <input
+              ref={customInputRef}
+              className={styles.customInput}
+              placeholder="Provider name..."
+              value={customProviderName}
+              onChange={(e) => setCustomProviderName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCustomProviderConfirm();
+                if (e.key === 'Escape') {
+                  setShowCustomInput(false);
+                  setCustomProviderName('');
+                }
+              }}
+            />
+            <button
+              className={styles.customConfirmBtn}
+              onClick={handleCustomProviderConfirm}
+              disabled={!customProviderName.trim()}
+              aria-label="Confirm"
+            >
+              <ChevronRightIcon />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderImportModeChooser = () => {
+    if (!hasExistingData) return null;
+    return (
+      <div className={styles.importModeSection}>
+        <div className={styles.importModeLabel}>
+          You already have {provider.name} chats imported
+        </div>
+        <div className={styles.importModeSublabel}>
+          How would you like to handle this import?
+        </div>
+        <div className={styles.importModeOptions}>
+          <button
+            className={`${styles.importModeOption} ${
+              importMode === 'add' ? styles.importModeOptionSelected : ''
+            }`}
+            onClick={() => setImportMode('add')}
+          >
+            <div className={styles.importModeRadio}>
+              <div className={styles.importModeRadioDot} />
+            </div>
+            <div className={styles.importModeText}>
+              <div className={styles.importModeTitle}>Add new conversations</div>
+              <div className={styles.importModeDesc}>
+                Keep your existing chats and add new ones from this file
+              </div>
+            </div>
+          </button>
+          <button
+            className={`${styles.importModeOption} ${
+              importMode === 'replace' ? styles.importModeOptionSelected : ''
+            }`}
+            onClick={() => setImportMode('replace')}
+          >
+            <div className={styles.importModeRadio}>
+              <div className={styles.importModeRadioDot} />
+            </div>
+            <div className={styles.importModeText}>
+              <div className={styles.importModeTitle}>Start fresh</div>
+              <div className={styles.importModeDesc}>
+                Replace all existing {provider.name} chats with this file
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFileUpload = () => {
+    if (file) {
+      return (
+        <div className={styles.fileSelected}>
+          <div className={styles.fileIcon}>
+            <FileTextIcon />
+          </div>
+          <div className={styles.fileInfo}>
+            <div className={styles.fileName}>{file.name}</div>
+            <div className={styles.fileSize}>{formatFileSize(file.size)}</div>
+          </div>
+          <button
+            className={styles.fileRemove}
+            onClick={() => setFile(null)}
+            aria-label="Remove file"
+          >
+            <CloseIcon />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={`${styles.uploadArea} ${isDragging ? styles.uploadAreaDragging : ''}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleFileDrop}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <div className={styles.uploadIcon}>
+          <UploadIcon />
+        </div>
+        <div className={styles.uploadTitle}>Drop your file here</div>
+        <div className={styles.uploadDesc}>
+          or <span className={styles.uploadBrowse}>browse</span> to select a file
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.zip"
+          style={{ display: 'none' }}
+          onChange={handleFileSelect}
+        />
+      </div>
+    );
+  };
+
+  const renderInstructions = () => {
+    if (!provider) return null;
+    return (
+      <div className={styles.instructions}>
+        <div className={styles.instructionHeader}>
+          <div className={styles.instructionProviderBadge} style={{ color: provider.color }}>
+            <provider.Logo size={18} />
+            <span className={styles.instructionProviderName}>{provider.name}</span>
+          </div>
+        </div>
+
+        <div className={styles.instructionSteps}>
+          {provider.instructions.map((inst, i) => (
+            <div key={i} className={styles.instructionStep}>
+              <div className={styles.instructionStepNum}>{i + 1}</div>
+              <div
+                className={styles.instructionStepText}
+                dangerouslySetInnerHTML={{ __html: inst.text }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {renderImportModeChooser()}
+        {renderFileUpload()}
+        {error && <div className={styles.error}>{error}</div>}
+      </div>
+    );
+  };
+
+  // ── Main render ─────────────────────────────────────────────────────────
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -405,244 +501,9 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
         <div className={styles.body}>
           {renderStepIndicator()}
 
-          {/* Step 0: Provider selection */}
-          {step === 0 && (
-            <div className={styles.providerGrid}>
-              {PROVIDERS.map((p) => {
-                const Logo = p.Logo;
-                return (
-                  <button
-                    key={p.id}
-                    className={`${styles.providerCard} ${
-                      selectedProvider === p.id ? styles.providerCardSelected : ''
-                    }`}
-                    onClick={() => handleProviderSelect(p.id)}
-                  >
-                    <div
-                      className={styles.providerLogo}
-                      style={{ backgroundColor: p.bgColor, color: p.color }}
-                    >
-                      <Logo size={20} />
-                    </div>
-                    <div className={styles.providerInfo}>
-                      <div className={styles.providerName}>{p.name}</div>
-                      <div className={styles.providerFormat}>{p.format}</div>
-                    </div>
-                  </button>
-                );
-              })}
-              {/* Custom provider */}
-              {!showCustomInput ? (
-                <button
-                  className={`${styles.providerCard} ${
-                    customProvider && selectedProvider === customProvider.id
-                      ? styles.providerCardSelected
-                      : ''
-                  }`}
-                  onClick={() => {
-                    setShowCustomInput(true);
-                    setTimeout(() => customInputRef.current?.focus(), 50);
-                  }}
-                >
-                  <div
-                    className={styles.providerLogo}
-                    style={{ backgroundColor: 'rgba(107, 114, 128, 0.08)', color: '#6b7280' }}
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 8v8" />
-                      <path d="M8 12h8" />
-                    </svg>
-                  </div>
-                  <div className={styles.providerInfo}>
-                    <div className={styles.providerName}>Other</div>
-                    <div className={styles.providerFormat}>Any JSON export</div>
-                  </div>
-                </button>
-              ) : (
-                <div
-                  className={`${styles.providerCard} ${styles.customProviderCard} ${
-                    customProvider && selectedProvider === customProvider.id
-                      ? styles.providerCardSelected
-                      : ''
-                  }`}
-                >
-                  <div
-                    className={styles.providerLogo}
-                    style={{ backgroundColor: 'rgba(107, 114, 128, 0.08)', color: '#6b7280' }}
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 8v8" />
-                      <path d="M8 12h8" />
-                    </svg>
-                  </div>
-                  <div className={styles.customProviderInput}>
-                    <input
-                      ref={customInputRef}
-                      className={styles.customInput}
-                      placeholder="Provider name..."
-                      value={customProviderName}
-                      onChange={(e) => setCustomProviderName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleCustomProviderConfirm();
-                        if (e.key === 'Escape') {
-                          setShowCustomInput(false);
-                          setCustomProviderName('');
-                        }
-                      }}
-                    />
-                    <button
-                      className={styles.customConfirmBtn}
-                      onClick={handleCustomProviderConfirm}
-                      disabled={!customProviderName.trim()}
-                      aria-label="Confirm"
-                    >
-                      <ChevronRightIcon />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          {step === 0 && renderProviderSelection()}
+          {step === 1 && renderInstructions()}
 
-          {/* Step 1: Instructions + Upload */}
-          {step === 1 && provider && (
-            <div className={styles.instructions}>
-              <div className={styles.instructionHeader}>
-                <div className={styles.instructionProviderBadge} style={{ color: provider.color }}>
-                  <provider.Logo size={18} />
-                  <span className={styles.instructionProviderName}>{provider.name}</span>
-                </div>
-              </div>
-
-              <div className={styles.instructionSteps}>
-                {provider.instructions.map((inst, i) => (
-                  <div key={i} className={styles.instructionStep}>
-                    <div className={styles.instructionStepNum}>{i + 1}</div>
-                    <div
-                      className={styles.instructionStepText}
-                      dangerouslySetInnerHTML={{ __html: inst.text }}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              {/* Import mode chooser — only shown if provider already has data */}
-              {hasExistingData && (
-                <div className={styles.importModeSection}>
-                  <div className={styles.importModeLabel}>
-                    You already have {provider.name} chats imported
-                  </div>
-                  <div className={styles.importModeSublabel}>
-                    How would you like to handle this import?
-                  </div>
-                  <div className={styles.importModeOptions}>
-                    <button
-                      className={`${styles.importModeOption} ${
-                        importMode === 'add' ? styles.importModeOptionSelected : ''
-                      }`}
-                      onClick={() => setImportMode('add')}
-                    >
-                      <div className={styles.importModeRadio}>
-                        <div className={styles.importModeRadioDot} />
-                      </div>
-                      <div className={styles.importModeText}>
-                        <div className={styles.importModeTitle}>Add new conversations</div>
-                        <div className={styles.importModeDesc}>
-                          Keep your existing chats and add new ones from this file
-                        </div>
-                      </div>
-                    </button>
-                    <button
-                      className={`${styles.importModeOption} ${
-                        importMode === 'replace' ? styles.importModeOptionSelected : ''
-                      }`}
-                      onClick={() => setImportMode('replace')}
-                    >
-                      <div className={styles.importModeRadio}>
-                        <div className={styles.importModeRadioDot} />
-                      </div>
-                      <div className={styles.importModeText}>
-                        <div className={styles.importModeTitle}>Start fresh</div>
-                        <div className={styles.importModeDesc}>
-                          Replace all existing {provider.name} chats with this file
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* File upload */}
-              {!file ? (
-                <div
-                  className={`${styles.uploadArea} ${isDragging ? styles.uploadAreaDragging : ''}`}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleFileDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className={styles.uploadIcon}>
-                    <UploadIcon />
-                  </div>
-                  <div className={styles.uploadTitle}>Drop your file here</div>
-                  <div className={styles.uploadDesc}>
-                    or <span className={styles.uploadBrowse}>browse</span> to select a file
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json,.zip"
-                    style={{ display: 'none' }}
-                    onChange={handleFileSelect}
-                  />
-                </div>
-              ) : (
-                <div className={styles.fileSelected}>
-                  <div className={styles.fileIcon}>
-                    <FileTextIcon />
-                  </div>
-                  <div className={styles.fileInfo}>
-                    <div className={styles.fileName}>{file.name}</div>
-                    <div className={styles.fileSize}>{formatFileSize(file.size)}</div>
-                  </div>
-                  <button
-                    className={styles.fileRemove}
-                    onClick={() => setFile(null)}
-                    aria-label="Remove file"
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
-              )}
-
-              {error && <div className={styles.error}>{error}</div>}
-            </div>
-          )}
-
-          {/* Step 2: Importing */}
           {step === 2 && (
             <div className={styles.importProgress}>
               <div className={styles.progressSpinner} />
@@ -651,7 +512,6 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
             </div>
           )}
 
-          {/* Step 3: Success */}
           {step === 3 && (
             <div className={styles.success}>
               <div className={styles.successIcon}>

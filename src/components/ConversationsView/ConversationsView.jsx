@@ -381,8 +381,15 @@ export default function ConversationsView() {
   }, []);
 
   const handleImportConversations = useCallback(
-    async (newConversations, providerId) => {
+    async (newConversations, providerId, importMode) => {
       try {
+        // In replace mode, delete existing conversations for this provider first
+        if (importMode === 'replace') {
+          const existing = importedConversations.filter((c) => c.provider === providerId);
+          if (existing.length > 0) {
+            await bulkDeleteImportedConversations(existing.map((c) => c.id));
+          }
+        }
         const payload = newConversations.map((c) => ({
           externalId: c.externalId,
           title: c.title,
@@ -401,7 +408,7 @@ export default function ConversationsView() {
       setActiveSection('imported');
       setActiveImportProvider(providerId);
     },
-    [loadImportedConversations]
+    [loadImportedConversations, importedConversations]
   );
 
   const toggleProviderContext = useCallback((providerId) => {
