@@ -395,8 +395,8 @@ export default function ConversationsView() {
         }));
         await importConversationsApi(payload);
         await loadImportedConversations();
-      } catch {
-        // Silently fail
+      } catch (err) {
+        throw err;
       }
       setActiveSection('imported');
       setActiveImportProvider(providerId);

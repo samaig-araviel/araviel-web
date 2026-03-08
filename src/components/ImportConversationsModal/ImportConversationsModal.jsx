@@ -164,6 +164,8 @@ function parseConversationsFile(file, providerId, providerName) {
           });
         }
 
+        conversations = conversations.filter(c => c.messages.length > 0);
+
         if (conversations.length === 0) {
           reject(
             new Error(
@@ -350,7 +352,7 @@ export default function ImportConversationsModal({ onClose, onImport, existingPr
     try {
       const conversations = await parseConversationsFile(file, selectedProvider, provider?.name);
       setImportedCount(conversations.length);
-      onImport(conversations, selectedProvider, importMode);
+      await onImport(conversations, selectedProvider, importMode);
       setStep(3);
     } catch (err) {
       setError(err.message);
