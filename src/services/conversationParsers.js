@@ -1,11 +1,15 @@
 // ---------------------------------------------------------------------------
 // Conversation Parsers
-// Pure functions to transform provider-specific export formats into a
+//
+// Pure functions to transform provider-specific export formats into the
 // normalised shape the import API expects.
 //
-// Normalised message:  { id, role, content, createdAt }
-// Normalised conversation: { externalId, title, provider, providerName,
-//                            messages, messageCount, createdAt, updatedAt }
+// Normalised message:
+//   { id, role, content, createdAt }
+//
+// Normalised conversation:
+//   { externalId, title, provider, providerName,
+//     messages, messageCount, createdAt, updatedAt }
 // ---------------------------------------------------------------------------
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -14,8 +18,8 @@ function uid() {
   return crypto.randomUUID();
 }
 
-function toISO(value, fallback) {
-  if (!value) return fallback || new Date().toISOString();
+function toISO(value) {
+  if (!value) return new Date().toISOString();
   if (typeof value === 'number') return new Date(value * 1000).toISOString();
   return value;
 }
@@ -28,21 +32,19 @@ function coerceArray(data, ...keys) {
   return [];
 }
 
-function nonEmpty(text) {
-  return typeof text === 'string' && text.trim().length > 0;
+function hasText(str) {
+  return typeof str === 'string' && str.trim().length > 0;
 }
 
 // ── Claude ──────────────────────────────────────────────────────────────────
 
-function extractClaudeMessageContent(msg) {
-  // Prefer structured content blocks — only extract type:"text"
+function extractClaudeContent(msg) {
   if (Array.isArray(msg.content)) {
     const parts = msg.content
-      .filter((b) => b.type === 'text' && nonEmpty(b.text))
+      .filter((b) => b.type === 'text' && hasText(b.text))
       .map((b) => b.text);
     if (parts.length > 0) return parts.join('\n\n');
   }
-  // Fallback to top-level text field
   return msg.text || '';
 }
 
@@ -54,13 +56,13 @@ function parseClaudeMessages(chatMessages) {
     .map((msg) => ({
       id: msg.uuid || uid(),
       role: msg.sender === 'human' ? 'user' : 'assistant',
-      content: extractClaudeMessageContent(msg),
+      content: extractClaudeContent(msg),
       createdAt: msg.created_at || new Date().toISOString(),
     }))
-    .filter((m) => nonEmpty(m.content));
+    .filter((m) => hasText(m.content));
 }
 
-export function parseClaude(data) {
+function parseClaude(data) {
   const items = coerceArray(data, 'conversations');
 
   return items
@@ -93,7 +95,7 @@ function parseChatGPTMessages(mapping) {
     if (!msg?.content?.parts) continue;
 
     const content = msg.content.parts.filter((p) => typeof p === 'string').join('\n');
-    if (!nonEmpty(content)) continue;
+    if (!hasText(content)) continue;
 
     const authorRole = msg.author?.role;
     if (authorRole !== 'user' && authorRole !== 'assistant') continue;
@@ -108,7 +110,7 @@ function parseChatGPTMessages(mapping) {
   return messages;
 }
 
-export function parseChatGPT(data) {
+function parseChatGPT(data) {
   const items = coerceArray(data, 'conversations');
 
   return items
@@ -150,10 +152,10 @@ function parseGenericMessages(rawMessages) {
         createdAt: toISO(msg.created_at || msg.createdAt || msg.timestamp),
       };
     })
-    .filter((m) => nonEmpty(m.content));
+    .filter((m) => hasText(m.content));
 }
 
-export function parseGeneric(data, providerId, providerName) {
+function parseGeneric(data, providerId, providerName) {
   const items = coerceArray(data, 'conversations', 'chats');
 
   return items
@@ -184,12 +186,11 @@ const PARSERS = {
 };
 
 /**
- * Read a File, parse JSON, and return normalised conversations.
- *
+ * Read a File, parse its JSON, and return normalised conversations.
  * @param {File} file
  * @param {string} providerId
  * @param {string} providerName
- * @returns {Promise<Array>} Normalised conversation objects
+ * @returns {Promise<Array>}
  */
 export function parseConversationsFile(file, providerId, providerName) {
   return new Promise((resolve, reject) => {
@@ -204,8 +205,8 @@ export function parseConversationsFile(file, providerId, providerName) {
       }
 
       try {
-        const parser = PARSERS[providerId] || ((d) => parseGeneric(d, providerId, providerName));
-        const conversations = parser(data);
+        const parse = PARSERS[providerId] || ((d) => parseGeneric(d, providerId, providerName));
+        const conversations = parse(data);
 
         if (conversations.length === 0) {
           return reject(
