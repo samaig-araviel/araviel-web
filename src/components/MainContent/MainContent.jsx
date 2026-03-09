@@ -652,6 +652,7 @@ export default function MainContent() {
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
+  const [isCodePanelOpen, setIsCodePanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [mobileFileSubmenu, setMobileFileSubmenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -1535,7 +1536,7 @@ export default function MainContent() {
     <main
       className={`${styles.main} ${hasMessages ? styles.hasMessages : ''} ${
         isSubConvPanelOpen ? styles.subConvPanelOpen : ''
-      }`}
+      } ${isCodePanelOpen ? styles.codePanelOpen : ''}`}
     >
       {/* Top nav bar with share + new chat + menu buttons */}
       <div className={styles.topNav}>
@@ -1678,6 +1679,7 @@ export default function MainContent() {
           onRetry={handleRetry}
           onAlternateModelRequest={handleAlternateModelRequest}
           onSubConvPanelToggle={setIsSubConvPanelOpen}
+          onCodePanelToggle={setIsCodePanelOpen}
           focusInput={focusInput}
           currentChatId={currentChatId}
         />

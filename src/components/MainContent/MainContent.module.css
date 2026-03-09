@@ -23,6 +23,12 @@
   margin-right: 440px;
 }
 
+/* When code side panel is open, make room on the right */
+.main.codePanelOpen {
+  margin-right: min(50vw, 700px);
+  transition: margin-right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* Top nav bar */
 .topNav {
   position: absolute;
@@ -1775,6 +1781,10 @@
     margin-right: 0;
   }
 
+  .main.codePanelOpen {
+    margin-right: 0;
+  }
+
   .containerBottom {
     padding: 0 16px 16px;
   }
@@ -1880,6 +1890,10 @@
 @media (min-width: 769px) and (max-width: 1024px) {
   .main.subConvPanelOpen {
     margin-right: 376px;
+  }
+
+  .main.codePanelOpen {
+    margin-right: 400px;
   }
 }
 
