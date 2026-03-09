@@ -30,7 +30,7 @@ const initialState = {
   pendingAutoSubmit: false, // when true, MainContent auto-fires the inputValue on mount
   pendingModality: null, // null = default 'text', or 'image' when prompt originates from image view
   // Imported conversation context for continuing imported chats
-  // Shape: { messages: Array<{ role, content }>, provider: string, title: string, importedConversationId: string } | null
+  // Shape: { importedConversationId: string, provider: string, providerName: string, title: string } | null
   importedContext: null,
   // Conversation list from backend
   conversations: [],

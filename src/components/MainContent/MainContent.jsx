@@ -828,11 +828,6 @@ export default function MainContent() {
               countryCode: userLocation.countryCode,
             }
           : undefined;
-        // When continuing an imported conversation, pass its messages as context
-        const contextMessages = importedContext?.messages?.length
-          ? importedContext.messages
-          : undefined;
-
         const response = await sendMessage({
           message: prompt,
           conversationId: options.conversationId || currentChatId || undefined,
@@ -849,7 +844,7 @@ export default function MainContent() {
           deepResearch: deepResearch || undefined,
           googleThinking: googleThinking || undefined,
           conversationHasImages: options.conversationHasImages || undefined,
-          contextMessages,
+          importedConversationId: importedContext?.importedConversationId || undefined,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;

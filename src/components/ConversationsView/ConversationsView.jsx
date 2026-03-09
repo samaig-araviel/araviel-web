@@ -675,18 +675,13 @@ export default function ConversationsView() {
         }),
       }));
       dispatch(setMessages(mappedMessages));
-      // Store imported context so runSSEPipeline can pass it to the backend
-      const contextMessages = (data.messages || []).map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      // Store imported context so runSSEPipeline can pass the ID to the backend
       dispatch(
         setImportedContext({
-          messages: contextMessages,
+          importedConversationId: chat.id,
           provider: chat.provider,
           providerName: chat.providerName,
           title: chat.title,
-          importedConversationId: chat.id,
         })
       );
     } catch {
