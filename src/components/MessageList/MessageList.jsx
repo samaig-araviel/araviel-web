@@ -804,12 +804,145 @@ function MermaidBlock({ code }) {
 }
 
 /**
+ * Extract a meaningful display name from a code block by parsing its content.
+ * Tries class/component/function declarations, then export names, then falls back.
+ */
+function extractCodeBlockName(code, lang) {
+  // Try class declaration
+  const classMatch = code.match(/(?:export\s+(?:default\s+)?)?(?:abstract\s+)?class\s+(\w+)/);
+  if (classMatch) return classMatch[1];
+
+  // Try interface/type declaration (TypeScript)
+  const interfaceMatch = code.match(/(?:export\s+)?(?:interface|type)\s+(\w+)/);
+  if (interfaceMatch) return interfaceMatch[1];
+
+  // Try React component (function declaration)
+  const funcComponentMatch = code.match(/(?:export\s+(?:default\s+)?)?function\s+([A-Z]\w*)/);
+  if (funcComponentMatch) return funcComponentMatch[1];
+
+  // Try arrow function component: const Name = () => or const Name: FC =
+  const arrowComponentMatch = code.match(/(?:export\s+(?:default\s+)?)?const\s+([A-Z]\w*)\s*[=:]/);
+  if (arrowComponentMatch) return arrowComponentMatch[1];
+
+  // Try regular function declaration
+  const funcMatch = code.match(/(?:export\s+(?:default\s+)?)?function\s+(\w+)/);
+  if (funcMatch) return funcMatch[1];
+
+  // Try module.exports pattern
+  const moduleExportMatch = code.match(
+    /module\.exports\s*=\s*(?:mongoose\.model\(\s*['"](\w+)['"]|(\w+))/
+  );
+  if (moduleExportMatch) return moduleExportMatch[1] || moduleExportMatch[2];
+
+  // Try export default
+  const exportDefaultMatch = code.match(/export\s+default\s+(\w+)/);
+  if (exportDefaultMatch) return exportDefaultMatch[1];
+
+  // Try const/let/var assignment at top level (first meaningful one)
+  const varMatch = code.match(/^(?:export\s+)?(?:const|let|var)\s+(\w+)/m);
+  if (varMatch) return varMatch[1];
+
+  // Try Java/Go/Rust patterns: public class Name, func Name, fn Name, struct Name
+  const javaClassMatch = code.match(/(?:public\s+)?class\s+(\w+)/);
+  if (javaClassMatch) return javaClassMatch[1];
+
+  const goFuncMatch = code.match(/func\s+(?:\([^)]*\)\s+)?(\w+)/);
+  if (goFuncMatch) return goFuncMatch[1];
+
+  const rustMatch = code.match(/(?:pub\s+)?(?:fn|struct|enum|trait)\s+(\w+)/);
+  if (rustMatch) return rustMatch[1];
+
+  // Try Python: class Name or def name
+  const pyMatch = code.match(/(?:class|def)\s+(\w+)/);
+  if (pyMatch) return pyMatch[1];
+
+  // Try package/namespace declaration as last resort
+  const packageMatch = code.match(/package\s+([\w.]+)/);
+  if (packageMatch) {
+    const parts = packageMatch[1].split('.');
+    return parts[parts.length - 1];
+  }
+
+  return null;
+}
+
+/**
+ * Extract code blocks from message text with smart naming.
+ * Also captures markdown heading context above each code block.
+ */
+function extractCodeBlocksWithNames(text) {
+  const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+  const blocks = [];
+  let m;
+  while ((m = codeBlockRegex.exec(text)) !== null) {
+    const lang = m[1] || '';
+    const code = m[2];
+    if (lang === 'chart' || lang === 'araviel-chart' || lang === 'mermaid') continue;
+    if (lang === 'json' || lang === '') {
+      try {
+        const parsed = JSON.parse(code);
+        const chartTypes = [
+          'line',
+          'area',
+          'bar',
+          'candlestick',
+          'pie',
+          'donut',
+          'composed',
+          'scatter',
+        ];
+        if (parsed && chartTypes.includes(parsed.type) && Array.isArray(parsed.data)) continue;
+      } catch {
+        /* not chart spec */
+      }
+    }
+
+    // Look for markdown heading or bold label before this code block
+    const textBefore = text.slice(0, m.index);
+    let contextName = null;
+
+    // Check for heading like "### Controller (src/controllers/userController.js)"
+    const headingMatch = textBefore.match(
+      /(?:^|\n)#{1,4}\s+(?:\d+\.\s+)?(?:\*\*)?([^\n*#]+?)(?:\*\*)?(?:\s*\([^)]*\))?\s*$/
+    );
+    if (headingMatch) {
+      contextName = headingMatch[1].trim();
+    }
+
+    // Check for bold label like "**Controller** (src/...)" or "**src/controllers/userController.js**"
+    if (!contextName) {
+      const boldMatch = textBefore.match(/\*\*([^*]+)\*\*(?:\s*\([^)]*\))?\s*$/);
+      if (boldMatch) {
+        const label = boldMatch[1].trim();
+        // If it's a file path, use the filename
+        if (label.includes('/')) {
+          const parts = label.split('/');
+          contextName = parts[parts.length - 1].replace(/\.\w+$/, '');
+        } else {
+          contextName = label;
+        }
+      }
+    }
+
+    // Extract name from code content
+    const codeName = extractCodeBlockName(code, lang);
+
+    // Build the display name with priority: code-extracted > context > fallback
+    const name = codeName || contextName || null;
+
+    blocks.push({ lang, code, name });
+  }
+  return blocks;
+}
+
+/**
  * Code side panel — Claude-style right-side panel for viewing code in a file-like view.
- * Renders as a fixed panel on the right side of the screen, not a modal overlay.
+ * Features a collapsible left sidebar with file tree navigation.
  */
 function CodeSidePanel({ codeBlocks, onClose }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(codeBlocks.length > 1);
   const codeRef = useRef(null);
   const panelRef = useRef(null);
 
@@ -819,6 +952,7 @@ function CodeSidePanel({ codeBlocks, onClose }) {
   useEffect(() => {
     setActiveIdx(0);
     setCopied(false);
+    setSidebarOpen(codeBlocks.length > 1);
   }, [codeBlocks]);
 
   useEffect(() => {
@@ -855,77 +989,116 @@ function CodeSidePanel({ codeBlocks, onClose }) {
   if (!codeBlocks || codeBlocks.length === 0) return null;
 
   const lineCount = activeBlock.code.split('\n').length;
+  const activeName =
+    activeBlock.name || (activeBlock.lang ? activeBlock.lang : `Block ${activeIdx + 1}`);
+  const activeLang = activeBlock.lang ? activeBlock.lang.toUpperCase() : 'CODE';
 
   return createPortal(
     <div className={styles.codeSidePanel} ref={panelRef}>
-      {/* Header */}
-      <div className={styles.codeSidePanelHeader}>
-        <div className={styles.codeSidePanelHeaderLeft}>
-          <span className={styles.codeSidePanelTitle}>{activeBlock.lang || 'Code'}</span>
-          <span className={styles.codeSidePanelDot}>·</span>
-          <span className={styles.codeSidePanelLang}>
-            {activeBlock.lang ? activeBlock.lang.toUpperCase() : 'CODE'}
-          </span>
-        </div>
-        <div className={styles.codeSidePanelHeaderActions}>
-          <button
-            className={`${styles.codeSidePanelCopyBtn} ${copied ? styles.codeSidePanelCopied : ''}`}
-            onClick={handleCopy}
-            title={copied ? 'Copied!' : 'Copy code'}
-          >
-            {copied ? <CheckIcon /> : <CopyIcon />}
-            <span>{copied ? 'Copied' : 'Copy'}</span>
-          </button>
-          <button className={styles.codeSidePanelCloseBtn} onClick={onClose} aria-label="Close">
-            <CloseIcon />
-          </button>
-        </div>
-      </div>
+      <div className={styles.codeSidePanelLayout}>
+        {/* Left sidebar — file tree */}
+        <div
+          className={`${styles.codeSidePanelSidebar} ${
+            sidebarOpen ? styles.codeSidePanelSidebarOpen : ''
+          }`}
+        >
+          <div className={styles.codeSidePanelSidebarHeader}>
+            <span className={styles.codeSidePanelSidebarTitle}>Files</span>
+            <span className={styles.codeSidePanelSidebarCount}>{codeBlocks.length}</span>
+          </div>
+          <div className={styles.codeSidePanelSidebarList}>
+            {codeBlocks.map((block, idx) => {
+              const blockName = block.name || (block.lang ? block.lang : `Block ${idx + 1}`);
+              const blockLang = block.lang ? block.lang.toUpperCase() : 'CODE';
+              const blockLines = block.code.split('\n').length;
+              const isActive = idx === activeIdx;
 
-      {/* Tabs — shown when multiple code blocks */}
-      {codeBlocks.length > 1 && (
-        <div className={styles.codeSidePanelTabs}>
-          {codeBlocks.map((block, idx) => (
-            <button
-              key={idx}
-              className={`${styles.codeSidePanelTab} ${
-                idx === activeIdx ? styles.codeSidePanelTabActive : ''
-              }`}
-              onClick={() => {
-                setActiveIdx(idx);
-                setCopied(false);
-              }}
-            >
-              <CodeIcon />
-              <span>{block.lang || `Block ${idx + 1}`}</span>
-              <span className={styles.codeSidePanelTabLines}>
-                {block.code.split('\n').length} lines
+              return (
+                <button
+                  key={idx}
+                  className={`${styles.codeSidePanelFileItem} ${
+                    isActive ? styles.codeSidePanelFileItemActive : ''
+                  }`}
+                  onClick={() => {
+                    setActiveIdx(idx);
+                    setCopied(false);
+                  }}
+                  title={blockName}
+                >
+                  <div className={styles.codeSidePanelFileIcon}>
+                    <CodeIcon />
+                  </div>
+                  <div className={styles.codeSidePanelFileInfo}>
+                    <span className={styles.codeSidePanelFileName}>{blockName}</span>
+                    <span className={styles.codeSidePanelFileMeta}>
+                      {blockLang} · {blockLines} lines
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Main content area */}
+        <div className={styles.codeSidePanelMain}>
+          {/* Header */}
+          <div className={styles.codeSidePanelHeader}>
+            <div className={styles.codeSidePanelHeaderLeft}>
+              {codeBlocks.length > 1 && (
+                <button
+                  className={`${styles.codeSidePanelSidebarToggle} ${
+                    sidebarOpen ? styles.codeSidePanelSidebarToggleOpen : ''
+                  }`}
+                  onClick={() => setSidebarOpen((v) => !v)}
+                  title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+                  aria-label="Toggle file sidebar"
+                >
+                  <ChevronRightIcon />
+                </button>
+              )}
+              <span className={styles.codeSidePanelTitle}>{activeName}</span>
+              <span className={styles.codeSidePanelLangBadge}>{activeLang}</span>
+            </div>
+            <div className={styles.codeSidePanelHeaderActions}>
+              <button
+                className={`${styles.codeSidePanelCopyBtn} ${
+                  copied ? styles.codeSidePanelCopied : ''
+                }`}
+                onClick={handleCopy}
+                title={copied ? 'Copied!' : 'Copy code'}
+              >
+                {copied ? <CheckIcon /> : <CopyIcon />}
+                <span>{copied ? 'Copied' : 'Copy'}</span>
+              </button>
+              <button className={styles.codeSidePanelCloseBtn} onClick={onClose} aria-label="Close">
+                <CloseIcon />
+              </button>
+            </div>
+          </div>
+
+          {/* Code area with line numbers */}
+          <div className={styles.codeSidePanelCodeArea}>
+            <div className={styles.codeSidePanelLineNumbers}>
+              {activeBlock.code.split('\n').map((_, idx) => (
+                <span key={idx}>{idx + 1}</span>
+              ))}
+            </div>
+            <pre className={styles.codeSidePanelPre}>
+              <code ref={codeRef}>{activeBlock.code}</code>
+            </pre>
+          </div>
+
+          {/* Footer info */}
+          <div className={styles.codeSidePanelFooter}>
+            <span>{lineCount} lines</span>
+            {codeBlocks.length > 1 && (
+              <span>
+                {activeIdx + 1} of {codeBlocks.length} files
               </span>
-            </button>
-          ))}
+            )}
+          </div>
         </div>
-      )}
-
-      {/* Code area with line numbers */}
-      <div className={styles.codeSidePanelCodeArea}>
-        <div className={styles.codeSidePanelLineNumbers}>
-          {activeBlock.code.split('\n').map((_, idx) => (
-            <span key={idx}>{idx + 1}</span>
-          ))}
-        </div>
-        <pre className={styles.codeSidePanelPre}>
-          <code ref={codeRef}>{activeBlock.code}</code>
-        </pre>
-      </div>
-
-      {/* Footer info */}
-      <div className={styles.codeSidePanelFooter}>
-        <span>{lineCount} lines</span>
-        {codeBlocks.length > 1 && (
-          <span>
-            Block {activeIdx + 1} of {codeBlocks.length}
-          </span>
-        )}
       </div>
     </div>,
     document.body
@@ -939,10 +1112,20 @@ function CodeCanvasButton({ codeBlocks, onClick }) {
   if (!codeBlocks || codeBlocks.length === 0) return null;
 
   const totalLines = codeBlocks.reduce((sum, b) => sum + b.code.split('\n').length, 0);
-  const label =
-    codeBlocks.length === 1
-      ? `${codeBlocks[0].lang || 'Code'}`
-      : `${codeBlocks.length} code blocks`;
+
+  // For single block, show the name; for multiple, list first few names
+  let title;
+  let meta;
+  if (codeBlocks.length === 1) {
+    title = codeBlocks[0].name || codeBlocks[0].lang || 'Code';
+    meta = `${
+      codeBlocks[0].lang ? codeBlocks[0].lang.toUpperCase() + ' · ' : ''
+    }${totalLines} lines`;
+  } else {
+    const names = codeBlocks.slice(0, 3).map((b) => b.name || b.lang || 'Code');
+    title = names.join(', ') + (codeBlocks.length > 3 ? ` +${codeBlocks.length - 3}` : '');
+    meta = `${codeBlocks.length} files · ${totalLines} lines`;
+  }
 
   return (
     <button className={styles.canvasOpenBtn} onClick={onClick}>
@@ -951,8 +1134,8 @@ function CodeCanvasButton({ codeBlocks, onClick }) {
           <CodeIcon />
         </span>
         <div className={styles.canvasOpenBtnText}>
-          <span className={styles.canvasOpenBtnTitle}>{label}</span>
-          <span className={styles.canvasOpenBtnMeta}>{totalLines} lines</span>
+          <span className={styles.canvasOpenBtnTitle}>{title}</span>
+          <span className={styles.canvasOpenBtnMeta}>{meta}</span>
         </div>
       </div>
       <span className={styles.canvasOpenBtnArrow}>
@@ -4083,34 +4266,7 @@ function Message({
         !isStreaming &&
         displayText &&
         (() => {
-          const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
-          const blocks = [];
-          let m;
-          while ((m = codeBlockRegex.exec(displayText)) !== null) {
-            const lang = m[1] || '';
-            if (lang === 'chart' || lang === 'araviel-chart' || lang === 'mermaid') continue;
-            // Skip json/untagged blocks that are chart specs
-            if (lang === 'json' || lang === '') {
-              try {
-                const parsed = JSON.parse(m[2]);
-                const chartTypes = [
-                  'line',
-                  'area',
-                  'bar',
-                  'candlestick',
-                  'pie',
-                  'donut',
-                  'composed',
-                  'scatter',
-                ];
-                if (parsed && chartTypes.includes(parsed.type) && Array.isArray(parsed.data))
-                  continue;
-              } catch {
-                /* not chart spec */
-              }
-            }
-            blocks.push({ lang, code: m[2] });
-          }
+          const blocks = extractCodeBlocksWithNames(displayText);
           if (blocks.length === 0) return null;
           return (
             <CodeCanvasButton
