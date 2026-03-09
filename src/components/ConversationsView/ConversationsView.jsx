@@ -10,6 +10,7 @@ import {
   setConversationsLoading,
   setCurrentChat,
   setMessages,
+  setImportedContext,
   createNewChat,
 } from '../../store/slices/chatSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
@@ -486,6 +487,7 @@ export default function ConversationsView() {
       return;
     }
     dispatch(setCurrentChat(chatId));
+    dispatch(setImportedContext(null));
     dispatch(setActiveItem('home'));
     try {
       const data = await fetchConversationMessages(chatId);
@@ -655,7 +657,8 @@ export default function ConversationsView() {
       toggleSelect(chat.id);
       return;
     }
-    dispatch(setCurrentChat(chat.id));
+    // Clear the native conversation ID so the backend creates a new one on first send
+    dispatch(setCurrentChat(null));
     dispatch(setActiveItem('home'));
     dispatch(setMessages([]));
     try {
@@ -665,12 +668,22 @@ export default function ConversationsView() {
         role: msg.role,
         content: msg.content,
         timestamp: new Date(msg.createdAt).getTime(),
+        isImported: true,
         ...(msg.role === 'assistant' && {
           modelName: chat.providerName,
           provider: chat.provider,
         }),
       }));
       dispatch(setMessages(mappedMessages));
+      // Store imported context so runSSEPipeline can pass the ID to the backend
+      dispatch(
+        setImportedContext({
+          importedConversationId: chat.id,
+          provider: chat.provider,
+          providerName: chat.providerName,
+          title: chat.title,
+        })
+      );
     } catch {
       // Silently fail
     }

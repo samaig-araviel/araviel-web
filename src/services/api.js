@@ -66,6 +66,7 @@ export async function sendMessage(payload) {
   if (payload.deepResearch) body.deepResearch = true;
   if (payload.googleThinking) body.googleThinking = true;
   if (payload.conversationHasImages) body.conversationHasImages = true;
+  if (payload.importedConversationId) body.importedConversationId = payload.importedConversationId;
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',

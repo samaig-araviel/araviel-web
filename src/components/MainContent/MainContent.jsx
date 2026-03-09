@@ -28,10 +28,12 @@ import {
   selectAutoStrategy,
   selectPendingAutoSubmit,
   selectPendingModality,
+  selectImportedContext,
   setTone,
   setMood,
   setPendingAutoSubmit,
   setPendingModality,
+  setImportedContext,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -627,6 +629,7 @@ export default function MainContent() {
   const autoStrategy = useSelector(selectAutoStrategy);
   const pendingAutoSubmit = useSelector(selectPendingAutoSubmit);
   const pendingModality = useSelector(selectPendingModality);
+  const importedContext = useSelector(selectImportedContext);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const {
@@ -841,6 +844,7 @@ export default function MainContent() {
           deepResearch: deepResearch || undefined,
           googleThinking: googleThinking || undefined,
           conversationHasImages: options.conversationHasImages || undefined,
+          importedConversationId: importedContext?.importedConversationId || undefined,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -858,6 +862,11 @@ export default function MainContent() {
               // Save the conversationId from backend (may be newly created)
               if (data.conversationId) {
                 dispatch(setCurrentChat(data.conversationId));
+                // Once the backend creates a native conversation, clear imported context
+                // so subsequent messages use the native conversation's history
+                if (importedContext) {
+                  dispatch(setImportedContext(null));
+                }
               }
 
               const routeData = {
@@ -1090,6 +1099,7 @@ export default function MainContent() {
       extendedThinking,
       deepResearch,
       googleThinking,
+      importedContext,
     ]
   );
 
