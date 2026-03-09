@@ -5755,6 +5755,49 @@
   }
 }
 
+/* Drag-to-resize handle on left edge */
+.codeSidePanelResizeHandle {
+  position: absolute;
+  top: 0;
+  left: -4px;
+  bottom: 0;
+  width: 9px;
+  cursor: col-resize;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.codeSidePanelResizeHandle:hover .codeSidePanelResizeGrip,
+.codeSidePanelResizeHandle:active .codeSidePanelResizeGrip {
+  opacity: 1;
+}
+
+.codeSidePanelResizeGrip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 2px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+  background-color: var(--bg-hover);
+}
+
+.codeSidePanelResizeHandle:hover .codeSidePanelResizeGrip {
+  background-color: var(--bg-active);
+}
+
+.codeSidePanelResizeGrip span {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+}
+
 /* Root layout: sidebar + main content side by side */
 .codeSidePanelLayout {
   display: flex;
