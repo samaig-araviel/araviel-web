@@ -23,9 +23,10 @@
   margin-right: 440px;
 }
 
-/* When code side panel is open, make room on the right */
+/* When code side panel is open, make room on the right.
+   Uses --code-panel-width CSS var when user drags to resize, otherwise defaults. */
 .main.codePanelOpen {
-  margin-right: min(50vw, 700px);
+  margin-right: var(--code-panel-width, min(50vw, 700px));
   transition: margin-right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

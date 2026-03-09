@@ -939,12 +939,17 @@ function extractCodeBlocksWithNames(text) {
  * Code side panel — Claude-style right-side panel for viewing code in a file-like view.
  * Features a collapsible left sidebar with file tree navigation.
  */
-function CodeSidePanel({ codeBlocks, onClose }) {
+function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [copied, setCopied] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(codeBlocks.length > 1);
+  const [panelWidth, setPanelWidth] = useState(null); // null = use CSS default
   const codeRef = useRef(null);
   const panelRef = useRef(null);
+  const isDraggingRef = useRef(false);
+
+  const MIN_WIDTH = 380;
+  const MAX_WIDTH_PERCENT = 0.8;
 
   const activeBlock = codeBlocks[activeIdx];
 
@@ -978,6 +983,41 @@ function CodeSidePanel({ codeBlocks, onClose }) {
     }
   }, [activeBlock]);
 
+  // Drag-to-resize handler
+  const handleResizeStart = useCallback(
+    (e) => {
+      e.preventDefault();
+      isDraggingRef.current = true;
+      const startX = e.clientX;
+      const startWidth = panelRef.current
+        ? panelRef.current.getBoundingClientRect().width
+        : MIN_WIDTH;
+
+      const handleMouseMove = (moveEvent) => {
+        if (!isDraggingRef.current) return;
+        const delta = startX - moveEvent.clientX;
+        const maxWidth = window.innerWidth * MAX_WIDTH_PERCENT;
+        const newWidth = Math.min(maxWidth, Math.max(MIN_WIDTH, startWidth + delta));
+        setPanelWidth(newWidth);
+        if (onWidthChange) onWidthChange(newWidth);
+      };
+
+      const handleMouseUp = () => {
+        isDraggingRef.current = false;
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    },
+    [onWidthChange]
+  );
+
   const handleCopy = useCallback(() => {
     if (!activeBlock) return;
     navigator.clipboard.writeText(activeBlock.code).then(() => {
@@ -993,8 +1033,21 @@ function CodeSidePanel({ codeBlocks, onClose }) {
     activeBlock.name || (activeBlock.lang ? activeBlock.lang : `Block ${activeIdx + 1}`);
   const activeLang = activeBlock.lang ? activeBlock.lang.toUpperCase() : 'CODE';
 
+  const panelStyle = panelWidth
+    ? { width: `${panelWidth}px`, maxWidth: '80vw', minWidth: `${MIN_WIDTH}px` }
+    : {};
+
   return createPortal(
-    <div className={styles.codeSidePanel} ref={panelRef}>
+    <div className={styles.codeSidePanel} ref={panelRef} style={panelStyle}>
+      {/* Resize handle on the left edge */}
+      <div className={styles.codeSidePanelResizeHandle} onMouseDown={handleResizeStart}>
+        <div className={styles.codeSidePanelResizeGrip}>
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+
       <div className={styles.codeSidePanelLayout}>
         {/* Left sidebar — file tree */}
         <div
@@ -4371,6 +4424,7 @@ export default function MessageList({
       setSubConvPanelOwnerId(null);
       if (onCodePanelToggle) onCodePanelToggle(false);
       if (onSubConvPanelToggle) onSubConvPanelToggle(false);
+      document.documentElement.style.removeProperty('--code-panel-width');
       prevChatIdRef.current = currentChatId;
     }
   }, [currentChatId, onCodePanelToggle, onSubConvPanelToggle]);
@@ -4386,7 +4440,13 @@ export default function MessageList({
   const handleCloseCodePanel = useCallback(() => {
     setCodePanelBlocks(null);
     if (onCodePanelToggle) onCodePanelToggle(false);
+    // Reset custom width CSS var
+    document.documentElement.style.removeProperty('--code-panel-width');
   }, [onCodePanelToggle]);
+
+  const handleCodePanelWidthChange = useCallback((width) => {
+    document.documentElement.style.setProperty('--code-panel-width', `${width}px`);
+  }, []);
 
   // Track scroll position → show/hide scroll-to-bottom button.
   // Detect user-initiated scrolling during streaming via wheel/touch events only
@@ -4596,7 +4656,11 @@ export default function MessageList({
 
       {/* Code side panel — Claude-style right panel */}
       {codePanelBlocks && codePanelBlocks.length > 0 && (
-        <CodeSidePanel codeBlocks={codePanelBlocks} onClose={handleCloseCodePanel} />
+        <CodeSidePanel
+          codeBlocks={codePanelBlocks}
+          onClose={handleCloseCodePanel}
+          onWidthChange={handleCodePanelWidthChange}
+        />
       )}
     </div>
   );
