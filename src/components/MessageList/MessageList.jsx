@@ -804,14 +804,22 @@ function MermaidBlock({ code }) {
 }
 
 /**
- * Canvas-style code viewer — full-screen overlay for viewing code in a file-like view.
+ * Code side panel — Claude-style right-side panel for viewing code in a file-like view.
+ * Renders as a fixed panel on the right side of the screen, not a modal overlay.
  */
-function CodeCanvasViewer({ codeBlocks, onClose }) {
+function CodeSidePanel({ codeBlocks, onClose }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const [copied, setCopied] = useState(false);
   const codeRef = useRef(null);
+  const panelRef = useRef(null);
 
   const activeBlock = codeBlocks[activeIdx];
+
+  // Reset active index when codeBlocks change
+  useEffect(() => {
+    setActiveIdx(0);
+    setCopied(false);
+  }, [codeBlocks]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -849,58 +857,75 @@ function CodeCanvasViewer({ codeBlocks, onClose }) {
   const lineCount = activeBlock.code.split('\n').length;
 
   return createPortal(
-    <div className={styles.canvasOverlay} onClick={onClose}>
-      <div className={styles.canvasPanel} onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className={styles.canvasHeader}>
-          <div className={styles.canvasHeaderLeft}>
-            <CodeIcon />
-            <span className={styles.canvasTitle}>{activeBlock.lang || 'Code'}</span>
-            <span className={styles.canvasLineCount}>{lineCount} lines</span>
-          </div>
-          <div className={styles.canvasHeaderActions}>
-            {codeBlocks.length > 1 && (
-              <div className={styles.canvasTabs}>
-                {codeBlocks.map((block, idx) => (
-                  <button
-                    key={idx}
-                    className={`${styles.canvasTab} ${
-                      idx === activeIdx ? styles.canvasTabActive : ''
-                    }`}
-                    onClick={() => {
-                      setActiveIdx(idx);
-                      setCopied(false);
-                    }}
-                  >
-                    {block.lang || `Block ${idx + 1}`}
-                  </button>
-                ))}
-              </div>
-            )}
+    <div className={styles.codeSidePanel} ref={panelRef}>
+      {/* Header */}
+      <div className={styles.codeSidePanelHeader}>
+        <div className={styles.codeSidePanelHeaderLeft}>
+          <span className={styles.codeSidePanelTitle}>{activeBlock.lang || 'Code'}</span>
+          <span className={styles.codeSidePanelDot}>·</span>
+          <span className={styles.codeSidePanelLang}>
+            {activeBlock.lang ? activeBlock.lang.toUpperCase() : 'CODE'}
+          </span>
+        </div>
+        <div className={styles.codeSidePanelHeaderActions}>
+          <button
+            className={`${styles.codeSidePanelCopyBtn} ${copied ? styles.codeSidePanelCopied : ''}`}
+            onClick={handleCopy}
+            title={copied ? 'Copied!' : 'Copy code'}
+          >
+            {copied ? <CheckIcon /> : <CopyIcon />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
+          <button className={styles.codeSidePanelCloseBtn} onClick={onClose} aria-label="Close">
+            <CloseIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* Tabs — shown when multiple code blocks */}
+      {codeBlocks.length > 1 && (
+        <div className={styles.codeSidePanelTabs}>
+          {codeBlocks.map((block, idx) => (
             <button
-              className={styles.canvasCopyBtn}
-              onClick={handleCopy}
-              title={copied ? 'Copied!' : 'Copy code'}
+              key={idx}
+              className={`${styles.codeSidePanelTab} ${
+                idx === activeIdx ? styles.codeSidePanelTabActive : ''
+              }`}
+              onClick={() => {
+                setActiveIdx(idx);
+                setCopied(false);
+              }}
             >
-              {copied ? <CheckIcon /> : <CopyIcon />}
-              <span>{copied ? 'Copied' : 'Copy'}</span>
+              <CodeIcon />
+              <span>{block.lang || `Block ${idx + 1}`}</span>
+              <span className={styles.codeSidePanelTabLines}>
+                {block.code.split('\n').length} lines
+              </span>
             </button>
-            <button className={styles.canvasCloseBtn} onClick={onClose} aria-label="Close">
-              <CloseIcon />
-            </button>
-          </div>
+          ))}
         </div>
-        {/* Code area with line numbers */}
-        <div className={styles.canvasCodeArea}>
-          <div className={styles.canvasLineNumbers}>
-            {activeBlock.code.split('\n').map((_, idx) => (
-              <span key={idx}>{idx + 1}</span>
-            ))}
-          </div>
-          <pre className={styles.canvasCodePre}>
-            <code ref={codeRef}>{activeBlock.code}</code>
-          </pre>
+      )}
+
+      {/* Code area with line numbers */}
+      <div className={styles.codeSidePanelCodeArea}>
+        <div className={styles.codeSidePanelLineNumbers}>
+          {activeBlock.code.split('\n').map((_, idx) => (
+            <span key={idx}>{idx + 1}</span>
+          ))}
         </div>
+        <pre className={styles.codeSidePanelPre}>
+          <code ref={codeRef}>{activeBlock.code}</code>
+        </pre>
+      </div>
+
+      {/* Footer info */}
+      <div className={styles.codeSidePanelFooter}>
+        <span>{lineCount} lines</span>
+        {codeBlocks.length > 1 && (
+          <span>
+            Block {activeIdx + 1} of {codeBlocks.length}
+          </span>
+        )}
       </div>
     </div>,
     document.body
@@ -908,7 +933,7 @@ function CodeCanvasViewer({ codeBlocks, onClose }) {
 }
 
 /**
- * Button shown below response content that opens the canvas code viewer.
+ * Button shown below response content that opens the code side panel.
  */
 function CodeCanvasButton({ codeBlocks, onClick }) {
   if (!codeBlocks || codeBlocks.length === 0) return null;
@@ -3584,6 +3609,7 @@ function Message({
   currentChatId,
   assistantIndex,
   onEditPrompt,
+  onOpenCodePanel,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -3592,7 +3618,6 @@ function Message({
   const LogoComponent = provider ? getProviderLogo(provider) : null;
   const [showHeaderDropdown, setShowHeaderDropdown] = useState(false);
   const [pendingAlternate, setPendingAlternate] = useState(null);
-  const [showCodeCanvas, setShowCodeCanvas] = useState(false);
   const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
   const headerPillRef = useRef(null);
 
@@ -4053,7 +4078,7 @@ function Message({
         </div>
       )}
 
-      {/* Code canvas button — shown below response when code blocks exist */}
+      {/* Code panel button — shown below response when code blocks exist */}
       {!isUser &&
         !isStreaming &&
         displayText &&
@@ -4088,12 +4113,10 @@ function Message({
           }
           if (blocks.length === 0) return null;
           return (
-            <>
-              <CodeCanvasButton codeBlocks={blocks} onClick={() => setShowCodeCanvas(true)} />
-              {showCodeCanvas && (
-                <CodeCanvasViewer codeBlocks={blocks} onClose={() => setShowCodeCanvas(false)} />
-              )}
-            </>
+            <CodeCanvasButton
+              codeBlocks={blocks}
+              onClick={() => onOpenCodePanel && onOpenCodePanel(blocks)}
+            />
           );
         })()}
 
@@ -4166,6 +4189,7 @@ export default function MessageList({
   onRetry,
   onAlternateModelRequest,
   onSubConvPanelToggle,
+  onCodePanelToggle,
   focusInput,
   currentChatId,
 }) {
@@ -4179,6 +4203,34 @@ export default function MessageList({
   const [subConvPanelOwnerId, setSubConvPanelOwnerId] = useState(null);
   const userScrolledDuringStreamRef = useRef(false);
   const wasStreamingRef = useRef(false);
+
+  // Code side panel state (lifted up so it persists across messages)
+  const [codePanelBlocks, setCodePanelBlocks] = useState(null);
+  const prevChatIdRef = useRef(currentChatId);
+
+  // Close code panel and sub-conversation panel when switching chats
+  useEffect(() => {
+    if (prevChatIdRef.current !== currentChatId) {
+      setCodePanelBlocks(null);
+      setSubConvPanelOwnerId(null);
+      if (onCodePanelToggle) onCodePanelToggle(false);
+      if (onSubConvPanelToggle) onSubConvPanelToggle(false);
+      prevChatIdRef.current = currentChatId;
+    }
+  }, [currentChatId, onCodePanelToggle, onSubConvPanelToggle]);
+
+  const handleOpenCodePanel = useCallback(
+    (blocks) => {
+      setCodePanelBlocks(blocks);
+      if (onCodePanelToggle) onCodePanelToggle(true);
+    },
+    [onCodePanelToggle]
+  );
+
+  const handleCloseCodePanel = useCallback(() => {
+    setCodePanelBlocks(null);
+    if (onCodePanelToggle) onCodePanelToggle(false);
+  }, [onCodePanelToggle]);
 
   // Track scroll position → show/hide scroll-to-bottom button.
   // Detect user-initiated scrolling during streaming via wheel/touch events only
@@ -4352,6 +4404,7 @@ export default function MessageList({
                 currentChatId={currentChatId}
                 assistantIndex={assistantIndices.get(index) ?? -1}
                 onEditPrompt={handleEditPrompt}
+                onOpenCodePanel={handleOpenCodePanel}
               />
             </div>
           );
@@ -4384,6 +4437,11 @@ export default function MessageList({
           </button>
         )}
       </div>
+
+      {/* Code side panel — Claude-style right panel */}
+      {codePanelBlocks && codePanelBlocks.length > 0 && (
+        <CodeSidePanel codeBlocks={codePanelBlocks} onClose={handleCloseCodePanel} />
+      )}
     </div>
   );
 }
