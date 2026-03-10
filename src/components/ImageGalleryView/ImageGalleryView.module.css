@@ -283,16 +283,16 @@
 
 .quickGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 
 .quickItem {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  border-radius: 14px;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
   background: transparent;
   border: 1px dashed var(--border-color);
   cursor: pointer;
@@ -309,9 +309,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
@@ -324,12 +324,12 @@
 }
 
 .quickItemIcon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .quickItemLabel {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   transition: color 0.15s ease;
@@ -1013,28 +1013,28 @@
   }
 
   .quickGrid {
-    grid-template-columns: 1fr;
-    gap: 2px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
   }
 
   .quickItem {
-    padding: 12px 14px;
-    gap: 12px;
+    padding: 10px 12px;
+    gap: 10px;
   }
 
   .quickItemIcon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
   }
 
   .quickItemIcon svg {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
   }
 
   .quickItemLabel {
-    font-size: 13px;
+    font-size: 12.5px;
   }
 
   .grid {
@@ -1090,9 +1090,14 @@
     min-width: 180px;
   }
 
+  .quickGrid {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
   .quickItemIcon {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
   }
 
   .grid {
