@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   MODELS,
@@ -47,37 +47,214 @@ function ProBadge() {
   return <span className={styles.proBadge}>PRO</span>;
 }
 
-function ProviderTabs({ activeFilter, onFilterChange, providerModelMap }) {
-  const scrollRef = useRef(null);
+// ── Provider Filter Dropdown ──
+
+function ProviderFilterDropdown({ activeFilter, onFilterChange, providerModelMap }) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  const activeProvider = activeFilter !== PROVIDER_FILTER_ALL ? PROVIDERS[activeFilter] : null;
+  const activeLabel = activeProvider ? activeProvider.name : 'All Providers';
+  const activeCount =
+    activeFilter !== PROVIDER_FILTER_ALL
+      ? providerModelMap[activeFilter]?.length || 0
+      : MODELS.length;
 
   return (
-    <div className={styles.tabsWrapper}>
-      <div className={styles.tabsScroll} ref={scrollRef}>
-        <button
-          className={`${styles.tab} ${
-            activeFilter === PROVIDER_FILTER_ALL ? styles.tabActive : ''
+    <div className={styles.filterDropdown} ref={dropdownRef}>
+      <button
+        className={`${styles.filterTrigger} ${open ? styles.filterTriggerOpen : ''}`}
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+      >
+        {activeProvider && (
+          <span
+            className={styles.filterTriggerDot}
+            style={{ backgroundColor: activeProvider.accentColor }}
+          />
+        )}
+        <span className={styles.filterTriggerLabel}>{activeLabel}</span>
+        <span className={styles.filterTriggerCount}>{activeCount}</span>
+        <span
+          className={`${styles.filterTriggerChevron} ${
+            open ? styles.filterTriggerChevronOpen : ''
           }`}
-          onClick={() => onFilterChange(PROVIDER_FILTER_ALL)}
         >
-          All
-          <span className={styles.tabCount}>{MODELS.length}</span>
-        </button>
-        {PROVIDER_ORDER.map((pid) => {
-          const provider = PROVIDERS[pid];
-          const count = providerModelMap[pid]?.length || 0;
-          if (count === 0) return null;
-          return (
-            <button
-              key={pid}
-              className={`${styles.tab} ${activeFilter === pid ? styles.tabActive : ''}`}
-              onClick={() => onFilterChange(pid)}
-            >
-              <span className={styles.tabDot} style={{ backgroundColor: provider.accentColor }} />
-              {provider.name}
-              <span className={styles.tabCount}>{count}</span>
-            </button>
-          );
-        })}
+          <ChevronDownIcon />
+        </span>
+      </button>
+      {open && (
+        <div className={styles.filterMenu}>
+          <button
+            className={`${styles.filterMenuItem} ${
+              activeFilter === PROVIDER_FILTER_ALL ? styles.filterMenuItemActive : ''
+            }`}
+            onClick={() => {
+              onFilterChange(PROVIDER_FILTER_ALL);
+              setOpen(false);
+            }}
+          >
+            <span
+              className={styles.filterMenuDot}
+              style={{ backgroundColor: 'var(--text-muted)' }}
+            />
+            <span className={styles.filterMenuLabel}>All Providers</span>
+            <span className={styles.filterMenuCount}>{MODELS.length}</span>
+          </button>
+          <div className={styles.filterMenuDivider} />
+          {PROVIDER_ORDER.map((pid) => {
+            const provider = PROVIDERS[pid];
+            const count = providerModelMap[pid]?.length || 0;
+            if (count === 0) return null;
+            return (
+              <button
+                key={pid}
+                className={`${styles.filterMenuItem} ${
+                  activeFilter === pid ? styles.filterMenuItemActive : ''
+                }`}
+                onClick={() => {
+                  onFilterChange(pid);
+                  setOpen(false);
+                }}
+              >
+                <span
+                  className={styles.filterMenuDot}
+                  style={{ backgroundColor: provider.accentColor }}
+                />
+                <span className={styles.filterMenuLabel}>{provider.name}</span>
+                <span className={styles.filterMenuCount}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Provider Pills (quick filter) ──
+
+function ProviderPills({ activeFilter, onFilterChange, providerModelMap }) {
+  return (
+    <div className={styles.providerPills}>
+      <button
+        className={`${styles.providerPill} ${
+          activeFilter === PROVIDER_FILTER_ALL ? styles.providerPillActive : ''
+        }`}
+        onClick={() => onFilterChange(PROVIDER_FILTER_ALL)}
+      >
+        All
+      </button>
+      {PROVIDER_ORDER.map((pid) => {
+        const provider = PROVIDERS[pid];
+        const count = providerModelMap[pid]?.length || 0;
+        if (count === 0) return null;
+        return (
+          <button
+            key={pid}
+            className={`${styles.providerPill} ${
+              activeFilter === pid ? styles.providerPillActive : ''
+            }`}
+            onClick={() => onFilterChange(pid)}
+          >
+            <span
+              className={styles.providerPillDot}
+              style={{ backgroundColor: provider.accentColor }}
+            />
+            {provider.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Default Model Card (hero) ──
+
+function DefaultModelHero({ model, onSetDefault, onSelect }) {
+  const provider = PROVIDERS[model.provider];
+  return (
+    <div className={styles.defaultHero} onClick={() => onSelect(model)}>
+      <div className={styles.defaultHeroAccent} style={{ backgroundColor: provider.accentColor }} />
+      <div className={styles.defaultHeroContent}>
+        <div className={styles.defaultHeroLeft}>
+          <span
+            className={styles.defaultHeroProvider}
+            style={{
+              '--chip-bg': provider.accentBg,
+              '--chip-text': provider.accentText,
+              '--chip-bg-dark': provider.accentBgDark,
+            }}
+          >
+            {provider.logoChar}
+          </span>
+          <div className={styles.defaultHeroInfo}>
+            <div className={styles.defaultHeroTopRow}>
+              <span className={styles.defaultHeroBadge}>Default Model</span>
+              <SpeedBadge tier={model.speedTier} />
+            </div>
+            <h3 className={styles.defaultHeroName}>{model.name}</h3>
+            <p className={styles.defaultHeroTagline}>{model.tagline}</p>
+          </div>
+        </div>
+        <div className={styles.defaultHeroRight}>
+          <div className={styles.defaultHeroStats}>
+            <div className={styles.defaultHeroStat}>
+              <span className={styles.defaultHeroStatLabel}>Input</span>
+              <span className={styles.defaultHeroStatValue}>
+                $
+                {model.pricing.inputPerM < 1
+                  ? model.pricing.inputPerM.toFixed(3)
+                  : model.pricing.inputPerM.toFixed(2)}
+                /M
+              </span>
+            </div>
+            <div className={styles.defaultHeroStat}>
+              <span className={styles.defaultHeroStatLabel}>Output</span>
+              <span className={styles.defaultHeroStatValue}>
+                $
+                {model.pricing.outputPerM < 1
+                  ? model.pricing.outputPerM.toFixed(3)
+                  : model.pricing.outputPerM.toFixed(2)}
+                /M
+              </span>
+            </div>
+            <div className={styles.defaultHeroStat}>
+              <span className={styles.defaultHeroStatLabel}>Context</span>
+              <span className={styles.defaultHeroStatValue}>
+                {formatTokens(model.context.inputTokens)}
+              </span>
+            </div>
+          </div>
+          <button
+            className={styles.defaultHeroRemove}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSetDefault(null);
+            }}
+            title="Remove as default"
+          >
+            <StarIcon filled />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -327,43 +504,68 @@ export default function ModelsView() {
     }
   }, []);
 
-  const providerModelMap = {};
-  for (const pid of PROVIDER_ORDER) {
-    const providerModels = MODELS.filter((m) => m.provider === pid);
-    if (providerModels.length > 0) {
-      providerModelMap[pid] = providerModels;
+  const providerModelMap = useMemo(() => {
+    const map = {};
+    for (const pid of PROVIDER_ORDER) {
+      const providerModels = MODELS.filter((m) => m.provider === pid);
+      if (providerModels.length > 0) {
+        map[pid] = providerModels;
+      }
     }
-  }
+    return map;
+  }, []);
 
-  const filteredModels =
-    activeFilter === PROVIDER_FILTER_ALL
-      ? MODELS
-      : MODELS.filter((m) => m.provider === activeFilter);
+  const filteredModels = useMemo(() => {
+    const models =
+      activeFilter === PROVIDER_FILTER_ALL
+        ? MODELS
+        : MODELS.filter((m) => m.provider === activeFilter);
+    // Exclude the default model from the main grid since it's shown at top
+    if (defaultModelId) {
+      return models.filter((m) => m.id !== defaultModelId);
+    }
+    return models;
+  }, [activeFilter, defaultModelId]);
+
+  const defaultModel = useMemo(() => {
+    if (!defaultModelId) return null;
+    return MODELS.find((m) => m.id === defaultModelId) || null;
+  }, [defaultModelId]);
 
   const totalModels = MODELS.length;
 
   return (
     <div className={styles.container}>
-      {/* Page header */}
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Models</h1>
-        <p className={styles.pageSubtitle}>
-          {totalModels} AI models across {Object.keys(providerModelMap).length} providers
-          {userTier === ACCESS_TIERS.free && (
-            <span className={styles.tierHint}>
-              {' \u2014 '}
-              <span className={styles.proBadgeInline}>PRO</span> models require an upgrade
-            </span>
-          )}
-        </p>
+      {/* Sticky header with filter */}
+      <div className={styles.headerBar}>
+        <div className={styles.headerTop}>
+          <div className={styles.headerTitleGroup}>
+            <h1 className={styles.pageTitle}>Models</h1>
+            <span className={styles.pageCount}>{totalModels} models</span>
+          </div>
+          <ProviderFilterDropdown
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+            providerModelMap={providerModelMap}
+          />
+        </div>
+        <ProviderPills
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          providerModelMap={providerModelMap}
+        />
       </div>
 
-      {/* Provider filter tabs */}
-      <ProviderTabs
-        activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
-        providerModelMap={providerModelMap}
-      />
+      {/* Default model hero */}
+      {defaultModel && activeFilter === PROVIDER_FILTER_ALL && (
+        <div className={styles.defaultSection}>
+          <DefaultModelHero
+            model={defaultModel}
+            onSetDefault={handleSetDefault}
+            onSelect={setSelectedModel}
+          />
+        </div>
+      )}
 
       {/* Model grid */}
       <div className={styles.modelGrid}>
