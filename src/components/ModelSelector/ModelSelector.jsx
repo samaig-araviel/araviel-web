@@ -38,7 +38,7 @@ const AUTO_STRATEGIES = [
   { id: 'taskBased', label: 'Task Based', desc: 'Pure task routing only', icon: '⚡' },
 ];
 
-export default function ModelSelector() {
+export default function ModelSelector({ imageOnly = false }) {
   const dispatch = useDispatch();
   const selectedModelId = useSelector(selectSelectedModelId);
   const autoStrategy = useSelector(selectAutoStrategy);
@@ -52,7 +52,10 @@ export default function ModelSelector() {
 
   // Get user tier and filter models accordingly
   const userTier = getUserTier();
-  const tierModels = useMemo(() => getModelsForTier(userTier), [userTier]);
+  const tierModels = useMemo(() => {
+    const models = getModelsForTier(userTier);
+    return imageOnly ? models.filter((m) => m.capabilities?.imageGeneration) : models;
+  }, [userTier, imageOnly]);
   const tierModelsByProvider = useMemo(() => getModelsByProvider(tierModels), [tierModels]);
 
   const selectedModel = selectedModelId ? MODELS.find((m) => m.id === selectedModelId) : null;
@@ -63,12 +66,15 @@ export default function ModelSelector() {
   const savedDefaultModel =
     isAutoMode && savedDefaultId ? MODELS.find((m) => m.id === savedDefaultId) : null;
 
-  // Featured models based on tier
-  const featuredIds =
-    userTier === ACCESS_TIERS.pro ? FEATURED_MODEL_IDS_PRO : FEATURED_MODEL_IDS_FREE;
-  const featuredModels = featuredIds
-    .map((id) => tierModels.find((m) => m.id === id))
-    .filter(Boolean);
+  // Featured models based on tier — when imageOnly, show first 3 image-capable models
+  const featuredModels = useMemo(() => {
+    if (imageOnly) {
+      return tierModels.slice(0, 3);
+    }
+    const featuredIds =
+      userTier === ACCESS_TIERS.pro ? FEATURED_MODEL_IDS_PRO : FEATURED_MODEL_IDS_FREE;
+    return featuredIds.map((id) => tierModels.find((m) => m.id === id)).filter(Boolean);
+  }, [imageOnly, tierModels, userTier]);
 
   // Active providers for the "All Models" view (only providers that have tier-accessible models)
   const activeProviders = PROVIDER_ORDER.filter((pid) => tierModelsByProvider[pid]?.length > 0);

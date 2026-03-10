@@ -254,7 +254,7 @@ export default function ImageGalleryView() {
                   >
                     <PlusIcon />
                   </button>
-                  <ModelSelector />
+                  <ModelSelector imageOnly />
                   {showAttachMenu && (
                     <div className={styles.promptAttachMenu}>
                       <button
