@@ -340,8 +340,6 @@ export default function ConversationsView() {
   });
 
   const listRef = useRef(null);
-  const observerRef = useRef(null);
-  const sentinelRef = useRef(null);
 
   const handleSingleArchive = useCallback((chatId) => {
     setArchivedIds((prev) => {
@@ -435,11 +433,13 @@ export default function ConversationsView() {
     localStorage.setItem('araviel-archived-chats', JSON.stringify([...archivedIds]));
   }, [archivedIds]);
 
+  const CONVERSATIONS_PAGE_SIZE = 15;
+
   const loadConversations = useCallback(
     async (offset = 0) => {
       dispatch(setConversationsLoading(true));
       try {
-        const data = await fetchConversations(20, offset);
+        const data = await fetchConversations(CONVERSATIONS_PAGE_SIZE, offset);
         if (offset === 0) {
           dispatch(setConversations(data));
         } else {
@@ -458,28 +458,11 @@ export default function ConversationsView() {
     loadConversations(0);
   }, [loadConversations]);
 
-  useEffect(() => {
-    if (observerRef.current) observerRef.current.disconnect();
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          !conversationsLoading &&
-          conversations.length < conversationsTotal
-        ) {
-          loadConversations(conversations.length);
-        }
-      },
-      { rootMargin: '200px' }
-    );
-
-    if (sentinelRef.current) {
-      observerRef.current.observe(sentinelRef.current);
+  const handleLoadMore = useCallback(() => {
+    if (!conversationsLoading && conversations.length < conversationsTotal) {
+      loadConversations(conversations.length);
     }
-
-    return () => observerRef.current?.disconnect();
-  }, [conversations.length, conversationsTotal, conversationsLoading, loadConversations]);
+  }, [conversationsLoading, conversations.length, conversationsTotal, loadConversations]);
 
   const handleChatClick = async (chatId) => {
     if (selectMode) {
@@ -990,9 +973,6 @@ export default function ConversationsView() {
           >
             <ImportIcon />
             <span>Imported Chats</span>
-            {importedConversations.length > 0 && (
-              <span className={styles.sectionBadge}>{importedConversations.length}</span>
-            )}
           </button>
         </div>
 
@@ -1132,17 +1112,23 @@ export default function ConversationsView() {
                       {group.items.map((chat) => renderConversationItem(chat))}
                     </div>
                   ))}
-                  <div ref={sentinelRef} className={styles.sentinel}>
-                    {conversationsLoading && (
-                      <div className={styles.loadingMore}>
-                        <div className={styles.loadingDots}>
-                          <span />
-                          <span />
-                          <span />
+                  {conversations.length < conversationsTotal && (
+                    <div className={styles.loadMoreWrapper}>
+                      {conversationsLoading ? (
+                        <div className={styles.loadingMore}>
+                          <div className={styles.loadingDots}>
+                            <span />
+                            <span />
+                            <span />
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      ) : (
+                        <button className={styles.loadMoreBtn} onClick={handleLoadMore}>
+                          Load more conversations
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className={styles.empty}>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   selectLifetimeStats,
@@ -22,12 +22,74 @@ import {
 } from '../../services/analytics';
 import styles from './AnalyticsDashboard.module.css';
 
+// ── Tab Navigation ──
+
+const TABS = [
+  { key: 'overview', label: 'Overview', icon: 'grid' },
+  { key: 'tokens', label: 'Tokens & Cost', icon: 'activity' },
+  { key: 'models', label: 'Models', icon: 'cpu' },
+  { key: 'insights', label: 'Insights', icon: 'zap' },
+];
+
+const TabIcon = ({ type }) => {
+  const props = {
+    width: 15,
+    height: 15,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  };
+  switch (type) {
+    case 'grid':
+      return (
+        <svg {...props}>
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+      );
+    case 'activity':
+      return (
+        <svg {...props}>
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      );
+    case 'cpu':
+      return (
+        <svg {...props}>
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <line x1="9" y1="1" x2="9" y2="4" />
+          <line x1="15" y1="1" x2="15" y2="4" />
+          <line x1="9" y1="20" x2="9" y2="23" />
+          <line x1="15" y1="20" x2="15" y2="23" />
+          <line x1="20" y1="9" x2="23" y2="9" />
+          <line x1="20" y1="14" x2="23" y2="14" />
+          <line x1="1" y1="9" x2="4" y2="9" />
+          <line x1="1" y1="14" x2="4" y2="14" />
+        </svg>
+      );
+    case 'zap':
+      return (
+        <svg {...props}>
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+};
+
 // ── Period Selector ──
 
 const PERIODS = [
   { key: 'today', label: 'Today' },
-  { key: 'week', label: 'This Week' },
-  { key: 'month', label: 'This Month' },
+  { key: 'week', label: 'Week' },
+  { key: 'month', label: 'Month' },
   { key: 'all', label: 'All Time' },
 ];
 
@@ -47,101 +109,139 @@ function PeriodSelector({ value, onChange, isPro }) {
       {!isPro && (
         <span className={styles.periodProHint}>
           <span className={styles.proBadge}>PRO</span>
-          for daily & weekly
         </span>
       )}
     </div>
   );
 }
 
-// ── Stat Card ──
+// ── Metric Card ──
 
-function StatCard({ label, value, subtitle, icon, accent }) {
+function MetricCard({ label, value, subtitle, icon, trend }) {
   return (
-    <div className={styles.statCard}>
-      <div className={styles.statCardIcon} style={accent ? { color: accent } : undefined}>
-        {icon}
+    <div className={styles.metricCard}>
+      <div className={styles.metricHeader}>
+        <span className={styles.metricIcon}>{icon}</span>
+        <span className={styles.metricLabel}>{label}</span>
       </div>
-      <div className={styles.statCardContent}>
-        <span className={styles.statCardValue}>{value}</span>
-        <span className={styles.statCardLabel}>{label}</span>
-        {subtitle && <span className={styles.statCardSubtitle}>{subtitle}</span>}
-      </div>
+      <div className={styles.metricValue}>{value}</div>
+      {subtitle && <div className={styles.metricSubtitle}>{subtitle}</div>}
+      {trend != null && (
+        <div
+          className={`${styles.metricTrend} ${
+            trend >= 0 ? styles.metricTrendUp : styles.metricTrendDown
+          }`}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
+            {trend >= 0 ? (
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+            ) : (
+              <polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />
+            )}
+          </svg>
+          <span>{Math.abs(trend)}%</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Section Card ──
+// ── Section ──
 
-function SectionCard({ title, proOnly, locked, children }) {
+function Section({ title, subtitle, proOnly, locked, action, children }) {
   return (
-    <div className={`${styles.sectionCard} ${locked ? styles.sectionLocked : ''}`}>
-      <div className={styles.sectionCardHeader}>
-        <h3 className={styles.sectionCardTitle}>{title}</h3>
-        {proOnly && <span className={styles.proBadge}>PRO</span>}
+    <div className={`${styles.section} ${locked ? styles.sectionLocked : ''}`}>
+      <div className={styles.sectionHeader}>
+        <div className={styles.sectionTitleGroup}>
+          <h3 className={styles.sectionTitle}>{title}</h3>
+          {subtitle && <p className={styles.sectionSubtitle}>{subtitle}</p>}
+        </div>
+        <div className={styles.sectionHeaderRight}>
+          {proOnly && <span className={styles.proBadge}>PRO</span>}
+          {action}
+        </div>
       </div>
-      <div className={styles.sectionCardBody}>
-        {locked && <ProLockOverlay />}
+      <div className={styles.sectionBody}>
+        {locked && (
+          <div className={styles.proLockOverlay}>
+            <div className={styles.proLockContent}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span>Upgrade to Pro</span>
+            </div>
+          </div>
+        )}
         {children}
       </div>
     </div>
   );
 }
 
-// ── Pro Lock Overlay ──
+// ── XP Banner ──
 
-function ProLockOverlay() {
+function XPBanner({ points, level, streak, longestStreak }) {
   return (
-    <div className={styles.proLockOverlay}>
-      <div className={styles.proLockContent}>
-        <span className={styles.proLockIcon}>{'\u2728'}</span>
-        <span className={styles.proLockText}>Upgrade to Pro to unlock</span>
-      </div>
-    </div>
-  );
-}
-
-// ── XP Hero Card ──
-
-function XPHeroCard({ points, level, streak, longestStreak }) {
-  return (
-    <div className={styles.xpHero}>
-      <div className={styles.xpHeroMain}>
-        <div className={styles.xpHeroLevel}>
-          <span className={styles.xpLevelLabel}>Level</span>
-          <span className={styles.xpLevelName} style={{ color: level.color }}>
-            {level.name}
+    <div className={styles.xpBanner}>
+      <div className={styles.xpBannerLeft}>
+        <div className={styles.xpLevelBadge} style={{ '--level-color': level.color }}>
+          <span className={styles.xpLevelIcon}>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+            </svg>
+          </span>
+          <div className={styles.xpLevelInfo}>
+            <span className={styles.xpLevelName} style={{ color: level.color }}>
+              {level.name}
+            </span>
+            <span className={styles.xpLevelXp}>{points.toLocaleString()} XP</span>
+          </div>
+        </div>
+        <div className={styles.xpProgressWrapper}>
+          <div className={styles.xpProgressTrack}>
+            <div
+              className={styles.xpProgressFill}
+              style={{
+                width: `${Math.round(level.progress * 100)}%`,
+                backgroundColor: level.color,
+              }}
+            />
+          </div>
+          <span className={styles.xpProgressLabel}>
+            {level.max === Infinity ? 'Max level' : `${Math.round(level.progress * 100)}% to next`}
           </span>
         </div>
-        <div className={styles.xpHeroPoints}>
-          <span className={styles.xpPointsValue}>{points.toLocaleString()}</span>
-          <span className={styles.xpPointsUnit}>XP</span>
-        </div>
-        <div className={styles.xpHeroStreak}>
-          <span className={styles.xpStreakFire}>{'\uD83D\uDD25'}</span>
-          <span className={styles.xpStreakCount}>{streak}</span>
-          <span className={styles.xpStreakLabel}>day streak</span>
-          {longestStreak > 0 && <span className={styles.xpStreakBest}>Best: {longestStreak}</span>}
-        </div>
       </div>
-      <div className={styles.xpProgressContainer}>
-        <div className={styles.xpProgressTrack}>
-          <div
-            className={styles.xpProgressFill}
-            style={{
-              width: `${Math.round(level.progress * 100)}%`,
-              background: `linear-gradient(90deg, ${level.color}, ${level.color}cc)`,
-            }}
-          />
-        </div>
-        <div className={styles.xpProgressMeta}>
-          <span className={styles.xpProgressPercent}>{Math.round(level.progress * 100)}%</span>
-          <span className={styles.xpProgressHint}>
-            {level.max === Infinity
-              ? 'Maximum level reached!'
-              : `${level.max - points + 1} XP to next level`}
-          </span>
-        </div>
+      <div className={styles.xpStreakPill}>
+        <span className={styles.xpStreakNum}>{streak}</span>
+        <span className={styles.xpStreakText}>day streak</span>
+        {longestStreak > 0 && <span className={styles.xpStreakBest}>Best: {longestStreak}</span>}
       </div>
     </div>
   );
@@ -150,21 +250,23 @@ function XPHeroCard({ points, level, streak, longestStreak }) {
 // ── Top Models List ──
 
 function TopModelsList({ models, totalMessages }) {
+  const [hoveredIdx, setHoveredIdx] = useState(null);
   if (!models.length) {
     return <p className={styles.emptyHint}>No model usage data yet</p>;
   }
   const max = models[0]?.count || 1;
   return (
     <div className={styles.topModelsList}>
-      {models.slice(0, 8).map((m) => (
-        <div key={m.modelId} className={styles.topModelRow}>
-          <div className={styles.topModelInfo}>
-            <span className={styles.topModelDot} style={{ backgroundColor: m.color }} />
-            <span className={styles.topModelName}>{m.name}</span>
-            <span className={styles.topModelCount}>
-              {m.count} {m.count === 1 ? 'msg' : 'msgs'}
-            </span>
-          </div>
+      {models.slice(0, 8).map((m, idx) => (
+        <div
+          key={m.modelId}
+          className={`${styles.topModelRow} ${hoveredIdx === idx ? styles.topModelRowHover : ''}`}
+          onMouseEnter={() => setHoveredIdx(idx)}
+          onMouseLeave={() => setHoveredIdx(null)}
+        >
+          <span className={styles.topModelRank}>{idx + 1}</span>
+          <span className={styles.topModelDot} style={{ backgroundColor: m.color }} />
+          <span className={styles.topModelName}>{m.name}</span>
           <div className={styles.topModelBarTrack}>
             <div
               className={styles.topModelBarFill}
@@ -174,8 +276,9 @@ function TopModelsList({ models, totalMessages }) {
               }}
             />
           </div>
+          <span className={styles.topModelCount}>{m.count}</span>
           <span className={styles.topModelPercent}>
-            {totalMessages > 0 ? `${((m.count / totalMessages) * 100).toFixed(1)}%` : '0%'}
+            {totalMessages > 0 ? `${((m.count / totalMessages) * 100).toFixed(0)}%` : '0%'}
           </span>
         </div>
       ))}
@@ -201,6 +304,7 @@ function BudgetSection({ budgetStatus, monthlyBudget, alertThreshold, dispatch }
 
   const isOverBudget = budgetStatus && budgetStatus.percent >= 1;
   const isNearBudget = budgetStatus && !isOverBudget && budgetStatus.percent >= alertThreshold;
+  const percentUsed = Math.min((budgetStatus?.percent || 0) * 100, 100);
 
   return (
     <div className={styles.budgetSection}>
@@ -253,7 +357,7 @@ function BudgetSection({ budgetStatus, monthlyBudget, alertThreshold, dispatch }
               <span className={styles.budgetSpent}>
                 ${budgetStatus?.spent?.toFixed(2) || '0.00'}
               </span>
-              <span className={styles.budgetOf}>of</span>
+              <span className={styles.budgetOf}>/</span>
               <span className={styles.budgetTotal}>${monthlyBudget?.toFixed(2)}</span>
             </div>
             <button
@@ -272,28 +376,17 @@ function BudgetSection({ budgetStatus, monthlyBudget, alertThreshold, dispatch }
               className={`${styles.budgetBarFill} ${
                 isOverBudget ? styles.budgetBarOver : isNearBudget ? styles.budgetBarWarn : ''
               }`}
-              style={{ width: `${Math.min((budgetStatus?.percent || 0) * 100, 100)}%` }}
+              style={{ width: `${percentUsed}%` }}
             />
           </div>
           <div className={styles.budgetMeta}>
-            <span className={styles.budgetMetaItem}>
-              {((budgetStatus?.percent || 0) * 100).toFixed(1)}% used
-            </span>
-            <span className={styles.budgetMetaItem}>
-              ${budgetStatus?.remaining?.toFixed(2)} remaining
-            </span>
-            <span className={styles.budgetMetaItem}>
-              Projected: ${budgetStatus?.projected?.toFixed(2)}/mo
-            </span>
+            <span>{percentUsed.toFixed(0)}% used</span>
+            <span>${budgetStatus?.remaining?.toFixed(2)} left</span>
           </div>
-          {isOverBudget && (
-            <div className={styles.budgetAlert}>
-              {'\u26A0'} You&apos;ve exceeded your monthly budget
-            </div>
-          )}
+          {isOverBudget && <div className={styles.budgetAlert}>Over budget</div>}
           {isNearBudget && !isOverBudget && (
             <div className={styles.budgetWarn}>
-              {'\u26A0'} Approaching budget limit ({Math.round(alertThreshold * 100)}% threshold)
+              Approaching limit ({Math.round(alertThreshold * 100)}%)
             </div>
           )}
         </div>
@@ -317,7 +410,7 @@ function TopicCloud({ topics }) {
           <span
             key={t.word}
             className={styles.topicTag}
-            style={{ opacity: intensity, fontSize: `${11 + 5 * (t.count / maxCount)}px` }}
+            style={{ opacity: intensity, fontSize: `${12 + 4 * (t.count / maxCount)}px` }}
           >
             {t.word}
             <span className={styles.topicCount}>{t.count}</span>
@@ -347,12 +440,12 @@ function formatMs(ms) {
   return `${ms}ms`;
 }
 
-// ── SVG Icons (inline, dashboard-specific) ──
+// ── Inline SVG Icons ──
 
 const DollarIcon = () => (
   <svg
-    width="20"
-    height="20"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -367,8 +460,8 @@ const DollarIcon = () => (
 
 const TokenIcon = () => (
   <svg
-    width="20"
-    height="20"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -382,8 +475,8 @@ const TokenIcon = () => (
 
 const MessageIcon = () => (
   <svg
-    width="20"
-    height="20"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -397,8 +490,8 @@ const MessageIcon = () => (
 
 const ClockIcon = () => (
   <svg
-    width="20"
-    height="20"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -411,10 +504,10 @@ const ClockIcon = () => (
   </svg>
 );
 
-const ModelIcon = () => (
+const ModelSmallIcon = () => (
   <svg
-    width="20"
-    height="20"
+    width="16"
+    height="16"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -439,6 +532,7 @@ export default function AnalyticsDashboard() {
   const userTier = getUserTier();
   const isPro = userTier === ACCESS_TIERS.pro;
 
+  const [activeTab, setActiveTab] = useState('overview');
   const [period, setPeriod] = useState('month');
 
   const overview = useMemo(() => computeOverviewFromLifetime(stats, period), [stats, period]);
@@ -466,19 +560,17 @@ export default function AnalyticsDashboard() {
   );
   const level = useMemo(() => getLevel(stats.points), [stats.points]);
 
-  // Chart specs — always create them (AravielChart handles empty data)
+  // Chart specs
   const tokenTrendSpec = useMemo(
     () => ({
       type: 'area',
-      title: 'Token Usage',
-      subtitle: 'Input vs Output tokens over time',
       xKey: 'date',
       series: [
-        { key: 'input', name: 'Input Tokens', color: '#d97706' },
-        { key: 'output', name: 'Output Tokens', color: '#0ea5e9' },
+        { key: 'input', name: 'Input', color: '#d97706' },
+        { key: 'output', name: 'Output', color: '#0ea5e9' },
       ],
       data: usageTrend,
-      config: { xAxisFormat: 'date', yAxisFormat: 'compact', height: 280 },
+      config: { xAxisFormat: 'date', yAxisFormat: 'compact', height: 300, showLegend: true },
     }),
     [usageTrend]
   );
@@ -486,12 +578,10 @@ export default function AnalyticsDashboard() {
   const costTrendSpec = useMemo(
     () => ({
       type: 'area',
-      title: 'Cumulative Cost',
-      subtitle: 'Running total spend over time',
       xKey: 'date',
       series: [{ key: 'cost', name: 'Total Cost', color: '#10b981' }],
       data: costTrend,
-      config: { xAxisFormat: 'date', yAxisFormat: 'usd', height: 280, showLegend: false },
+      config: { xAxisFormat: 'date', yAxisFormat: 'usd', height: 300, showLegend: false },
     }),
     [costTrend]
   );
@@ -500,8 +590,6 @@ export default function AnalyticsDashboard() {
     if (!providerBreakdown.length) return null;
     return {
       type: 'donut',
-      title: 'Usage by Provider',
-      subtitle: 'Message distribution across providers',
       xKey: 'name',
       series: [{ key: 'value', name: 'Messages' }],
       data: providerBreakdown,
@@ -512,135 +600,236 @@ export default function AnalyticsDashboard() {
   const hourlySpec = useMemo(
     () => ({
       type: 'bar',
-      title: 'Hourly Activity',
-      subtitle: 'When you use AI most',
       xKey: 'hour',
-      series: [{ key: 'messages', name: 'Messages', color: '#06b6d4' }],
+      series: [{ key: 'messages', name: 'Messages', color: '#d97706' }],
       data: hourlyActivity,
-      config: { yAxisFormat: 'integer', height: 240, showLegend: false },
+      config: { yAxisFormat: 'integer', height: 260, showLegend: false },
     }),
     [hourlyActivity]
   );
 
+  const handleTabChange = useCallback((key) => setActiveTab(key), []);
+
   return (
     <div className={styles.container}>
-      {/* Page Header */}
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Usage Dashboard</h1>
-        <p className={styles.pageSubtitle}>
-          Your AI usage at a glance
-          {!isPro && (
-            <span className={styles.tierHint}>
-              {' \u2014 '}
-              <span className={styles.proBadge}>PRO</span> unlocks full analytics
-            </span>
-          )}
-        </p>
+      {/* ── Sticky header ── */}
+      <div className={styles.headerBar}>
+        <div className={styles.headerTop}>
+          <div className={styles.headerTitleGroup}>
+            <h1 className={styles.pageTitle}>Usage</h1>
+            {!isPro && <span className={styles.proBadge}>PRO</span>}
+          </div>
+          <PeriodSelector value={period} onChange={setPeriod} isPro={isPro} />
+        </div>
+        <nav className={styles.tabBar}>
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              className={`${styles.tabBtn} ${activeTab === tab.key ? styles.tabBtnActive : ''}`}
+              onClick={() => handleTabChange(tab.key)}
+            >
+              <TabIcon type={tab.icon} />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
       </div>
 
       <div className={styles.content}>
-        {/* ── XP Hero Card ── */}
-        <XPHeroCard
+        {/* ── XP Banner (always visible) ── */}
+        <XPBanner
           points={stats.points}
           level={level}
           streak={stats.currentStreak}
           longestStreak={stats.longestStreak}
         />
 
-        {/* Period Selector */}
-        <div className={styles.toolbar}>
-          <PeriodSelector value={period} onChange={setPeriod} isPro={isPro} />
-        </div>
-
-        {/* ── Overview Stat Cards (single row of 5) ── */}
-        <div className={styles.statGrid}>
-          <StatCard
-            label="Total Cost"
-            value={formatCost(overview.totalCost)}
-            icon={<DollarIcon />}
-            accent="#10b981"
-          />
-          <StatCard
-            label="Total Tokens"
-            value={formatTokensCompact(overview.totalTokens)}
-            subtitle={`${formatTokensCompact(overview.totalInputTokens)} in / ${formatTokensCompact(
-              overview.totalOutputTokens
-            )} out`}
-            icon={<TokenIcon />}
-            accent="#d97706"
-          />
-          <StatCard
-            label="Messages"
-            value={overview.totalMessages.toLocaleString()}
-            icon={<MessageIcon />}
-            accent="#0ea5e9"
-          />
-          <StatCard
-            label="Avg Latency"
-            value={formatMs(overview.avgLatency)}
-            icon={<ClockIcon />}
-            accent="#8b5cf6"
-          />
-          <StatCard
-            label="Models Used"
-            value={overview.uniqueModels}
-            icon={<ModelIcon />}
-            accent="#f97316"
-          />
-        </div>
-
-        {/* ── Token Usage Trend ── */}
-        <SectionCard title="Token Usage Trend">
-          <AravielChart spec={tokenTrendSpec} />
-        </SectionCard>
-
-        {/* ── Provider + Top Models (side by side) ── */}
-        <div className={styles.splitSection}>
-          <SectionCard title="Usage by Provider">
-            {providerDonutSpec ? (
-              <AravielChart spec={providerDonutSpec} />
-            ) : (
-              <p className={styles.emptyHint}>No provider data yet</p>
-            )}
-          </SectionCard>
-          <SectionCard title="Top Models">
-            <TopModelsList models={modelBreakdown} totalMessages={overview.totalMessages} />
-          </SectionCard>
-        </div>
-
-        {/* ── Cost Trend + Budget (side by side, PRO) ── */}
-        <div className={styles.splitSection}>
-          <SectionCard title="Cost Trend" proOnly={!isPro} locked={!isPro}>
-            <AravielChart spec={costTrendSpec} />
-          </SectionCard>
-          <SectionCard title="Budget & Limits" proOnly={!isPro} locked={!isPro}>
-            {isPro ? (
-              <BudgetSection
-                budgetStatus={budgetStatus}
-                monthlyBudget={monthlyBudget}
-                alertThreshold={alertThreshold}
-                dispatch={dispatch}
+        {/* ──────── OVERVIEW TAB ──────── */}
+        {activeTab === 'overview' && (
+          <>
+            <div className={styles.metricsGrid}>
+              <MetricCard
+                label="Total Cost"
+                value={formatCost(overview.totalCost)}
+                icon={<DollarIcon />}
               />
-            ) : (
-              <BudgetSection
-                budgetStatus={{ spent: 0, budget: 10, percent: 0, projected: 0, remaining: 10 }}
-                monthlyBudget={10}
-                alertThreshold={0.8}
-                dispatch={() => {}}
+              <MetricCard
+                label="Tokens"
+                value={formatTokensCompact(overview.totalTokens)}
+                subtitle={`${formatTokensCompact(
+                  overview.totalInputTokens
+                )} in / ${formatTokensCompact(overview.totalOutputTokens)} out`}
+                icon={<TokenIcon />}
               />
-            )}
-          </SectionCard>
-        </div>
+              <MetricCard
+                label="Messages"
+                value={overview.totalMessages.toLocaleString()}
+                icon={<MessageIcon />}
+              />
+              <MetricCard
+                label="Avg Latency"
+                value={formatMs(overview.avgLatency)}
+                icon={<ClockIcon />}
+              />
+              <MetricCard label="Models" value={overview.uniqueModels} icon={<ModelSmallIcon />} />
+            </div>
 
-        {/* ── Hourly Activity + Topics (side by side, PRO) ── */}
-        <div className={styles.splitSection}>
-          <SectionCard title="Hourly Activity" proOnly={!isPro} locked={!isPro}>
-            <AravielChart spec={hourlySpec} />
-          </SectionCard>
-          <SectionCard title="Your Topics" proOnly={!isPro} locked={!isPro}>
-            <TopicCloud topics={topics} />
-          </SectionCard>
-        </div>
+            <Section title="Token Usage" subtitle="Input vs output tokens over time">
+              <AravielChart spec={tokenTrendSpec} />
+            </Section>
+
+            <div className={styles.splitRow}>
+              <Section title="Providers" subtitle="Message distribution">
+                {providerDonutSpec ? (
+                  <AravielChart spec={providerDonutSpec} />
+                ) : (
+                  <p className={styles.emptyHint}>No provider data yet</p>
+                )}
+              </Section>
+              <Section title="Top Models" subtitle="Most used models">
+                <TopModelsList models={modelBreakdown} totalMessages={overview.totalMessages} />
+              </Section>
+            </div>
+          </>
+        )}
+
+        {/* ──────── TOKENS & COST TAB ──────── */}
+        {activeTab === 'tokens' && (
+          <>
+            <div className={styles.metricsGrid}>
+              <MetricCard
+                label="Total Cost"
+                value={formatCost(overview.totalCost)}
+                icon={<DollarIcon />}
+              />
+              <MetricCard
+                label="Input Tokens"
+                value={formatTokensCompact(overview.totalInputTokens)}
+                icon={<TokenIcon />}
+              />
+              <MetricCard
+                label="Output Tokens"
+                value={formatTokensCompact(overview.totalOutputTokens)}
+                icon={<TokenIcon />}
+              />
+              <MetricCard
+                label="Total Tokens"
+                value={formatTokensCompact(overview.totalTokens)}
+                icon={<TokenIcon />}
+              />
+            </div>
+
+            <Section title="Token Usage Trend" subtitle="Daily token consumption over time">
+              <AravielChart spec={tokenTrendSpec} />
+            </Section>
+
+            <div className={styles.splitRow}>
+              <Section
+                title="Cost Trend"
+                subtitle="Cumulative spend over time"
+                proOnly={!isPro}
+                locked={!isPro}
+              >
+                <AravielChart spec={costTrendSpec} />
+              </Section>
+              <Section
+                title="Budget"
+                subtitle="Monthly spending limits"
+                proOnly={!isPro}
+                locked={!isPro}
+              >
+                {isPro ? (
+                  <BudgetSection
+                    budgetStatus={budgetStatus}
+                    monthlyBudget={monthlyBudget}
+                    alertThreshold={alertThreshold}
+                    dispatch={dispatch}
+                  />
+                ) : (
+                  <BudgetSection
+                    budgetStatus={{ spent: 0, budget: 10, percent: 0, projected: 0, remaining: 10 }}
+                    monthlyBudget={10}
+                    alertThreshold={0.8}
+                    dispatch={() => {}}
+                  />
+                )}
+              </Section>
+            </div>
+          </>
+        )}
+
+        {/* ──────── MODELS TAB ──────── */}
+        {activeTab === 'models' && (
+          <>
+            <div className={styles.metricsGrid}>
+              <MetricCard
+                label="Models Used"
+                value={overview.uniqueModels}
+                icon={<ModelSmallIcon />}
+              />
+              <MetricCard
+                label="Messages"
+                value={overview.totalMessages.toLocaleString()}
+                icon={<MessageIcon />}
+              />
+              <MetricCard
+                label="Avg Latency"
+                value={formatMs(overview.avgLatency)}
+                icon={<ClockIcon />}
+              />
+            </div>
+
+            <div className={styles.splitRow}>
+              <Section title="Providers" subtitle="Message distribution across providers">
+                {providerDonutSpec ? (
+                  <AravielChart spec={providerDonutSpec} />
+                ) : (
+                  <p className={styles.emptyHint}>No provider data yet</p>
+                )}
+              </Section>
+              <Section title="Top Models" subtitle="Ranked by usage">
+                <TopModelsList models={modelBreakdown} totalMessages={overview.totalMessages} />
+              </Section>
+            </div>
+          </>
+        )}
+
+        {/* ──────── INSIGHTS TAB ──────── */}
+        {activeTab === 'insights' && (
+          <>
+            <div className={styles.metricsGrid}>
+              <MetricCard
+                label="Messages"
+                value={overview.totalMessages.toLocaleString()}
+                icon={<MessageIcon />}
+              />
+              <MetricCard
+                label="Avg Latency"
+                value={formatMs(overview.avgLatency)}
+                icon={<ClockIcon />}
+              />
+            </div>
+
+            <div className={styles.splitRow}>
+              <Section
+                title="Activity Pattern"
+                subtitle="When you use AI most"
+                proOnly={!isPro}
+                locked={!isPro}
+              >
+                <AravielChart spec={hourlySpec} />
+              </Section>
+              <Section
+                title="Your Topics"
+                subtitle="Common themes in your prompts"
+                proOnly={!isPro}
+                locked={!isPro}
+              >
+                <TopicCloud topics={topics} />
+              </Section>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

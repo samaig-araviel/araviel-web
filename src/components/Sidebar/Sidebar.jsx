@@ -152,7 +152,7 @@ export default function Sidebar() {
     async (offset = 0) => {
       dispatch(setConversationsLoading(true));
       try {
-        const data = await fetchConversations(20, offset);
+        const data = await fetchConversations(15, offset);
         if (offset === 0) {
           dispatch(setConversations(data));
         } else {
@@ -529,11 +529,11 @@ export default function Sidebar() {
           <button
             className={`${styles.navItem} ${activeItem === 'analytics' ? styles.active : ''}`}
             onClick={handleAnalyticsClick}
-            title="Analytics"
-            aria-label="Analytics"
+            title="Usage"
+            aria-label="Usage"
           >
             <AnalyticsIcon />
-            {showFullContent && <span>Analytics</span>}
+            {showFullContent && <span>Usage</span>}
           </button>
         </nav>
 
@@ -635,7 +635,9 @@ export default function Sidebar() {
                                   }}
                                 >
                                   <ArchiveIcon />
-                                  <span>{archivedIds.has(chat.id) ? 'Move to Chats' : 'Archive'}</span>
+                                  <span>
+                                    {archivedIds.has(chat.id) ? 'Move to Chats' : 'Archive'}
+                                  </span>
                                 </button>
                                 <div className={styles.chatDropdownDivider} />
                                 <button
