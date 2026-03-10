@@ -1199,14 +1199,87 @@ function CodeCanvasButton({ codeBlocks, onClick }) {
 }
 
 /**
- * Horizontal scrollable image row shown when response contains images.
- * Clicking a single image opens a lightbox. "View all" opens the side gallery panel.
+ * Single inline image block — mirrors GeneratedImageBlock style with hover
+ * overlay showing download & expand actions.
+ */
+function InlineImageBlock({ src, alt, onClick }) {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async (e) => {
+    e.stopPropagation();
+    if (downloading) return;
+    setDownloading(true);
+    const filename = `araviel-${(alt || 'image')
+      .slice(0, 40)
+      .replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.png`;
+    try {
+      const response = await fetch(src);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(src, '_blank', 'noopener,noreferrer');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <div className={styles.generatedImageBlock}>
+      <div className={styles.generatedImageFrame} onClick={onClick}>
+        <img src={src} alt={alt || 'Image'} className={styles.generatedImageImg} loading="lazy" />
+        <div className={styles.generatedImageOverlay}>
+          <div className={styles.generatedImageOverlayInner}>
+            {alt && <span className={styles.generatedImageModel}>{alt}</span>}
+            <div className={styles.generatedImageOverlayActions}>
+              <button
+                className={styles.generatedImageSaveBtn}
+                onClick={handleDownload}
+                title={downloading ? 'Saving...' : 'Save image'}
+                aria-label="Save image"
+                disabled={downloading}
+              >
+                <FileDownIcon />
+              </button>
+              <button
+                className={styles.generatedImageExpandBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClick();
+                }}
+                title="View full size"
+                aria-label="Expand image"
+              >
+                <MaximizeIcon />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Horizontal image row shown when response contains markdown images.
+ * Renders images directly with action overlays. Multiple images show
+ * in a horizontal scroll with a "View all" button that opens the gallery panel.
  */
 function ImageRow({ images }) {
   const [showGallery, setShowGallery] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
-  const handleClick = () => {
+  const openImage = (idx) => {
+    setLightboxIdx(idx);
+  };
+
+  const openGallery = () => {
     if (window.innerWidth <= 768) {
       setLightboxIdx(0);
     } else {
@@ -1216,40 +1289,37 @@ function ImageRow({ images }) {
 
   return (
     <>
-      <button className={styles.imagesPill} onClick={handleClick}>
-        <svg
-          className={styles.imagesPillIcon}
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="3" y="3" width="18" height="18" rx="3" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <path d="m21 15-5-5L5 21" />
-        </svg>
-        <span className={styles.imagesPillCount}>
-          {images.length} image{images.length !== 1 ? 's' : ''}
-        </span>
-        <span className={styles.imagesPillAction}>View images</span>
-        <svg
-          className={styles.imagesPillChevron}
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </button>
+      <div className={styles.inlineImagesRow}>
+        <div className={styles.inlineImagesScroll}>
+          {images.map((img, idx) => (
+            <InlineImageBlock
+              key={idx}
+              src={img.src}
+              alt={img.alt}
+              onClick={() => openImage(idx)}
+            />
+          ))}
+        </div>
+        {images.length > 1 && (
+          <button className={styles.inlineImagesViewAll} onClick={openGallery}>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="3" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <path d="m21 15-5-5L5 21" />
+            </svg>
+            <span>View all {images.length} images</span>
+          </button>
+        )}
+      </div>
       {showGallery && <ImageGalleryPanel images={images} onClose={() => setShowGallery(false)} />}
       {lightboxIdx !== null &&
         createPortal(
