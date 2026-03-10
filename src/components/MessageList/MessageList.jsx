@@ -133,6 +133,21 @@ function extractQuestionTopic(userPrompt) {
  * response content and the user's original question.
  */
 function generateFollowUps(content, userPrompt, generatedImages) {
+  // For image-only responses (no text content), return image follow-ups
+  if (generatedImages && generatedImages.length > 0 && !content) {
+    const imgSuggestions = [
+      'Generate a similar image with a different mood',
+      'Try a different art style',
+      'Make it more vibrant and colorful',
+      'Create a darker, moodier version',
+      'Show a wider angle of this scene',
+      'Add more fine detail and texture',
+      'Try this in a painterly style',
+      'Generate a cinematic version',
+    ];
+    return pickRandom(imgSuggestions, 4);
+  }
+
   if (!content) return [];
 
   const lower = content.toLowerCase();
@@ -4284,8 +4299,9 @@ function Message({
 
   // Memoize follow-ups so they don't regenerate on every render (which causes jitter)
   // Prefer AI-provided follow-ups from the backend; fall back to client-side generation.
+  const hasGeneratedImages = message.generatedImages && message.generatedImages.length > 0;
   const followUps = useMemo(() => {
-    if (!isUser && isLastAssistant && !isStreaming && message.content) {
+    if (!isUser && isLastAssistant && !isStreaming && (message.content || hasGeneratedImages)) {
       if (message.followUps && message.followUps.length > 0) {
         return message.followUps.slice(0, 4);
       }
@@ -4297,6 +4313,7 @@ function Message({
     isLastAssistant,
     isStreaming,
     message.content,
+    hasGeneratedImages,
     message.followUps,
     userPrompt,
     message.generatedImages,
@@ -4477,7 +4494,7 @@ function Message({
         <SelectionTooltip position={selectionTooltip} onAsk={handleAskAraviel} />
       )}
 
-      {!isUser && !isStreaming && message.content && (
+      {!isUser && !isStreaming && (message.content || hasGeneratedImages) && (
         <ResponseActions
           message={message}
           isDark={isDark}
