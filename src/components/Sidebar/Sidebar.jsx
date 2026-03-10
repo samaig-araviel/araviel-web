@@ -34,7 +34,6 @@ import {
   MenuIcon,
   CloseIcon,
   ModelsIcon,
-  AnalyticsIcon,
   ImageGalleryIcon,
   ConversationsIcon,
   MoreVerticalIcon,
@@ -282,13 +281,6 @@ export default function Sidebar() {
     }
   };
 
-  const handleAnalyticsClick = () => {
-    dispatch(setActiveItem(activeItem === 'analytics' ? 'home' : 'analytics'));
-    if (isMobile) {
-      dispatch(setCollapsed(true));
-    }
-  };
-
   const handleGalleryClick = () => {
     dispatch(setActiveItem(activeItem === 'gallery' ? 'home' : 'gallery'));
     if (isMobile) {
@@ -525,15 +517,6 @@ export default function Sidebar() {
           >
             <ModelsIcon />
             {showFullContent && <span>Models</span>}
-          </button>
-          <button
-            className={`${styles.navItem} ${activeItem === 'analytics' ? styles.active : ''}`}
-            onClick={handleAnalyticsClick}
-            title="Usage"
-            aria-label="Usage"
-          >
-            <AnalyticsIcon />
-            {showFullContent && <span>Usage</span>}
           </button>
         </nav>
 
