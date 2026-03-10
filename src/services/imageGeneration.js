@@ -104,6 +104,8 @@ export function saveGeneratedImage(image) {
   // Keep max 100 images
   if (images.length > 100) images.length = 100;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+  // Notify any listeners (e.g. ImageGalleryView) about the new image
+  window.dispatchEvent(new CustomEvent('araviel-image-saved', { detail: entry }));
   return entry;
 }
 

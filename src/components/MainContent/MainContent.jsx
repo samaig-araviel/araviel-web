@@ -952,10 +952,12 @@ export default function MainContent() {
                 dispatch(updateLastMessage({ citations: data.sources }));
               }
             } else if (type === 'image_generation') {
-              // Handle generated image from the backend
-              if (assistantMsgAdded && data.url) {
+              // Handle generated image from the backend (supports both URL and base64)
+              const imageUrl =
+                data.url || (data.b64_json ? `data:image/png;base64,${data.b64_json}` : null);
+              if (assistantMsgAdded && imageUrl) {
                 const imgEntry = saveGeneratedImage({
-                  url: data.url,
+                  url: imageUrl,
                   prompt: data.prompt || prompt,
                   model: data.model || routeInfo?.modelName,
                   provider: data.provider || routeInfo?.provider,
@@ -963,26 +965,18 @@ export default function MainContent() {
                   style: data.style,
                 });
                 recordGeneration();
-                dispatch(
-                  updateLastMessage({
-                    generatedImages: [
-                      ...(accumulatedImages || []),
-                      {
-                        url: data.url,
-                        prompt: data.prompt || prompt,
-                        model: data.model || routeInfo?.modelName,
-                        provider: data.provider || routeInfo?.provider,
-                        id: imgEntry.id,
-                      },
-                    ],
-                  })
-                );
-                accumulatedImages = accumulatedImages || [];
-                accumulatedImages.push({
-                  url: data.url,
-                  prompt: data.prompt || prompt,
-                  model: data.model || routeInfo?.modelName,
-                });
+                const newImages = [
+                  ...(accumulatedImages || []),
+                  {
+                    url: imageUrl,
+                    prompt: data.prompt || prompt,
+                    model: data.model || routeInfo?.modelName,
+                    provider: data.provider || routeInfo?.provider,
+                    id: imgEntry.id,
+                  },
+                ];
+                dispatch(updateLastMessage({ generatedImages: newImages }));
+                accumulatedImages = newImages;
               }
             } else if (type === 'followups') {
               if (assistantMsgAdded && data.suggestions) {
@@ -1134,11 +1128,16 @@ export default function MainContent() {
       (m) => m.generatedImages && m.generatedImages.length > 0
     );
 
+    // Set modality to 'image' when an image generation model is explicitly selected
+    const modality =
+      selectedModelId && isImageGenerationModel(selectedModelId) ? 'image' : undefined;
+
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
       addUserMessage: true,
       webSearch: webSearchEnabled,
       conversationHasImages: conversationHasImages || undefined,
+      modality,
     });
   };
 

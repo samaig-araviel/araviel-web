@@ -99,6 +99,10 @@ export default function ImageGalleryView() {
 
   useEffect(() => {
     loadImages();
+    // Refresh gallery when new images are saved (e.g. from chat)
+    const handleImageSaved = () => loadImages();
+    window.addEventListener('araviel-image-saved', handleImageSaved);
+    return () => window.removeEventListener('araviel-image-saved', handleImageSaved);
   }, [loadImages]);
 
   useEffect(() => {
