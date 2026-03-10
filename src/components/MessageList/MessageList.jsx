@@ -2386,12 +2386,67 @@ function ErrorCard({ error, onRetry, userPrompt }) {
 }
 
 /**
- * Stream timeout notice.
+ * Stream timeout notice with Continue / Retry action buttons.
  */
-function StreamTimeoutNotice() {
+function StreamTimeoutNotice({ onContinue, onRetry }) {
   return (
     <div className={styles.streamTimeoutNotice}>
-      Response may have been cut short due to timeout.
+      <div className={styles.streamTimeoutContent}>
+        <svg
+          className={styles.streamTimeoutIcon}
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+        <span className={styles.streamTimeoutText}>
+          Response may have been cut short due to timeout.
+        </span>
+      </div>
+      <div className={styles.streamTimeoutActions}>
+        {onContinue && (
+          <button className={styles.streamTimeoutContinueBtn} onClick={onContinue}>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            Continue
+          </button>
+        )}
+        {onRetry && (
+          <button className={styles.streamTimeoutRetryBtn} onClick={onRetry}>
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Retry
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -4335,7 +4390,17 @@ function Message({
       )}
 
       {/* Stream timeout notice */}
-      {!isUser && !isStreaming && message.streamTimeout && <StreamTimeoutNotice />}
+      {!isUser && !isStreaming && message.streamTimeout && (
+        <StreamTimeoutNotice
+          onContinue={
+            onRetry && userPrompt
+              ? () =>
+                  onRetry('Continue from where you left off. Do not repeat what was already said.')
+              : null
+          }
+          onRetry={onRetry && userPrompt ? () => onRetry(userPrompt) : null}
+        />
+      )}
 
       {/* Text selection tooltip */}
       {selectionTooltip && !isUser && (

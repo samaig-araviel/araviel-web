@@ -14,41 +14,23 @@ import {
   getUserTier,
   formatTokens,
 } from '../../data/models';
-import { StarIcon, CloseIcon, SearchIcon, CheckIcon } from '../Icons';
+import { CloseIcon, SearchIcon, CheckIcon, FilterIcon, ChevronDownIcon } from '../Icons';
 import styles from './ModelsView.module.css';
 
 // ── Helpers ──
-
-function getDefaultModel() {
-  return localStorage.getItem('araviel-default-model') || null;
-}
-
-function saveDefaultModel(modelId) {
-  if (modelId) {
-    localStorage.setItem('araviel-default-model', modelId);
-  } else {
-    localStorage.removeItem('araviel-default-model');
-  }
-}
 
 const TIER_CONFIG = {
   [ACCESS_TIERS.free]: {
     label: 'Included',
     sublabel: 'Available on all plans',
-    gradient: 'var(--tier-free-gradient)',
-    accentColor: 'var(--tier-free-accent)',
   },
   [ACCESS_TIERS.pro]: {
     label: 'Pro',
     sublabel: 'Unlock with Pro plan',
-    gradient: 'var(--tier-pro-gradient)',
-    accentColor: 'var(--tier-pro-accent)',
   },
   [ACCESS_TIERS.premium]: {
     label: 'Premium',
     sublabel: 'Unlock with Premium plan',
-    gradient: 'var(--tier-premium-gradient)',
-    accentColor: 'var(--tier-premium-accent)',
   },
 };
 
@@ -85,126 +67,151 @@ function PremiumBadge() {
   return <span className={styles.premiumBadge}>PREMIUM</span>;
 }
 
-// ── Active Model Banner (shows chat model) ──
+// ── Selected Model Pill (top of page) ──
 
-function ActiveModelBanner({ model, defaultModelId, onSetDefault, onSelect }) {
+function SelectedModelPill({ modelId, onSelect }) {
+  if (!modelId) {
+    // Auto mode
+    return (
+      <div className={styles.selectedPill}>
+        <span className={styles.selectedPillAuto}>✦</span>
+        <span className={styles.selectedPillLabel}>Auto</span>
+        <span className={styles.selectedPillTag}>Default</span>
+      </div>
+    );
+  }
+
+  const model = MODELS.find((m) => m.id === modelId);
+  if (!model) return null;
   const provider = PROVIDERS[model.provider];
-  const isDefault = defaultModelId === model.id;
 
   return (
-    <div className={styles.activeBanner} onClick={() => onSelect(model)}>
-      <div className={styles.activeBannerGlow} style={{ '--glow-color': provider.accentColor }} />
-      <div className={styles.activeBannerContent}>
-        <div className={styles.activeBannerLeft}>
-          <div className={styles.activeBannerIndicator}>
-            <span className={styles.activeBannerPulse} />
-            <span className={styles.activeBannerLabel}>Active in chat</span>
-          </div>
-          <div className={styles.activeBannerMain}>
-            <span
-              className={styles.activeBannerProvider}
-              style={{
-                '--chip-bg': provider.accentBg,
-                '--chip-text': provider.accentText,
-                '--chip-bg-dark': provider.accentBgDark,
-              }}
-            >
-              {provider.logoChar}
-            </span>
-            <div className={styles.activeBannerInfo}>
-              <h3 className={styles.activeBannerName}>{model.name}</h3>
-              <p className={styles.activeBannerTagline}>{model.tagline}</p>
-            </div>
-          </div>
-        </div>
-        <div className={styles.activeBannerRight}>
-          <div className={styles.activeBannerStats}>
-            <SpeedBadge tier={model.speedTier} />
-            <span className={styles.activeBannerCtx}>
-              {formatTokens(model.context.inputTokens)} ctx
-            </span>
-          </div>
-          {!isDefault && (
-            <button
-              className={styles.activeBannerSetDefault}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSetDefault(model.id);
-              }}
-              title="Set as default model"
-            >
-              <StarIcon filled={false} />
-              <span>Set default</span>
-            </button>
-          )}
-          {isDefault && (
-            <span className={styles.activeBannerDefaultBadge}>
-              <StarIcon filled />
-              Default
-            </span>
-          )}
-        </div>
-      </div>
+    <div className={styles.selectedPill} onClick={() => onSelect(model)} role="button" tabIndex={0}>
+      <span
+        className={styles.selectedPillProvider}
+        style={{
+          '--chip-bg': provider.accentBg,
+          '--chip-text': provider.accentText,
+          '--chip-bg-dark': provider.accentBgDark,
+        }}
+      >
+        {provider.logoChar}
+      </span>
+      <span className={styles.selectedPillLabel}>{model.name}</span>
+      <span className={styles.selectedPillTag}>Default</span>
     </div>
   );
 }
 
-// ── Provider Filter Pills (single filter, no duplication) ──
+// ── Provider Filter Dropdown ──
 
-function ProviderFilters({ activeFilter, onFilterChange, providerCounts }) {
+function ProviderFilterDropdown({ activeFilter, onFilterChange, providerCounts }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const activeProvider = activeFilter !== 'all' ? PROVIDERS[activeFilter] : null;
+  const totalCount = MODELS.length;
+
   return (
-    <div className={styles.filterRow}>
+    <div className={styles.filterDropdown} ref={dropdownRef}>
       <button
-        className={`${styles.filterChip} ${activeFilter === 'all' ? styles.filterChipActive : ''}`}
-        onClick={() => onFilterChange('all')}
+        className={`${styles.filterTrigger} ${isOpen ? styles.filterTriggerOpen : ''} ${
+          activeFilter !== 'all' ? styles.filterTriggerActive : ''
+        }`}
+        onClick={() => setIsOpen(!isOpen)}
       >
-        All
-        <span className={styles.filterChipCount}>{MODELS.length}</span>
+        <span className={styles.filterTriggerIcon}>
+          <FilterIcon />
+        </span>
+        <span className={styles.filterTriggerLabel}>
+          {activeProvider ? activeProvider.shortName : 'All providers'}
+        </span>
+        <span
+          className={`${styles.filterTriggerChevron} ${
+            isOpen ? styles.filterTriggerChevronOpen : ''
+          }`}
+        >
+          <ChevronDownIcon />
+        </span>
       </button>
-      {PROVIDER_ORDER.map((pid) => {
-        const provider = PROVIDERS[pid];
-        const count = providerCounts[pid] || 0;
-        if (count === 0) return null;
-        return (
+
+      {isOpen && (
+        <div className={styles.filterMenu}>
           <button
-            key={pid}
-            className={`${styles.filterChip} ${
-              activeFilter === pid ? styles.filterChipActive : ''
+            className={`${styles.filterMenuItem} ${
+              activeFilter === 'all' ? styles.filterMenuItemActive : ''
             }`}
-            onClick={() => onFilterChange(pid)}
+            onClick={() => {
+              onFilterChange('all');
+              setIsOpen(false);
+            }}
           >
-            <span
-              className={styles.filterChipDot}
-              style={{ backgroundColor: provider.accentColor }}
-            />
-            {provider.shortName}
-            <span className={styles.filterChipCount}>{count}</span>
+            <span className={styles.filterMenuLabel}>All providers</span>
+            <span className={styles.filterMenuCount}>{totalCount}</span>
+            {activeFilter === 'all' && (
+              <span className={styles.filterMenuCheck}>
+                <CheckIcon />
+              </span>
+            )}
           </button>
-        );
-      })}
+          <div className={styles.filterMenuDivider} />
+          {PROVIDER_ORDER.map((pid) => {
+            const provider = PROVIDERS[pid];
+            const count = providerCounts[pid] || 0;
+            if (count === 0) return null;
+            return (
+              <button
+                key={pid}
+                className={`${styles.filterMenuItem} ${
+                  activeFilter === pid ? styles.filterMenuItemActive : ''
+                }`}
+                onClick={() => {
+                  onFilterChange(pid);
+                  setIsOpen(false);
+                }}
+              >
+                <span
+                  className={styles.filterMenuDot}
+                  style={{ backgroundColor: provider.accentColor }}
+                />
+                <span className={styles.filterMenuLabel}>{provider.name}</span>
+                <span className={styles.filterMenuCount}>{count}</span>
+                {activeFilter === pid && (
+                  <span className={styles.filterMenuCheck}>
+                    <CheckIcon />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Model Card ──
 
-function ModelCard({ model, isDefault, isChatModel, onSetDefault, isLocked, onSelect }) {
+function ModelCard({ model, isSelected, isLocked, onSelect }) {
   const provider = PROVIDERS[model.provider];
-
-  const handleStarClick = (e) => {
-    e.stopPropagation();
-    if (isLocked) return;
-    onSetDefault(isDefault ? null : model.id);
-  };
 
   return (
     <div
-      className={`${styles.card} ${isDefault ? styles.cardDefault : ''} ${
-        isChatModel ? styles.cardChatActive : ''
-      } ${isLocked ? styles.cardLocked : ''}`}
+      className={`${styles.card} ${isSelected ? styles.cardSelected : ''} ${
+        isLocked ? styles.cardLocked : ''
+      }`}
       onClick={() => !isLocked && onSelect(model)}
     >
-      <div className={styles.cardAccent} style={{ backgroundColor: provider.accentColor }} />
       <div className={styles.cardBody}>
         {/* Header: provider chip + badges */}
         <div className={styles.cardHeader}>
@@ -219,7 +226,7 @@ function ModelCard({ model, isDefault, isChatModel, onSetDefault, isLocked, onSe
             {provider.logoChar}
           </span>
           <div className={styles.cardBadges}>
-            {isChatModel && <span className={styles.cardActiveBadge}>Active</span>}
+            {isSelected && <span className={styles.cardSelectedBadge}>Selected</span>}
             {model.badge && (
               <span
                 className={styles.cardBadge}
@@ -259,7 +266,7 @@ function ModelCard({ model, isDefault, isChatModel, onSetDefault, isLocked, onSe
           {model.capabilities.tts && <span className={styles.capTag}>TTS</span>}
         </div>
 
-        {/* Footer: price + star */}
+        {/* Footer: price */}
         <div className={styles.cardFooter}>
           <span className={styles.cardPrice}>
             $
@@ -268,15 +275,10 @@ function ModelCard({ model, isDefault, isChatModel, onSetDefault, isLocked, onSe
               : model.pricing.inputPerM.toFixed(2)}
             <span className={styles.cardPriceUnit}>/M in</span>
           </span>
-          {!isLocked && (
-            <button
-              className={`${styles.cardStar} ${isDefault ? styles.cardStarActive : ''}`}
-              onClick={handleStarClick}
-              title={isDefault ? 'Remove as default' : 'Set as default model'}
-              aria-label={isDefault ? 'Remove as default' : 'Set as default model'}
-            >
-              <StarIcon filled={isDefault} />
-            </button>
+          {isSelected && (
+            <span className={styles.cardCheckmark}>
+              <CheckIcon />
+            </span>
           )}
         </div>
       </div>
@@ -309,16 +311,7 @@ function ProviderGroupHeader({ providerId, count }) {
 
 // ── Tier Section ──
 
-function TierSection({
-  tier,
-  models,
-  activeFilter,
-  defaultModelId,
-  chatModelId,
-  userTier,
-  onSetDefault,
-  onSelect,
-}) {
+function TierSection({ tier, models, activeFilter, selectedModelId, userTier, onSelect }) {
   const config = TIER_CONFIG[tier];
   const isLocked =
     (userTier === ACCESS_TIERS.free && tier !== ACCESS_TIERS.free) ||
@@ -336,7 +329,6 @@ function TierSection({
     return groups;
   }, [models]);
 
-  // If filtering by provider, don't show provider sub-headers
   const showProviderHeaders = activeFilter === 'all';
   const providerIds = Object.keys(groupedByProvider);
 
@@ -346,9 +338,7 @@ function TierSection({
     <div className={`${styles.tierSection} ${isLocked ? styles.tierSectionLocked : ''}`}>
       <div className={styles.tierHeader}>
         <div className={styles.tierHeaderLeft}>
-          <span className={styles.tierBadge} style={{ '--tier-accent': config.accentColor }}>
-            {config.label}
-          </span>
+          <span className={`${styles.tierBadge} ${styles[`tier_${tier}`]}`}>{config.label}</span>
           <span className={styles.tierSublabel}>{config.sublabel}</span>
         </div>
         <span className={styles.tierCount}>{models.length} models</span>
@@ -363,9 +353,7 @@ function TierSection({
                 <ModelCard
                   key={model.id}
                   model={model}
-                  isDefault={defaultModelId === model.id}
-                  isChatModel={chatModelId === model.id}
-                  onSetDefault={onSetDefault}
+                  isSelected={selectedModelId === model.id}
                   isLocked={isLocked}
                   onSelect={onSelect}
                 />
@@ -379,9 +367,7 @@ function TierSection({
             <ModelCard
               key={model.id}
               model={model}
-              isDefault={defaultModelId === model.id}
-              isChatModel={chatModelId === model.id}
-              onSetDefault={onSetDefault}
+              isSelected={selectedModelId === model.id}
               isLocked={isLocked}
               onSelect={onSelect}
             />
@@ -394,14 +380,7 @@ function TierSection({
 
 // ── Model Detail Panel ──
 
-function ModelDetailPanel({
-  model,
-  isDefault,
-  isChatModel,
-  onSetDefault,
-  onSetChatModel,
-  onClose,
-}) {
+function ModelDetailPanel({ model, isSelected, onSetModel, onClose }) {
   const provider = PROVIDERS[model.provider];
   const panelRef = useRef(null);
 
@@ -454,8 +433,7 @@ function ModelDetailPanel({
               {model.badge}
             </span>
           )}
-          {isDefault && <span className={styles.detailDefaultBadge}>Default Model</span>}
-          {isChatModel && <span className={styles.detailChatBadge}>Active in Chat</span>}
+          {isSelected && <span className={styles.detailSelectedBadge}>Selected Model</span>}
         </div>
 
         {/* Description */}
@@ -522,30 +500,17 @@ function ModelDetailPanel({
           </div>
         </div>
 
-        {/* Actions */}
-        <div className={styles.detailActions}>
-          <button
-            className={`${styles.detailActionBtn} ${
-              isChatModel ? styles.detailActionBtnActive : ''
-            }`}
-            onClick={() => {
-              onSetChatModel(isChatModel ? null : model.id);
-              onClose();
-            }}
-          >
-            <CheckIcon />
-            {isChatModel ? 'Active in chat' : 'Use in chat'}
-          </button>
-          <button
-            className={`${styles.detailDefaultBtn} ${
-              isDefault ? styles.detailDefaultBtnActive : ''
-            }`}
-            onClick={() => onSetDefault(isDefault ? null : model.id)}
-          >
-            <StarIcon filled={isDefault} />
-            {isDefault ? 'Remove default' : 'Set as default'}
-          </button>
-        </div>
+        {/* Single action: select this model */}
+        <button
+          className={`${styles.detailSelectBtn} ${isSelected ? styles.detailSelectBtnActive : ''}`}
+          onClick={() => {
+            onSetModel(isSelected ? null : model.id);
+            onClose();
+          }}
+        >
+          <CheckIcon />
+          {isSelected ? 'Selected — click to switch to Auto' : 'Use this model'}
+        </button>
       </div>
     </div>,
     document.body
@@ -556,30 +521,23 @@ function ModelDetailPanel({
 
 export default function ModelsView() {
   const dispatch = useDispatch();
-  const chatModelId = useSelector(selectSelectedModelId);
+  const selectedModelId = useSelector(selectSelectedModelId);
 
   const [activeFilter, setActiveFilter] = useState('all');
-  const [defaultModelId, setDefaultModelId] = useState(getDefaultModel);
-  const [selectedModel, setSelectedModel] = useState(null);
+  const [detailModel, setDetailModel] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef(null);
   const userTier = getUserTier();
 
-  // Sync: when default model changes, also update Redux if no explicit chat model is set
-  const handleSetDefault = useCallback((modelId) => {
-    setDefaultModelId(modelId);
-    saveDefaultModel(modelId);
-  }, []);
-
-  // Set the chat model (Redux-synced)
-  const handleSetChatModel = useCallback(
+  // Single unified action: set the model (Redux + localStorage)
+  const handleSetModel = useCallback(
     (modelId) => {
       dispatch(setReduxSelectedModel(modelId));
     },
     [dispatch]
   );
 
-  // Provider counts (for filter chips)
+  // Provider counts
   const providerCounts = useMemo(() => {
     const counts = {};
     for (const pid of PROVIDER_ORDER) {
@@ -592,12 +550,10 @@ export default function ModelsView() {
   const filteredModels = useMemo(() => {
     let models = MODELS;
 
-    // Provider filter
     if (activeFilter !== 'all') {
       models = models.filter((m) => m.provider === activeFilter);
     }
 
-    // Search filter
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       models = models.filter(
@@ -622,12 +578,6 @@ export default function ModelsView() {
     return grouped;
   }, [filteredModels]);
 
-  // Active chat model object
-  const chatModel = useMemo(() => {
-    if (!chatModelId) return null;
-    return MODELS.find((m) => m.id === chatModelId) || null;
-  }, [chatModelId]);
-
   // Keyboard shortcut for search
   useEffect(() => {
     const handleKey = (e) => {
@@ -650,51 +600,47 @@ export default function ModelsView() {
             <span className={styles.pageCount}>{MODELS.length}</span>
           </div>
 
-          {/* Search */}
-          <div className={styles.searchWrapper}>
-            <span className={styles.searchIcon}>
-              <SearchIcon />
-            </span>
-            <input
-              ref={searchRef}
-              type="text"
-              className={styles.searchInput}
-              placeholder="Search models..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Search models"
+          <div className={styles.headerActions}>
+            {/* Search */}
+            <div className={styles.searchWrapper}>
+              <span className={styles.searchIcon}>
+                <SearchIcon />
+              </span>
+              <input
+                ref={searchRef}
+                type="text"
+                className={styles.searchInput}
+                placeholder="Search models..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search models"
+              />
+              {searchQuery && (
+                <button
+                  className={styles.searchClear}
+                  onClick={() => setSearchQuery('')}
+                  aria-label="Clear search"
+                >
+                  <CloseIcon />
+                </button>
+              )}
+              <kbd className={styles.searchKbd}>⌘K</kbd>
+            </div>
+
+            {/* Filter dropdown */}
+            <ProviderFilterDropdown
+              activeFilter={activeFilter}
+              onFilterChange={setActiveFilter}
+              providerCounts={providerCounts}
             />
-            {searchQuery && (
-              <button
-                className={styles.searchClear}
-                onClick={() => setSearchQuery('')}
-                aria-label="Clear search"
-              >
-                <CloseIcon />
-              </button>
-            )}
-            <kbd className={styles.searchKbd}>⌘K</kbd>
           </div>
         </div>
 
-        <ProviderFilters
-          activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
-          providerCounts={providerCounts}
-        />
-      </div>
-
-      {/* Active chat model banner */}
-      {chatModel && !searchQuery && activeFilter === 'all' && (
-        <div className={styles.bannerSection}>
-          <ActiveModelBanner
-            model={chatModel}
-            defaultModelId={defaultModelId}
-            onSetDefault={handleSetDefault}
-            onSelect={setSelectedModel}
-          />
+        {/* Selected model pill */}
+        <div className={styles.pillRow}>
+          <SelectedModelPill modelId={selectedModelId} onSelect={setDetailModel} />
         </div>
-      )}
+      </div>
 
       {/* Tier sections */}
       <div className={styles.tiersContainer}>
@@ -721,25 +667,21 @@ export default function ModelsView() {
               tier={tier}
               models={modelsByTier[tier]}
               activeFilter={activeFilter}
-              defaultModelId={defaultModelId}
-              chatModelId={chatModelId}
+              selectedModelId={selectedModelId}
               userTier={userTier}
-              onSetDefault={handleSetDefault}
-              onSelect={setSelectedModel}
+              onSelect={setDetailModel}
             />
           ))
         )}
       </div>
 
       {/* Detail panel */}
-      {selectedModel && (
+      {detailModel && (
         <ModelDetailPanel
-          model={selectedModel}
-          isDefault={defaultModelId === selectedModel.id}
-          isChatModel={chatModelId === selectedModel.id}
-          onSetDefault={handleSetDefault}
-          onSetChatModel={handleSetChatModel}
-          onClose={() => setSelectedModel(null)}
+          model={detailModel}
+          isSelected={selectedModelId === detailModel.id}
+          onSetModel={handleSetModel}
+          onClose={() => setDetailModel(null)}
         />
       )}
     </div>

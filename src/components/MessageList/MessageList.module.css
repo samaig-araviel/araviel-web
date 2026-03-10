@@ -5653,14 +5653,87 @@
 
 /* ===== Stream Timeout Notice ===== */
 .streamTimeoutNotice {
-  padding: 6px 12px;
-  margin-top: 8px;
-  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
   background-color: var(--bg-secondary);
-  font-size: 12px;
-  color: var(--text-muted);
-  font-style: italic;
+  border: 1px solid var(--border-color);
   animation: messageFadeIn 0.3s ease;
+}
+
+.streamTimeoutContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.streamTimeoutIcon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.streamTimeoutText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.streamTimeoutActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.streamTimeoutContinueBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.streamTimeoutContinueBtn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+.streamTimeoutContinueBtn svg {
+  color: var(--text-muted);
+}
+
+.streamTimeoutRetryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.streamTimeoutRetryBtn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.streamTimeoutRetryBtn svg {
+  color: var(--text-muted);
 }
 
 /* ===== Markdown Table ===== */
