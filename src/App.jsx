@@ -6,7 +6,6 @@ import { SpeedInsights } from '@vercel/speed-insights/react';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import ModelsView from './components/ModelsView';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
 import ImageGalleryView from './components/ImageGalleryView';
 import ConversationsView from './components/ConversationsView';
 import './App.css';
@@ -40,8 +39,6 @@ export default function App() {
         <ConversationsView />
       ) : activeItem === 'models' ? (
         <ModelsView />
-      ) : activeItem === 'analytics' ? (
-        <AnalyticsDashboard />
       ) : activeItem === 'gallery' ? (
         <ImageGalleryView />
       ) : (
