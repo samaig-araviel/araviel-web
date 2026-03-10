@@ -33,6 +33,7 @@ import {
   PlusIcon,
   PhotoIcon,
 } from '../Icons';
+import ModelSelector from '../ModelSelector/ModelSelector';
 import styles from './ImageGalleryView.module.css';
 
 const QUICK_PROMPTS = [
@@ -253,6 +254,7 @@ export default function ImageGalleryView() {
                   >
                     <PlusIcon />
                   </button>
+                  <ModelSelector />
                   {showAttachMenu && (
                     <div className={styles.promptAttachMenu}>
                       <button
