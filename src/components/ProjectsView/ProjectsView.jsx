@@ -218,11 +218,8 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
     const load = async () => {
       setConvsLoading(true);
       try {
-        const data = await fetchConversations(100, 0);
-        const allConvs = data.conversations || [];
-        // Filter to only conversations belonging to this project
-        const projectConvs = allConvs.filter((c) => c.project_id === project.id);
-        if (!cancelled) setConversations(projectConvs);
+        const data = await fetchConversations(100, 0, { projectId: project.id });
+        if (!cancelled) setConversations(data.conversations || []);
       } catch {
         // silently fail
       } finally {

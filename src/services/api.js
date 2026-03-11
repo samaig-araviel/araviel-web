@@ -9,10 +9,14 @@ const API_BASE =
  * Fetch conversation list.
  * @param {number} limit
  * @param {number} offset
+ * @param {object} [params]
+ * @param {string} [params.projectId] - Filter by project ID
  * @returns {Promise<{ conversations: Array, total: number }>}
  */
-export async function fetchConversations(limit = 20, offset = 0) {
-  const res = await fetch(`${API_BASE}/api/conversations?limit=${limit}&offset=${offset}`);
+export async function fetchConversations(limit = 20, offset = 0, params = {}) {
+  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (params.projectId) query.set('projectId', params.projectId);
+  const res = await fetch(`${API_BASE}/api/conversations?${query}`);
   if (!res.ok) throw new Error(`Failed to fetch conversations: ${res.status}`);
   return res.json();
 }
