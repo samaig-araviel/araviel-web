@@ -25,6 +25,8 @@ import {
   deleteProject as deleteProjectApi,
   fetchConversations,
   fetchConversationMessages,
+  updateConversation,
+  deleteConversation,
 } from '../../services/api';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import {
@@ -41,6 +43,7 @@ import {
   ChevronDownIcon,
   ChatIcon,
   FileTextIcon,
+  FilePlusIcon,
   CheckIcon,
   SendIcon,
 } from '../Icons';
@@ -218,8 +221,14 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
   const [convsLoading, setConvsLoading] = useState(true);
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [convMenuOpen, setConvMenuOpen] = useState(null);
+  const [showPlusMenu, setShowPlusMenu] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState([]);
   const textareaRef = useRef(null);
   const moreRef = useRef(null);
+  const convMenuRef = useRef(null);
+  const plusMenuRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Load conversations for this project
   useEffect(() => {
@@ -249,11 +258,17 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
     el.style.height = Math.min(el.scrollHeight, 160) + 'px';
   }, [chatInput]);
 
-  // Close more menu on outside click
+  // Close menus on outside click
   useEffect(() => {
     const handleClick = (e) => {
       if (moreRef.current && !moreRef.current.contains(e.target)) {
         setShowMore(false);
+      }
+      if (convMenuRef.current && !convMenuRef.current.contains(e.target)) {
+        setConvMenuOpen(null);
+      }
+      if (plusMenuRef.current && !plusMenuRef.current.contains(e.target)) {
+        setShowPlusMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -366,17 +381,17 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
               <div className={styles.wsHeaderActions} ref={moreRef}>
                 <button
                   className={styles.wsHeaderActionBtn}
-                  onClick={() => setShowMore(!showMore)}
-                  title="More options"
-                >
-                  <MoreVerticalIcon />
-                </button>
-                <button
-                  className={styles.wsHeaderActionBtn}
                   onClick={() => onToggleStar(project)}
                   title={project.is_starred ? 'Unstar' : 'Star'}
                 >
                   <StarIcon filled={project.is_starred} />
+                </button>
+                <button
+                  className={styles.wsHeaderActionBtn}
+                  onClick={() => setShowMore(!showMore)}
+                  title="More options"
+                >
+                  <MoreVerticalIcon />
                 </button>
 
                 {showMore && (
@@ -425,6 +440,24 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
           {/* Chat input */}
           <form className={styles.wsChatBox} onSubmit={handleSendMessage}>
             <div className={styles.wsChatInputWrap}>
+              {attachedFiles.length > 0 && (
+                <div className={styles.wsAttachedFiles}>
+                  {attachedFiles.map((file, i) => (
+                    <div key={i} className={styles.wsAttachedFile}>
+                      <FileTextIcon />
+                      <span>{file.name}</span>
+                      <button
+                        type="button"
+                        className={styles.wsAttachedFileRemove}
+                        onClick={() => setAttachedFiles((prev) => prev.filter((_, j) => j !== i))}
+                        aria-label="Remove file"
+                      >
+                        <CloseIcon />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
               <textarea
                 ref={textareaRef}
                 className={styles.wsChatInput}
@@ -436,6 +469,44 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
               />
               <div className={styles.wsChatActions}>
                 <div className={styles.wsChatLeft}>
+                  <div className={styles.wsPlusWrap} ref={plusMenuRef}>
+                    <button
+                      type="button"
+                      className={`${styles.wsPlusBtn} ${
+                        showPlusMenu ? styles.wsPlusBtnActive : ''
+                      }`}
+                      onClick={() => setShowPlusMenu(!showPlusMenu)}
+                      aria-label="Add content"
+                    >
+                      <PlusIcon />
+                    </button>
+                    {showPlusMenu && (
+                      <div className={styles.wsPlusDropdown}>
+                        <button
+                          type="button"
+                          className={styles.wsPlusDropdownItem}
+                          onClick={() => {
+                            fileInputRef.current?.click();
+                            setShowPlusMenu(false);
+                          }}
+                        >
+                          <FilePlusIcon />
+                          <span>Upload files or images</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length) setAttachedFiles((prev) => [...prev, ...files]);
+                      e.target.value = '';
+                    }}
+                  />
                   <ModelSelector />
                 </div>
                 <button
@@ -469,21 +540,81 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
             ) : conversations.length > 0 ? (
               <div className={styles.wsConvList}>
                 {conversations.map((conv) => (
-                  <button
+                  <div
                     key={conv.id}
                     className={styles.wsConvItem}
                     onClick={() => handleConvClick(conv)}
                   >
-                    <div className={styles.wsConvItemIcon}>
-                      <ChatIcon />
-                    </div>
                     <div className={styles.wsConvItemBody}>
                       <span className={styles.wsConvItemTitle}>{conv.title || 'Untitled'}</span>
                       <span className={styles.wsConvItemTime}>
                         Last message {formatRelativeTime(conv.updated_at || conv.created_at)}
                       </span>
                     </div>
-                  </button>
+                    <div
+                      className={styles.wsConvItemActions}
+                      ref={convMenuOpen === conv.id ? convMenuRef : null}
+                    >
+                      <button
+                        className={`${styles.wsConvItemMenuBtn} ${
+                          convMenuOpen === conv.id ? styles.wsConvItemMenuBtnActive : ''
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConvMenuOpen(convMenuOpen === conv.id ? null : conv.id);
+                        }}
+                        aria-label="Conversation options"
+                      >
+                        <MoreVerticalIcon />
+                      </button>
+                      {convMenuOpen === conv.id && (
+                        <div className={styles.wsConvItemDropdown}>
+                          <button
+                            className={styles.cardDropdownItem}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleConvClick(conv);
+                              setConvMenuOpen(null);
+                            }}
+                          >
+                            <ChatIcon />
+                            <span>Open chat</span>
+                          </button>
+                          <div className={styles.cardDropdownDivider} />
+                          <button
+                            className={`${styles.cardDropdownItem} ${styles.cardDropdownItemDanger}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConvMenuOpen(null);
+                              updateConversation(conv.id, { project_id: null }).then(() => {
+                                setConversations((prev) => prev.filter((c) => c.id !== conv.id));
+                              });
+                            }}
+                          >
+                            <CloseIcon />
+                            <span>Remove from project</span>
+                          </button>
+                          <button
+                            className={`${styles.cardDropdownItem} ${styles.cardDropdownItemDanger}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConvMenuOpen(null);
+                              if (
+                                window.confirm('Delete this conversation? This cannot be undone.')
+                              ) {
+                                deleteConversation(conv.id).then(() => {
+                                  setConversations((prev) => prev.filter((c) => c.id !== conv.id));
+                                });
+                              }
+                            }}
+                          >
+                            <TrashIcon />
+                            <span>Delete</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -618,6 +749,18 @@ export default function ProjectsView() {
   useEffect(() => {
     loadProjects();
   }, [loadProjects]);
+
+  // Handle navigation from MainContent project header
+  useEffect(() => {
+    if (window.__aravielNavigateToProject) {
+      const targetId = window.__aravielNavigateToProject;
+      delete window.__aravielNavigateToProject;
+      const proj = projects.find((p) => p.id === targetId);
+      if (proj) {
+        setSelectedProject(proj);
+      }
+    }
+  }, [projects]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -787,28 +930,42 @@ export default function ProjectsView() {
               <div className={styles.deleteOptions}>
                 <button
                   type="button"
-                  className={`${styles.deleteOption} ${deleteOption === 'project-only' ? styles.deleteOptionSelected : ''}`}
+                  className={`${styles.deleteOption} ${
+                    deleteOption === 'project-only' ? styles.deleteOptionSelected : ''
+                  }`}
                   onClick={() => setDeleteOption('project-only')}
                 >
                   <div className={styles.deleteOptionRadio}>
-                    {deleteOption === 'project-only' && <div className={styles.deleteOptionRadioDot} />}
+                    {deleteOption === 'project-only' && (
+                      <div className={styles.deleteOptionRadioDot} />
+                    )}
                   </div>
                   <div className={styles.deleteOptionContent}>
                     <span className={styles.deleteOptionLabel}>Delete project only</span>
-                    <span className={styles.deleteOptionHint}>Your conversations will be kept and unlinked from this project</span>
+                    <span className={styles.deleteOptionHint}>
+                      Your conversations will be kept and unlinked from this project
+                    </span>
                   </div>
                 </button>
                 <button
                   type="button"
-                  className={`${styles.deleteOption} ${deleteOption === 'everything' ? styles.deleteOptionSelected : ''} ${deleteOption === 'everything' ? styles.deleteOptionDanger : ''}`}
+                  className={`${styles.deleteOption} ${
+                    deleteOption === 'everything' ? styles.deleteOptionSelected : ''
+                  } ${deleteOption === 'everything' ? styles.deleteOptionDanger : ''}`}
                   onClick={() => setDeleteOption('everything')}
                 >
                   <div className={styles.deleteOptionRadio}>
-                    {deleteOption === 'everything' && <div className={styles.deleteOptionRadioDot} />}
+                    {deleteOption === 'everything' && (
+                      <div className={styles.deleteOptionRadioDot} />
+                    )}
                   </div>
                   <div className={styles.deleteOptionContent}>
-                    <span className={styles.deleteOptionLabel}>Delete project and all conversations</span>
-                    <span className={styles.deleteOptionHint}>Permanently removes the project and every conversation in it</span>
+                    <span className={styles.deleteOptionLabel}>
+                      Delete project and all conversations
+                    </span>
+                    <span className={styles.deleteOptionHint}>
+                      Permanently removes the project and every conversation in it
+                    </span>
                   </div>
                 </button>
               </div>
@@ -1097,28 +1254,40 @@ export default function ProjectsView() {
             <div className={styles.deleteOptions}>
               <button
                 type="button"
-                className={`${styles.deleteOption} ${deleteOption === 'project-only' ? styles.deleteOptionSelected : ''}`}
+                className={`${styles.deleteOption} ${
+                  deleteOption === 'project-only' ? styles.deleteOptionSelected : ''
+                }`}
                 onClick={() => setDeleteOption('project-only')}
               >
                 <div className={styles.deleteOptionRadio}>
-                  {deleteOption === 'project-only' && <div className={styles.deleteOptionRadioDot} />}
+                  {deleteOption === 'project-only' && (
+                    <div className={styles.deleteOptionRadioDot} />
+                  )}
                 </div>
                 <div className={styles.deleteOptionContent}>
                   <span className={styles.deleteOptionLabel}>Delete project only</span>
-                  <span className={styles.deleteOptionHint}>Your conversations will be kept and unlinked from this project</span>
+                  <span className={styles.deleteOptionHint}>
+                    Your conversations will be kept and unlinked from this project
+                  </span>
                 </div>
               </button>
               <button
                 type="button"
-                className={`${styles.deleteOption} ${deleteOption === 'everything' ? styles.deleteOptionSelected : ''} ${deleteOption === 'everything' ? styles.deleteOptionDanger : ''}`}
+                className={`${styles.deleteOption} ${
+                  deleteOption === 'everything' ? styles.deleteOptionSelected : ''
+                } ${deleteOption === 'everything' ? styles.deleteOptionDanger : ''}`}
                 onClick={() => setDeleteOption('everything')}
               >
                 <div className={styles.deleteOptionRadio}>
                   {deleteOption === 'everything' && <div className={styles.deleteOptionRadioDot} />}
                 </div>
                 <div className={styles.deleteOptionContent}>
-                  <span className={styles.deleteOptionLabel}>Delete project and all conversations</span>
-                  <span className={styles.deleteOptionHint}>Permanently removes the project and every conversation in it</span>
+                  <span className={styles.deleteOptionLabel}>
+                    Delete project and all conversations
+                  </span>
+                  <span className={styles.deleteOptionHint}>
+                    Permanently removes the project and every conversation in it
+                  </span>
                 </div>
               </button>
             </div>

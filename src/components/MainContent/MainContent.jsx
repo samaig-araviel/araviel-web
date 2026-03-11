@@ -86,6 +86,7 @@ import {
   FlagIcon,
   TrashIcon,
   ProjectsIcon,
+  ChevronDownIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -96,6 +97,7 @@ import {
   updateConversation,
 } from '../../services/api';
 import { selectProjects } from '../../store/slices/projectsSlice';
+import { setActiveItem, selectActiveItem } from '../../store/slices/sidebarSlice';
 import { getUserTier, PROVIDERS, isImageGenerationModel } from '../../data/models';
 import {
   canGenerateImage,
@@ -673,7 +675,11 @@ export default function MainContent() {
   const [showLimitToast, setShowLimitToast] = useState(false);
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
   const [conversationProject, setConversationProject] = useState(null); // { id, name } of linked project
+  const [conversationTitle, setConversationTitle] = useState('');
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [showProjectPicker, setShowProjectPicker] = useState(false);
   const [showRemoveFromProject, setShowRemoveFromProject] = useState(false);
+  const projectDropdownRef = useRef(null);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const chatMenuRef = useRef(null);
@@ -692,6 +698,7 @@ export default function MainContent() {
       try {
         const conv = await fetchConversation(currentChatId);
         if (cancelled) return;
+        setConversationTitle(conv.title || 'Untitled');
         if (conv.projectId) {
           const proj = projects.find((p) => p.id === conv.projectId);
           setConversationProject({ id: conv.projectId, name: proj?.name || 'Project' });
@@ -717,6 +724,39 @@ export default function MainContent() {
       // Silently fail
     }
   };
+
+  const handleChangeProject = async (projectId) => {
+    if (!currentChatId) return;
+    try {
+      await updateConversation(currentChatId, { project_id: projectId });
+      const proj = projects.find((p) => p.id === projectId);
+      setConversationProject({ id: projectId, name: proj?.name || 'Project' });
+      setShowProjectPicker(false);
+      setShowProjectDropdown(false);
+    } catch {
+      // Silently fail
+    }
+  };
+
+  const handleNavigateToProject = () => {
+    if (!conversationProject) return;
+    // Store the project ID so ProjectsView can pick it up
+    window.__aravielNavigateToProject = conversationProject.id;
+    dispatch(setActiveItem('projects'));
+  };
+
+  // Close project dropdown on outside click
+  useEffect(() => {
+    if (!showProjectDropdown) return;
+    const handleClick = (e) => {
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target)) {
+        setShowProjectDropdown(false);
+        setShowProjectPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showProjectDropdown]);
 
   // Streaming / timeline state
   const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
@@ -1593,29 +1633,89 @@ export default function MainContent() {
         isSubConvPanelOpen ? styles.subConvPanelOpen : ''
       } ${isCodePanelOpen ? styles.codePanelOpen : ''}`}
     >
-      {/* Top nav bar with project link + share + new chat + menu buttons */}
+      {/* Top nav bar */}
       <div className={styles.topNav}>
-        {/* Project breadcrumb — left side */}
+        {/* Project context header — left side */}
         {conversationProject && (
-          <div className={styles.projectBreadcrumb}>
+          <div className={styles.projectHeader} ref={projectDropdownRef}>
             <button
-              className={styles.projectBreadcrumbLink}
-              onClick={() => {
-                // Navigate to the project in ProjectsView
-                // For now, just show it
-              }}
-              title={`Part of "${conversationProject.name}"`}
+              className={styles.projectHeaderProject}
+              onClick={handleNavigateToProject}
+              title={`Go to ${conversationProject.name}`}
             >
               <ProjectsIcon />
               <span>{conversationProject.name}</span>
             </button>
+            <span className={styles.projectHeaderSep}>/</span>
+            <span className={styles.projectHeaderTitle}>{conversationTitle || 'Untitled'}</span>
             <button
-              className={styles.projectBreadcrumbRemove}
-              onClick={() => setShowRemoveFromProject(true)}
-              title="Remove from project"
+              className={`${styles.projectHeaderChevron} ${
+                showProjectDropdown ? styles.projectHeaderChevronOpen : ''
+              }`}
+              onClick={() => {
+                setShowProjectDropdown(!showProjectDropdown);
+                setShowProjectPicker(false);
+              }}
+              aria-label="Project options"
             >
-              <CloseIcon />
+              <ChevronDownIcon />
             </button>
+
+            {/* Project dropdown menu */}
+            {showProjectDropdown && !showProjectPicker && (
+              <div className={styles.projectDropdown}>
+                <button
+                  className={styles.projectDropdownItem}
+                  onClick={() => setShowProjectPicker(true)}
+                >
+                  <ProjectsIcon />
+                  <span>Change project</span>
+                </button>
+                <button
+                  className={`${styles.projectDropdownItem} ${styles.projectDropdownItemDanger}`}
+                  onClick={() => {
+                    setShowProjectDropdown(false);
+                    setShowRemoveFromProject(true);
+                  }}
+                >
+                  <CloseIcon />
+                  <span>Remove from project</span>
+                </button>
+              </div>
+            )}
+
+            {/* Project picker sub-menu */}
+            {showProjectDropdown && showProjectPicker && (
+              <div className={styles.projectDropdown}>
+                <div className={styles.projectPickerHeader}>
+                  <button
+                    className={styles.projectPickerBack}
+                    onClick={() => setShowProjectPicker(false)}
+                  >
+                    <ChevronLeftIcon />
+                  </button>
+                  <span>Move to project</span>
+                </div>
+                <div className={styles.projectPickerList}>
+                  {projects
+                    .filter((p) => !p.is_archived && p.id !== conversationProject.id)
+                    .map((project) => (
+                      <button
+                        key={project.id}
+                        className={styles.projectPickerItem}
+                        onClick={() => handleChangeProject(project.id)}
+                      >
+                        <ProjectsIcon />
+                        <span>{project.name}</span>
+                      </button>
+                    ))}
+                  {projects.filter((p) => !p.is_archived && p.id !== conversationProject.id)
+                    .length === 0 && (
+                    <p className={styles.projectPickerEmpty}>No other projects available</p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
         <div className={styles.topNavInner}>
