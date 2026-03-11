@@ -290,3 +290,59 @@ export async function bulkDeleteImportedConversations(ids) {
   if (!res.ok) throw new Error(`Failed to bulk delete imported conversations: ${res.status}`);
   return res.json();
 }
+
+// ─── Projects ───────────────────────────────────────────────────────────────
+
+/**
+ * Fetch all projects.
+ * @returns {Promise<{ projects: Array }>}
+ */
+export async function fetchProjects() {
+  const res = await fetch(`${API_BASE}/api/projects`);
+  if (!res.ok) throw new Error(`Failed to fetch projects: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Create a new project.
+ * @param {object} project - { name, description?, instructions? }
+ * @returns {Promise<object>}
+ */
+export async function createProject(project) {
+  const res = await fetch(`${API_BASE}/api/projects`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(project),
+  });
+  if (!res.ok) throw new Error(`Failed to create project: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Update a project.
+ * @param {string} projectId
+ * @param {object} updates - { name?, description?, instructions?, is_archived?, is_starred? }
+ * @returns {Promise<object>}
+ */
+export async function updateProject(projectId, updates) {
+  const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`Failed to update project: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Delete a project.
+ * @param {string} projectId
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function deleteProject(projectId) {
+  const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Failed to delete project: ${res.status}`);
+  return res.json();
+}

@@ -8,6 +8,7 @@ import MainContent from './components/MainContent';
 import ModelsView from './components/ModelsView';
 import ImageGalleryView from './components/ImageGalleryView';
 import ConversationsView from './components/ConversationsView';
+import ProjectsView from './components/ProjectsView';
 import './App.css';
 
 export default function App() {
@@ -37,6 +38,8 @@ export default function App() {
       <Sidebar />
       {activeItem === 'conversations' ? (
         <ConversationsView />
+      ) : activeItem === 'projects' ? (
+        <ProjectsView />
       ) : activeItem === 'models' ? (
         <ModelsView />
       ) : activeItem === 'gallery' ? (

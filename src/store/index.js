@@ -3,6 +3,7 @@ import themeReducer from './slices/themeSlice';
 import sidebarReducer from './slices/sidebarSlice';
 import chatReducer from './slices/chatSlice';
 import analyticsReducer from './slices/analyticsSlice';
+import projectsReducer from './slices/projectsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
     sidebar: sidebarReducer,
     chat: chatReducer,
     analytics: analyticsReducer,
+    projects: projectsReducer,
   },
 });
