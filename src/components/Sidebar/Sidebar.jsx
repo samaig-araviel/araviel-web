@@ -36,6 +36,7 @@ import {
   ModelsIcon,
   ImageGalleryIcon,
   ConversationsIcon,
+  ProjectsIcon,
   MoreVerticalIcon,
   ShareIcon,
   EditIcon,
@@ -274,6 +275,13 @@ export default function Sidebar() {
     }
   };
 
+  const handleProjectsClick = () => {
+    dispatch(setActiveItem(activeItem === 'projects' ? 'home' : 'projects'));
+    if (isMobile) {
+      dispatch(setCollapsed(true));
+    }
+  };
+
   const handleModelsClick = () => {
     dispatch(setActiveItem(activeItem === 'models' ? 'home' : 'models'));
     if (isMobile) {
@@ -499,6 +507,15 @@ export default function Sidebar() {
           >
             <ConversationsIcon />
             {showFullContent && <span>Conversations</span>}
+          </button>
+          <button
+            className={`${styles.navItem} ${activeItem === 'projects' ? styles.active : ''}`}
+            onClick={handleProjectsClick}
+            title="Projects"
+            aria-label="Projects"
+          >
+            <ProjectsIcon />
+            {showFullContent && <span>Projects</span>}
           </button>
           <button
             className={`${styles.navItem} ${activeItem === 'gallery' ? styles.active : ''}`}
