@@ -907,10 +907,19 @@
   cursor: not-allowed;
 }
 
-/* ─── Project Detail View ─────────────────────────────────────────────────── */
-.detailView {
+/* ─── Project Workspace View ──────────────────────────────────────────────── */
+.workspacePage {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
   display: flex;
   flex-direction: column;
+}
+
+.workspaceTopBar {
+  padding: 16px 32px 0;
+  flex-shrink: 0;
 }
 
 .detailBack {
@@ -926,8 +935,6 @@
   border: none;
   cursor: pointer;
   transition: all 0.15s ease;
-  margin-bottom: 24px;
-  align-self: flex-start;
 }
 
 .detailBack:hover {
@@ -940,233 +947,507 @@
   height: 14px;
 }
 
-.detailHeader {
+/* Two-column layout */
+.workspaceLayout {
+  display: flex;
+  flex: 1;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 32px 80px;
+  gap: 32px;
+}
+
+.workspaceMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.workspaceSide {
+  width: 280px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Workspace Header ── */
+.wsHeader {
+  margin-bottom: 28px;
+}
+
+.wsHeaderTop {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
-.detailTitleRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.detailIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
+.wsHeaderIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--bg-hover) 0%, var(--bg-secondary) 100%);
   border: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
-.detailIcon svg {
+.wsHeaderIcon svg {
   width: 20px;
   height: 20px;
 }
 
-.detailName {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.03em;
-}
-
-.detailActions {
+.wsHeaderActions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  position: relative;
 }
 
-.detailActionBtn {
-  width: 34px;
-  height: 34px;
+.wsHeaderActionBtn {
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
-  color: var(--text-muted);
-  background: transparent;
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.detailActionBtn:hover {
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border-color: var(--text-muted);
-}
-
-.detailActionBtn svg {
-  width: 15px;
-  height: 15px;
-}
-
-.detailActionBtnDanger:hover {
-  background-color: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.25);
-}
-
-.detailMeta {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-bottom: 28px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.detailMetaDot {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background-color: var(--text-muted);
-  opacity: 0.4;
-}
-
-/* Detail sections */
-.detailSection {
-  margin-bottom: 28px;
-}
-
-.detailSectionHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.detailSectionTitle {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.detailSectionEdit {
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: 8px;
   color: var(--text-muted);
   background: transparent;
   border: none;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
   transition: all 0.15s ease;
 }
 
-.detailSectionEdit:hover {
+.wsHeaderActionBtn:hover {
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
-  background-color: var(--bg-secondary);
 }
 
-.detailDesc {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.65;
-  padding: 14px 16px;
-  border-radius: 12px;
+.wsHeaderActionBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.wsMoreDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 200;
+  min-width: 180px;
+  padding: 4px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.04);
+  animation: dropdownIn 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.detailDescEmpty {
+.wsTitle {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+  margin-bottom: 6px;
+}
+
+.wsDescription {
+  font-size: 14px;
   color: var(--text-muted);
-  font-style: italic;
+  line-height: 1.6;
+  max-width: 560px;
 }
 
-.detailInstructions {
-  font-size: 14px;
-  color: var(--text-secondary);
-  line-height: 1.65;
-  padding: 16px 18px;
-  border-radius: 12px;
+/* ── Chat Input Box ── */
+.wsChatBox {
+  margin-bottom: 32px;
+}
+
+.wsChatInputWrap {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  white-space: pre-wrap;
+  border-radius: 16px;
+  padding: 14px 16px 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.wsChatInputWrap:focus-within {
+  border-color: var(--text-muted);
+  box-shadow: 0 0 0 3px rgba(128, 128, 128, 0.06);
+}
+
+.wsChatInput {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 15px;
   font-family: inherit;
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  min-height: 24px;
+  max-height: 160px;
+  overflow-y: auto;
 }
 
-.detailInstructionsEmpty {
+.wsChatInput::placeholder {
   color: var(--text-muted);
-  font-style: italic;
 }
 
-.detailDivider {
-  height: 1px;
-  background-color: var(--border-color);
-  margin-bottom: 28px;
+.wsChatActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
 }
 
-/* Conversations in project */
-.detailConversations {
+.wsChatLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wsChatSend {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-hover);
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wsChatSend svg {
+  width: 15px;
+  height: 15px;
+}
+
+.wsChatSendActive {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.wsChatSendActive:hover {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+.wsChatSend:disabled {
+  cursor: default;
+}
+
+/* ── Conversations Section ── */
+.wsConversations {
+  flex: 1;
+}
+
+.wsConvHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 4px;
+}
+
+.wsConvHeader svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+}
+
+.wsConvCount {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.wsConvList {
+  display: flex;
+  flex-direction: column;
+}
+
+.wsConvItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  background: transparent;
+  border: none;
+  text-align: left;
+  width: 100%;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.wsConvItem:last-child {
+  border-bottom: none;
+}
+
+.wsConvItem:hover {
+  background-color: var(--bg-hover);
+}
+
+.wsConvItemIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.wsConvItemIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.wsConvItemBody {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
 
-.detailConvItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.detailConvItem:hover {
-  background-color: var(--bg-hover);
-}
-
-.detailConvIcon {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background-color: var(--bg-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.detailConvIcon svg {
-  width: 14px;
-  height: 14px;
-}
-
-.detailConvTitle {
-  flex: 1;
+.wsConvItemTitle {
   font-size: 14px;
-  font-weight: 450;
+  font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.detailConvTime {
+.wsConvItemTime {
   font-size: 12px;
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
-.detailConvEmpty {
-  padding: 40px 20px;
+.wsConvEmpty {
+  padding: 48px 20px;
   text-align: center;
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.6;
+}
+
+.wsConvLoading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.wsConvSkeleton {
+  height: 52px;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.wsConvSkeleton:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.wsConvSkeleton:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* ── Side Panel Cards ── */
+.wsSideCard {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.wsSideCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.wsSideCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.wsSideCardTitle svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.wsSideCardAction {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wsSideCardAction:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.wsSideCardAction svg {
+  width: 13px;
+  height: 13px;
+}
+
+.wsSideCardBody {
+  padding: 14px 16px;
+}
+
+.wsInstructionsText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.wsShowMoreBtn {
+  display: inline;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 6px;
+  transition: color 0.15s ease;
+}
+
+.wsShowMoreBtn:hover {
+  color: var(--text-primary);
+}
+
+.wsSideCardEmpty {
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.wsSideCardEmpty p {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.wsSideCardEmptyAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.wsSideCardEmptyAction:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.wsSideCardEmptyAction svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Side info list */
+.wsSideInfoList {
+  padding: 10px 16px 14px;
+}
+
+.wsSideInfoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+}
+
+.wsSideInfoRow + .wsSideInfoRow {
+  border-top: 1px solid var(--border-color);
+}
+
+.wsSideInfoLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 450;
+}
+
+.wsSideInfoValue {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.wsSideInfoStarred {
+  color: #f59e0b;
+  display: flex;
+}
+
+.wsSideInfoStarred svg {
+  width: 13px;
+  height: 13px;
+}
+
+.wsSideInfoBadge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: var(--bg-hover);
+  color: var(--text-muted);
 }
 
 /* ─── Confirm Dialog ──────────────────────────────────────────────────────── */
@@ -1257,6 +1538,26 @@
 }
 
 /* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .workspaceLayout {
+    flex-direction: column;
+    padding: 20px 20px 80px;
+    gap: 24px;
+  }
+
+  .workspaceSide {
+    width: 100%;
+    flex-direction: row;
+    gap: 12px;
+    overflow-x: auto;
+  }
+
+  .wsSideCard {
+    min-width: 240px;
+    flex: 1;
+  }
+}
+
 @media (max-width: 768px) {
   .inner {
     padding: 24px 16px 120px;
@@ -1312,6 +1613,26 @@
   .modalFooter {
     padding: 12px 20px 20px;
   }
+
+  .workspaceTopBar {
+    padding: 12px 16px 0;
+  }
+
+  .workspaceLayout {
+    padding: 16px 16px 80px;
+  }
+
+  .wsTitle {
+    font-size: 22px;
+  }
+
+  .workspaceSide {
+    flex-direction: column;
+  }
+
+  .wsSideCard {
+    min-width: unset;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1330,5 +1651,9 @@
   .newProjectBtn {
     padding: 10px;
     border-radius: 10px;
+  }
+
+  .workspaceLayout {
+    padding: 12px 12px 80px;
   }
 }
