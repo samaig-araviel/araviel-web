@@ -10,7 +10,7 @@ import {
   setProjectsLoading,
 } from '../../store/slices/projectsSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { createNewChat, setInputValue, setPendingAutoSubmit } from '../../store/slices/chatSlice';
+import { createNewChat, setInputValue, setPendingAutoSubmit, setActiveProjectId } from '../../store/slices/chatSlice';
 import {
   fetchProjects,
   createProject as createProjectApi,
@@ -260,6 +260,7 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
     if (!text) return;
     // Navigate to MainContent with the message ready to send
     dispatch(createNewChat());
+    dispatch(setActiveProjectId(project.id));
     dispatch(setInputValue(text));
     dispatch(setPendingAutoSubmit(true));
     dispatch(setActiveItem('home'));
