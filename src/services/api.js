@@ -342,10 +342,15 @@ export async function updateProject(projectId, updates) {
 /**
  * Delete a project.
  * @param {string} projectId
+ * @param {object} [options]
+ * @param {boolean} [options.deleteConversations] - Also delete all conversations in this project
  * @returns {Promise<{ success: boolean }>}
  */
-export async function deleteProject(projectId) {
-  const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+export async function deleteProject(projectId, options = {}) {
+  const query = new URLSearchParams();
+  if (options.deleteConversations) query.set('deleteConversations', 'true');
+  const qs = query.toString();
+  const res = await fetch(`${API_BASE}/api/projects/${projectId}${qs ? `?${qs}` : ''}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error(`Failed to delete project: ${res.status}`);
