@@ -29,11 +29,13 @@ import {
   selectPendingAutoSubmit,
   selectPendingModality,
   selectImportedContext,
+  selectActiveProjectId,
   setTone,
   setMood,
   setPendingAutoSubmit,
   setPendingModality,
   setImportedContext,
+  setActiveProjectId,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -630,6 +632,7 @@ export default function MainContent() {
   const pendingAutoSubmit = useSelector(selectPendingAutoSubmit);
   const pendingModality = useSelector(selectPendingModality);
   const importedContext = useSelector(selectImportedContext);
+  const activeProjectId = useSelector(selectActiveProjectId);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const {
@@ -846,6 +849,7 @@ export default function MainContent() {
           googleThinking: googleThinking || undefined,
           conversationHasImages: options.conversationHasImages || undefined,
           importedConversationId: importedContext?.importedConversationId || undefined,
+          projectId: activeProjectId || undefined,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -867,6 +871,10 @@ export default function MainContent() {
                 // so subsequent messages use the native conversation's history
                 if (importedContext) {
                   dispatch(setImportedContext(null));
+                }
+                // Clear active project ID once the conversation is created with the project link
+                if (activeProjectId) {
+                  dispatch(setActiveProjectId(null));
                 }
               }
 
@@ -1095,6 +1103,7 @@ export default function MainContent() {
       deepResearch,
       googleThinking,
       importedContext,
+      activeProjectId,
     ]
   );
 

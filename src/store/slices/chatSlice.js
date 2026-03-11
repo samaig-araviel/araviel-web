@@ -29,6 +29,7 @@ const initialState = {
   isProcessing: false,
   pendingAutoSubmit: false, // when true, MainContent auto-fires the inputValue on mount
   pendingModality: null, // null = default 'text', or 'image' when prompt originates from image view
+  activeProjectId: null, // set when starting a chat from a project workspace
   // Imported conversation context for continuing imported chats
   // Shape: { importedConversationId: string, provider: string, providerName: string, title: string } | null
   importedContext: null,
@@ -118,7 +119,11 @@ const chatSlice = createSlice({
       state.isProcessing = false;
       state.pendingAutoSubmit = false;
       state.pendingModality = null;
+      state.activeProjectId = null;
       state.importedContext = null;
+    },
+    setActiveProjectId: (state, action) => {
+      state.activeProjectId = action.payload;
     },
     setImportedContext: (state, action) => {
       state.importedContext = action.payload;
@@ -174,6 +179,7 @@ export const {
   removeLastAssistantMessage,
   setPendingAutoSubmit,
   setPendingModality,
+  setActiveProjectId,
   setImportedContext,
   setMessages,
   setConversations,
@@ -196,6 +202,7 @@ export const selectIsProcessing = (state) => state.chat.isProcessing;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
 export const selectPendingAutoSubmit = (state) => state.chat.pendingAutoSubmit;
 export const selectPendingModality = (state) => state.chat.pendingModality;
+export const selectActiveProjectId = (state) => state.chat.activeProjectId;
 export const selectConversations = (state) => state.chat.conversations;
 export const selectConversationsTotal = (state) => state.chat.conversationsTotal;
 export const selectConversationsLoading = (state) => state.chat.conversationsLoading;
