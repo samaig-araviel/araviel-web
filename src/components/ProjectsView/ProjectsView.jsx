@@ -9,11 +9,14 @@ import {
   removeProject,
   setProjectsLoading,
 } from '../../store/slices/projectsSlice';
+import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { createNewChat, setInputValue, setPendingAutoSubmit } from '../../store/slices/chatSlice';
 import {
   fetchProjects,
   createProject as createProjectApi,
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
+  fetchConversations,
 } from '../../services/api';
 import {
   SearchIcon,
@@ -30,7 +33,9 @@ import {
   ChatIcon,
   FileTextIcon,
   CheckIcon,
+  SendIcon,
 } from '../Icons';
+import ModelSelector from '../ModelSelector/ModelSelector';
 import styles from './ProjectsView.module.css';
 
 const FILTER_TABS = [
@@ -195,102 +200,322 @@ function ProjectFormModal({ project, onClose, onSubmit }) {
   );
 }
 
-// ─── Project Detail View ─────────────────────────────────────────────────────
+// ─── Project Workspace View ──────────────────────────────────────────────────
 
-function ProjectDetail({ project, onBack, onEdit, onDelete, onToggleStar, onToggleArchive }) {
+function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onToggleArchive }) {
+  const dispatch = useDispatch();
+  const [chatInput, setChatInput] = useState('');
+  const [conversations, setConversations] = useState([]);
+  const [convsLoading, setConvsLoading] = useState(true);
+  const [instructionsExpanded, setInstructionsExpanded] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const textareaRef = useRef(null);
+  const moreRef = useRef(null);
+
+  // Load conversations for this project
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setConvsLoading(true);
+      try {
+        const data = await fetchConversations(100, 0);
+        const allConvs = data.conversations || [];
+        // Filter to only conversations belonging to this project
+        const projectConvs = allConvs.filter((c) => c.project_id === project.id);
+        if (!cancelled) setConversations(projectConvs);
+      } catch {
+        // silently fail
+      } finally {
+        if (!cancelled) setConvsLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [project.id]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+  }, [chatInput]);
+
+  // Close more menu on outside click
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (moreRef.current && !moreRef.current.contains(e.target)) {
+        setShowMore(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    const text = chatInput.trim();
+    if (!text) return;
+    // Navigate to MainContent with the message ready to send
+    dispatch(createNewChat());
+    dispatch(setInputValue(text));
+    dispatch(setPendingAutoSubmit(true));
+    dispatch(setActiveItem('home'));
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e);
+    }
+  };
+
+  const handleConvClick = (conv) => {
+    // Navigate to MainContent and load the conversation
+    dispatch(setActiveItem('home'));
+    // The conversation will load through the normal flow
+  };
+
+  const descriptionText = project.description || '';
+  const instructionsText = project.instructions || '';
+  const instructionsPreview =
+    instructionsText.length > 120 && !instructionsExpanded
+      ? instructionsText.slice(0, 120) + '...'
+      : instructionsText;
+
   return (
-    <div className={styles.detailView}>
-      <button className={styles.detailBack} onClick={onBack}>
-        <ChevronLeftIcon />
-        <span>All projects</span>
-      </button>
+    <div className={styles.workspacePage}>
+      {/* Back nav */}
+      <div className={styles.workspaceTopBar}>
+        <button className={styles.detailBack} onClick={onBack}>
+          <ChevronLeftIcon />
+          <span>All projects</span>
+        </button>
+      </div>
 
-      <div className={styles.detailHeader}>
-        <div className={styles.detailTitleRow}>
-          <div className={styles.detailIcon}>
-            <ProjectsIcon />
+      <div className={styles.workspaceLayout}>
+        {/* ── Main Column ── */}
+        <div className={styles.workspaceMain}>
+          {/* Project header */}
+          <div className={styles.wsHeader}>
+            <div className={styles.wsHeaderTop}>
+              <div className={styles.wsHeaderIcon}>
+                <ProjectsIcon />
+              </div>
+              <div className={styles.wsHeaderActions} ref={moreRef}>
+                <button
+                  className={styles.wsHeaderActionBtn}
+                  onClick={() => setShowMore(!showMore)}
+                  title="More options"
+                >
+                  <MoreVerticalIcon />
+                </button>
+                <button
+                  className={styles.wsHeaderActionBtn}
+                  onClick={() => onToggleStar(project)}
+                  title={project.is_starred ? 'Unstar' : 'Star'}
+                >
+                  <StarIcon filled={project.is_starred} />
+                </button>
+
+                {showMore && (
+                  <div className={styles.wsMoreDropdown}>
+                    <button
+                      className={styles.cardDropdownItem}
+                      onClick={() => {
+                        onEdit(project);
+                        setShowMore(false);
+                      }}
+                    >
+                      <EditIcon />
+                      <span>Edit details</span>
+                    </button>
+                    <button
+                      className={styles.cardDropdownItem}
+                      onClick={() => {
+                        onToggleArchive(project);
+                        setShowMore(false);
+                      }}
+                    >
+                      <ArchiveIcon />
+                      <span>{project.is_archived ? 'Unarchive' : 'Archive'}</span>
+                    </button>
+                    <div className={styles.cardDropdownDivider} />
+                    <button
+                      className={`${styles.cardDropdownItem} ${styles.cardDropdownItemDanger}`}
+                      onClick={() => {
+                        onDelete(project);
+                        setShowMore(false);
+                      }}
+                    >
+                      <TrashIcon />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <h1 className={styles.wsTitle}>{project.name}</h1>
+
+            {descriptionText && <p className={styles.wsDescription}>{descriptionText}</p>}
           </div>
-          <h1 className={styles.detailName}>{project.name}</h1>
-        </div>
-        <div className={styles.detailActions}>
-          <button
-            className={styles.detailActionBtn}
-            onClick={() => onToggleStar(project)}
-            title={project.is_starred ? 'Unstar' : 'Star'}
-          >
-            <StarIcon filled={project.is_starred} />
-          </button>
-          <button className={styles.detailActionBtn} onClick={() => onEdit(project)} title="Edit">
-            <EditIcon />
-          </button>
-          <button
-            className={`${styles.detailActionBtn} ${styles.detailActionBtnDanger}`}
-            onClick={() => onDelete(project)}
-            title="Delete"
-          >
-            <TrashIcon />
-          </button>
-        </div>
-      </div>
 
-      <div className={styles.detailMeta}>
-        <span>Created {formatFullDate(project.created_at)}</span>
-        {project.updated_at && project.updated_at !== project.created_at && (
-          <>
-            <span className={styles.detailMetaDot} />
-            <span>Updated {formatRelativeTime(project.updated_at)}</span>
-          </>
-        )}
-        {project.is_archived && (
-          <>
-            <span className={styles.detailMetaDot} />
-            <span>Archived</span>
-          </>
-        )}
-      </div>
+          {/* Chat input */}
+          <form className={styles.wsChatBox} onSubmit={handleSendMessage}>
+            <div className={styles.wsChatInputWrap}>
+              <textarea
+                ref={textareaRef}
+                className={styles.wsChatInput}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Ask anything about ${project.name}...`}
+                rows={1}
+              />
+              <div className={styles.wsChatActions}>
+                <div className={styles.wsChatLeft}>
+                  <ModelSelector />
+                </div>
+                <button
+                  type="submit"
+                  className={`${styles.wsChatSend} ${
+                    chatInput.trim() ? styles.wsChatSendActive : ''
+                  }`}
+                  disabled={!chatInput.trim()}
+                  aria-label="Send message"
+                >
+                  <SendIcon />
+                </button>
+              </div>
+            </div>
+          </form>
 
-      {/* Description */}
-      <div className={styles.detailSection}>
-        <div className={styles.detailSectionHeader}>
-          <h3 className={styles.detailSectionTitle}>Description</h3>
-          <button className={styles.detailSectionEdit} onClick={() => onEdit(project)}>
-            Edit
-          </button>
-        </div>
-        <div
-          className={`${styles.detailDesc} ${!project.description ? styles.detailDescEmpty : ''}`}
-        >
-          {project.description || 'No description added yet.'}
-        </div>
-      </div>
+          {/* Conversations list */}
+          <div className={styles.wsConversations}>
+            <div className={styles.wsConvHeader}>
+              <ChatIcon />
+              <span>Conversations</span>
+              <span className={styles.wsConvCount}>{conversations.length}</span>
+            </div>
 
-      {/* Instructions */}
-      <div className={styles.detailSection}>
-        <div className={styles.detailSectionHeader}>
-          <h3 className={styles.detailSectionTitle}>Instructions</h3>
-          <button className={styles.detailSectionEdit} onClick={() => onEdit(project)}>
-            Edit
-          </button>
+            {convsLoading ? (
+              <div className={styles.wsConvLoading}>
+                <div className={styles.wsConvSkeleton} />
+                <div className={styles.wsConvSkeleton} />
+                <div className={styles.wsConvSkeleton} />
+              </div>
+            ) : conversations.length > 0 ? (
+              <div className={styles.wsConvList}>
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    className={styles.wsConvItem}
+                    onClick={() => handleConvClick(conv)}
+                  >
+                    <div className={styles.wsConvItemIcon}>
+                      <ChatIcon />
+                    </div>
+                    <div className={styles.wsConvItemBody}>
+                      <span className={styles.wsConvItemTitle}>{conv.title || 'Untitled'}</span>
+                      <span className={styles.wsConvItemTime}>
+                        Last message {formatRelativeTime(conv.updated_at || conv.created_at)}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className={styles.wsConvEmpty}>
+                <p>No conversations yet. Use the chat above to start one.</p>
+              </div>
+            )}
+          </div>
         </div>
-        <div
-          className={`${styles.detailInstructions} ${
-            !project.instructions ? styles.detailInstructionsEmpty : ''
-          }`}
-        >
-          {project.instructions ||
-            'No custom instructions. Conversations in this project will use default context.'}
-        </div>
-      </div>
 
-      <div className={styles.detailDivider} />
+        {/* ── Side Panel ── */}
+        <div className={styles.workspaceSide}>
+          {/* Instructions card */}
+          <div className={styles.wsSideCard}>
+            <div className={styles.wsSideCardHeader}>
+              <div className={styles.wsSideCardTitle}>
+                <FileTextIcon />
+                <span>Instructions</span>
+              </div>
+              <button
+                className={styles.wsSideCardAction}
+                onClick={() => onEdit(project)}
+                title="Edit instructions"
+              >
+                <EditIcon />
+              </button>
+            </div>
+            {instructionsText ? (
+              <div className={styles.wsSideCardBody}>
+                <p className={styles.wsInstructionsText}>{instructionsPreview}</p>
+                {instructionsText.length > 120 && (
+                  <button
+                    className={styles.wsShowMoreBtn}
+                    onClick={() => setInstructionsExpanded(!instructionsExpanded)}
+                  >
+                    {instructionsExpanded ? 'Show less' : 'Show more'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className={styles.wsSideCardEmpty}>
+                <p>Add instructions to tailor responses for this project.</p>
+                <button className={styles.wsSideCardEmptyAction} onClick={() => onEdit(project)}>
+                  <PlusIcon />
+                  <span>Add instructions</span>
+                </button>
+              </div>
+            )}
+          </div>
 
-      {/* Conversations in project */}
-      <div className={styles.detailSection}>
-        <div className={styles.detailSectionHeader}>
-          <h3 className={styles.detailSectionTitle}>Conversations</h3>
-        </div>
-        <div className={styles.detailConvEmpty}>
-          No conversations in this project yet. Start a new chat and assign it to this project.
+          {/* Project info card */}
+          <div className={styles.wsSideCard}>
+            <div className={styles.wsSideCardHeader}>
+              <div className={styles.wsSideCardTitle}>
+                <ProjectsIcon />
+                <span>Project info</span>
+              </div>
+            </div>
+            <div className={styles.wsSideInfoList}>
+              <div className={styles.wsSideInfoRow}>
+                <span className={styles.wsSideInfoLabel}>Created</span>
+                <span className={styles.wsSideInfoValue}>{formatFullDate(project.created_at)}</span>
+              </div>
+              {project.updated_at && project.updated_at !== project.created_at && (
+                <div className={styles.wsSideInfoRow}>
+                  <span className={styles.wsSideInfoLabel}>Updated</span>
+                  <span className={styles.wsSideInfoValue}>
+                    {formatRelativeTime(project.updated_at)}
+                  </span>
+                </div>
+              )}
+              <div className={styles.wsSideInfoRow}>
+                <span className={styles.wsSideInfoLabel}>Conversations</span>
+                <span className={styles.wsSideInfoValue}>{conversations.length}</span>
+              </div>
+              {project.is_starred && (
+                <div className={styles.wsSideInfoRow}>
+                  <span className={styles.wsSideInfoLabel}>Starred</span>
+                  <span className={styles.wsSideInfoStarred}>
+                    <StarIcon filled />
+                  </span>
+                </div>
+              )}
+              {project.is_archived && (
+                <div className={styles.wsSideInfoRow}>
+                  <span className={styles.wsSideInfoLabel}>Status</span>
+                  <span className={styles.wsSideInfoBadge}>Archived</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -465,22 +690,19 @@ export default function ProjectsView() {
     setSelectedProject(project);
   };
 
-  // If viewing a project detail
+  // If viewing a project workspace
   if (selectedProject) {
-    // Find latest version from store
     const current = projects.find((p) => p.id === selectedProject.id) || selectedProject;
     return (
-      <div className={styles.page}>
-        <div className={styles.inner}>
-          <ProjectDetail
-            project={current}
-            onBack={() => setSelectedProject(null)}
-            onEdit={(p) => openEditModal(p)}
-            onDelete={(p) => openDeleteConfirm(p)}
-            onToggleStar={handleToggleStar}
-            onToggleArchive={handleToggleArchive}
-          />
-        </div>
+      <>
+        <ProjectWorkspace
+          project={current}
+          onBack={() => setSelectedProject(null)}
+          onEdit={(p) => openEditModal(p)}
+          onDelete={(p) => openDeleteConfirm(p)}
+          onToggleStar={handleToggleStar}
+          onToggleArchive={handleToggleArchive}
+        />
 
         {/* Delete confirm */}
         {deleteConfirm && (
@@ -517,7 +739,7 @@ export default function ProjectsView() {
             onSubmit={editingProject ? handleEdit : handleCreate}
           />
         )}
-      </div>
+      </>
     );
   }
 
