@@ -10,14 +10,23 @@ import {
   setProjectsLoading,
 } from '../../store/slices/projectsSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { createNewChat, setInputValue, setPendingAutoSubmit, setActiveProjectId } from '../../store/slices/chatSlice';
+import {
+  createNewChat,
+  setInputValue,
+  setPendingAutoSubmit,
+  setActiveProjectId,
+  setCurrentChat,
+  setMessages,
+} from '../../store/slices/chatSlice';
 import {
   fetchProjects,
   createProject as createProjectApi,
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
   fetchConversations,
+  fetchConversationMessages,
 } from '../../services/api';
+import { getGeneratedImages } from '../../services/imageGeneration';
 import {
   SearchIcon,
   PlusIcon,
@@ -270,10 +279,62 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
     }
   };
 
-  const handleConvClick = (conv) => {
-    // Navigate to MainContent and load the conversation
+  const handleConvClick = async (conv) => {
+    dispatch(setCurrentChat(conv.id));
     dispatch(setActiveItem('home'));
-    // The conversation will load through the normal flow
+    try {
+      const data = await fetchConversationMessages(conv.id);
+      const storedImages = getGeneratedImages();
+      const mappedMessages = (data.messages || []).map((msg) => {
+        const base = {
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.createdAt).getTime(),
+        };
+        if (msg.role === 'assistant') {
+          let generatedImages = msg.generatedImages || [];
+          if (generatedImages.length === 0) {
+            const msgTime = new Date(msg.createdAt).getTime();
+            const matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
+            if (matched.length > 0) {
+              generatedImages = matched.map((img) => ({
+                url: img.url,
+                prompt: img.prompt,
+                model: img.model,
+                provider: img.provider,
+                id: img.id,
+              }));
+            }
+          }
+          Object.assign(base, {
+            modelId: msg.model?.id,
+            modelName: msg.model?.name,
+            provider: msg.model?.provider,
+            score: msg.model?.score,
+            reasoning: msg.model?.reasoning,
+            alternateModels: (msg.alternateModels || []).map((m) => ({
+              modelId: m.id,
+              modelName: m.name,
+              provider: m.provider,
+              score: m.score,
+              reasoning: m.reasoning,
+            })),
+            thinkingContent: msg.thinkingContent,
+            citations: msg.citations,
+            usage: msg.usage,
+            costUsd: msg.costUsd,
+            latencyMs: msg.latencyMs,
+            adeLatencyMs: msg.adeLatencyMs,
+            ...(generatedImages.length > 0 && { generatedImages }),
+          });
+        }
+        return base;
+      });
+      dispatch(setMessages(mappedMessages));
+    } catch {
+      // Fail silently
+    }
   };
 
   const descriptionText = project.description || '';
@@ -538,6 +599,7 @@ export default function ProjectsView() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const sortRef = useRef(null);
   const menuRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Load projects
   const loadProjects = useCallback(async () => {
@@ -562,7 +624,11 @@ export default function ProjectsView() {
       if (sortRef.current && !sortRef.current.contains(e.target)) {
         setSortOpen(false);
       }
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(e.target))
+      ) {
         setMenuOpenId(null);
       }
     };
@@ -839,7 +905,9 @@ export default function ProjectsView() {
             {filteredProjects.map((project) => (
               <div
                 key={project.id}
-                className={`${styles.card} ${project.is_starred ? styles.cardStarred : ''}`}
+                className={`${styles.card} ${project.is_starred ? styles.cardStarred : ''} ${
+                  menuOpenId === project.id ? styles.cardMenuOpen : ''
+                }`}
                 onClick={() => handleCardClick(project)}
               >
                 <div className={styles.cardHeader}>
@@ -884,7 +952,7 @@ export default function ProjectsView() {
 
                 {/* Card dropdown */}
                 {menuOpenId === project.id && (
-                  <div className={styles.cardDropdown}>
+                  <div className={styles.cardDropdown} ref={dropdownRef}>
                     <button
                       className={styles.cardDropdownItem}
                       onClick={(e) => {

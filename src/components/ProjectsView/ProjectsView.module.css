@@ -329,6 +329,10 @@
   transform: translateY(-2px);
 }
 
+.cardMenuOpen {
+  z-index: 100;
+}
+
 .card:hover .cardMenu {
   opacity: 1;
 }
