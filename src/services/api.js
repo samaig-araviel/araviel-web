@@ -189,6 +189,46 @@ export async function checkHealth() {
   return res.json();
 }
 
+/**
+ * Update a conversation (title, project assignment, etc.).
+ * @param {string} conversationId
+ * @param {object} updates - { title?, project_id? }
+ * @returns {Promise<object>}
+ */
+export async function updateConversation(conversationId, updates) {
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`Failed to update conversation: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Delete a conversation and all its messages.
+ * @param {string} conversationId
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function deleteConversation(conversationId) {
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Failed to delete conversation: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Fetch a single conversation's metadata.
+ * @param {string} conversationId
+ * @returns {Promise<object>}
+ */
+export async function fetchConversation(conversationId) {
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`);
+  if (!res.ok) throw new Error(`Failed to fetch conversation: ${res.status}`);
+  return res.json();
+}
+
 // ─── Imported Conversations ─────────────────────────────────────────────────
 
 /**

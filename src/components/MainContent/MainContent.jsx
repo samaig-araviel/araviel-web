@@ -85,10 +85,17 @@ import {
   ArchiveIcon,
   FlagIcon,
   TrashIcon,
+  ProjectsIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
-import { sendMessage, consumeSSEStream } from '../../services/api';
+import {
+  sendMessage,
+  consumeSSEStream,
+  fetchConversation,
+  updateConversation,
+} from '../../services/api';
+import { selectProjects } from '../../store/slices/projectsSlice';
 import { getUserTier, PROVIDERS, isImageGenerationModel } from '../../data/models';
 import {
   canGenerateImage,
@@ -633,6 +640,7 @@ export default function MainContent() {
   const pendingModality = useSelector(selectPendingModality);
   const importedContext = useSelector(selectImportedContext);
   const activeProjectId = useSelector(selectActiveProjectId);
+  const projects = useSelector(selectProjects);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const {
@@ -664,12 +672,51 @@ export default function MainContent() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [showLimitToast, setShowLimitToast] = useState(false);
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
+  const [conversationProject, setConversationProject] = useState(null); // { id, name } of linked project
+  const [showRemoveFromProject, setShowRemoveFromProject] = useState(false);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const chatMenuRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  // Fetch conversation metadata to check project link
+  useEffect(() => {
+    if (!currentChatId) {
+      setConversationProject(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const conv = await fetchConversation(currentChatId);
+        if (cancelled) return;
+        if (conv.projectId) {
+          const proj = projects.find((p) => p.id === conv.projectId);
+          setConversationProject({ id: conv.projectId, name: proj?.name || 'Project' });
+        } else {
+          setConversationProject(null);
+        }
+      } catch {
+        if (!cancelled) setConversationProject(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentChatId, projects]);
+
+  const handleRemoveFromProject = async () => {
+    if (!currentChatId || !conversationProject) return;
+    try {
+      await updateConversation(currentChatId, { project_id: null });
+      setConversationProject(null);
+      setShowRemoveFromProject(false);
+    } catch {
+      // Silently fail
+    }
+  };
 
   // Streaming / timeline state
   const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
@@ -1546,8 +1593,31 @@ export default function MainContent() {
         isSubConvPanelOpen ? styles.subConvPanelOpen : ''
       } ${isCodePanelOpen ? styles.codePanelOpen : ''}`}
     >
-      {/* Top nav bar with share + new chat + menu buttons */}
+      {/* Top nav bar with project link + share + new chat + menu buttons */}
       <div className={styles.topNav}>
+        {/* Project breadcrumb — left side */}
+        {conversationProject && (
+          <div className={styles.projectBreadcrumb}>
+            <button
+              className={styles.projectBreadcrumbLink}
+              onClick={() => {
+                // Navigate to the project in ProjectsView
+                // For now, just show it
+              }}
+              title={`Part of "${conversationProject.name}"`}
+            >
+              <ProjectsIcon />
+              <span>{conversationProject.name}</span>
+            </button>
+            <button
+              className={styles.projectBreadcrumbRemove}
+              onClick={() => setShowRemoveFromProject(true)}
+              title="Remove from project"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+        )}
         <div className={styles.topNavInner}>
           <button
             className={styles.shareBtn}
@@ -1647,6 +1717,33 @@ export default function MainContent() {
                 }}
               >
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove from project confirmation */}
+      {showRemoveFromProject && conversationProject && (
+        <div className={styles.confirmOverlay} onClick={() => setShowRemoveFromProject(false)}>
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIconProject}>
+              <ProjectsIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Remove from project?</h3>
+            <p className={styles.confirmDesc}>
+              This conversation will be removed from <strong>{conversationProject.name}</strong>. It
+              won&apos;t be deleted — you can add it back anytime.
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setShowRemoveFromProject(false)}
+              >
+                Keep in project
+              </button>
+              <button className={styles.confirmRemoveBtn} onClick={handleRemoveFromProject}>
+                Remove
               </button>
             </div>
           </div>

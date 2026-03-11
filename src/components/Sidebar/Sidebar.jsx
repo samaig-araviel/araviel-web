@@ -20,7 +20,14 @@ import {
   selectCurrentChatId,
 } from '../../store/slices/chatSlice';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
-import { fetchConversations, fetchConversationMessages } from '../../services/api';
+import {
+  fetchConversations,
+  fetchConversationMessages,
+  updateConversation,
+  deleteConversation,
+  fetchProjects as fetchProjectsApi,
+} from '../../services/api';
+import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import {
   PlusIcon,
@@ -123,7 +130,9 @@ export default function Sidebar() {
   const currentChatId = useSelector(selectCurrentChatId);
   const themeMode = useSelector(selectTheme);
   const activeItem = useSelector(selectActiveItem);
+  const projects = useSelector(selectProjects);
   const [isMobile, setIsMobile] = useState(false);
+  const [projectPickerFor, setProjectPickerFor] = useState(null); // chatId to assign to project
   const [recentsExpanded, setRecentsExpanded] = useState(true);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
@@ -170,6 +179,15 @@ export default function Sidebar() {
   useEffect(() => {
     loadConversations(0);
   }, [loadConversations]);
+
+  // Ensure projects are loaded for project picker
+  useEffect(() => {
+    if (projects.length === 0) {
+      fetchProjectsApi()
+        .then((data) => dispatch(setProjects(data.projects || [])))
+        .catch(() => {});
+    }
+  }, [projects.length, dispatch]);
 
   // Refresh conversations when currentChatId changes (new conversation created)
   useEffect(() => {
@@ -368,6 +386,8 @@ export default function Sidebar() {
           total: conversationsTotal,
         })
       );
+      // Persist to backend
+      updateConversation(chatId, { title: trimmed }).catch(() => {});
     }
     setRenamingId(null);
     setRenameValue('');
@@ -427,6 +447,12 @@ export default function Sidebar() {
         total: Math.max(0, conversationsTotal - 1),
       })
     );
+    // If the deleted chat is currently open, clear it
+    if (currentChatId === chatId) {
+      dispatch(createNewChat());
+    }
+    // Persist to backend
+    deleteConversation(chatId).catch(() => {});
     try {
       const starred = new Set(JSON.parse(localStorage.getItem('araviel-starred-chats') || '[]'));
       const archived = new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
@@ -438,6 +464,47 @@ export default function Sidebar() {
       // Silently fail
     }
     setDeleteConfirm(null);
+  };
+
+  const handleAddToProject = (chatId) => {
+    closeMenu();
+    setProjectPickerFor(chatId);
+  };
+
+  const handleAssignProject = async (projectId) => {
+    if (!projectPickerFor) return;
+    try {
+      await updateConversation(projectPickerFor, { project_id: projectId });
+      // Update local state
+      dispatch(
+        setConversations({
+          conversations: conversations.map((c) =>
+            c.id === projectPickerFor ? { ...c, projectId } : c
+          ),
+          total: conversationsTotal,
+        })
+      );
+    } catch {
+      // Silently fail
+    }
+    setProjectPickerFor(null);
+  };
+
+  const handleRemoveFromProject = async (chatId) => {
+    closeMenu();
+    try {
+      await updateConversation(chatId, { project_id: null });
+      dispatch(
+        setConversations({
+          conversations: conversations.map((c) =>
+            c.id === chatId ? { ...c, projectId: null } : c
+          ),
+          total: conversationsTotal,
+        })
+      );
+    } catch {
+      // Silently fail
+    }
   };
 
   return (
@@ -639,6 +706,29 @@ export default function Sidebar() {
                                     {archivedIds.has(chat.id) ? 'Move to Chats' : 'Archive'}
                                   </span>
                                 </button>
+                                {chat.projectId ? (
+                                  <button
+                                    className={styles.chatDropdownItem}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemoveFromProject(chat.id);
+                                    }}
+                                  >
+                                    <ProjectsIcon />
+                                    <span>Remove from project</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    className={styles.chatDropdownItem}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddToProject(chat.id);
+                                    }}
+                                  >
+                                    <ProjectsIcon />
+                                    <span>Add to project</span>
+                                  </button>
+                                )}
                                 <div className={styles.chatDropdownDivider} />
                                 <button
                                   className={`${styles.chatDropdownItem} ${styles.chatDropdownItemDanger}`}
@@ -755,6 +845,44 @@ export default function Sidebar() {
               </button>
               <button className={styles.confirmDeleteBtn} onClick={confirmDelete}>
                 Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project picker dialog */}
+      {projectPickerFor && (
+        <div className={styles.confirmOverlay} onClick={() => setProjectPickerFor(null)}>
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIconProject}>
+              <ProjectsIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Move to project</h3>
+            <p className={styles.confirmDesc}>Choose which project this conversation belongs to.</p>
+            <div className={styles.projectPickerList}>
+              {projects.length > 0 ? (
+                projects
+                  .filter((p) => !p.is_archived)
+                  .map((project) => (
+                    <button
+                      key={project.id}
+                      className={styles.projectPickerItem}
+                      onClick={() => handleAssignProject(project.id)}
+                    >
+                      <ProjectsIcon />
+                      <span>{project.name}</span>
+                    </button>
+                  ))
+              ) : (
+                <p className={styles.projectPickerEmpty}>
+                  No projects yet. Create one in the Projects view.
+                </p>
+              )}
+            </div>
+            <div className={styles.confirmActions}>
+              <button className={styles.confirmCancelBtn} onClick={() => setProjectPickerFor(null)}>
+                Cancel
               </button>
             </div>
           </div>
