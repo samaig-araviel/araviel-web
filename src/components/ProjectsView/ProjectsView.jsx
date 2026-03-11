@@ -597,6 +597,7 @@ export default function ProjectsView() {
   const [editingProject, setEditingProject] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteOption, setDeleteOption] = useState('project-only');
   const sortRef = useRef(null);
   const menuRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -701,7 +702,9 @@ export default function ProjectsView() {
   const handleDelete = async () => {
     if (!deleteConfirm) return;
     try {
-      await deleteProjectApi(deleteConfirm.id);
+      await deleteProjectApi(deleteConfirm.id, {
+        deleteConversations: deleteOption === 'everything',
+      });
       dispatch(removeProject(deleteConfirm.id));
       if (selectedProject?.id === deleteConfirm.id) {
         setSelectedProject(null);
@@ -710,6 +713,7 @@ export default function ProjectsView() {
       // Silently fail
     }
     setDeleteConfirm(null);
+    setDeleteOption('project-only');
   };
 
   const handleToggleStar = async (project) => {
@@ -747,6 +751,7 @@ export default function ProjectsView() {
 
   const openDeleteConfirm = (project) => {
     setDeleteConfirm(project);
+    setDeleteOption('project-only');
     setMenuOpenId(null);
   };
 
@@ -775,17 +780,44 @@ export default function ProjectsView() {
               <div className={styles.confirmIcon}>
                 <TrashIcon />
               </div>
-              <h3 className={styles.confirmTitle}>Delete this project?</h3>
+              <h3 className={styles.confirmTitle}>Delete &ldquo;{deleteConfirm.name}&rdquo;?</h3>
               <p className={styles.confirmDesc}>
-                This will permanently delete &ldquo;{deleteConfirm.name}&rdquo; and remove it from
-                all conversations. This action cannot be undone.
+                Choose what to remove. This action cannot be undone.
               </p>
+              <div className={styles.deleteOptions}>
+                <button
+                  type="button"
+                  className={`${styles.deleteOption} ${deleteOption === 'project-only' ? styles.deleteOptionSelected : ''}`}
+                  onClick={() => setDeleteOption('project-only')}
+                >
+                  <div className={styles.deleteOptionRadio}>
+                    {deleteOption === 'project-only' && <div className={styles.deleteOptionRadioDot} />}
+                  </div>
+                  <div className={styles.deleteOptionContent}>
+                    <span className={styles.deleteOptionLabel}>Delete project only</span>
+                    <span className={styles.deleteOptionHint}>Your conversations will be kept and unlinked from this project</span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.deleteOption} ${deleteOption === 'everything' ? styles.deleteOptionSelected : ''} ${deleteOption === 'everything' ? styles.deleteOptionDanger : ''}`}
+                  onClick={() => setDeleteOption('everything')}
+                >
+                  <div className={styles.deleteOptionRadio}>
+                    {deleteOption === 'everything' && <div className={styles.deleteOptionRadioDot} />}
+                  </div>
+                  <div className={styles.deleteOptionContent}>
+                    <span className={styles.deleteOptionLabel}>Delete project and all conversations</span>
+                    <span className={styles.deleteOptionHint}>Permanently removes the project and every conversation in it</span>
+                  </div>
+                </button>
+              </div>
               <div className={styles.confirmActions}>
                 <button className={styles.confirmCancelBtn} onClick={() => setDeleteConfirm(null)}>
                   Cancel
                 </button>
                 <button className={styles.confirmDeleteBtn} onClick={handleDelete}>
-                  Delete
+                  Delete{deleteOption === 'everything' ? ' everything' : ' project'}
                 </button>
               </div>
             </div>
@@ -1058,17 +1090,44 @@ export default function ProjectsView() {
             <div className={styles.confirmIcon}>
               <TrashIcon />
             </div>
-            <h3 className={styles.confirmTitle}>Delete this project?</h3>
+            <h3 className={styles.confirmTitle}>Delete &ldquo;{deleteConfirm.name}&rdquo;?</h3>
             <p className={styles.confirmDesc}>
-              This will permanently delete &ldquo;{deleteConfirm.name}&rdquo; and remove it from all
-              conversations. This action cannot be undone.
+              Choose what to remove. This action cannot be undone.
             </p>
+            <div className={styles.deleteOptions}>
+              <button
+                type="button"
+                className={`${styles.deleteOption} ${deleteOption === 'project-only' ? styles.deleteOptionSelected : ''}`}
+                onClick={() => setDeleteOption('project-only')}
+              >
+                <div className={styles.deleteOptionRadio}>
+                  {deleteOption === 'project-only' && <div className={styles.deleteOptionRadioDot} />}
+                </div>
+                <div className={styles.deleteOptionContent}>
+                  <span className={styles.deleteOptionLabel}>Delete project only</span>
+                  <span className={styles.deleteOptionHint}>Your conversations will be kept and unlinked from this project</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                className={`${styles.deleteOption} ${deleteOption === 'everything' ? styles.deleteOptionSelected : ''} ${deleteOption === 'everything' ? styles.deleteOptionDanger : ''}`}
+                onClick={() => setDeleteOption('everything')}
+              >
+                <div className={styles.deleteOptionRadio}>
+                  {deleteOption === 'everything' && <div className={styles.deleteOptionRadioDot} />}
+                </div>
+                <div className={styles.deleteOptionContent}>
+                  <span className={styles.deleteOptionLabel}>Delete project and all conversations</span>
+                  <span className={styles.deleteOptionHint}>Permanently removes the project and every conversation in it</span>
+                </div>
+              </button>
+            </div>
             <div className={styles.confirmActions}>
               <button className={styles.confirmCancelBtn} onClick={() => setDeleteConfirm(null)}>
                 Cancel
               </button>
               <button className={styles.confirmDeleteBtn} onClick={handleDelete}>
-                Delete
+                Delete{deleteOption === 'everything' ? ' everything' : ' project'}
               </button>
             </div>
           </div>

@@ -1460,8 +1460,8 @@
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 28px 24px 24px;
-  max-width: 380px;
-  width: 90%;
+  max-width: 420px;
+  width: 92%;
   text-align: center;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: modalSlideIn 0.2s cubic-bezier(0.2, 0, 0, 1);
@@ -1495,7 +1495,98 @@
   font-size: 13px;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+}
+
+.deleteOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.deleteOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.deleteOption:hover {
+  background-color: var(--bg-hover);
+}
+
+.deleteOptionSelected {
+  border-color: var(--text-secondary);
+  background-color: var(--bg-hover);
+}
+
+.deleteOptionDanger {
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.04);
+}
+
+.deleteOptionDanger:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.deleteOptionRadio {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  transition: border-color 0.15s ease;
+}
+
+.deleteOptionSelected .deleteOptionRadio {
+  border-color: var(--text-primary);
+}
+
+.deleteOptionDanger .deleteOptionRadio {
+  border-color: #ef4444;
+}
+
+.deleteOptionRadioDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-primary);
+}
+
+.deleteOptionDanger .deleteOptionRadioDot {
+  background-color: #ef4444;
+}
+
+.deleteOptionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.deleteOptionLabel {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.deleteOptionHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .confirmActions {
