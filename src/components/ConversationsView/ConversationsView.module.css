@@ -1383,7 +1383,7 @@
 /* Mobile */
 @media (max-width: 768px) {
   .inner {
-    padding: 24px 16px 120px;
+    padding: 64px 16px 120px;
   }
 
   .title {
@@ -1502,7 +1502,7 @@
 
 @media (max-width: 480px) {
   .inner {
-    padding: 20px 12px 120px;
+    padding: 60px 12px 120px;
   }
 
   .header {
