@@ -526,7 +526,6 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
           {/* Conversations list */}
           <div className={styles.wsConversations}>
             <div className={styles.wsConvHeader}>
-              <ChatIcon />
               <span>Conversations</span>
               <span className={styles.wsConvCount}>{conversations.length}</span>
             </div>
