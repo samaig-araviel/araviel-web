@@ -37,6 +37,7 @@ import {
   setImportedContext,
   setActiveProjectId,
   selectConversations,
+  selectConversationsTotal,
   setConversations,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
@@ -648,6 +649,7 @@ export default function MainContent() {
   const activeProjectId = useSelector(selectActiveProjectId);
   const projects = useSelector(selectProjects);
   const conversations = useSelector(selectConversations);
+  const conversationsTotal = useSelector(selectConversationsTotal);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
   const { showError, showSuccess } = useToast();
@@ -721,36 +723,37 @@ export default function MainContent() {
     };
   }, [currentChatId]);
 
+  // Helper to dispatch conversation updates with correct payload shape
+  const updateConvState = (newConversations) => {
+    dispatch(setConversations({ conversations: newConversations, total: conversationsTotal }));
+  };
+
   const handleRemoveFromProject = async () => {
     if (!currentChatId || !conversationProject) return;
-    const prev = conversations.map((c) => ({ ...c }));
-    dispatch(
-      setConversations(
-        conversations.map((c) => (c.id === currentChatId ? { ...c, projectId: null } : c))
-      )
+    const prev = [...conversations];
+    updateConvState(
+      conversations.map((c) => (c.id === currentChatId ? { ...c, projectId: null } : c))
     );
     setShowRemoveFromProject(false);
     try {
       await updateConversation(currentChatId, { project_id: null });
       showSuccess('Removed from project');
     } catch {
-      dispatch(setConversations(prev));
+      updateConvState(prev);
       showError('Could not remove from project. Try again.');
     }
   };
 
   const handleChangeProject = async (projectId) => {
     if (!currentChatId) return;
-    const prev = conversations.map((c) => ({ ...c }));
-    dispatch(
-      setConversations(conversations.map((c) => (c.id === currentChatId ? { ...c, projectId } : c)))
-    );
+    const prev = [...conversations];
+    updateConvState(conversations.map((c) => (c.id === currentChatId ? { ...c, projectId } : c)));
     setShowProjectPicker(false);
     setShowProjectDropdown(false);
     try {
       await updateConversation(currentChatId, { project_id: projectId });
     } catch {
-      dispatch(setConversations(prev));
+      updateConvState(prev);
       showError('Could not assign to project. Try again.');
     }
   };
@@ -761,11 +764,8 @@ export default function MainContent() {
     setIsReporting(true);
     try {
       await reportConversation(currentChatId, reportReason, reportDetails);
-      // Update Redux to mark as reported
-      dispatch(
-        setConversations(
-          conversations.map((c) => (c.id === currentChatId ? { ...c, isReported: true } : c))
-        )
+      updateConvState(
+        conversations.map((c) => (c.id === currentChatId ? { ...c, isReported: true } : c))
       );
       setShowReportDialog(false);
       setReportReason('');
@@ -781,16 +781,14 @@ export default function MainContent() {
   const handleToggleStar = async () => {
     if (!currentChatId) return;
     const isStarred = currentConv?.isStarred || false;
-    const prev = conversations.map((c) => ({ ...c }));
-    dispatch(
-      setConversations(
-        conversations.map((c) => (c.id === currentChatId ? { ...c, isStarred: !isStarred } : c))
-      )
+    const prev = [...conversations];
+    updateConvState(
+      conversations.map((c) => (c.id === currentChatId ? { ...c, isStarred: !isStarred } : c))
     );
     try {
       await updateConversation(currentChatId, { is_starred: !isStarred });
     } catch {
-      dispatch(setConversations(prev));
+      updateConvState(prev);
       showError('Could not update star status.');
     }
   };
@@ -798,17 +796,15 @@ export default function MainContent() {
   const handleToggleArchive = async () => {
     if (!currentChatId) return;
     const isArchived = currentConv?.isArchived || false;
-    const prev = conversations.map((c) => ({ ...c }));
-    dispatch(
-      setConversations(
-        conversations.map((c) => (c.id === currentChatId ? { ...c, isArchived: !isArchived } : c))
-      )
+    const prev = [...conversations];
+    updateConvState(
+      conversations.map((c) => (c.id === currentChatId ? { ...c, isArchived: !isArchived } : c))
     );
     try {
       await updateConversation(currentChatId, { is_archived: !isArchived });
       showSuccess(isArchived ? 'Conversation unarchived' : 'Conversation archived');
     } catch {
-      dispatch(setConversations(prev));
+      updateConvState(prev);
       showError('Could not update archive status.');
     }
   };
