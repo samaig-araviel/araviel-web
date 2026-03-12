@@ -102,7 +102,21 @@ export default function ImageGalleryView() {
     // Refresh gallery when new images are saved (e.g. from chat)
     const handleImageSaved = () => loadImages();
     window.addEventListener('araviel-image-saved', handleImageSaved);
-    return () => window.removeEventListener('araviel-image-saved', handleImageSaved);
+    // Also refresh when tab regains focus (catches cross-tab localStorage changes)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') loadImages();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    // Refresh on storage changes from other contexts
+    const handleStorage = (e) => {
+      if (e.key === 'araviel-generated-images') loadImages();
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('araviel-image-saved', handleImageSaved);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('storage', handleStorage);
+    };
   }, [loadImages]);
 
   useEffect(() => {

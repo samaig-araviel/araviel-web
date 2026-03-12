@@ -87,6 +87,7 @@ export function getLimitInfo() {
 
 /**
  * Save a generated image to local storage.
+ * Handles localStorage quota errors by evicting oldest images when needed.
  */
 export function saveGeneratedImage(image) {
   const images = getGeneratedImages();
@@ -104,7 +105,30 @@ export function saveGeneratedImage(image) {
   images.unshift(entry);
   // Keep max 100 images
   if (images.length > 100) images.length = 100;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+
+  // Attempt to persist — evict oldest entries if localStorage quota is exceeded
+  let saved = false;
+  const toSave = [...images];
+  while (toSave.length > 0) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      saved = true;
+      break;
+    } catch {
+      // QuotaExceededError — remove oldest image and retry
+      toSave.pop();
+    }
+  }
+
+  if (!saved) {
+    // Last resort: store only the new entry
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([entry]));
+    } catch {
+      // localStorage completely unavailable — proceed without persistence
+    }
+  }
+
   // Notify any listeners (e.g. ImageGalleryView) about the new image
   window.dispatchEvent(new CustomEvent('araviel-image-saved', { detail: entry }));
   return entry;

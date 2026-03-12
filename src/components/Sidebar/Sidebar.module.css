@@ -485,10 +485,8 @@
   color: var(--text-primary);
 }
 
-/* Dropdown menu */
+/* Dropdown menu — position: fixed + z-index set via inline style to escape overflow containers */
 .chatDropdown {
-  position: absolute;
-  z-index: 200;
   min-width: 170px;
   padding: 4px;
   background-color: var(--bg-secondary);

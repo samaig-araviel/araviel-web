@@ -97,23 +97,27 @@ function useDropdownPosition(menuOpenId) {
     if (!menuOpenId || !menuBtnRef.current) return;
     const btn = menuBtnRef.current;
     const rect = btn.getBoundingClientRect();
-    const menuHeight = 170;
+    const menuHeight = 220;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
     const openUpward = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
 
-    const newStyle = {};
+    // Use fixed positioning so the dropdown escapes overflow-y: auto containers
+    const newStyle = {
+      position: 'fixed',
+      zIndex: 9000,
+    };
+
     if (openUpward) {
-      newStyle.bottom = '100%';
+      newStyle.bottom = `${window.innerHeight - rect.top + 4}px`;
       newStyle.top = 'auto';
-      newStyle.marginBottom = '4px';
     } else {
-      newStyle.top = '100%';
+      newStyle.top = `${rect.bottom + 4}px`;
       newStyle.bottom = 'auto';
-      newStyle.marginTop = '4px';
     }
 
-    newStyle.right = '0';
+    // Align to the right edge of the button
+    newStyle.right = `${window.innerWidth - rect.right}px`;
     newStyle.left = 'auto';
 
     setDropdownStyle(newStyle);
@@ -201,6 +205,13 @@ export default function Sidebar() {
       loadConversations(0);
     }
   }, [currentChatId, loadConversations]);
+
+  // Listen for conversation-updated events from chat stream (covers creation + title updates)
+  useEffect(() => {
+    const handleConversationUpdated = () => loadConversations(0);
+    window.addEventListener('araviel-conversation-updated', handleConversationUpdated);
+    return () => window.removeEventListener('araviel-conversation-updated', handleConversationUpdated);
+  }, [loadConversations]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -811,7 +822,7 @@ export default function Sidebar() {
                       </ul>
                     </div>
                   ))}
-                  {conversations.length < conversationsTotal && (
+                  {conversations.length < conversationsTotal && filteredConversations.length > 1 && (
                     <button
                       className={styles.loadMoreBtn}
                       onClick={handleLoadMore}
