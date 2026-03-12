@@ -2422,6 +2422,111 @@
   height: 15px;
 }
 
+.subConvHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.subConvMenuWrapper {
+  position: relative;
+}
+
+.subConvMenuBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subConvMenuBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.subConvMenuBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.subConvMenuDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 50;
+  min-width: 140px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.subConvMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.subConvMenuItem:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.subConvMenuItem svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.subConvMenuItemReported {
+  color: #ef4444;
+}
+
+.subConvMenuItemReported:hover {
+  color: #ef4444;
+}
+
+.subConvMenuItemDanger {
+  color: #ef4444;
+}
+
+.subConvMenuItemDanger:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+.subConvMenuDivider {
+  height: 1px;
+  margin: 3px 6px;
+  background-color: var(--border-primary);
+}
+
+/* Pill star/report indicator colors */
+.subConvPillBtn svg[data-starred] {
+  color: #d97706;
+}
+
+.subConvPillBtn svg[data-reported] {
+  color: #ef4444;
+}
+
 /* Empty state */
 .subConvEmpty {
   display: flex;

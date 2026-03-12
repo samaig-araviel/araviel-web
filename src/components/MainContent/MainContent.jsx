@@ -2068,6 +2068,7 @@ export default function MainContent() {
           onCodePanelToggle={setIsCodePanelOpen}
           focusInput={focusInput}
           currentChatId={currentChatId}
+          webSearchEnabled={webSearchEnabled}
         />
       )}
 
