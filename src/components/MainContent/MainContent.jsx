@@ -778,6 +778,21 @@ export default function MainContent() {
     }
   };
 
+  const handleUnreport = async () => {
+    if (!currentChatId) return;
+    const prev = [...conversations];
+    updateConvState(
+      conversations.map((c) => (c.id === currentChatId ? { ...c, isReported: false } : c))
+    );
+    try {
+      await updateConversation(currentChatId, { is_reported: false });
+      showSuccess('Report removed.');
+    } catch {
+      updateConvState(prev);
+      showError('Could not remove report. Try again.');
+    }
+  };
+
   const handleToggleStar = async () => {
     if (!currentChatId) return;
     const isStarred = currentConv?.isStarred || false;
@@ -1793,6 +1808,11 @@ export default function MainContent() {
           </div>
         )}
         <div className={styles.topNavInner}>
+          {currentConv?.isReported && (
+            <span className={styles.reportedFlag} title="This conversation has been reported">
+              <FlagIcon />
+            </span>
+          )}
           <button
             className={styles.shareBtn}
             onClick={() => setShowShareModal(true)}
@@ -1841,14 +1861,20 @@ export default function MainContent() {
                   <span>{currentConv?.isArchived ? 'Unarchive' : 'Archive'}</span>
                 </button>
                 <button
-                  className={styles.chatMenuItem}
+                  className={`${styles.chatMenuItem} ${
+                    currentConv?.isReported ? styles.chatMenuItemReported : ''
+                  }`}
                   onClick={() => {
                     setShowChatMenu(false);
-                    setShowReportDialog(true);
+                    if (currentConv?.isReported) {
+                      handleUnreport();
+                    } else {
+                      setShowReportDialog(true);
+                    }
                   }}
                 >
                   <FlagIcon />
-                  <span>Report</span>
+                  <span>{currentConv?.isReported ? 'Unreport' : 'Report'}</span>
                 </button>
                 <div className={styles.chatMenuDivider} />
                 <button

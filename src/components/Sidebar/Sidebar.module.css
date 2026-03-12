@@ -434,6 +434,16 @@
   white-space: nowrap;
 }
 
+.reportedDot {
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  flex-shrink: 0;
+  margin-right: 6px;
+}
+
 .recentItemActive {
   background-color: var(--bg-active);
   color: var(--text-primary);

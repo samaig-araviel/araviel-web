@@ -58,6 +58,20 @@
   pointer-events: auto;
 }
 
+.reportedFlag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ef4444;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.reportedFlag svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Project context — top-left */
 .projectHeader {
   pointer-events: auto;
@@ -507,6 +521,14 @@
 
 .chatMenuItemDanger:hover {
   background-color: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+.chatMenuItemReported {
+  color: #ef4444;
+}
+
+.chatMenuItemReported svg {
   color: #ef4444;
 }
 
