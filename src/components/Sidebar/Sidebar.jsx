@@ -718,6 +718,9 @@ export default function Sidebar() {
                                 }`}
                                 onClick={() => handleChatClick(chat.id)}
                               >
+                                {chat.isReported && (
+                                  <span className={styles.reportedDot} title="Reported" />
+                                )}
                                 <span>{chat.title}</span>
                               </button>
                             )}

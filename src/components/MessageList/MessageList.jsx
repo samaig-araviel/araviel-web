@@ -13,6 +13,8 @@ import {
   consumeSSEStream,
   submitMessageFeedback,
   deleteSubConversation,
+  updateSubConversation,
+  reportSubConversation,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import {
@@ -38,6 +40,9 @@ import {
   MaximizeIcon,
   CodeIcon,
   EditIcon,
+  StarIcon,
+  FlagIcon,
+  MoreVerticalIcon,
 } from '../Icons';
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -360,32 +365,31 @@ function extractVideoInfo(url) {
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  */
 /**
- * Strip emoji characters from text for cleaner, professional rendering.
- * Preserves standard punctuation, symbols, and all non-emoji Unicode.
+ * Strip emoji characters from a single line of text.
+ * Preserves all whitespace structure — only removes emoji codepoints.
  */
-function stripEmojis(text) {
-  if (!text) return text;
-  return text
-    .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // emoticons
-    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // symbols & pictographs
-    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // transport & map
-    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // flags
-    .replace(/[\u{2600}-\u{26FF}]/gu, '') // misc symbols
-    .replace(/[\u{2700}-\u{27BF}]/gu, '') // dingbats
-    .replace(/[\u{FE00}-\u{FE0F}]/gu, '') // variation selectors
-    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // supplemental symbols
-    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '') // chess symbols
-    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '') // symbols extended-A
-    .replace(/[\u{200D}]/gu, '') // zero-width joiner
-    .replace(/[\u{20E3}]/gu, '') // combining enclosing keycap
-    .replace(/\s{2,}/g, ' ') // collapse multiple spaces from removals
-    .trim();
+function stripEmojis(line) {
+  if (!line) return line;
+  return line
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
+    .replace(/[\u{2600}-\u{26FF}]/gu, '')
+    .replace(/[\u{2700}-\u{27BF}]/gu, '')
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '')
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '')
+    .replace(/[\u{200D}]/gu, '')
+    .replace(/[\u{20E3}]/gu, '')
+    .replace(/ {2,}/g, ' '); // collapse double spaces (not newlines)
 }
 
 function renderMarkdown(text) {
   if (!text) return null;
 
-  const lines = stripEmojis(text).split('\n');
+  const lines = text.split('\n').map(stripEmojis);
   const elements = [];
   const images = [];
   let i = 0;
@@ -3127,8 +3131,13 @@ function SubConversationPanel({
   thinkingStatus,
   conversationId,
   isDark,
+  onStar,
+  onReport,
+  onDelete,
 }) {
   const [input, setInput] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
   const messagesEndRef = useRef(null);
   const panelRef = useRef(null);
   const textareaRef = useRef(null);
@@ -3148,11 +3157,28 @@ function SubConversationPanel({
 
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (showMenu) {
+          setShowMenu(false);
+        } else {
+          onClose();
+        }
+      }
     };
     document.addEventListener('keydown', handleEsc);
     return () => document.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+  }, [onClose, showMenu]);
+
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
 
   const autoResize = () => {
     const el = textareaRef.current;
@@ -3195,9 +3221,57 @@ function SubConversationPanel({
         <div className={styles.subConvPanelHeader}>
           <div className={styles.subConvPanelHeaderTop}>
             <span className={styles.subConvHeaderTitle}>Sub Conversation</span>
-            <button className={styles.subConvCloseBtn} onClick={onClose} aria-label="Close panel">
-              <CloseIcon />
-            </button>
+            <div className={styles.subConvHeaderActions}>
+              <div className={styles.subConvMenuWrapper} ref={menuRef}>
+                <button
+                  className={styles.subConvMenuBtn}
+                  onClick={() => setShowMenu((v) => !v)}
+                  aria-label="Actions"
+                >
+                  <MoreVerticalIcon />
+                </button>
+                {showMenu && (
+                  <div className={styles.subConvMenuDropdown}>
+                    <button
+                      className={styles.subConvMenuItem}
+                      onClick={() => {
+                        setShowMenu(false);
+                        onStar && onStar(subConversation.id);
+                      }}
+                    >
+                      <StarIcon filled={subConversation.isStarred} />
+                      <span>{subConversation.isStarred ? 'Unstar' : 'Star'}</span>
+                    </button>
+                    <button
+                      className={`${styles.subConvMenuItem} ${
+                        subConversation.isReported ? styles.subConvMenuItemReported : ''
+                      }`}
+                      onClick={() => {
+                        setShowMenu(false);
+                        onReport && onReport(subConversation.id);
+                      }}
+                    >
+                      <FlagIcon />
+                      <span>{subConversation.isReported ? 'Unreport' : 'Report'}</span>
+                    </button>
+                    <div className={styles.subConvMenuDivider} />
+                    <button
+                      className={`${styles.subConvMenuItem} ${styles.subConvMenuItemDanger}`}
+                      onClick={() => {
+                        setShowMenu(false);
+                        onDelete && onDelete(subConversation.id);
+                      }}
+                    >
+                      <CloseIcon />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button className={styles.subConvCloseBtn} onClick={onClose} aria-label="Close panel">
+                <CloseIcon />
+              </button>
+            </div>
           </div>
           <div className={styles.subConvPanelSubheader} title={subConversation.highlightedText}>
             <SparkleIcon />
@@ -3377,7 +3451,9 @@ function SubConversationPills({ subConversations, onOpen, onDelete, activeSubCon
                 onClick={() => onOpen(sc.id)}
                 title={sc.highlightedText}
               >
-                <MessageCircleIcon />
+                {sc.isStarred && <StarIcon filled />}
+                {sc.isReported && <FlagIcon />}
+                {!sc.isStarred && !sc.isReported && <MessageCircleIcon />}
                 <span>{truncated}</span>
               </button>
               {onDelete && (
@@ -4164,6 +4240,7 @@ function Message({
   assistantIndex,
   onEditPrompt,
   onOpenCodePanel,
+  webSearchEnabled,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -4187,6 +4264,7 @@ function Message({
   const subConvStreamRef = useRef(null);
   const markdownContentRef = useRef(null);
   const tooltipTimeoutRef = useRef(null);
+  const { showError } = useToast();
 
   // Handle text selection within the assistant message content
   const handleMouseUp = useCallback(() => {
@@ -4360,6 +4438,7 @@ function Message({
           message: text,
           conversationId: currentChatId || undefined,
           subConversationId: activeSubConvId,
+          webSearch: webSearchEnabled === true ? true : undefined,
         });
 
         await consumeSSEStream(response, (event) => {
@@ -4429,7 +4508,7 @@ function Message({
         )
       );
     },
-    [activeSubConvId, currentChatId]
+    [activeSubConvId, currentChatId, webSearchEnabled]
   );
 
   // Open existing sub-conversation pill — fetch messages from API
@@ -4477,6 +4556,52 @@ function Message({
     setActiveSubConvId(null);
     if (onSubConvPanelToggle) onSubConvPanelToggle(false);
   }, [activeSubConvId, subConversations, onSubConvPanelToggle]);
+
+  // Toggle star on a sub-conversation
+  const handleStarSubConv = useCallback(
+    async (id) => {
+      const sc = subConversations.find((s) => s.id === id);
+      if (!sc) return;
+      const newVal = !sc.isStarred;
+      setSubConversations((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, isStarred: newVal } : s))
+      );
+      try {
+        await updateSubConversation(id, { is_starred: newVal });
+      } catch {
+        setSubConversations((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, isStarred: !newVal } : s))
+        );
+        showError('Could not update star. Try again.');
+      }
+    },
+    [subConversations, showError]
+  );
+
+  // Toggle report on a sub-conversation
+  const handleReportSubConv = useCallback(
+    async (id) => {
+      const sc = subConversations.find((s) => s.id === id);
+      if (!sc) return;
+      const newVal = !sc.isReported;
+      setSubConversations((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, isReported: newVal } : s))
+      );
+      try {
+        if (newVal) {
+          await reportSubConversation(id, 'other', '');
+        } else {
+          await updateSubConversation(id, { is_reported: false });
+        }
+      } catch {
+        setSubConversations((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, isReported: !newVal } : s))
+        );
+        showError('Could not update report. Try again.');
+      }
+    },
+    [subConversations, showError]
+  );
 
   // Request to delete a sub-conversation (shows confirmation)
   const handleRequestDeleteSubConv = useCallback((id) => {
@@ -4714,6 +4839,9 @@ function Message({
           thinkingStatus={subConvThinkingStatus}
           conversationId={currentChatId}
           isDark={isDark}
+          onStar={handleStarSubConv}
+          onReport={handleReportSubConv}
+          onDelete={handleRequestDeleteSubConv}
         />
       )}
 
@@ -4747,6 +4875,7 @@ export default function MessageList({
   onCodePanelToggle,
   focusInput,
   currentChatId,
+  webSearchEnabled,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -4967,6 +5096,7 @@ export default function MessageList({
                 assistantIndex={assistantIndices.get(index) ?? -1}
                 onEditPrompt={handleEditPrompt}
                 onOpenCodePanel={handleOpenCodePanel}
+                webSearchEnabled={webSearchEnabled}
               />
             </div>
           );
