@@ -4766,7 +4766,13 @@ function Message({
           </div>
         ) : (
           <div className={styles.markdownContent} ref={markdownContentRef}>
-            {renderMarkdown(displayText)}
+            {renderMarkdown(
+              // Strip image markdown when generatedImages already handles rendering,
+              // to prevent duplicate images (one from markdown, one from GeneratedImageBlock)
+              message.generatedImages && message.generatedImages.length > 0
+                ? displayText.replace(/^!\[Generated image\]\([^)]+\)\s*$/gm, '').trim()
+                : displayText
+            )}
             {isStreaming && <span className={styles.cursor} />}
           </div>
         )}
