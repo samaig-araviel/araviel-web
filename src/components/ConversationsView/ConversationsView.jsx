@@ -28,6 +28,7 @@ import {
   deleteConversation,
   fetchProjects as fetchProjectsApi,
 } from '../../services/api';
+import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import {
@@ -45,7 +46,7 @@ import {
   ImportIcon,
   ProjectsIcon,
 } from '../Icons';
-import { getProviderLogo } from '../ProviderLogos';
+import { getProviderLogo } from '../getProviderLogo';
 import ImportConversationsModal from '../ImportConversationsModal';
 import styles from './ConversationsView.module.css';
 
@@ -89,7 +90,7 @@ function groupConversationsByTime(conversations) {
   return groups;
 }
 
-function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive } = {}) {
+function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive, showError } = {}) {
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({});
   const [renamingId, setRenamingId] = useState(null);
@@ -188,7 +189,9 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive } 
         })
       );
       // Persist to backend
-      updateConversation(chatId, { title: trimmed }).catch(() => {});
+      updateConversation(chatId, { title: trimmed }).catch(() => {
+        if (showError) showError("Couldn't rename this conversation. Try again.");
+      });
     }
     setRenamingId(null);
     setRenameValue('');
@@ -223,20 +226,6 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive } 
     closeMenu();
     if (onArchive) {
       onArchive(chatId);
-    } else {
-      try {
-        const archived = new Set(
-          JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]')
-        );
-        if (archived.has(chatId)) {
-          archived.delete(chatId);
-        } else {
-          archived.add(chatId);
-        }
-        localStorage.setItem('araviel-archived-chats', JSON.stringify([...archived]));
-      } catch {
-        // Silently fail
-      }
     }
   };
 
@@ -247,6 +236,8 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive } 
 
   const confirmDelete = () => {
     const chatId = deleteConfirm;
+    const prevConversations = conversations;
+    const prevTotal = conversationsTotal;
     dispatch(
       setConversations({
         conversations: conversations.filter((c) => c.id !== chatId),
@@ -254,17 +245,10 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive } 
       })
     );
     // Persist to backend
-    deleteConversation(chatId).catch(() => {});
-    try {
-      const starred = new Set(JSON.parse(localStorage.getItem('araviel-starred-chats') || '[]'));
-      const archived = new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
-      starred.delete(chatId);
-      archived.delete(chatId);
-      localStorage.setItem('araviel-starred-chats', JSON.stringify([...starred]));
-      localStorage.setItem('araviel-archived-chats', JSON.stringify([...archived]));
-    } catch {
-      // Silently fail
-    }
+    deleteConversation(chatId).catch(() => {
+      dispatch(setConversations({ conversations: prevConversations, total: prevTotal }));
+      if (showError) showError("Couldn't delete this conversation. Try again.");
+    });
     setDeleteConfirm(null);
   };
 
@@ -309,6 +293,7 @@ function getImportedProviders(conversations) {
 
 export default function ConversationsView() {
   const dispatch = useDispatch();
+  const { showError, showSuccess } = useToast();
   const conversations = useSelector(selectConversations);
   const conversationsTotal = useSelector(selectConversationsTotal);
   const conversationsLoading = useSelector(selectConversationsLoading);
@@ -323,20 +308,6 @@ export default function ConversationsView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [starredIds, setStarredIds] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('araviel-starred-chats') || '[]'));
-    } catch {
-      return new Set();
-    }
-  });
-  const [archivedIds, setArchivedIds] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
-    } catch {
-      return new Set();
-    }
-  });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importedConversations, setImportedConversations] = useState([]);
@@ -353,20 +324,47 @@ export default function ConversationsView() {
 
   const listRef = useRef(null);
 
-  const handleSingleArchive = useCallback((chatId) => {
-    setArchivedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(chatId)) {
-        next.delete(chatId);
-      } else {
-        next.add(chatId);
-      }
-      return next;
-    });
-  }, []);
+  // Derive starred/archived sets from conversations (API-backed via Redux)
+  const starredIds = useMemo(
+    () => new Set(conversations.filter((c) => c.isStarred).map((c) => c.id)),
+    [conversations]
+  );
+  const archivedIds = useMemo(
+    () => new Set(conversations.filter((c) => c.isArchived).map((c) => c.id)),
+    [conversations]
+  );
+
+  const handleSingleArchive = useCallback(
+    (chatId) => {
+      const conv = conversations.find((c) => c.id === chatId);
+      const newValue = !conv?.isArchived;
+      // Optimistic update
+      dispatch(
+        setConversations({
+          conversations: conversations.map((c) =>
+            c.id === chatId ? { ...c, isArchived: newValue } : c
+          ),
+          total: conversationsTotal,
+        })
+      );
+      updateConversation(chatId, { is_archived: newValue }).catch(() => {
+        dispatch(
+          setConversations({
+            conversations: conversations.map((c) =>
+              c.id === chatId ? { ...c, isArchived: !newValue } : c
+            ),
+            total: conversationsTotal,
+          })
+        );
+        showError("Couldn't archive this conversation. Try again.");
+      });
+    },
+    [conversations, conversationsTotal, dispatch, showError]
+  );
 
   const menu = useItemMenu(conversations, conversationsTotal, dispatch, {
     onArchive: handleSingleArchive,
+    showError,
   });
 
   const importedProviders = useMemo(
@@ -385,11 +383,11 @@ export default function ConversationsView() {
       const data = await fetchImportedConversations({ archived: false });
       setImportedConversations(data.conversations || []);
     } catch {
-      // Silently fail — API may not be ready yet
+      showError("Couldn't load imported conversations.");
     } finally {
       setImportedLoading(false);
     }
-  }, []);
+  }, [showError]);
 
   const handleImportConversations = useCallback(
     async (newConversations, providerId, importMode) => {
@@ -437,22 +435,14 @@ export default function ConversationsView() {
     localStorage.setItem(IMPORTED_CONTEXT_KEY, JSON.stringify(contextProviders));
   }, [contextProviders]);
 
-  useEffect(() => {
-    localStorage.setItem('araviel-starred-chats', JSON.stringify([...starredIds]));
-  }, [starredIds]);
-
-  useEffect(() => {
-    localStorage.setItem('araviel-archived-chats', JSON.stringify([...archivedIds]));
-  }, [archivedIds]);
-
   // Ensure projects are loaded
   useEffect(() => {
     if (projects.length === 0) {
       fetchProjectsApi()
         .then((data) => dispatch(setProjects(data.projects || [])))
-        .catch(() => {});
+        .catch(() => showError('Could not load projects.'));
     }
-  }, [projects.length, dispatch]);
+  }, [projects.length, dispatch, showError]);
 
   const handleAddToProject = (chatId) => {
     menu.closeMenu();
@@ -461,36 +451,53 @@ export default function ConversationsView() {
 
   const handleAssignProject = async (projectId) => {
     if (!projectPickerFor) return;
+    const chatId = projectPickerFor;
+    const prevProjectId = conversations.find((c) => c.id === chatId)?.projectId;
+    // Optimistic update
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) => (c.id === chatId ? { ...c, projectId } : c)),
+        total: conversationsTotal,
+      })
+    );
+    setProjectPickerFor(null);
     try {
-      await updateConversation(projectPickerFor, { project_id: projectId });
+      await updateConversation(chatId, { project_id: projectId });
+      showSuccess('Conversation added to project.');
+    } catch {
       dispatch(
         setConversations({
           conversations: conversations.map((c) =>
-            c.id === projectPickerFor ? { ...c, projectId } : c
+            c.id === chatId ? { ...c, projectId: prevProjectId } : c
           ),
           total: conversationsTotal,
         })
       );
-    } catch {
-      // Silently fail
+      showError("Couldn't move this conversation to the project.");
     }
-    setProjectPickerFor(null);
   };
 
   const handleRemoveFromProject = async (chatId) => {
     menu.closeMenu();
+    const prevProjectId = conversations.find((c) => c.id === chatId)?.projectId;
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) => (c.id === chatId ? { ...c, projectId: null } : c)),
+        total: conversationsTotal,
+      })
+    );
     try {
       await updateConversation(chatId, { project_id: null });
+    } catch {
       dispatch(
         setConversations({
           conversations: conversations.map((c) =>
-            c.id === chatId ? { ...c, projectId: null } : c
+            c.id === chatId ? { ...c, projectId: prevProjectId } : c
           ),
           total: conversationsTotal,
         })
       );
-    } catch {
-      // Silently fail
+      showError("Couldn't remove conversation from project.");
     }
   };
 
@@ -507,12 +514,12 @@ export default function ConversationsView() {
           dispatch(appendConversations(data));
         }
       } catch {
-        // Silently fail
+        showError("Couldn't load conversations. Check your connection.");
       } finally {
         dispatch(setConversationsLoading(false));
       }
     },
-    [dispatch]
+    [dispatch, showError]
   );
 
   useEffect(() => {
@@ -546,8 +553,15 @@ export default function ConversationsView() {
         if (msg.role === 'assistant') {
           let generatedImages = msg.generatedImages || [];
           if (generatedImages.length === 0) {
-            const msgTime = new Date(msg.createdAt).getTime();
-            const matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
+            // Primary: match by messageId (deterministic)
+            let matched = storedImages.filter((img) => img.messageId && img.messageId === msg.id);
+            // Fallback for legacy images without messageId: use timestamp window
+            if (matched.length === 0) {
+              const msgTime = new Date(msg.createdAt).getTime();
+              matched = storedImages.filter(
+                (img) => !img.messageId && Math.abs(img.createdAt - msgTime) < 30000
+              );
+            }
             if (matched.length > 0) {
               generatedImages = matched.map((img) => ({
                 url: img.url,
@@ -578,6 +592,7 @@ export default function ConversationsView() {
             latencyMs: msg.latencyMs,
             adeLatencyMs: msg.adeLatencyMs,
             ...(generatedImages.length > 0 && { generatedImages }),
+            feedback: msg.feedback || null,
           });
         }
         return base;
@@ -606,33 +621,41 @@ export default function ConversationsView() {
   };
 
   const toggleStar = (ids) => {
-    setStarredIds((prev) => {
-      const next = new Set(prev);
-      const allStarred = [...ids].every((id) => next.has(id));
-      ids.forEach((id) => {
-        if (allStarred) {
-          next.delete(id);
-        } else {
-          next.add(id);
-        }
+    const allStarred = [...ids].every((id) => starredIds.has(id));
+    const newValue = !allStarred;
+    // Optimistic update
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) =>
+          ids.has(c.id) ? { ...c, isStarred: newValue } : c
+        ),
+        total: conversationsTotal,
+      })
+    );
+    // Persist each to backend
+    ids.forEach((id) => {
+      updateConversation(id, { is_starred: newValue }).catch(() => {
+        showError("Couldn't update star status. Try again.");
       });
-      return next;
     });
     exitSelectMode();
   };
 
   const toggleArchive = (ids) => {
-    setArchivedIds((prev) => {
-      const next = new Set(prev);
-      const allArchived = [...ids].every((id) => next.has(id));
-      ids.forEach((id) => {
-        if (allArchived) {
-          next.delete(id);
-        } else {
-          next.add(id);
-        }
+    const allArchived = [...ids].every((id) => archivedIds.has(id));
+    const newValue = !allArchived;
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) =>
+          ids.has(c.id) ? { ...c, isArchived: newValue } : c
+        ),
+        total: conversationsTotal,
+      })
+    );
+    ids.forEach((id) => {
+      updateConversation(id, { is_archived: newValue }).catch(() => {
+        showError("Couldn't update archive status. Try again.");
       });
-      return next;
     });
     exitSelectMode();
   };
@@ -642,24 +665,28 @@ export default function ConversationsView() {
   };
 
   const confirmBulkDelete = () => {
-    setStarredIds((prev) => {
-      const next = new Set(prev);
-      selectedIds.forEach((id) => next.delete(id));
-      return next;
-    });
-    setArchivedIds((prev) => {
-      const next = new Set(prev);
-      selectedIds.forEach((id) => next.delete(id));
-      return next;
+    const prevConversations = conversations;
+    const prevTotal = conversationsTotal;
+    dispatch(
+      setConversations({
+        conversations: conversations.filter((c) => !selectedIds.has(c.id)),
+        total: Math.max(0, conversationsTotal - selectedIds.size),
+      })
+    );
+    selectedIds.forEach((id) => {
+      deleteConversation(id).catch(() => {
+        dispatch(setConversations({ conversations: prevConversations, total: prevTotal }));
+        showError("Couldn't delete some conversations. Try again.");
+      });
     });
     setShowDeleteConfirm(false);
     exitSelectMode();
   };
 
   const filteredConversations = conversations.filter((chat) => {
-    if (activeTab === 'starred' && !starredIds.has(chat.id)) return false;
-    if (activeTab === 'archived' && !archivedIds.has(chat.id)) return false;
-    if (activeTab === 'all' && archivedIds.has(chat.id)) return false;
+    if (activeTab === 'starred' && !chat.isStarred) return false;
+    if (activeTab === 'archived' && !chat.isArchived) return false;
+    if (activeTab === 'all' && chat.isArchived) return false;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -910,7 +937,7 @@ export default function ConversationsView() {
   const renderConversationItem = (chat, { isImported = false } = {}) => {
     const isSelected = selectedIds.has(chat.id);
     const isCurrent = currentChatId === chat.id;
-    const isStarred = isImported ? !!chat.isStarred : starredIds.has(chat.id);
+    const isStarred = !!chat.isStarred;
     const isRenaming = menu.renamingId === chat.id;
     const ProviderLogo = isImported ? getProviderLogo(chat.provider) : null;
 

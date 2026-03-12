@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue } from '../../store/slices/chatSlice';
-import { getProviderLogo } from '../ProviderLogos';
+import { getProviderLogo } from '../getProviderLogo';
 import { PROVIDERS, MODELS, SPEED_TIERS, formatTokens } from '../../data/models';
 import {
   createSubConversation,
@@ -11,7 +11,10 @@ import {
   fetchSubConversationMessages,
   sendMessage,
   consumeSSEStream,
+  submitMessageFeedback,
+  deleteSubConversation,
 } from '../../services/api';
+import { useToast } from '../Toast/Toast';
 import {
   CopyIcon,
   CheckIcon,
@@ -2984,6 +2987,114 @@ function SubConvThinkingTimeline({ status }) {
  * Sub-conversation panel — a right-side panel for discussing highlighted text.
  * Renders as a floating card on the right side, styled to feel like part of the page.
  */
+function SubConvResponseActions({ msg, conversationId }) {
+  const [copied, setCopied] = useState(false);
+  const [liked, setLiked] = useState(msg.feedback === 'like');
+  const [disliked, setDisliked] = useState(msg.feedback === 'dislike');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleLike = async () => {
+    const was = liked;
+    const newFeedback = was ? null : 'like';
+    setLiked(!was);
+    setDisliked(false);
+    if (conversationId && msg.id) {
+      try {
+        await submitMessageFeedback(conversationId, msg.id, newFeedback);
+      } catch {
+        setLiked(was);
+      }
+    }
+  };
+
+  const handleDislike = async () => {
+    const was = disliked;
+    const newFeedback = was ? null : 'dislike';
+    setDisliked(!was);
+    setLiked(false);
+    if (conversationId && msg.id) {
+      try {
+        await submitMessageFeedback(conversationId, msg.id, newFeedback);
+      } catch {
+        setDisliked(was);
+      }
+    }
+  };
+
+  return (
+    <div className={styles.subConvActions}>
+      <button
+        className={`${styles.subConvActionBtn} ${liked ? styles.subConvActionBtnActive : ''}`}
+        onClick={handleLike}
+        title="Like"
+        aria-label="Like"
+      >
+        <ThumbsUpIcon />
+      </button>
+      <button
+        className={`${styles.subConvActionBtn} ${disliked ? styles.subConvActionBtnActive : ''}`}
+        onClick={handleDislike}
+        title="Dislike"
+        aria-label="Dislike"
+      >
+        <ThumbsDownIcon />
+      </button>
+      <button
+        className={`${styles.subConvActionBtn} ${copied ? styles.subConvActionBtnCopied : ''}`}
+        onClick={handleCopy}
+        title={copied ? 'Copied!' : 'Copy'}
+        aria-label="Copy"
+      >
+        {copied ? <CheckIcon /> : <CopyIcon />}
+      </button>
+    </div>
+  );
+}
+
+function SubConvModelBadge({ msg, isDark }) {
+  const provider = msg.provider;
+  if (!provider) return null;
+  const providerData = PROVIDERS[provider];
+  if (!providerData) return null;
+  const LogoComponent = getProviderLogo(provider);
+  const displayName =
+    provider === 'anthropic'
+      ? 'Claude'
+      : provider === 'openai'
+      ? 'OpenAI'
+      : provider === 'google'
+      ? 'Gemini'
+      : provider === 'perplexity'
+      ? 'Perplexity'
+      : providerData.name || provider;
+
+  return (
+    <div
+      className={styles.subConvModelBadge}
+      style={{
+        backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
+        color: isDark
+          ? providerData.accentTextDark || providerData.accentColor
+          : providerData.accentText,
+      }}
+    >
+      <LogoComponent size={10} />
+      <span>{displayName}</span>
+      {msg.webSearchUsed && (
+        <span className={styles.subConvWebBadge} title="Used web search">
+          🔍
+        </span>
+      )}
+    </div>
+  );
+}
+
 function SubConversationPanel({
   subConversation,
   onSend,
@@ -2991,15 +3102,15 @@ function SubConversationPanel({
   isSending,
   streamingText,
   thinkingStatus,
+  conversationId,
+  isDark,
 }) {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
   const panelRef = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
-    // Focus input after panel slide-in animation
     const timer = setTimeout(() => {
       if (textareaRef.current) textareaRef.current.focus();
     }, 400);
@@ -3012,7 +3123,6 @@ function SubConversationPanel({
     }
   }, [subConversation.messages.length, streamingText]);
 
-  // Close on escape
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') onClose();
@@ -3021,7 +3131,6 @@ function SubConversationPanel({
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  // Auto-resize textarea
   const autoResize = () => {
     const el = textareaRef.current;
     if (el) {
@@ -3050,7 +3159,6 @@ function SubConversationPanel({
       ? subConversation.highlightedText.slice(0, 60) + '...'
       : subConversation.highlightedText;
 
-  // Build the list of finalized messages (excluding the one being streamed)
   const finalizedMessages = subConversation.messages;
   const showStreaming = isSending || (thinkingStatus && thinkingStatus !== 'idle');
 
@@ -3058,7 +3166,6 @@ function SubConversationPanel({
     <>
       <div className={styles.subConvOverlay} onClick={onClose} />
       <div className={styles.subConvPanel} ref={panelRef}>
-        {/* Top fade */}
         <div className={styles.subConvPanelFadeTop} />
 
         {/* Header */}
@@ -3090,7 +3197,7 @@ function SubConversationPanel({
           )}
           {finalizedMessages.map((msg, idx) => (
             <div
-              key={idx}
+              key={msg.id || idx}
               className={`${styles.subConvMsg} ${
                 msg.role === 'user' ? styles.subConvMsgUser : styles.subConvMsgAssistant
               }`}
@@ -3099,12 +3206,29 @@ function SubConversationPanel({
                 <div className={styles.subConvUserCard}>{msg.content}</div>
               ) : (
                 <div className={styles.subConvAssistantContent}>
+                  <SubConvModelBadge msg={msg} isDark={isDark} />
                   <div className={styles.subConvMarkdown}>{renderMarkdown(msg.content)}</div>
+                  {msg.citations && msg.citations.length > 0 && (
+                    <div className={styles.subConvCitations}>
+                      {msg.citations.map((src, i) => (
+                        <a
+                          key={i}
+                          href={src.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.subConvCitationLink}
+                          title={src.title || src.url}
+                        >
+                          {src.title || src.url}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  <SubConvResponseActions msg={msg} conversationId={conversationId} />
                 </div>
               )}
             </div>
           ))}
-          {/* Thinking timeline + streaming response */}
           {thinkingStatus && thinkingStatus !== 'idle' && (
             <div className={styles.subConvMsg}>
               <SubConvThinkingTimeline status={thinkingStatus} />
@@ -3123,10 +3247,9 @@ function SubConversationPanel({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Bottom fade */}
         <div className={styles.subConvPanelFadeBottom} />
 
-        {/* Input — matches main chatbox design */}
+        {/* Input */}
         <div className={styles.subConvInputSection}>
           <form className={styles.subConvInputContainer} onSubmit={handleSubmit}>
             <div className={styles.subConvInputWrapper}>
@@ -3544,10 +3667,11 @@ function ResponseActions({
   userPrompt,
   onSelectAlternate,
   assistantIndex,
+  conversationId,
 }) {
   const [copied, setCopied] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [disliked, setDisliked] = useState(false);
+  const [liked, setLiked] = useState(message.feedback === 'like');
+  const [disliked, setDisliked] = useState(message.feedback === 'dislike');
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [showModelDropdown, setShowModelDropdown] = useState(false);
   const modelPillRef = useRef(null);
@@ -3584,14 +3708,32 @@ function ResponseActions({
     }
   }, [onRetry, userPrompt]);
 
-  const handleLike = () => {
-    setLiked(!liked);
-    if (disliked) setDisliked(false);
+  const handleLike = async () => {
+    const wasLiked = liked;
+    const newFeedback = wasLiked ? null : 'like';
+    setLiked(!wasLiked);
+    setDisliked(false);
+    if (conversationId && message.id) {
+      try {
+        await submitMessageFeedback(conversationId, message.id, newFeedback);
+      } catch {
+        setLiked(wasLiked);
+      }
+    }
   };
 
-  const handleDislike = () => {
-    setDisliked(!disliked);
-    if (liked) setLiked(false);
+  const handleDislike = async () => {
+    const wasDisliked = disliked;
+    const newFeedback = wasDisliked ? null : 'dislike';
+    setDisliked(!wasDisliked);
+    setLiked(false);
+    if (conversationId && message.id) {
+      try {
+        await submitMessageFeedback(conversationId, message.id, newFeedback);
+      } catch {
+        setDisliked(wasDisliked);
+      }
+    }
   };
 
   const displayName = getProviderDisplayName();
@@ -4120,8 +4262,9 @@ function Message({
 
   // Cleanup streaming on unmount
   useEffect(() => {
+    const ref = subConvStreamRef.current;
     return () => {
-      if (subConvStreamRef.current) clearTimeout(subConvStreamRef.current);
+      if (ref) clearTimeout(ref);
     };
   }, []);
 
@@ -4139,6 +4282,8 @@ function Message({
         const mapped = data.subConversations.map((sc) => ({
           id: sc.id,
           highlightedText: sc.highlightedText,
+          isStarred: sc.isStarred || false,
+          isReported: sc.isReported || false,
           messages: [], // loaded on demand when opened
         }));
         setSubConversations(mapped);
@@ -4170,6 +4315,9 @@ function Message({
       setSubConvStreamText('');
 
       let accumulatedContent = '';
+      let routingInfo = {};
+      let citationSources = null;
+      let doneInfo = {};
 
       try {
         const response = await sendMessage({
@@ -4182,15 +4330,28 @@ function Message({
           const { type, data } = event;
 
           if (type === 'routing') {
-            // Sub-conv routing done, move to thinking/streaming phase
+            routingInfo = {
+              modelName: data.modelName || data.model,
+              provider: data.provider,
+              modelId: data.modelId,
+              webSearchUsed: data.webSearchUsed || false,
+              messageId: data.messageId,
+            };
           } else if (type === 'thinking') {
             // Still thinking
           } else if (type === 'delta') {
             setSubConvThinkingStatus('streaming');
             accumulatedContent += data.content || '';
             setSubConvStreamText(accumulatedContent);
+          } else if (type === 'citations') {
+            citationSources = data.sources || data.citations;
           } else if (type === 'done') {
-            // Finalize
+            doneInfo = {
+              messageId: data.messageId,
+              usage: data.usage,
+              costUsd: data.costUsd,
+              latencyMs: data.latencyMs,
+            };
           } else if (type === 'error') {
             if (data.code !== 'PROVIDER_RETRY') {
               accumulatedContent += `\n\n*Error: ${data.message}*`;
@@ -4202,7 +4363,7 @@ function Message({
         accumulatedContent = accumulatedContent || `*Error: ${err.message || 'Connection failed'}*`;
       }
 
-      // Finalize: add assistant message and reset streaming state
+      // Finalize: add rich assistant message and reset streaming state
       const finalContent = accumulatedContent || '*No response received*';
       setSubConvStreamText('');
       setSubConvThinkingStatus('idle');
@@ -4210,7 +4371,24 @@ function Message({
       setSubConversations((prev) =>
         prev.map((sc) =>
           sc.id === activeSubConvId
-            ? { ...sc, messages: [...sc.messages, { role: 'assistant', content: finalContent }] }
+            ? {
+                ...sc,
+                messages: [
+                  ...sc.messages,
+                  {
+                    role: 'assistant',
+                    content: finalContent,
+                    id: doneInfo.messageId || routingInfo.messageId,
+                    modelName: routingInfo.modelName,
+                    provider: routingInfo.provider,
+                    modelId: routingInfo.modelId,
+                    webSearchUsed: routingInfo.webSearchUsed,
+                    citations: citationSources,
+                    feedback: null,
+                    usage: doneInfo.usage,
+                  },
+                ],
+              }
             : sc
         )
       );
@@ -4225,13 +4403,21 @@ function Message({
       setShowSubConvPanel(true);
       if (onSubConvPanelToggle) onSubConvPanelToggle(true);
 
-      // Try to load messages from backend
+      // Try to load messages from backend (with rich fields)
       try {
         const data = await fetchSubConversationMessages(id);
         if (data.messages && data.messages.length > 0) {
           const mappedMsgs = data.messages.map((msg) => ({
             role: msg.role,
             content: msg.content,
+            id: msg.id,
+            modelName: msg.modelUsed || msg.modelName,
+            provider: msg.provider,
+            modelId: msg.modelId,
+            webSearchUsed: msg.webSearchUsed || false,
+            citations: msg.citations || msg.sources || null,
+            feedback: msg.feedback || null,
+            usage: msg.usage || null,
           }));
           setSubConversations((prev) =>
             prev.map((sc) => (sc.id === id ? { ...sc, messages: mappedMsgs } : sc))
@@ -4261,8 +4447,8 @@ function Message({
     setPendingDeleteId(id);
   }, []);
 
-  // Confirm delete
-  const handleConfirmDeleteSubConv = useCallback(() => {
+  // Confirm delete — now calls API
+  const handleConfirmDeleteSubConv = useCallback(async () => {
     if (!pendingDeleteId) return;
     // If deleting the active one, close the panel
     if (pendingDeleteId === activeSubConvId) {
@@ -4270,8 +4456,14 @@ function Message({
       setActiveSubConvId(null);
       if (onSubConvPanelToggle) onSubConvPanelToggle(false);
     }
-    setSubConversations((prev) => prev.filter((sc) => sc.id !== pendingDeleteId));
+    const idToDelete = pendingDeleteId;
+    setSubConversations((prev) => prev.filter((sc) => sc.id !== idToDelete));
     setPendingDeleteId(null);
+    try {
+      await deleteSubConversation(idToDelete);
+    } catch {
+      // Already removed from UI — acceptable since the sub-conv is gone locally
+    }
   }, [pendingDeleteId, activeSubConvId, onSubConvPanelToggle]);
 
   // Cancel delete
@@ -4457,6 +4649,7 @@ function Message({
           userPrompt={userPrompt}
           onSelectAlternate={(alt) => setPendingAlternate(alt)}
           assistantIndex={assistantIndex}
+          conversationId={currentChatId}
         />
       )}
 
@@ -4482,10 +4675,12 @@ function Message({
           isSending={isSendingSubMsg}
           streamingText={subConvStreamText}
           thinkingStatus={subConvThinkingStatus}
+          conversationId={currentChatId}
+          isDark={isDark}
         />
       )}
 
-      {/* Delete sub-conversation not supported by backend */}
+      {/* Sub-conversation delete is handled via DeleteSubConvDialog */}
     </div>
   );
 }

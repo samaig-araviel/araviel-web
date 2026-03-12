@@ -99,6 +99,7 @@ export function saveGeneratedImage(image) {
     createdAt: Date.now(),
     size: image.size || null,
     style: image.style || null,
+    messageId: image.messageId || null,
   };
   images.unshift(entry);
   // Keep max 100 images

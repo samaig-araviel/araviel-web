@@ -630,6 +630,71 @@
   transform: scale(0.98);
 }
 
+/* Report dialog */
+.reportReasons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0 8px;
+  width: 100%;
+}
+
+.reportReasonLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.reportReasonLabel:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.reportReasonSelected {
+  border-color: var(--accent-color, #8b5cf6);
+  background-color: var(--accent-color-alpha, rgba(139, 92, 246, 0.08));
+  color: var(--text-primary);
+}
+
+.reportReasonRadio {
+  accent-color: var(--accent-color, #8b5cf6);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.reportDetailsInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+  margin-bottom: 4px;
+  transition: border-color 0.15s;
+}
+
+.reportDetailsInput::placeholder {
+  color: var(--text-tertiary);
+}
+
+.reportDetailsInput:focus {
+  outline: none;
+  border-color: var(--accent-color, #8b5cf6);
+}
+
 /* Share modal overlay */
 .shareOverlay {
   position: fixed;

@@ -2526,6 +2526,95 @@
   color: var(--text-primary);
 }
 
+/* Sub-conversation model badge */
+.subConvModelBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 6px;
+  width: fit-content;
+}
+
+.subConvWebBadge {
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+/* Sub-conversation compact response actions */
+.subConvActions {
+  display: flex;
+  gap: 2px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.subConvMsgAssistant:hover .subConvActions {
+  opacity: 1;
+}
+
+.subConvActionBtn {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.subConvActionBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.subConvActionBtn:hover {
+  color: var(--text-secondary);
+  background-color: var(--bg-hover);
+}
+
+.subConvActionBtnActive {
+  color: var(--accent-color, #8b5cf6);
+}
+
+.subConvActionBtnCopied {
+  color: var(--success-color, #22c55e);
+}
+
+/* Sub-conversation citations */
+.subConvCitations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.subConvCitationLink {
+  font-size: 11px;
+  color: var(--accent-color, #8b5cf6);
+  text-decoration: none;
+  background: var(--bg-secondary);
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: background-color 0.15s;
+}
+
+.subConvCitationLink:hover {
+  background: var(--bg-hover);
+}
+
 .subConvMarkdown {
   font-size: 14px;
   line-height: 1.7;

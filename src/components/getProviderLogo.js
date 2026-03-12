@@ -1,0 +1,15 @@
+import { AnthropicLogo, OpenAILogo, GoogleLogo, PerplexityLogo, XAILogo } from './ProviderLogos';
+
+/**
+ * Get the logo component for a given provider ID.
+ */
+export function getProviderLogo(providerId) {
+  const logos = {
+    anthropic: AnthropicLogo,
+    openai: OpenAILogo,
+    google: GoogleLogo,
+    perplexity: PerplexityLogo,
+    xai: XAILogo,
+  };
+  return logos[providerId] || AnthropicLogo;
+}

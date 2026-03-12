@@ -36,6 +36,8 @@ import {
   setPendingModality,
   setImportedContext,
   setActiveProjectId,
+  selectConversations,
+  setConversations,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -95,7 +97,9 @@ import {
   consumeSSEStream,
   fetchConversation,
   updateConversation,
+  reportConversation,
 } from '../../services/api';
+import { useToast } from '../Toast/Toast';
 import { selectProjects } from '../../store/slices/projectsSlice';
 import { setActiveItem, selectActiveItem } from '../../store/slices/sidebarSlice';
 import { getUserTier, PROVIDERS, isImageGenerationModel } from '../../data/models';
@@ -643,8 +647,10 @@ export default function MainContent() {
   const importedContext = useSelector(selectImportedContext);
   const activeProjectId = useSelector(selectActiveProjectId);
   const projects = useSelector(selectProjects);
+  const conversations = useSelector(selectConversations);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
+  const { showError, showSuccess } = useToast();
   const {
     location: userLocation,
     permission: locationPermission,
@@ -664,6 +670,10 @@ export default function MainContent() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showReportDialog, setShowReportDialog] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportDetails, setReportDetails] = useState('');
+  const [isReporting, setIsReporting] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
   const [isCodePanelOpen, setIsCodePanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -674,7 +684,7 @@ export default function MainContent() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [showLimitToast, setShowLimitToast] = useState(false);
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
-  const [conversationProject, setConversationProject] = useState(null); // { id, name } of linked project
+  // conversationProject is now derived from Redux — see below
   const [conversationTitle, setConversationTitle] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
@@ -687,54 +697,119 @@ export default function MainContent() {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  // Fetch conversation metadata to check project link
+  // Derive conversationProject from Redux conversations (single source of truth)
+  const currentConv = conversations.find((c) => c.id === currentChatId);
+  const conversationProject = (() => {
+    if (!currentConv?.projectId) return null;
+    const proj = projects.find((p) => p.id === currentConv.projectId);
+    return { id: currentConv.projectId, name: proj?.name || 'Project' };
+  })();
+
   useEffect(() => {
     if (!currentChatId) {
-      setConversationProject(null);
+      setConversationTitle('');
       return;
     }
     let cancelled = false;
-    (async () => {
-      try {
-        const conv = await fetchConversation(currentChatId);
-        if (cancelled) return;
-        setConversationTitle(conv.title || 'Untitled');
-        if (conv.projectId) {
-          const proj = projects.find((p) => p.id === conv.projectId);
-          setConversationProject({ id: conv.projectId, name: proj?.name || 'Project' });
-        } else {
-          setConversationProject(null);
-        }
-      } catch {
-        if (!cancelled) setConversationProject(null);
-      }
-    })();
+    fetchConversation(currentChatId)
+      .then((conv) => {
+        if (!cancelled) setConversationTitle(conv.title || 'Untitled');
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [currentChatId, projects]);
+  }, [currentChatId]);
 
   const handleRemoveFromProject = async () => {
     if (!currentChatId || !conversationProject) return;
+    const prev = conversations.map((c) => ({ ...c }));
+    dispatch(
+      setConversations(
+        conversations.map((c) => (c.id === currentChatId ? { ...c, projectId: null } : c))
+      )
+    );
+    setShowRemoveFromProject(false);
     try {
       await updateConversation(currentChatId, { project_id: null });
-      setConversationProject(null);
-      setShowRemoveFromProject(false);
+      showSuccess('Removed from project');
     } catch {
-      // Silently fail
+      dispatch(setConversations(prev));
+      showError('Could not remove from project. Try again.');
     }
   };
 
   const handleChangeProject = async (projectId) => {
     if (!currentChatId) return;
+    const prev = conversations.map((c) => ({ ...c }));
+    dispatch(
+      setConversations(conversations.map((c) => (c.id === currentChatId ? { ...c, projectId } : c)))
+    );
+    setShowProjectPicker(false);
+    setShowProjectDropdown(false);
     try {
       await updateConversation(currentChatId, { project_id: projectId });
-      const proj = projects.find((p) => p.id === projectId);
-      setConversationProject({ id: projectId, name: proj?.name || 'Project' });
-      setShowProjectPicker(false);
-      setShowProjectDropdown(false);
     } catch {
-      // Silently fail
+      dispatch(setConversations(prev));
+      showError('Could not assign to project. Try again.');
+    }
+  };
+
+  // Handle report submission
+  const handleReport = async () => {
+    if (!currentChatId || !reportReason) return;
+    setIsReporting(true);
+    try {
+      await reportConversation(currentChatId, reportReason, reportDetails);
+      // Update Redux to mark as reported
+      dispatch(
+        setConversations(
+          conversations.map((c) => (c.id === currentChatId ? { ...c, isReported: true } : c))
+        )
+      );
+      setShowReportDialog(false);
+      setReportReason('');
+      setReportDetails('');
+      showSuccess('Report submitted. Thank you for your feedback.');
+    } catch {
+      showError('Could not submit report. Try again.');
+    } finally {
+      setIsReporting(false);
+    }
+  };
+
+  const handleToggleStar = async () => {
+    if (!currentChatId) return;
+    const isStarred = currentConv?.isStarred || false;
+    const prev = conversations.map((c) => ({ ...c }));
+    dispatch(
+      setConversations(
+        conversations.map((c) => (c.id === currentChatId ? { ...c, isStarred: !isStarred } : c))
+      )
+    );
+    try {
+      await updateConversation(currentChatId, { is_starred: !isStarred });
+    } catch {
+      dispatch(setConversations(prev));
+      showError('Could not update star status.');
+    }
+  };
+
+  const handleToggleArchive = async () => {
+    if (!currentChatId) return;
+    const isArchived = currentConv?.isArchived || false;
+    const prev = conversations.map((c) => ({ ...c }));
+    dispatch(
+      setConversations(
+        conversations.map((c) => (c.id === currentChatId ? { ...c, isArchived: !isArchived } : c))
+      )
+    );
+    try {
+      await updateConversation(currentChatId, { is_archived: !isArchived });
+      showSuccess(isArchived ? 'Conversation unarchived' : 'Conversation archived');
+    } catch {
+      dispatch(setConversations(prev));
+      showError('Could not update archive status.');
     }
   };
 
@@ -907,6 +982,7 @@ export default function MainContent() {
       let accumulatedImages = null;
       let receivedDone = false;
       let routeInfo = null;
+      let assistantMessageId = null;
 
       try {
         const webSearchParam =
@@ -996,8 +1072,9 @@ export default function MainContent() {
               }));
 
               // Add empty assistant message
+              assistantMessageId = data.messageId || `assistant-${Date.now()}`;
               const assistantMsg = {
-                id: data.messageId || `assistant-${Date.now()}`,
+                id: assistantMessageId,
                 role: 'assistant',
                 content: '',
                 timestamp: Date.now(),
@@ -1058,6 +1135,7 @@ export default function MainContent() {
                   provider: data.provider || routeInfo?.provider,
                   size: data.size,
                   style: data.style,
+                  messageId: assistantMessageId,
                 });
                 recordGeneration();
                 const newImages = [
@@ -1750,24 +1828,27 @@ export default function MainContent() {
                   className={styles.chatMenuItem}
                   onClick={() => {
                     setShowChatMenu(false);
+                    handleToggleStar();
                   }}
                 >
                   <StarIcon />
-                  <span>Star conversation</span>
+                  <span>{currentConv?.isStarred ? 'Unstar' : 'Star conversation'}</span>
                 </button>
                 <button
                   className={styles.chatMenuItem}
                   onClick={() => {
                     setShowChatMenu(false);
+                    handleToggleArchive();
                   }}
                 >
                   <ArchiveIcon />
-                  <span>Archive</span>
+                  <span>{currentConv?.isArchived ? 'Unarchive' : 'Archive'}</span>
                 </button>
                 <button
                   className={styles.chatMenuItem}
                   onClick={() => {
                     setShowChatMenu(false);
+                    setShowReportDialog(true);
                   }}
                 >
                   <FlagIcon />
@@ -1844,6 +1925,84 @@ export default function MainContent() {
               </button>
               <button className={styles.confirmRemoveBtn} onClick={handleRemoveFromProject}>
                 Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report dialog */}
+      {showReportDialog && (
+        <div
+          className={styles.confirmOverlay}
+          onClick={() => {
+            setShowReportDialog(false);
+            setReportReason('');
+            setReportDetails('');
+          }}
+        >
+          <div
+            className={styles.confirmDialog}
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 420 }}
+          >
+            <div className={styles.confirmIcon} style={{ color: 'var(--warning-color, #f59e0b)' }}>
+              <FlagIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Report conversation</h3>
+            <p className={styles.confirmDesc}>
+              Help us improve by flagging conversations that don&apos;t meet quality standards.
+            </p>
+            <div className={styles.reportReasons}>
+              {[
+                { value: 'harmful', label: 'Harmful content' },
+                { value: 'inaccurate', label: 'Inaccurate response' },
+                { value: 'inappropriate', label: 'Inappropriate content' },
+                { value: 'other', label: 'Other' },
+              ].map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`${styles.reportReasonLabel} ${
+                    reportReason === opt.value ? styles.reportReasonSelected : ''
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="reportReason"
+                    value={opt.value}
+                    checked={reportReason === opt.value}
+                    onChange={() => setReportReason(opt.value)}
+                    className={styles.reportReasonRadio}
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+            <textarea
+              className={styles.reportDetailsInput}
+              placeholder="Additional details (optional)"
+              value={reportDetails}
+              onChange={(e) => setReportDetails(e.target.value)}
+              rows={3}
+            />
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => {
+                  setShowReportDialog(false);
+                  setReportReason('');
+                  setReportDetails('');
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmRemoveBtn}
+                onClick={handleReport}
+                disabled={!reportReason || isReporting}
+                style={{ opacity: !reportReason || isReporting ? 0.5 : 1 }}
+              >
+                {isReporting ? 'Submitting...' : 'Submit Report'}
               </button>
             </div>
           </div>
