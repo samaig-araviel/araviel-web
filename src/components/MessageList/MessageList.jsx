@@ -359,10 +359,33 @@ function extractVideoInfo(url) {
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  */
+/**
+ * Strip emoji characters from text for cleaner, professional rendering.
+ * Preserves standard punctuation, symbols, and all non-emoji Unicode.
+ */
+function stripEmojis(text) {
+  if (!text) return text;
+  return text
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // emoticons
+    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '') // symbols & pictographs
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // transport & map
+    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '') // flags
+    .replace(/[\u{2600}-\u{26FF}]/gu, '') // misc symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, '') // dingbats
+    .replace(/[\u{FE00}-\u{FE0F}]/gu, '') // variation selectors
+    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '') // supplemental symbols
+    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '') // chess symbols
+    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '') // symbols extended-A
+    .replace(/[\u{200D}]/gu, '') // zero-width joiner
+    .replace(/[\u{20E3}]/gu, '') // combining enclosing keycap
+    .replace(/\s{2,}/g, ' ') // collapse multiple spaces from removals
+    .trim();
+}
+
 function renderMarkdown(text) {
   if (!text) return null;
 
-  const lines = text.split('\n');
+  const lines = stripEmojis(text).split('\n');
   const elements = [];
   const images = [];
   let i = 0;
@@ -1566,7 +1589,7 @@ function GeneratedImageBlock({ imageData }) {
         <div className={styles.generatedImageFrame} onClick={() => setLightboxOpen(true)}>
           <img
             src={imageData.url}
-            alt={imageData.prompt || 'Generated image'}
+            alt={imageData.prompt || imageData.model || 'Generated image'}
             className={styles.generatedImageImg}
             loading="lazy"
           />
@@ -1672,7 +1695,7 @@ function GeneratedImageLightbox({ imageData, onClose, onDownload, downloading })
         <div className={styles.genLightboxBody}>
           <img
             src={imageData.url}
-            alt={imageData.prompt || 'Generated image'}
+            alt={imageData.prompt || imageData.model || 'Generated image'}
             className={styles.genLightboxImg}
           />
         </div>
@@ -3328,7 +3351,7 @@ function DeleteSubConvDialog({ highlightedText, onConfirm, onCancel }) {
 /**
  * Horizontal scrollable pills showing saved sub-conversations.
  */
-function SubConversationPills({ subConversations, onOpen, activeSubConvId }) {
+function SubConversationPills({ subConversations, onOpen, onDelete, activeSubConvId }) {
   if (!subConversations || subConversations.length === 0) return null;
 
   return (
@@ -3357,6 +3380,19 @@ function SubConversationPills({ subConversations, onOpen, activeSubConvId }) {
                 <MessageCircleIcon />
                 <span>{truncated}</span>
               </button>
+              {onDelete && (
+                <button
+                  className={styles.subConvPillDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(sc.id);
+                  }}
+                  title="Delete sub-conversation"
+                  aria-label="Delete"
+                >
+                  <CloseIcon />
+                </button>
+              )}
             </div>
           );
         })}
@@ -4658,6 +4694,7 @@ function Message({
         <SubConversationPills
           subConversations={subConversations}
           onOpen={handleOpenSubConv}
+          onDelete={handleRequestDeleteSubConv}
           activeSubConvId={showSubConvPanel ? activeSubConvId : null}
         />
       )}
@@ -4680,7 +4717,14 @@ function Message({
         />
       )}
 
-      {/* Sub-conversation delete is handled via DeleteSubConvDialog */}
+      {/* Sub-conversation delete confirmation */}
+      {pendingDeleteConv && (
+        <DeleteSubConvDialog
+          highlightedText={pendingDeleteConv.highlightedText}
+          onConfirm={handleConfirmDeleteSubConv}
+          onCancel={handleCancelDeleteSubConv}
+        />
+      )}
     </div>
   );
 }

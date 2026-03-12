@@ -136,6 +136,7 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [projectPickerFor, setProjectPickerFor] = useState(null); // chatId to assign to project
   const [recentsExpanded, setRecentsExpanded] = useState(true);
+  const [sidebarView, setSidebarView] = useState('recents'); // 'recents' | 'archived'
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
@@ -146,9 +147,17 @@ export default function Sidebar() {
 
   const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
 
+  const filteredConversations = useMemo(
+    () =>
+      sidebarView === 'archived'
+        ? conversations.filter((c) => c.isArchived)
+        : conversations.filter((c) => !c.isArchived),
+    [conversations, sidebarView]
+  );
+
   const groupedConversations = useMemo(
-    () => groupConversationsByTime(conversations),
-    [conversations]
+    () => groupConversationsByTime(filteredConversations),
+    [filteredConversations]
   );
 
   // Load conversations on mount
@@ -643,18 +652,37 @@ export default function Sidebar() {
 
         {showFullContent && (
           <div className={styles.recents}>
-            <button
-              className={styles.recentsHeader}
-              onClick={toggleRecents}
-              aria-expanded={recentsExpanded}
-            >
-              <span className={styles.recentsLabel}>Recents</span>
-              <span
-                className={`${styles.recentsChevron} ${recentsExpanded ? styles.expanded : ''}`}
+            <div className={styles.recentsHeaderRow}>
+              <div className={styles.recentsToggle}>
+                <button
+                  className={`${styles.recentsToggleBtn} ${
+                    sidebarView === 'recents' ? styles.recentsToggleBtnActive : ''
+                  }`}
+                  onClick={() => setSidebarView('recents')}
+                >
+                  Recents
+                </button>
+                <button
+                  className={`${styles.recentsToggleBtn} ${
+                    sidebarView === 'archived' ? styles.recentsToggleBtnActive : ''
+                  }`}
+                  onClick={() => setSidebarView('archived')}
+                >
+                  Archived
+                </button>
+              </div>
+              <button
+                className={styles.recentsCollapseBtn}
+                onClick={toggleRecents}
+                aria-expanded={recentsExpanded}
               >
-                <ChevronDownIcon />
-              </span>
-            </button>
+                <span
+                  className={`${styles.recentsChevron} ${recentsExpanded ? styles.expanded : ''}`}
+                >
+                  <ChevronDownIcon />
+                </span>
+              </button>
+            </div>
             <div
               className={`${styles.recentsContent} ${recentsExpanded ? styles.recentsOpen : ''}`}
             >
@@ -791,7 +819,9 @@ export default function Sidebar() {
                   )}
                 </>
               ) : (
-                <p className={styles.recentsEmpty}>No recent chats</p>
+                <p className={styles.recentsEmpty}>
+                  {sidebarView === 'archived' ? 'No archived chats' : 'No recent chats'}
+                </p>
               )}
             </div>
           </div>
