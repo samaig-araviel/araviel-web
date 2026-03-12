@@ -229,6 +229,93 @@ export async function fetchConversation(conversationId) {
   return res.json();
 }
 
+// ─── Conversation Actions ────────────────────────────────────────────────────
+
+/**
+ * Report a conversation.
+ * @param {string} conversationId
+ * @param {string} reason - "harmful" | "inaccurate" | "inappropriate" | "other"
+ * @param {string} [details]
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function reportConversation(conversationId, reason, details) {
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason, details: details || undefined }),
+  });
+  if (!res.ok) throw new Error(`Failed to report conversation: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Submit feedback (like/dislike) for a message.
+ * @param {string} conversationId
+ * @param {string} messageId
+ * @param {"like" | "dislike" | null} feedback - null to remove feedback
+ * @returns {Promise<{ success: boolean, feedback: string | null }>}
+ */
+export async function submitMessageFeedback(conversationId, messageId, feedback) {
+  const res = await fetch(
+    `${API_BASE}/api/conversations/${conversationId}/messages/${messageId}/feedback`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback }),
+    }
+  );
+  if (!res.ok) throw new Error(`Failed to submit feedback: ${res.status}`);
+  return res.json();
+}
+
+// ─── Sub-Conversation Actions ────────────────────────────────────────────────
+
+/**
+ * Delete a sub-conversation and all its messages.
+ * @param {string} subId
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function deleteSubConversation(subId) {
+  const res = await fetch(`${API_BASE}/api/sub-conversations/${subId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error(`Failed to delete sub-conversation: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Update a sub-conversation (star, archive).
+ * @param {string} subId
+ * @param {object} updates - { is_starred?, is_archived? }
+ * @returns {Promise<object>}
+ */
+export async function updateSubConversation(subId, updates) {
+  const res = await fetch(`${API_BASE}/api/sub-conversations/${subId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) throw new Error(`Failed to update sub-conversation: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Report a sub-conversation.
+ * @param {string} subId
+ * @param {string} reason
+ * @param {string} [details]
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function reportSubConversation(subId, reason, details) {
+  const res = await fetch(`${API_BASE}/api/sub-conversations/${subId}/report`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ reason, details: details || undefined }),
+  });
+  if (!res.ok) throw new Error(`Failed to report sub-conversation: ${res.status}`);
+  return res.json();
+}
+
 // ─── Imported Conversations ─────────────────────────────────────────────────
 
 /**

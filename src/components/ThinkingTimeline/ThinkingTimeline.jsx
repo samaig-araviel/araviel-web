@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
-import { getProviderLogo } from '../ProviderLogos';
+import { getProviderLogo } from '../getProviderLogo';
 import { PROVIDERS } from '../../data/models';
 import styles from './ThinkingTimeline.module.css';
 

@@ -27,6 +27,7 @@ import {
   deleteConversation,
   fetchProjects as fetchProjectsApi,
 } from '../../services/api';
+import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import {
@@ -123,6 +124,7 @@ function useDropdownPosition(menuOpenId) {
 
 export default function Sidebar() {
   const dispatch = useDispatch();
+  const { showError, showSuccess } = useToast();
   const collapsed = useSelector(selectSidebarCollapsed);
   const conversations = useSelector(selectConversations);
   const conversationsTotal = useSelector(selectConversationsTotal);
@@ -140,13 +142,6 @@ export default function Sidebar() {
   const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [archivedIds, setArchivedIds] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
-    } catch {
-      return new Set();
-    }
-  });
   const renameInputRef = useRef(null);
 
   const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
@@ -168,12 +163,14 @@ export default function Sidebar() {
           dispatch(appendConversations(data));
         }
       } catch {
-        // Silently fail — sidebar will show empty state
+        showError("Couldn't load your conversations. Check your connection.", {
+          onRetry: () => loadConversations(offset),
+        });
       } finally {
         dispatch(setConversationsLoading(false));
       }
     },
-    [dispatch]
+    [dispatch, showError]
   );
 
   useEffect(() => {
@@ -185,9 +182,9 @@ export default function Sidebar() {
     if (projects.length === 0) {
       fetchProjectsApi()
         .then((data) => dispatch(setProjects(data.projects || [])))
-        .catch(() => {});
+        .catch(() => showError("Couldn't load projects."));
     }
-  }, [projects.length, dispatch]);
+  }, [projects.length, dispatch, showError]);
 
   // Refresh conversations when currentChatId changes (new conversation created)
   useEffect(() => {
@@ -387,7 +384,18 @@ export default function Sidebar() {
         })
       );
       // Persist to backend
-      updateConversation(chatId, { title: trimmed }).catch(() => {});
+      updateConversation(chatId, { title: trimmed }).catch(() => {
+        // Revert optimistic update
+        dispatch(
+          setConversations({
+            conversations: conversations.map((c) =>
+              c.id === chatId ? { ...c, title: c.title } : c
+            ),
+            total: conversationsTotal,
+          })
+        );
+        showError("Couldn't rename this conversation. Try again.");
+      });
     }
     setRenamingId(null);
     setRenameValue('');
@@ -420,18 +428,29 @@ export default function Sidebar() {
 
   const handleArchive = (chatId) => {
     closeMenu();
-    try {
-      const next = new Set(archivedIds);
-      if (next.has(chatId)) {
-        next.delete(chatId);
-      } else {
-        next.add(chatId);
-      }
-      setArchivedIds(next);
-      localStorage.setItem('araviel-archived-chats', JSON.stringify([...next]));
-    } catch {
-      // Silently fail
-    }
+    const conv = conversations.find((c) => c.id === chatId);
+    const newValue = !conv?.isArchived;
+    // Optimistic update
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) =>
+          c.id === chatId ? { ...c, isArchived: newValue } : c
+        ),
+        total: conversationsTotal,
+      })
+    );
+    updateConversation(chatId, { is_archived: newValue }).catch(() => {
+      // Revert
+      dispatch(
+        setConversations({
+          conversations: conversations.map((c) =>
+            c.id === chatId ? { ...c, isArchived: !newValue } : c
+          ),
+          total: conversationsTotal,
+        })
+      );
+      showError("Couldn't archive this conversation. Try again.");
+    });
   };
 
   const handleDeleteRequest = (chatId) => {
@@ -441,6 +460,9 @@ export default function Sidebar() {
 
   const confirmDelete = () => {
     const chatId = deleteConfirm;
+    const prevConversations = conversations;
+    const prevTotal = conversationsTotal;
+    // Optimistic update
     dispatch(
       setConversations({
         conversations: conversations.filter((c) => c.id !== chatId),
@@ -452,17 +474,11 @@ export default function Sidebar() {
       dispatch(createNewChat());
     }
     // Persist to backend
-    deleteConversation(chatId).catch(() => {});
-    try {
-      const starred = new Set(JSON.parse(localStorage.getItem('araviel-starred-chats') || '[]'));
-      const archived = new Set(JSON.parse(localStorage.getItem('araviel-archived-chats') || '[]'));
-      starred.delete(chatId);
-      archived.delete(chatId);
-      localStorage.setItem('araviel-starred-chats', JSON.stringify([...starred]));
-      localStorage.setItem('araviel-archived-chats', JSON.stringify([...archived]));
-    } catch {
-      // Silently fail
-    }
+    deleteConversation(chatId).catch(() => {
+      // Revert
+      dispatch(setConversations({ conversations: prevConversations, total: prevTotal }));
+      showError("Couldn't delete this conversation. Try again.");
+    });
     setDeleteConfirm(null);
   };
 
@@ -473,37 +489,56 @@ export default function Sidebar() {
 
   const handleAssignProject = async (projectId) => {
     if (!projectPickerFor) return;
+    const chatId = projectPickerFor;
+    const prevProjectId = conversations.find((c) => c.id === chatId)?.projectId;
+    // Optimistic update
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) => (c.id === chatId ? { ...c, projectId } : c)),
+        total: conversationsTotal,
+      })
+    );
+    setProjectPickerFor(null);
     try {
-      await updateConversation(projectPickerFor, { project_id: projectId });
-      // Update local state
+      await updateConversation(chatId, { project_id: projectId });
+      showSuccess('Conversation added to project.');
+    } catch {
+      // Revert
       dispatch(
         setConversations({
           conversations: conversations.map((c) =>
-            c.id === projectPickerFor ? { ...c, projectId } : c
+            c.id === chatId ? { ...c, projectId: prevProjectId } : c
           ),
           total: conversationsTotal,
         })
       );
-    } catch {
-      // Silently fail
+      showError("Couldn't move this conversation to the project.");
     }
-    setProjectPickerFor(null);
   };
 
   const handleRemoveFromProject = async (chatId) => {
     closeMenu();
+    const prevProjectId = conversations.find((c) => c.id === chatId)?.projectId;
+    // Optimistic update
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) => (c.id === chatId ? { ...c, projectId: null } : c)),
+        total: conversationsTotal,
+      })
+    );
     try {
       await updateConversation(chatId, { project_id: null });
+    } catch {
+      // Revert
       dispatch(
         setConversations({
           conversations: conversations.map((c) =>
-            c.id === chatId ? { ...c, projectId: null } : c
+            c.id === chatId ? { ...c, projectId: prevProjectId } : c
           ),
           total: conversationsTotal,
         })
       );
-    } catch {
-      // Silently fail
+      showError("Couldn't remove conversation from project.");
     }
   };
 
@@ -702,9 +737,7 @@ export default function Sidebar() {
                                   }}
                                 >
                                   <ArchiveIcon />
-                                  <span>
-                                    {archivedIds.has(chat.id) ? 'Move to Chats' : 'Archive'}
-                                  </span>
+                                  <span>{chat.isArchived ? 'Move to Chats' : 'Archive'}</span>
                                 </button>
                                 {chat.projectId ? (
                                   <button
