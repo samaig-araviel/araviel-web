@@ -18,10 +18,7 @@ import {
   CloseIcon,
   FileDownIcon,
   FilterIcon,
-  SparkleIcon,
   SendIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ChevronDownIcon,
   MaximizeIcon,
   UserIcon,
@@ -32,6 +29,7 @@ import {
   EyeIcon,
   PlusIcon,
   PhotoIcon,
+  TrashIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import styles from './ImageGalleryView.module.css';
@@ -93,26 +91,40 @@ export default function ImageGalleryView() {
   const fileInputRef = useRef(null);
   const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
 
+  const loadImagesRef = useRef(null);
   const loadImages = useCallback(() => {
-    setImages(getGeneratedImages());
+    // Always read fresh from localStorage to avoid stale state
+    const fresh = getGeneratedImages();
+    setImages(fresh);
   }, []);
+  loadImagesRef.current = loadImages;
 
   useEffect(() => {
     loadImages();
+
     // Refresh gallery when new images are saved (e.g. from chat)
-    const handleImageSaved = () => loadImages();
+    // Use a small debounce to handle rapid successive saves
+    let debounceTimer = null;
+    const handleImageSaved = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadImagesRef.current(), 50);
+    };
     window.addEventListener('araviel-image-saved', handleImageSaved);
+
     // Also refresh when tab regains focus (catches cross-tab localStorage changes)
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') loadImages();
+      if (document.visibilityState === 'visible') loadImagesRef.current();
     };
     document.addEventListener('visibilitychange', handleVisibility);
+
     // Refresh on storage changes from other contexts
     const handleStorage = (e) => {
-      if (e.key === 'araviel-generated-images') loadImages();
+      if (e.key === 'araviel-generated-images') loadImagesRef.current();
     };
     window.addEventListener('storage', handleStorage);
+
     return () => {
+      clearTimeout(debounceTimer);
       window.removeEventListener('araviel-image-saved', handleImageSaved);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('storage', handleStorage);
@@ -459,7 +471,15 @@ export default function ImageGalleryView() {
                   <div key={img.id} className={styles.card}>
                     <div className={styles.cardImageWrapper}>
                       <button className={styles.cardImage} onClick={() => setLightboxIdx(idx)}>
-                        <img src={img.url} alt={img.prompt || 'Generated image'} loading="lazy" />
+                        <img
+                          src={img.url}
+                          alt={img.prompt || 'Generated image'}
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.classList.add(styles.cardImageBroken);
+                          }}
+                        />
                       </button>
                       <div className={styles.cardOverlay}>
                         <div className={styles.cardOverlayTop}>
@@ -564,12 +584,17 @@ export default function ImageGalleryView() {
 }
 
 /**
- * Fullscreen image detail view with navigation and metadata.
+ * Fullscreen image detail view with thumbnail sidebar and large preview.
+ * Thumbnails on the left, selected image large in the center.
  */
 function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) {
-  const [currentIdx, setCurrentIdx] = useState(startIndex);
+  const [activeIndex, setActiveIndex] = useState(startIndex);
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
-  const img = images[currentIdx];
+  const thumbListRef = useRef(null);
+  const activeThumbRef = useRef(null);
+
+  const img = images[activeIndex];
+  const providerData = img?.provider ? PROVIDERS[img.provider] : null;
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -581,25 +606,38 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
         }
       }
       if (!showDeleteWarning) {
-        if (e.key === 'ArrowLeft' && currentIdx > 0) setCurrentIdx((i) => i - 1);
-        if (e.key === 'ArrowRight' && currentIdx < images.length - 1) setCurrentIdx((i) => i + 1);
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
+        }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : prev));
+        }
       }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose, currentIdx, images.length, showDeleteWarning]);
+  }, [onClose, images.length, showDeleteWarning]);
+
+  // Scroll active thumbnail into view
+  useEffect(() => {
+    if (activeThumbRef.current) {
+      activeThumbRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [activeIndex]);
 
   if (!img) return null;
-
-  const providerData = img.provider ? PROVIDERS[img.provider] : null;
 
   return (
     <div className={styles.detailOverlay} onClick={onClose}>
       <div className={styles.detailContainer} onClick={(e) => e.stopPropagation()}>
+        {/* Top bar */}
         <div className={styles.detailTopBar}>
           <div className={styles.detailTopBarLeft}>
             {img.model && (
-              <span className={styles.detailModelBadge}>
+              <span
+                className={styles.detailModelBadge}
+                style={providerData ? { borderColor: providerData.accentColor + '40' } : undefined}
+              >
                 {providerData && (
                   <span
                     className={styles.detailModelDot}
@@ -609,14 +647,13 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
                 {img.model}
               </span>
             )}
-            {images.length > 1 && (
-              <span className={styles.detailCounter}>
-                {currentIdx + 1} / {images.length}
-              </span>
-            )}
           </div>
           <div className={styles.detailTopBarRight}>
-            <button className={styles.detailActionBtn} onClick={() => onDownload(img)} title="Save">
+            <button
+              className={styles.detailActionBtn}
+              onClick={() => onDownload(img)}
+              title="Save image"
+            >
               <FileDownIcon />
               <span>Save</span>
             </button>
@@ -626,19 +663,7 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
               title="Delete"
               aria-label="Delete"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
+              <TrashIcon />
             </button>
             <button className={styles.detailCloseBtn} onClick={onClose} aria-label="Close">
               <CloseIcon />
@@ -646,72 +671,77 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
           </div>
         </div>
 
-        <div className={styles.detailImageArea}>
-          {images.length > 1 && currentIdx > 0 && (
-            <button
-              className={`${styles.detailNav} ${styles.detailNavLeft}`}
-              onClick={() => setCurrentIdx((i) => i - 1)}
-              aria-label="Previous"
-            >
-              <ChevronLeftIcon />
-            </button>
+        {/* Main area: sidebar + image */}
+        <div className={styles.detailMain}>
+          {/* Thumbnail sidebar — only shown when multiple images */}
+          {images.length > 1 && (
+            <div className={styles.detailSidebar} ref={thumbListRef}>
+              {images.map((thumb, idx) => (
+                <button
+                  key={thumb.id || idx}
+                  ref={idx === activeIndex ? activeThumbRef : null}
+                  className={`${styles.detailThumb} ${
+                    idx === activeIndex ? styles.detailThumbActive : ''
+                  }`}
+                  onClick={() => setActiveIndex(idx)}
+                  aria-label={`View image ${idx + 1}`}
+                >
+                  <img
+                    src={thumb.url}
+                    alt=""
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.style.opacity = '0.3';
+                    }}
+                  />
+                </button>
+              ))}
+            </div>
           )}
-          <div className={styles.detailImageWrapper}>
+
+          {/* Main image */}
+          <div className={styles.detailBody}>
             <img
-              key={img.id}
+              key={activeIndex}
               src={img.url}
               alt={img.prompt || 'Generated image'}
               className={styles.detailImage}
+              onError={(e) => {
+                e.target.style.opacity = '0.2';
+              }}
             />
           </div>
-          {images.length > 1 && currentIdx < images.length - 1 && (
-            <button
-              className={`${styles.detailNav} ${styles.detailNavRight}`}
-              onClick={() => setCurrentIdx((i) => i + 1)}
-              aria-label="Next"
-            >
-              <ChevronRightIcon />
-            </button>
-          )}
         </div>
 
-        {(img.prompt || img.provider) && (
-          <div className={styles.detailInfoPanel}>
-            {img.prompt && <p className={styles.detailFullPrompt}>{img.prompt}</p>}
-            <div className={styles.detailMetaRow}>
-              {img.provider && (
-                <span className={styles.detailMetaChip}>{providerData?.name || img.provider}</span>
-              )}
-              {img.size && <span className={styles.detailMetaChip}>{img.size}</span>}
+        {/* Footer: prompt + meta */}
+        <div className={styles.detailFooter}>
+          {img.prompt && <p className={styles.detailPromptText}>{img.prompt}</p>}
+          <div className={styles.detailMetaRow}>
+            {img.provider && (
+              <span className={styles.detailMetaChip}>{providerData?.name || img.provider}</span>
+            )}
+            {img.size && <span className={styles.detailMetaChip}>{img.size}</span>}
+            {images.length > 1 && (
               <span className={styles.detailMetaChip}>
-                {new Date(img.createdAt).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                {activeIndex + 1} of {images.length}
               </span>
-            </div>
+            )}
+            <span className={styles.detailMetaChip}>
+              {new Date(img.createdAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
           </div>
-        )}
+        </div>
 
         {/* Delete confirmation */}
         {showDeleteWarning && (
           <div className={styles.deleteWarningOverlay} onClick={() => setShowDeleteWarning(false)}>
             <div className={styles.deleteWarningDialog} onClick={(e) => e.stopPropagation()}>
               <div className={styles.deleteWarningIcon}>
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="3 6 5 6 21 6" />
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                </svg>
+                <TrashIcon />
               </div>
               <h3 className={styles.deleteWarningTitle}>Delete this image?</h3>
               <p className={styles.deleteWarningDesc}>
