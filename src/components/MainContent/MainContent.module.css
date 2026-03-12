@@ -37,8 +37,10 @@
   left: 0;
   right: 0;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  padding: 10px 16px;
+  padding: 0 16px;
+  height: 52px;
   z-index: 10;
   pointer-events: none;
   background: linear-gradient(
@@ -63,6 +65,7 @@
   align-items: center;
   gap: 0;
   margin-right: auto;
+  margin-left: 8px;
   position: relative;
   animation: breadcrumbIn 0.25s cubic-bezier(0.2, 0, 0, 1);
 }
@@ -82,8 +85,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 0 6px 2px;
-  font-size: 13px;
+  padding: 6px 2px;
+  font-size: 14px;
   font-weight: 550;
   color: var(--text-muted);
   background: transparent;
@@ -91,7 +94,7 @@
   cursor: pointer;
   transition: color 0.15s ease;
   white-space: nowrap;
-  max-width: 160px;
+  max-width: 180px;
 }
 
 .projectHeaderProject:hover {
@@ -114,19 +117,19 @@
 .projectHeaderSep {
   font-size: 14px;
   color: var(--text-muted);
-  opacity: 0.4;
-  margin: 0 6px;
+  opacity: 0.35;
+  margin: 0 8px;
   user-select: none;
 }
 
 .projectHeaderTitle {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 220px;
+  max-width: 240px;
 }
 
 .projectHeaderChevron {
@@ -2166,7 +2169,7 @@
   }
 
   .topNav {
-    padding: 8px 12px;
+    padding: 0 12px;
     height: 56px;
     background: linear-gradient(
       to bottom,
@@ -2177,23 +2180,21 @@
   }
 
   .projectHeader {
-    padding: 8px 12px;
-    gap: 6px;
-    margin-top: 56px;
+    margin-left: 40px;
   }
 
   .projectHeaderProject {
     font-size: 12px;
-    max-width: 120px;
-  }
-
-  .projectHeaderProject span {
     max-width: 100px;
   }
 
+  .projectHeaderProject span {
+    max-width: 80px;
+  }
+
   .projectHeaderTitle {
-    font-size: 13px;
-    max-width: 140px;
+    font-size: 12px;
+    max-width: 100px;
   }
 
   .projectDropdown {
