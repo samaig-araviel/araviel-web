@@ -90,6 +90,7 @@ export function getLimitInfo() {
  * Handles localStorage quota errors by evicting oldest images when needed.
  */
 export function saveGeneratedImage(image) {
+  // Always read fresh from storage right before writing to avoid stale reads
   const images = getGeneratedImages();
   const entry = {
     id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -102,6 +103,20 @@ export function saveGeneratedImage(image) {
     style: image.style || null,
     messageId: image.messageId || null,
   };
+
+  // Prevent duplicate saves — skip if same URL + prompt already exists recently
+  const isDuplicate = images.some(
+    (existing) =>
+      existing.url === entry.url &&
+      existing.prompt === entry.prompt &&
+      Date.now() - existing.createdAt < 5000
+  );
+  if (isDuplicate) {
+    // Already saved — still dispatch event for UI sync but don't re-save
+    window.dispatchEvent(new CustomEvent('araviel-image-saved', { detail: entry }));
+    return images.find((e) => e.url === entry.url) || entry;
+  }
+
   images.unshift(entry);
   // Keep max 100 images
   if (images.length > 100) images.length = 100;
