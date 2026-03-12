@@ -1041,6 +1041,8 @@ export default function MainContent() {
               // Save the conversationId from backend (may be newly created)
               if (data.conversationId) {
                 dispatch(setCurrentChat(data.conversationId));
+                // Notify sidebar to refresh conversations list immediately
+                window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
                 // Once the backend creates a native conversation, clear imported context
                 // so subsequent messages use the native conversation's history
                 if (importedContext) {
@@ -1198,6 +1200,8 @@ export default function MainContent() {
                   })
                 );
               }
+              // Refresh sidebar conversations after stream completes (title may now be set)
+              window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
             } else if (type === 'error') {
               if (data.code === 'PROVIDER_RETRY') {
                 // Non-fatal — show a brief notification but keep listening

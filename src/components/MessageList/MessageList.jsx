@@ -364,32 +364,10 @@ function extractVideoInfo(url) {
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  */
-/**
- * Strip emoji characters from a single line of text.
- * Preserves all whitespace structure — only removes emoji codepoints.
- */
-function stripEmojis(line) {
-  if (!line) return line;
-  return line
-    .replace(/[\u{1F600}-\u{1F64F}]/gu, '')
-    .replace(/[\u{1F300}-\u{1F5FF}]/gu, '')
-    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '')
-    .replace(/[\u{1F1E0}-\u{1F1FF}]/gu, '')
-    .replace(/[\u{2600}-\u{26FF}]/gu, '')
-    .replace(/[\u{2700}-\u{27BF}]/gu, '')
-    .replace(/[\u{FE00}-\u{FE0F}]/gu, '')
-    .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')
-    .replace(/[\u{1FA00}-\u{1FA6F}]/gu, '')
-    .replace(/[\u{1FA70}-\u{1FAFF}]/gu, '')
-    .replace(/[\u{200D}]/gu, '')
-    .replace(/[\u{20E3}]/gu, '')
-    .replace(/ {2,}/g, ' '); // collapse double spaces (not newlines)
-}
-
 function renderMarkdown(text) {
   if (!text) return null;
 
-  const lines = text.split('\n').map(stripEmojis);
+  const lines = text.split('\n');
   const elements = [];
   const images = [];
   let i = 0;
