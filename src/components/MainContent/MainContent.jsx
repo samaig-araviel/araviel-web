@@ -1639,18 +1639,17 @@ export default function MainContent() {
         {conversationProject && (
           <div className={styles.projectHeader} ref={projectDropdownRef}>
             <button
-              className={styles.projectHeaderProject}
+              className={styles.projectBadge}
               onClick={handleNavigateToProject}
               title={`Go to ${conversationProject.name}`}
             >
               <ProjectsIcon />
               <span>{conversationProject.name}</span>
             </button>
-            <span className={styles.projectHeaderSep}>/</span>
-            <span className={styles.projectHeaderTitle}>{conversationTitle || 'Untitled'}</span>
+            <span className={styles.projectHeaderSep}>›</span>
             <button
-              className={`${styles.projectHeaderChevron} ${
-                showProjectDropdown ? styles.projectHeaderChevronOpen : ''
+              className={`${styles.projectHeaderTitleBtn} ${
+                showProjectDropdown ? styles.projectHeaderTitleBtnOpen : ''
               }`}
               onClick={() => {
                 setShowProjectDropdown(!showProjectDropdown);
@@ -1658,6 +1657,7 @@ export default function MainContent() {
               }}
               aria-label="Project options"
             >
+              <span className={styles.projectHeaderTitle}>{conversationTitle || 'Untitled'}</span>
               <ChevronDownIcon />
             </button>
 
