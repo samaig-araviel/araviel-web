@@ -58,7 +58,7 @@
   pointer-events: auto;
 }
 
-/* Project breadcrumb — top-left pill */
+/* Project context — top-left */
 .projectHeader {
   pointer-events: auto;
   display: flex;
@@ -67,59 +67,112 @@
   margin-right: auto;
   margin-left: 8px;
   position: relative;
-  animation: breadcrumbIn 0.25s cubic-bezier(0.2, 0, 0, 1);
+  animation: projectHeaderIn 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
-@keyframes breadcrumbIn {
+@keyframes projectHeaderIn {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateX(-8px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
-.projectHeaderProject {
+/* Warm amber project badge */
+.projectBadge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 2px;
-  font-size: 14px;
-  font-weight: 550;
-  color: var(--text-muted);
-  background: transparent;
-  border: none;
+  gap: 5px;
+  padding: 5px 10px 5px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: #b45309;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(245, 158, 11, 0.07) 100%);
+  border: 1px solid rgba(217, 119, 6, 0.15);
+  border-radius: 20px;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
-  max-width: 180px;
-}
-
-.projectHeaderProject:hover {
-  color: var(--text-primary);
-}
-
-.projectHeaderProject svg {
-  width: 14px;
-  height: 14px;
+  max-width: 160px;
   flex-shrink: 0;
-  opacity: 0.65;
 }
 
-.projectHeaderProject span {
+:global([data-theme='dark']) .projectBadge {
+  color: #fbbf24;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(217, 119, 6, 0.08) 100%);
+  border-color: rgba(251, 191, 36, 0.18);
+}
+
+.projectBadge:hover {
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.16) 0%, rgba(245, 158, 11, 0.12) 100%);
+  border-color: rgba(217, 119, 6, 0.25);
+  transform: translateY(-0.5px);
+}
+
+:global([data-theme='dark']) .projectBadge:hover {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.18) 0%, rgba(217, 119, 6, 0.14) 100%);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.projectBadge svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.projectBadge span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Separator */
 .projectHeaderSep {
-  font-size: 14px;
+  font-size: 16px;
   color: var(--text-muted);
-  opacity: 0.35;
+  opacity: 0.3;
   margin: 0 8px;
   user-select: none;
+  font-weight: 300;
+}
+
+/* Title + chevron as one clickable unit */
+.projectHeaderTitleBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 2px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  max-width: 260px;
+}
+
+.projectHeaderTitleBtn:hover {
+  background-color: var(--bg-hover);
+}
+
+.projectHeaderTitleBtn svg {
+  width: 13px;
+  height: 13px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.projectHeaderTitleBtnOpen {
+  background-color: var(--bg-hover);
+}
+
+.projectHeaderTitleBtnOpen svg {
+  transform: rotate(180deg);
 }
 
 .projectHeaderTitle {
@@ -129,38 +182,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 240px;
-}
-
-.projectHeaderChevron {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  margin-left: 2px;
-  flex-shrink: 0;
-}
-
-.projectHeaderChevron:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.projectHeaderChevron svg {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.2s ease;
-}
-
-.projectHeaderChevronOpen svg {
-  transform: rotate(180deg);
 }
 
 /* Project dropdown menu */
@@ -2183,18 +2204,18 @@
     margin-left: 40px;
   }
 
-  .projectHeaderProject {
-    font-size: 12px;
-    max-width: 100px;
+  .projectBadge {
+    font-size: 11px;
+    padding: 4px 8px 4px 6px;
+    max-width: 110px;
   }
 
-  .projectHeaderProject span {
-    max-width: 80px;
+  .projectHeaderTitleBtn {
+    max-width: 120px;
   }
 
   .projectHeaderTitle {
     font-size: 12px;
-    max-width: 100px;
   }
 
   .projectDropdown {

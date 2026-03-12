@@ -4331,57 +4331,12 @@ function Message({
       className={`${styles.message} ${isUser ? styles.userMessage : styles.assistantMessage}`}
       style={{ position: 'relative' }}
     >
-      {!isUser && providerData && (
+      {!isUser && message.webSearchUsed && !isStreaming && (
         <div className={styles.assistantHeader}>
-          <div
-            className={styles.providerPillWrapper}
-            ref={headerPillRef}
-            onClick={() => setShowHeaderDropdown((prev) => !prev)}
-          >
-            <div
-              className={`${styles.providerPill} ${
-                hasAlternates ? styles.providerPillClickable : ''
-              }`}
-              style={{
-                backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
-                color: isDark
-                  ? providerData.accentTextDark || providerData.accentColor
-                  : providerData.accentText,
-              }}
-            >
-              <LogoComponent size={14} />
-              <span>{message.modelName || providerData.name}</span>
-              {message.score && (
-                <>
-                  <span className={styles.pillDivider}>&#183;</span>
-                  <span className={styles.scoreText}>
-                    {getFitLabel(message.score) || 'Matched'}
-                  </span>
-                </>
-              )}
-              {hasAlternates && (
-                <span className={styles.providerPillChevron}>
-                  <ChevronDownIcon />
-                </span>
-              )}
-            </div>
-            {showHeaderDropdown && (
-              <ModelPillDropdown
-                message={message}
-                isDark={isDark}
-                position="below"
-                onClose={() => setShowHeaderDropdown(false)}
-                onSelectAlternate={(alt) => setPendingAlternate(alt)}
-                triggerRef={headerPillRef}
-              />
-            )}
-          </div>
-          {message.webSearchUsed && !isStreaming && (
-            <WebSearchBadgeWithSources
-              isAutoDetected={message.webSearchAutoDetected}
-              citations={message.citations}
-            />
-          )}
+          <WebSearchBadgeWithSources
+            isAutoDetected={message.webSearchAutoDetected}
+            citations={message.citations}
+          />
         </div>
       )}
 
