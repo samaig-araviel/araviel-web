@@ -1505,21 +1505,18 @@ function ImageGalleryPanel({ images, onClose }) {
  * Generated image block — renders an AI-generated image with a sleek
  * ChatGPT-style transparent hover overlay showing model & save icon.
  */
-function GeneratedImageBlock({ imageData }) {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
+function useImageDownload() {
   const [downloading, setDownloading] = useState(false);
 
-  if (!imageData || !imageData.url) return null;
-
-  const handleDownload = async (e) => {
-    e.stopPropagation();
-    if (downloading) return;
+  const handleDownload = useCallback(async (e, imgData) => {
+    if (e) e.stopPropagation();
+    if (downloading || !imgData?.url) return;
     setDownloading(true);
-    const filename = `araviel-${(imageData.prompt || 'generated')
+    const filename = `araviel-${(imgData.prompt || 'generated')
       .slice(0, 40)
       .replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.png`;
     try {
-      const response = await fetch(imageData.url);
+      const response = await fetch(imgData.url);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1530,7 +1527,6 @@ function GeneratedImageBlock({ imageData }) {
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch {
-      // Cross-origin fallback: draw to canvas and export as blob
       try {
         const blob = await new Promise((resolve, reject) => {
           const img = new Image();
@@ -1546,7 +1542,7 @@ function GeneratedImageBlock({ imageData }) {
             );
           };
           img.onerror = reject;
-          img.src = imageData.url;
+          img.src = imgData.url;
         });
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -1557,13 +1553,21 @@ function GeneratedImageBlock({ imageData }) {
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
       } catch {
-        // Last resort: open in new tab so user can right-click save
-        window.open(imageData.url, '_blank', 'noopener,noreferrer');
+        window.open(imgData.url, '_blank', 'noopener,noreferrer');
       }
     } finally {
       setDownloading(false);
     }
-  };
+  }, [downloading]);
+
+  return { downloading, handleDownload };
+}
+
+function GeneratedImageBlock({ imageData, allImages, imageIndex }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const { downloading, handleDownload } = useImageDownload();
+
+  if (!imageData || !imageData.url) return null;
 
   return (
     <>
@@ -1584,7 +1588,7 @@ function GeneratedImageBlock({ imageData }) {
               <div className={styles.generatedImageOverlayActions}>
                 <button
                   className={styles.generatedImageSaveBtn}
-                  onClick={handleDownload}
+                  onClick={(e) => handleDownload(e, imageData)}
                   title={downloading ? 'Saving...' : 'Save image'}
                   aria-label="Save image"
                   disabled={downloading}
@@ -1610,10 +1614,9 @@ function GeneratedImageBlock({ imageData }) {
       {lightboxOpen &&
         createPortal(
           <GeneratedImageLightbox
-            imageData={imageData}
+            images={allImages || [imageData]}
+            initialIndex={imageIndex || 0}
             onClose={() => setLightboxOpen(false)}
-            onDownload={handleDownload}
-            downloading={downloading}
           />,
           document.body
         )}
@@ -1622,26 +1625,48 @@ function GeneratedImageBlock({ imageData }) {
 }
 
 /**
- * Premium fullscreen lightbox for a generated image — shows the image large
- * with metadata panel (prompt, model, date) and download action.
+ * Premium fullscreen lightbox with gallery sidebar — shows all generated images
+ * from the conversation as scrollable thumbnails on the left, selected image large
+ * in the center, with model badge, prompt text, and save action.
  */
-function GeneratedImageLightbox({ imageData, onClose, onDownload, downloading }) {
+function GeneratedImageLightbox({ images, initialIndex, onClose }) {
+  const [activeIndex, setActiveIndex] = useState(initialIndex || 0);
+  const { downloading, handleDownload } = useImageDownload();
+  const thumbListRef = useRef(null);
+  const activeThumbRef = useRef(null);
+
+  const activeImage = images[activeIndex] || images[0];
+  const providerData = activeImage?.provider ? PROVIDERS[activeImage.provider] : null;
+
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+        setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
+      }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+        setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : prev));
+      }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, images.length]);
 
-  const providerData = imageData.provider ? PROVIDERS[imageData.provider] : null;
+  // Scroll active thumbnail into view
+  useEffect(() => {
+    if (activeThumbRef.current) {
+      activeThumbRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [activeIndex]);
+
+  if (!activeImage) return null;
 
   return (
     <div className={styles.genLightboxOverlay} onClick={onClose}>
       <div className={styles.genLightboxContainer} onClick={(e) => e.stopPropagation()}>
         <div className={styles.genLightboxTopBar}>
           <div className={styles.genLightboxTopLeft}>
-            {imageData.model && (
+            {activeImage.model && (
               <span
                 className={styles.genLightboxModelBadge}
                 style={providerData ? { borderColor: providerData.accentColor + '40' } : undefined}
@@ -1652,17 +1677,14 @@ function GeneratedImageLightbox({ imageData, onClose, onDownload, downloading })
                     style={{ background: providerData.accentColor }}
                   />
                 )}
-                {imageData.model}
+                {activeImage.model}
               </span>
             )}
           </div>
           <div className={styles.genLightboxTopRight}>
             <button
               className={styles.genLightboxActionBtn}
-              onClick={(e) => {
-                e.stopPropagation();
-                onDownload(e);
-              }}
+              onClick={(e) => handleDownload(e, activeImage)}
               disabled={downloading}
               title="Save image"
             >
@@ -1674,30 +1696,47 @@ function GeneratedImageLightbox({ imageData, onClose, onDownload, downloading })
             </button>
           </div>
         </div>
-        <div className={styles.genLightboxBody}>
-          <img
-            src={imageData.url}
-            alt={imageData.prompt || imageData.model || 'Generated image'}
-            className={styles.genLightboxImg}
-          />
-        </div>
-        {imageData.prompt && (
-          <div className={styles.genLightboxFooter}>
-            <p className={styles.genLightboxPrompt}>{imageData.prompt}</p>
-            <div className={styles.genLightboxMeta}>
-              {imageData.size && <span>{imageData.size}</span>}
-              {imageData.createdAt && (
-                <span>
-                  {new Date(imageData.createdAt).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-              )}
+
+        <div className={styles.genLightboxMain}>
+          {/* Thumbnail sidebar — only shown when multiple images */}
+          {images.length > 1 && (
+            <div className={styles.genLightboxSidebar} ref={thumbListRef}>
+              {images.map((img, idx) => (
+                <button
+                  key={img.id || idx}
+                  ref={idx === activeIndex ? activeThumbRef : null}
+                  className={`${styles.genLightboxThumb} ${idx === activeIndex ? styles.genLightboxThumbActive : ''}`}
+                  onClick={() => setActiveIndex(idx)}
+                  aria-label={`View image ${idx + 1}`}
+                >
+                  <img src={img.url} alt="" loading="lazy" />
+                </button>
+              ))}
             </div>
+          )}
+
+          {/* Main image area */}
+          <div className={styles.genLightboxBody}>
+            <img
+              key={activeIndex}
+              src={activeImage.url}
+              alt={activeImage.prompt || activeImage.model || 'Generated image'}
+              className={styles.genLightboxImg}
+            />
           </div>
-        )}
+        </div>
+
+        <div className={styles.genLightboxFooter}>
+          {activeImage.prompt && (
+            <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>
+          )}
+          <div className={styles.genLightboxMeta}>
+            {activeImage.size && <span>{activeImage.size}</span>}
+            {images.length > 1 && (
+              <span>{activeIndex + 1} of {images.length}</span>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -4737,7 +4776,12 @@ function Message({
       {!isUser && message.generatedImages && message.generatedImages.length > 0 && (
         <div className={styles.generatedImagesSection}>
           {message.generatedImages.map((img, idx) => (
-            <GeneratedImageBlock key={idx} imageData={img} />
+            <GeneratedImageBlock
+              key={img.id || idx}
+              imageData={img}
+              allImages={message.generatedImages}
+              imageIndex={idx}
+            />
           ))}
         </div>
       )}
