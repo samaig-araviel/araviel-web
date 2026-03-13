@@ -201,7 +201,7 @@ function renderPieLabel({ cx, cy, midAngle, outerRadius, name, percent }) {
 }
 
 // --- Main Component ---
-export default function AravielChart({ spec }) {
+export default function AravielChart({ spec, isStreaming = false }) {
   const [showData, setShowData] = useState(false);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
@@ -249,6 +249,20 @@ export default function AravielChart({ spec }) {
   }, [series, data, xKey]);
 
   if (!chartSpec || !Array.isArray(chartSpec.data) || chartSpec.data.length === 0) {
+    if (isStreaming) {
+      return (
+        <div className={styles.chartBlock}>
+          <div className={styles.chartHeader}>
+            <div className={styles.chartTitleGroup}>
+              <span className={styles.chartTitle} style={{ opacity: 0.5 }}>Building chart...</span>
+            </div>
+          </div>
+          <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.4, fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            Loading data...
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.chartBlock}>
         <div className={styles.chartError}>Unable to render chart — invalid or missing data.</div>

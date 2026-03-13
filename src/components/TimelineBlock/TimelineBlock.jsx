@@ -6,7 +6,7 @@ import styles from './TimelineBlock.module.css';
  * Expects `spec` to be a JSON string of an array:
  * [{ "date": "2024", "title": "Event", "description": "Details" }, ...]
  */
-export default function TimelineBlock({ spec }) {
+export default function TimelineBlock({ spec, isStreaming = false }) {
   const [expanded, setExpanded] = useState(null);
 
   const items = useMemo(() => {
@@ -22,6 +22,22 @@ export default function TimelineBlock({ spec }) {
   }, [spec]);
 
   if (!items || items.length === 0) {
+    if (isStreaming) {
+      return (
+        <div className={styles.wrapper}>
+          <div className={styles.header}>
+            <span className={styles.headerLabel}>Timeline</span>
+            <span className={styles.headerCount}>Loading...</span>
+          </div>
+          <div className={styles.timeline} style={{ padding: '20px', opacity: 0.5 }}>
+            <div className={styles.item}>
+              <div className={styles.marker}><div className={styles.dot} /><div className={styles.line} /></div>
+              <div className={styles.content}><span className={styles.date}>...</span><span className={styles.title}>Building timeline...</span></div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.error}>
         <span>Could not parse timeline data</span>

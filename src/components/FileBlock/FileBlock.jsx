@@ -7,7 +7,7 @@ import styles from './FileBlock.module.css';
  * Shows file icon, name, format, size estimate, and a download button.
  * Generates the actual file client-side on click.
  */
-export default function FileBlock({ spec }) {
+export default function FileBlock({ spec, isStreaming = false }) {
   const [status, setStatus] = useState('idle'); // idle | generating | done | error
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -30,6 +30,26 @@ export default function FileBlock({ spec }) {
   }, [parsed]);
 
   if (!parsed) {
+    if (isStreaming) {
+      return (
+        <div className={styles.card}>
+          <div className={styles.cardInner}>
+            <div className={`${styles.icon} ${styles.icon_text}`} style={{ opacity: 0.4 }}>
+              <FileTypeIcon type="text" />
+            </div>
+            <div className={styles.info}>
+              <span className={styles.filename} style={{ opacity: 0.5 }}>Generating file...</span>
+              <span className={styles.meta}>Preparing download</span>
+            </div>
+            <div className={styles.action}>
+              <div className={styles.spinner}>
+                <SpinnerIcon />
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.errorCard}>
         <span className={styles.errorText}>Could not parse file specification</span>

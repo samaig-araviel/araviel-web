@@ -7,7 +7,7 @@ import styles from './StepsBlock.module.css';
  * Expects `spec` to be a JSON string of an array:
  * [{ "title": "Step title", "description": "Details", "code": "npm install ..." }, ...]
  */
-export default function StepsBlock({ spec }) {
+export default function StepsBlock({ spec, isStreaming = false }) {
   const items = useMemo(() => {
     try {
       const parsed = typeof spec === 'string' ? JSON.parse(spec) : spec;
@@ -19,6 +19,19 @@ export default function StepsBlock({ spec }) {
   }, [spec]);
 
   if (!items || items.length === 0) {
+    if (isStreaming) {
+      return (
+        <div className={styles.wrapper}>
+          <div className={styles.header}>
+            <span className={styles.headerLabel}>Steps</span>
+            <span className={styles.headerCount}>Loading...</span>
+          </div>
+          <div style={{ padding: '20px', opacity: 0.5, fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            Building steps...
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.error}>
         <span>Could not parse steps data</span>
