@@ -757,6 +757,74 @@
   animation: detailIn 0.25s ease;
 }
 
+/* Light mode: softer, lighter overlay */
+:global([data-theme='light']) .detailOverlay {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(1.2);
+}
+
+:global([data-theme='light']) .detailModelBadge {
+  color: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+:global([data-theme='light']) .detailActionBtn {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme='light']) .detailActionBtn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme='light']) .detailDeleteBtn {
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(0, 0, 0, 0.4);
+}
+
+:global([data-theme='light']) .detailDeleteBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+:global([data-theme='light']) .detailCloseBtn {
+  background: rgba(0, 0, 0, 0.06);
+  color: rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme='light']) .detailCloseBtn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.8);
+}
+
+:global([data-theme='light']) .detailImage {
+  box-shadow: 0 16px 56px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme='light']) .detailPromptText {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+:global([data-theme='light']) .detailMetaChip {
+  color: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme='light']) .detailThumb {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme='light']) .detailThumb:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+:global([data-theme='light']) .detailThumbActive {
+  border-color: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
 @keyframes detailIn {
   from {
     opacity: 0;
@@ -899,7 +967,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 0 12px 12px 20px;
+  padding: 20px 12px 12px 20px;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -919,8 +987,8 @@
   background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
   padding: 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  opacity: 0.5;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0.45;
 }
 
 .detailThumb img {
@@ -928,23 +996,32 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .detailThumb:hover {
-  opacity: 0.8;
+  opacity: 0.85;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 12px rgba(255, 255, 255, 0.06);
+}
+
+.detailThumb:hover img {
   transform: scale(1.08);
 }
 
 .detailThumbActive {
   opacity: 1;
   border-color: rgba(255, 255, 255, 0.6);
-  transform: scale(1.12);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .detailThumbActive:hover {
   opacity: 1;
-  transform: scale(1.12);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.detailThumbActive:hover img {
+  transform: scale(1);
 }
 
 /* Main image body */
