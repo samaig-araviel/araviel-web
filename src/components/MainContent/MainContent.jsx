@@ -1168,6 +1168,10 @@ export default function MainContent() {
               if (assistantMsgAdded && data.suggestions) {
                 dispatch(updateLastMessage({ followUps: data.suggestions }));
               }
+            } else if (type === 'questions') {
+              if (assistantMsgAdded && data.questions) {
+                dispatch(updateLastMessage({ questions: data.questions }));
+              }
             } else if (type === 'done') {
               receivedDone = true;
               const totalDuration = ((Date.now() - routingStart) / 1000).toFixed(1);

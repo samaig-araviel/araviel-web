@@ -1894,18 +1894,20 @@
   flex-shrink: 0;
 }
 
-/* Follow-up suggestions */
-.followUps {
-  margin-top: 16px;
-  animation: followUpsFadeIn 0.4s ease;
-  /* Prevent layout shift by reserving stable space */
+/* ===== Follow-Up Section (Questions + Suggestions) ===== */
+.followUpSection {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: followUpFadeIn 0.4s ease;
   contain: layout;
 }
 
-@keyframes followUpsFadeIn {
+@keyframes followUpFadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -1913,30 +1915,285 @@
   }
 }
 
-.followUpsHeader {
+/* --- Question Card --- */
+.questionCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.questionCard:focus-within {
+  border-color: var(--text-muted);
+  box-shadow: 0 0 0 3px rgba(158, 146, 131, 0.08);
+}
+
+.questionCardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.questionText {
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.4;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.questionNav {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.questionCounter {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.questionDismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.questionDismiss:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+/* --- Question Options --- */
+.questionOptions {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.questionOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  text-align: left;
+  position: relative;
+}
+
+.questionOption:hover {
+  border-color: var(--text-muted);
+  background: var(--bg-hover);
+}
+
+.questionOptionSelected {
+  border-color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.questionOptionSelected .questionOptionNumber {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+}
+
+.questionOptionNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--bg-hover);
   color: var(--text-muted);
   font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.questionOptionLabel {
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 450;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.questionOptionCheck {
+  flex-shrink: 0;
+  color: var(--text-primary);
+  opacity: 0.7;
+}
+
+/* --- Custom Input --- */
+.questionCustom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  transition: all 0.18s ease;
+}
+
+.questionCustomActive {
+  border-color: var(--text-muted);
+  background: var(--bg-hover);
+}
+
+.questionCustomIcon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.questionCustomInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 450;
+  line-height: 1.4;
+  color: var(--text-primary);
+  outline: none;
+  font-family: inherit;
+}
+
+.questionCustomInput::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* --- Question Card Footer --- */
+.questionCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+}
+
+.questionNavButtons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.questionNavBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.questionNavBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+.questionNavBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.questionActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.questionSkipBtn {
+  padding: 5px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.questionSkipBtn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-hover);
+}
+
+.questionSubmitBtn {
+  padding: 5px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.questionSubmitBtn:hover {
+  opacity: 0.88;
+}
+
+/* --- Suggestions List --- */
+.suggestionsList {
+  animation: followUpFadeIn 0.35s ease 0.1s both;
+}
+
+.suggestionsHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
-.followUpsList {
+.suggestionsItems {
   display: flex;
   flex-direction: column;
   gap: 0;
 }
 
-.followUpItem {
+.suggestionItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-radius: 10px;
   text-align: left;
   font-size: 13px;
@@ -1945,31 +2202,65 @@
   color: var(--text-secondary);
   background: transparent;
   border: 1px solid transparent;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
   cursor: pointer;
 }
 
-.followUpItem:hover {
-  background-color: var(--bg-secondary);
+.suggestionItem:hover {
+  background: var(--bg-secondary);
   border-color: var(--border-color);
   color: var(--text-primary);
 }
 
-.followUpItem:hover svg {
+.suggestionItem:hover svg {
   transform: translateX(2px);
   opacity: 1;
 }
 
-.followUpItem svg {
+.suggestionItem svg {
   width: 13px;
   height: 13px;
   flex-shrink: 0;
-  opacity: 0.4;
-  transition: all 0.2s ease;
+  opacity: 0.35;
+  transition: all 0.18s ease;
 }
 
-.followUpText {
+.suggestionText {
   flex: 1;
+}
+
+/* --- Responsive: Follow-Up Section --- */
+@media (max-width: 640px) {
+  .followUpSection {
+    margin-top: 16px;
+    gap: 12px;
+  }
+
+  .questionCard {
+    padding: 14px 14px 12px;
+    border-radius: 12px;
+  }
+
+  .questionText {
+    font-size: 13.5px;
+  }
+
+  .questionOption {
+    padding: 11px 12px;
+  }
+
+  .questionOptionLabel {
+    font-size: 13px;
+  }
+
+  .questionCustomInput {
+    font-size: 13px;
+  }
+
+  .suggestionItem {
+    padding: 10px 10px;
+    font-size: 12.5px;
+  }
 }
 
 /* ===== Thinking Block (Claude-style collapsible) ===== */
