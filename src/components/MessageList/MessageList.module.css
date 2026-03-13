@@ -416,13 +416,13 @@
 }
 
 .heading1 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   margin-bottom: 8px;
-  margin-top: 22px;
+  margin-top: 24px;
   color: var(--text-primary);
-  letter-spacing: -0.015em;
-  line-height: 1.3;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .heading1:first-child {
@@ -430,13 +430,13 @@
 }
 
 .heading2 {
-  font-size: 16px;
-  font-weight: 650;
+  font-size: 17px;
+  font-weight: 680;
   margin-bottom: 6px;
-  margin-top: 20px;
+  margin-top: 22px;
   color: var(--text-primary);
-  letter-spacing: -0.01em;
-  line-height: 1.35;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
 }
 
 .heading2:first-child {
@@ -444,23 +444,39 @@
 }
 
 .heading3 {
-  font-size: 15px;
-  font-weight: 620;
+  font-size: 15.5px;
+  font-weight: 650;
   margin-bottom: 4px;
-  margin-top: 16px;
+  margin-top: 18px;
   color: var(--text-primary);
-  letter-spacing: -0.005em;
-  line-height: 1.4;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
 }
 
 .heading3:first-child {
   margin-top: 4px;
 }
 
+/* Inferred heading — short standalone lines detected as section titles */
+.inferredHeading {
+  font-size: 15.5px;
+  font-weight: 650;
+  margin-bottom: 4px;
+  margin-top: 18px;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+
+.inferredHeading:first-child {
+  margin-top: 4px;
+}
+
 /* Inline emphasis within markdown */
 .markdownContent strong {
-  font-weight: 650;
+  font-weight: 680;
   color: var(--text-primary);
+  letter-spacing: -0.005em;
 }
 
 .markdownContent em {
@@ -474,7 +490,9 @@
 .markdownContent h4 + .list,
 .markdownContent h4 + .orderedList,
 .markdownContent h5 + .list,
-.markdownContent h5 + .orderedList {
+.markdownContent h5 + .orderedList,
+.markdownContent .inferredHeading + .list,
+.markdownContent .inferredHeading + .orderedList {
   margin-top: 4px;
 }
 
@@ -482,12 +500,15 @@
 .markdownContent .paragraph + h3,
 .markdownContent .paragraph + h4,
 .markdownContent .paragraph + h5,
+.markdownContent .paragraph + .inferredHeading,
 .markdownContent .list + h3,
 .markdownContent .list + h4,
 .markdownContent .list + h5,
+.markdownContent .list + .inferredHeading,
 .markdownContent .orderedList + h3,
 .markdownContent .orderedList + h4,
-.markdownContent .orderedList + h5 {
+.markdownContent .orderedList + h5,
+.markdownContent .orderedList + .inferredHeading {
   margin-top: 24px;
 }
 
@@ -1273,12 +1294,19 @@
 
 .inlineCode {
   font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-  font-size: 13px;
+  font-size: 12.5px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 1px 5px;
+  border-radius: 5px;
+  padding: 2px 6px;
   color: var(--text-primary);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+:global([data-theme='dark']) .inlineCode {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .hr {
@@ -4158,6 +4186,40 @@
 }
 
 .inlineLink {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 550;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 6px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  letter-spacing: -0.005em;
+  vertical-align: baseline;
+}
+
+.inlineLink:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+:global([data-theme='dark']) .inlineLink {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+}
+
+:global([data-theme='dark']) .inlineLink:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+/* Full markdown links [text](url) get regular underline style */
+.inlineLinkFull {
   color: var(--text-primary);
   text-decoration: underline;
   text-decoration-color: var(--border-color);
@@ -4165,10 +4227,11 @@
   text-decoration-thickness: 1px;
   transition: text-decoration-color 0.15s ease, color 0.15s ease;
   cursor: pointer;
+  font-weight: 500;
 }
 
-.inlineLink:hover {
-  text-decoration-color: var(--text-secondary);
+.inlineLinkFull:hover {
+  text-decoration-color: var(--text-primary);
   color: var(--text-primary);
 }
 
