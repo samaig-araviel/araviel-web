@@ -345,6 +345,88 @@
   text-align: center;
 }
 
+/* "New project" button in project picker list */
+.projectPickerCreate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #d97706;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  text-align: left;
+  margin-bottom: 2px;
+}
+
+.projectPickerCreate:hover {
+  background-color: rgba(217, 119, 6, 0.08);
+}
+
+.projectPickerCreate svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* Inline create project form inside dropdown */
+.projectCreateForm {
+  padding: 6px 8px 8px;
+}
+
+.projectCreateInput {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 8px;
+}
+
+.projectCreateInput:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1);
+}
+
+.projectCreateInput::placeholder {
+  color: var(--text-muted);
+}
+
+.projectCreateSubmit {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  background-color: #d97706;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.projectCreateSubmit:hover:not(:disabled) {
+  background-color: #b45309;
+}
+
+.projectCreateSubmit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.projectCreateSubmit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Confirm dialog — project variant */
 .confirmIconProject {
   width: 48px;

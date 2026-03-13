@@ -48,6 +48,7 @@ import {
 } from '../Icons';
 import { getProviderLogo } from '../getProviderLogo';
 import ImportConversationsModal from '../ImportConversationsModal';
+import ProjectPickerModal from '../ProjectPickerModal';
 import styles from './ConversationsView.module.css';
 
 const TABS = [
@@ -1619,40 +1620,11 @@ export default function ConversationsView() {
 
       {/* Project picker dialog */}
       {projectPickerFor && (
-        <div className={styles.confirmOverlay} onClick={() => setProjectPickerFor(null)}>
-          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.confirmIconProject}>
-              <ProjectsIcon />
-            </div>
-            <h3 className={styles.confirmTitle}>Move to project</h3>
-            <p className={styles.confirmDesc}>Choose which project this conversation belongs to.</p>
-            <div className={styles.projectPickerList}>
-              {projects.length > 0 ? (
-                projects
-                  .filter((p) => !p.is_archived)
-                  .map((project) => (
-                    <button
-                      key={project.id}
-                      className={styles.projectPickerItem}
-                      onClick={() => handleAssignProject(project.id)}
-                    >
-                      <ProjectsIcon />
-                      <span>{project.name}</span>
-                    </button>
-                  ))
-              ) : (
-                <p className={styles.projectPickerEmpty}>
-                  No projects yet. Create one in the Projects view.
-                </p>
-              )}
-            </div>
-            <div className={styles.confirmActions}>
-              <button className={styles.confirmCancelBtn} onClick={() => setProjectPickerFor(null)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+        <ProjectPickerModal
+          onSelect={handleAssignProject}
+          onClose={() => setProjectPickerFor(null)}
+          onError={showError}
+        />
       )}
     </div>
   );
