@@ -4020,9 +4020,9 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
           <button className={styles.questionSkipBtn} onClick={handleSkip}>
             Skip
           </button>
-          {(isLastQuestion || total === 1) && hasAnswer && (
+          {hasAnswer && (
             <button className={styles.questionSubmitBtn} onClick={handleNext}>
-              Continue
+              {isLastQuestion || total === 1 ? 'Send' : 'Continue'}
             </button>
           )}
         </div>
@@ -4341,6 +4341,7 @@ function Message({
   isLastAssistant,
   hideThinking,
   onFollowUpSelect,
+  onQuestionsSend,
   onRetry,
   onAlternateModelRequest,
   userPrompt,
@@ -4946,7 +4947,7 @@ function Message({
           followUps={followUps}
           questions={questions}
           onFollowUpSelect={onFollowUpSelect}
-          onQuestionsComplete={onFollowUpSelect}
+          onQuestionsComplete={onQuestionsSend}
           onQuestionsDismiss={() => {}}
         />
       )}
@@ -4999,6 +5000,7 @@ export default function MessageList({
   focusInput,
   currentChatId,
   webSearchEnabled,
+  onSendMessage,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -5122,6 +5124,15 @@ export default function MessageList({
     [dispatch, focusInput]
   );
 
+  const handleQuestionsSend = useCallback(
+    (text) => {
+      if (onSendMessage && text) {
+        onSendMessage(text, { addUserMessage: true });
+      }
+    },
+    [onSendMessage]
+  );
+
   const handleEditPrompt = useCallback(
     (text) => {
       dispatch(setInputValue(text));
@@ -5209,6 +5220,7 @@ export default function MessageList({
                 isLastAssistant={isLastAssistant}
                 hideThinking={isLast && isProcessing && msg.role === 'assistant'}
                 onFollowUpSelect={handleFollowUpSelect}
+                onQuestionsSend={handleQuestionsSend}
                 onRetry={onRetry}
                 onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}

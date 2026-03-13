@@ -2092,6 +2092,7 @@ export default function MainContent() {
           focusInput={focusInput}
           currentChatId={currentChatId}
           webSearchEnabled={webSearchEnabled}
+          onSendMessage={runSSEPipeline}
         />
       )}
 
