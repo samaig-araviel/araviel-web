@@ -660,6 +660,34 @@ function renderMarkdown(text) {
       continue;
     }
 
+    // Detect standalone headings: short lines that look like section titles
+    // Heuristic: line is short, not ending with common sentence punctuation,
+    // followed by a list, paragraph, or empty line + content
+    {
+      const trimmed = line.trim();
+      // Strip bold markers for length/pattern check
+      const stripped = trimmed.replace(/^\*\*(.+)\*\*$/, '$1').replace(/^__(.+)__$/, '$1');
+      const isShortLine = stripped.length <= 80 && stripped.length >= 2;
+      const endsLikeSentence = /[.!?,;:)\]}"']$/.test(stripped);
+      const looksLikeTitle = isShortLine && !endsLikeSentence;
+      // Check next non-empty line exists and is a list or paragraph (not another short heading)
+      let nextContentIdx = i + 1;
+      while (nextContentIdx < lines.length && lines[nextContentIdx].trim() === '') nextContentIdx++;
+      const nextLine = nextContentIdx < lines.length ? lines[nextContentIdx].trim() : '';
+      const nextIsList = /^[-*]\s/.test(nextLine) || /^\d+\.\s/.test(nextLine);
+      const nextIsContent = nextLine.length > 0;
+
+      if (looksLikeTitle && nextIsContent && (nextIsList || nextLine.length > stripped.length)) {
+        elements.push(
+          <p className={styles.inferredHeading} key={key++}>
+            {renderInline(stripped)}
+          </p>
+        );
+        i++;
+        continue;
+      }
+    }
+
     // Regular paragraph
     elements.push(
       <p className={styles.paragraph} key={key++}>
@@ -1508,42 +1536,17 @@ function ImageGalleryPanel({ images, onClose }) {
 function useImageDownload() {
   const [downloading, setDownloading] = useState(false);
 
-  const handleDownload = useCallback(async (e, imgData) => {
-    if (e) e.stopPropagation();
-    if (downloading || !imgData?.url) return;
-    setDownloading(true);
-    const filename = `araviel-${(imgData.prompt || 'generated')
-      .slice(0, 40)
-      .replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.png`;
-    try {
-      const response = await fetch(imgData.url);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-    } catch {
+  const handleDownload = useCallback(
+    async (e, imgData) => {
+      if (e) e.stopPropagation();
+      if (downloading || !imgData?.url) return;
+      setDownloading(true);
+      const filename = `araviel-${(imgData.prompt || 'generated')
+        .slice(0, 40)
+        .replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}.png`;
       try {
-        const blob = await new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = img.naturalWidth;
-            canvas.height = img.naturalHeight;
-            canvas.getContext('2d').drawImage(img, 0, 0);
-            canvas.toBlob(
-              (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
-              'image/png'
-            );
-          };
-          img.onerror = reject;
-          img.src = imgData.url;
-        });
+        const response = await fetch(imgData.url);
+        const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = blobUrl;
@@ -1553,12 +1556,40 @@ function useImageDownload() {
         document.body.removeChild(link);
         URL.revokeObjectURL(blobUrl);
       } catch {
-        window.open(imgData.url, '_blank', 'noopener,noreferrer');
+        try {
+          const blob = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth;
+              canvas.height = img.naturalHeight;
+              canvas.getContext('2d').drawImage(img, 0, 0);
+              canvas.toBlob(
+                (b) => (b ? resolve(b) : reject(new Error('toBlob failed'))),
+                'image/png'
+              );
+            };
+            img.onerror = reject;
+            img.src = imgData.url;
+          });
+          const blobUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(blobUrl);
+        } catch {
+          window.open(imgData.url, '_blank', 'noopener,noreferrer');
+        }
+      } finally {
+        setDownloading(false);
       }
-    } finally {
-      setDownloading(false);
-    }
-  }, [downloading]);
+    },
+    [downloading]
+  );
 
   return { downloading, handleDownload };
 }
@@ -1705,7 +1736,9 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
                 <button
                   key={img.id || idx}
                   ref={idx === activeIndex ? activeThumbRef : null}
-                  className={`${styles.genLightboxThumb} ${idx === activeIndex ? styles.genLightboxThumbActive : ''}`}
+                  className={`${styles.genLightboxThumb} ${
+                    idx === activeIndex ? styles.genLightboxThumbActive : ''
+                  }`}
                   onClick={() => setActiveIndex(idx)}
                   aria-label={`View image ${idx + 1}`}
                 >
@@ -1727,13 +1760,13 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
         </div>
 
         <div className={styles.genLightboxFooter}>
-          {activeImage.prompt && (
-            <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>
-          )}
+          {activeImage.prompt && <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>}
           <div className={styles.genLightboxMeta}>
             {activeImage.size && <span>{activeImage.size}</span>}
             {images.length > 1 && (
-              <span>{activeIndex + 1} of {images.length}</span>
+              <span>
+                {activeIndex + 1} of {images.length}
+              </span>
             )}
           </div>
         </div>
@@ -1812,7 +1845,7 @@ function VideoPreview({ url }) {
 /**
  * Inline link component with hover tooltip showing the URL.
  */
-function InlineLink({ href, children }) {
+function InlineLink({ href, children, variant = 'pill' }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const linkRef = useRef(null);
@@ -1840,7 +1873,7 @@ function InlineLink({ href, children }) {
     <span className={styles.inlineLinkWrapper} ref={linkRef}>
       <a
         href={isSafe ? href : '#'}
-        className={styles.inlineLink}
+        className={variant === 'full' ? styles.inlineLinkFull : styles.inlineLink}
         target="_blank"
         rel="noopener noreferrer"
         onMouseEnter={handleMouseEnter}
@@ -1892,11 +1925,11 @@ function renderInline(text) {
       continue;
     }
 
-    // Markdown link [text](url)
+    // Markdown link [text](url) — rendered with underline style
     match = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
     if (match) {
       parts.push(
-        <InlineLink key={key++} href={match[2]}>
+        <InlineLink key={key++} href={match[2]} variant="full">
           {match[1]}
         </InlineLink>
       );
@@ -1904,7 +1937,7 @@ function renderInline(text) {
       continue;
     }
 
-    // Auto-detect bare URLs
+    // Auto-detect bare URLs — rendered as citation pill
     match = remaining.match(/^(https?:\/\/[^\s<>)\]]+)/);
     if (match) {
       const url = match[1];
@@ -1916,8 +1949,22 @@ function renderInline(text) {
         displayText = url;
       }
       parts.push(
-        <InlineLink key={key++} href={url}>
+        <InlineLink key={key++} href={url} variant="pill">
           {displayText}
+        </InlineLink>
+      );
+      remaining = remaining.slice(match[0].length);
+      continue;
+    }
+
+    // Parenthesized source reference like (barita.com) — render as citation pill
+    match = remaining.match(/^\(([a-zA-Z0-9][\w.-]*\.[a-z]{2,}(?:\/[^\s)]*)?)\)/);
+    if (match) {
+      const domain = match[1];
+      const url = domain.startsWith('http') ? domain : `https://${domain}`;
+      parts.push(
+        <InlineLink key={key++} href={url} variant="pill">
+          {domain.replace(/^www\./, '')}
         </InlineLink>
       );
       remaining = remaining.slice(match[0].length);
@@ -1952,8 +1999,20 @@ function renderInline(text) {
       continue;
     }
 
+    // Strikethrough
+    match = remaining.match(/^~~(.+?)~~/);
+    if (match) {
+      parts.push(
+        <del key={key++} style={{ opacity: 0.6 }}>
+          {match[1]}
+        </del>
+      );
+      remaining = remaining.slice(match[0].length);
+      continue;
+    }
+
     // Plain text up to next special char or URL start
-    match = remaining.match(/^[^`*\[h]+/);
+    match = remaining.match(/^[^`*~\[(h]+/);
     if (match) {
       parts.push(match[0]);
       remaining = remaining.slice(match[0].length);
@@ -1965,6 +2024,20 @@ function renderInline(text) {
       (remaining[0] === 'h' && !remaining.match(/^https?:\/\//)) ||
       (remaining[0] === '[' && !remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/))
     ) {
+      parts.push(remaining[0]);
+      remaining = remaining.slice(1);
+      continue;
+    }
+
+    // Check for '(' that isn't a domain reference
+    if (remaining[0] === '(' && !remaining.match(/^\([a-zA-Z0-9][\w.-]*\.[a-z]{2,}/)) {
+      parts.push(remaining[0]);
+      remaining = remaining.slice(1);
+      continue;
+    }
+
+    // Check for '~' that isn't strikethrough
+    if (remaining[0] === '~' && !remaining.match(/^~~.+?~~/)) {
       parts.push(remaining[0]);
       remaining = remaining.slice(1);
       continue;
