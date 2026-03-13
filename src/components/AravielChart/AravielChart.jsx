@@ -26,16 +26,16 @@ import styles from './AravielChart.module.css';
 
 // --- Araviel color palette ---
 const PALETTE = [
-  '#d97706', // warm amber
-  '#0ea5e9', // sky blue
+  '#d97706', // warm amber (primary)
+  '#3b82f6', // royal blue
   '#10b981', // emerald
   '#8b5cf6', // violet
   '#f43f5e', // rose
-  '#f97316', // orange
   '#06b6d4', // cyan
   '#ec4899', // pink
-  '#84cc16', // lime
+  '#f97316', // orange
   '#6366f1', // indigo
+  '#84cc16', // lime
 ];
 
 const GAIN_COLOR = '#10b981';
@@ -183,7 +183,7 @@ function CandlestickTooltip({ active, payload, label, config }) {
 // --- Pie Label ---
 function renderPieLabel({ cx, cy, midAngle, outerRadius, name, percent }) {
   const RADIAN = Math.PI / 180;
-  const radius = outerRadius + 24;
+  const radius = outerRadius + 28;
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
   if (percent < 0.04) return null;
@@ -193,7 +193,7 @@ function renderPieLabel({ cx, cy, midAngle, outerRadius, name, percent }) {
       y={y}
       textAnchor={x > cx ? 'start' : 'end'}
       dominantBaseline="central"
-      style={{ fontSize: 12, fontWeight: 500, fill: 'var(--text-secondary)' }}
+      style={{ fontSize: 12, fontWeight: 550, fill: 'var(--text-secondary)', letterSpacing: '-0.01em' }}
     >
       {name} ({(percent * 100).toFixed(1)}%)
     </text>
@@ -233,8 +233,8 @@ export default function AravielChart({ spec }) {
   const referenceLines = config.referenceLines || [];
   const gradientFill = config.gradientFill !== false;
 
-  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const axisColor = isDark ? '#787470' : '#9e9283';
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+  const axisColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
 
   // Infer series from data keys if not explicitly provided
   const effectiveSeries = useMemo(() => {
@@ -259,24 +259,24 @@ export default function AravielChart({ spec }) {
   // Common axis props
   const xAxisProps = {
     dataKey: xKey,
-    tick: { fontSize: 11, fill: axisColor },
+    tick: { fontSize: 11, fill: axisColor, fontWeight: 500 },
     tickLine: false,
-    axisLine: { stroke: gridColor },
+    axisLine: { stroke: gridColor, strokeWidth: 1 },
     tickFormatter: (v) => formatAxisTick(v, xAxisFormat),
-    tickMargin: 8,
+    tickMargin: 10,
   };
 
   const yAxisProps = {
-    tick: { fontSize: 11, fill: axisColor },
+    tick: { fontSize: 11, fill: axisColor, fontWeight: 500 },
     tickLine: false,
     axisLine: false,
     tickFormatter: (v) => formatAxisTick(v, yAxisFormat),
-    width: 60,
+    width: 56,
   };
 
   const tooltipProps = {
     content: <ChartTooltip config={config} />,
-    cursor: { stroke: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)', strokeWidth: 1 },
+    cursor: { stroke: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', strokeWidth: 1, strokeDasharray: '4 4' },
   };
 
   const legendProps = showLegend
@@ -302,8 +302,8 @@ export default function AravielChart({ spec }) {
     switch (type) {
       case 'line':
         return (
-          <LineChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} />}
+          <LineChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 4 }}>
+            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} strokeDasharray="3 4" />}
             <XAxis {...xAxisProps} />
             <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
@@ -316,11 +316,11 @@ export default function AravielChart({ spec }) {
                 dataKey={s.key}
                 name={s.name || s.key}
                 stroke={s.color || PALETTE[idx % PALETTE.length]}
-                strokeWidth={2.5}
+                strokeWidth={2}
                 dot={false}
-                activeDot={{ r: 4, strokeWidth: 2, fill: isDark ? '#1a1a1a' : '#fff' }}
+                activeDot={{ r: 5, strokeWidth: 2.5, fill: isDark ? '#1a1a1a' : '#fff', stroke: s.color || PALETTE[idx % PALETTE.length] }}
                 isAnimationActive={animate}
-                animationDuration={800}
+                animationDuration={900}
                 animationEasing="ease-out"
               />
             ))}
@@ -329,19 +329,19 @@ export default function AravielChart({ spec }) {
 
       case 'area':
         return (
-          <AreaChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 4 }}>
             <defs>
               {effectiveSeries.map((s, idx) => {
                 const color = s.color || PALETTE[idx % PALETTE.length];
                 return (
                   <linearGradient key={`grad-${s.key}`} id={`araviel-grad-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={isDark ? 0.35 : 0.3} />
-                    <stop offset="95%" stopColor={color} stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={color} stopOpacity={isDark ? 0.25 : 0.2} />
+                    <stop offset="100%" stopColor={color} stopOpacity={0} />
                   </linearGradient>
                 );
               })}
             </defs>
-            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} />}
+            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} strokeDasharray="3 4" />}
             <XAxis {...xAxisProps} />
             <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
@@ -356,12 +356,12 @@ export default function AravielChart({ spec }) {
                   dataKey={s.key}
                   name={s.name || s.key}
                   stroke={color}
-                  strokeWidth={2.5}
+                  strokeWidth={2}
                   fill={gradientFill ? `url(#araviel-grad-${s.key})` : color}
-                  fillOpacity={gradientFill ? 1 : 0.1}
-                  activeDot={{ r: 4, strokeWidth: 2, fill: isDark ? '#1a1a1a' : '#fff' }}
+                  fillOpacity={gradientFill ? 1 : 0.08}
+                  activeDot={{ r: 5, strokeWidth: 2.5, fill: isDark ? '#1a1a1a' : '#fff', stroke: color }}
                   isAnimationActive={animate}
-                  animationDuration={800}
+                  animationDuration={900}
                   animationEasing="ease-out"
                 />
               );
@@ -371,8 +371,8 @@ export default function AravielChart({ spec }) {
 
       case 'bar':
         return (
-          <BarChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }} barCategoryGap="20%">
-            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} />}
+          <BarChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 4 }} barCategoryGap="25%">
+            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} strokeDasharray="3 4" />}
             <XAxis {...xAxisProps} />
             <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
@@ -384,10 +384,10 @@ export default function AravielChart({ spec }) {
                 dataKey={s.key}
                 name={s.name || s.key}
                 fill={s.color || PALETTE[idx % PALETTE.length]}
-                fillOpacity={0.85}
-                radius={[4, 4, 0, 0]}
+                fillOpacity={0.9}
+                radius={[6, 6, 0, 0]}
                 isAnimationActive={animate}
-                animationDuration={600}
+                animationDuration={700}
                 animationEasing="ease-out"
               />
             ))}
@@ -439,21 +439,22 @@ export default function AravielChart({ spec }) {
               nameKey={nameKey}
               cx="50%"
               cy="50%"
-              innerRadius={isDonut ? '52%' : 0}
-              outerRadius="78%"
-              paddingAngle={data.length > 1 ? 2 : 0}
+              innerRadius={isDonut ? '58%' : 0}
+              outerRadius="82%"
+              paddingAngle={data.length > 1 ? 3 : 0}
               label={renderPieLabel}
               isAnimationActive={animate}
-              animationDuration={800}
+              animationDuration={900}
               animationEasing="ease-out"
-              stroke={isDark ? '#1a1a1a' : '#fdf9f3'}
-              strokeWidth={2}
+              stroke={isDark ? '#1a1a1a' : '#fff'}
+              strokeWidth={3}
+              cornerRadius={3}
             >
               {data.map((entry, idx) => (
                 <Cell
                   key={idx}
                   fill={entry.color || PALETTE[idx % PALETTE.length]}
-                  fillOpacity={0.88}
+                  fillOpacity={0.92}
                 />
               ))}
             </Pie>
@@ -466,7 +467,7 @@ export default function AravielChart({ spec }) {
       case 'composed': {
         // Composed chart: each series specifies chartType: 'line' | 'bar' | 'area'
         return (
-          <ComposedChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 12, right: 20, left: 0, bottom: 4 }}>
             <defs>
               {effectiveSeries
                 .filter((s) => s.chartType === 'area')
@@ -480,7 +481,7 @@ export default function AravielChart({ spec }) {
                   );
                 })}
             </defs>
-            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} />}
+            {showGrid && <CartesianGrid stroke={gridColor} vertical={false} strokeDasharray="3 4" />}
             <XAxis {...xAxisProps} />
             <YAxis {...yAxisProps} />
             <Tooltip {...tooltipProps} />
@@ -496,8 +497,8 @@ export default function AravielChart({ spec }) {
                     dataKey={s.key}
                     name={s.name || s.key}
                     fill={color}
-                    fillOpacity={0.75}
-                    radius={[3, 3, 0, 0]}
+                    fillOpacity={0.85}
+                    radius={[5, 5, 0, 0]}
                     isAnimationActive={animate}
                   />
                 );
@@ -523,9 +524,9 @@ export default function AravielChart({ spec }) {
                   dataKey={s.key}
                   name={s.name || s.key}
                   stroke={color}
-                  strokeWidth={2.5}
+                  strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 4, strokeWidth: 2, fill: isDark ? '#1a1a1a' : '#fff' }}
+                  activeDot={{ r: 5, strokeWidth: 2.5, fill: isDark ? '#1a1a1a' : '#fff', stroke: color }}
                   isAnimationActive={animate}
                 />
               );
@@ -536,7 +537,7 @@ export default function AravielChart({ spec }) {
 
       case 'scatter':
         return (
-          <ScatterChart margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+          <ScatterChart margin={{ top: 12, right: 20, left: 0, bottom: 4 }}>
             {showGrid && <CartesianGrid stroke={gridColor} />}
             <XAxis
               {...xAxisProps}
