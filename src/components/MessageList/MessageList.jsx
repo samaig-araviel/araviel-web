@@ -96,221 +96,7 @@ hljs.registerLanguage('rs', rust);
 hljs.registerLanguage('cpp', cpp);
 hljs.registerLanguage('c', cpp);
 
-/**
- * Extract bold-formatted entity names from markdown content (e.g., **SBI Life Insurance (SBI Life)**).
- * Returns an array of short names extracted from parentheses or the bold text itself.
- */
-function extractBoldEntities(content) {
-  const entities = [];
-  // Match **Name (ShortName)** or **Name**
-  const boldPattern = /\*\*([^*]+)\*\*/g;
-  let match;
-  while ((match = boldPattern.exec(content)) !== null) {
-    const full = match[1].trim();
-    // Skip generic headers like "Please note", "Summary", single words like "Q3FY26"
-    if (full.length < 3 || /^(please|note|summary|disclaimer|important|key|risk)/i.test(full))
-      continue;
-    // Extract short name from parentheses if present: "SBI Life Insurance (SBI Life)" → "SBI Life"
-    const parenMatch = full.match(/\(([^)]+)\)\s*$/);
-    if (parenMatch) {
-      entities.push(parenMatch[1].trim());
-    } else if (full.length <= 40) {
-      entities.push(full);
-    }
-  }
-  return entities;
-}
 
-/**
- * Extract the core topic from the user's question.
- */
-function extractQuestionTopic(userPrompt) {
-  if (!userPrompt) return null;
-  // Remove filler words to get core topic
-  return userPrompt
-    .replace(
-      /^(give me|show me|tell me|can you|could you|please|what are|what is|what's|how|list|provide|i want|i need|help me with)\s+(an?|the|some|my)?\s*/i,
-      ''
-    )
-    .replace(/[?.!]+$/, '')
-    .trim();
-}
-
-/**
- * Generate 4 contextual follow-up suggestion prompts based on the assistant's
- * response content and the user's original question.
- */
-function generateFollowUps(content, userPrompt, generatedImages) {
-  // For image-only responses (no text content), return image follow-ups
-  if (generatedImages && generatedImages.length > 0 && !content) {
-    const imgSuggestions = [
-      'Generate a similar image with a different mood',
-      'Try a different art style',
-      'Make it more vibrant and colorful',
-      'Create a darker, moodier version',
-      'Show a wider angle of this scene',
-      'Add more fine detail and texture',
-      'Try this in a painterly style',
-      'Generate a cinematic version',
-    ];
-    return pickRandom(imgSuggestions, 4);
-  }
-
-  if (!content) return [];
-
-  const lower = content.toLowerCase();
-  const entities = extractBoldEntities(content);
-  const topic = extractQuestionTopic(userPrompt);
-  const suggestions = [];
-
-  // --- Image generation responses ---
-  if (generatedImages && generatedImages.length > 0) {
-    suggestions.push(
-      'Generate a similar image with a different mood',
-      'Try a different art style',
-      'Make it more vibrant and colorful',
-      'Create a darker, moodier version',
-      'Show a wider angle of this scene',
-      'Add more fine detail and texture',
-      'Try this in a painterly style',
-      'Generate a cinematic version'
-    );
-    return pickRandom(suggestions, 4);
-  }
-
-  // --- Financial / Stock / Investment responses ---
-  if (
-    /stock|invest|market|portfolio|dividend|earnings|revenue|growth|share|bull|bear|valuation/i.test(
-      lower
-    ) ||
-    /\bQ[1-4]FY\d{2}\b|\bCAGR\b|\bEBITDA\b|\bAPE\b|\bYoY\b/i.test(content)
-  ) {
-    if (entities.length >= 2) {
-      suggestions.push(
-        `Compare ${entities[0]} and ${entities[1]} — which is a better buy right now?`
-      );
-    }
-    if (entities.length >= 1) {
-      suggestions.push(`What are the key risks and downsides for ${entities[0]}?`);
-      suggestions.push(
-        `What is the technical chart analysis for ${entities[entities.length > 1 ? 1 : 0]}?`
-      );
-    }
-    if (entities.length >= 3) {
-      suggestions.push(
-        `Rank ${entities.slice(0, Math.min(entities.length, 4)).join(', ')} by risk-to-reward ratio`
-      );
-    }
-    suggestions.push(
-      ...[
-        topic
-          ? `What sectors should I avoid this ${/week/i.test(userPrompt || '') ? 'week' : 'month'}?`
-          : null,
-        'What are the best entry and exit points for these stocks?',
-        'How do global market trends affect these picks?',
-        entities.length >= 1
-          ? `Show me the historical performance of ${entities[0]} over the last year`
-          : null,
-        'What macroeconomic factors could impact these stocks?',
-      ].filter(Boolean)
-    );
-    return pickRandom(suggestions, 4);
-  }
-
-  // --- Coding / Programming responses ---
-  if (/```/.test(content) && /function|const|let|var|def |class |import /.test(content)) {
-    // Extract function/class names for specificity
-    const fnMatch = content.match(/(?:function|def|class)\s+(\w+)/);
-    const fnName = fnMatch ? fnMatch[1] : null;
-    suggestions.push(
-      ...[
-        fnName ? `How would I write unit tests for \`${fnName}\`?` : 'How would I test this code?',
-        fnName
-          ? `Can you add error handling to \`${fnName}\`?`
-          : 'Can you add error handling to this?',
-        'What are the edge cases I should watch out for?',
-        topic ? `Are there any libraries that simplify ${topic}?` : null,
-        'Can you explain the time and space complexity?',
-        'How would I integrate this into a larger project?',
-      ].filter(Boolean)
-    );
-    return pickRandom(suggestions, 4);
-  }
-
-  // --- Comparison / List responses ---
-  if (entities.length >= 3) {
-    suggestions.push(`Which of these would you recommend and why?`);
-    suggestions.push(`What are the pros and cons of ${entities[0]} vs ${entities[1]}?`);
-    suggestions.push(`Can you go deeper on ${entities[entities.length - 1]}?`);
-    suggestions.push(
-      topic ? `What other options should I consider for ${topic}?` : 'What alternatives exist?'
-    );
-    suggestions.push(`How do I choose between these based on my needs?`);
-    return pickRandom(suggestions, 4);
-  }
-
-  // --- How-to / Tutorial responses ---
-  if (/step\s*\d|first[,.]|then[,.]|finally[,.]|instructions/i.test(lower)) {
-    suggestions.push(
-      ...[
-        'What are common mistakes to avoid with this approach?',
-        topic ? `Are there faster ways to ${topic}?` : null,
-        'Can you show me a practical example of this?',
-        'What should I do if something goes wrong at one of these steps?',
-        topic ? `What tools or resources help with ${topic}?` : null,
-        'Can you explain the reasoning behind each step?',
-      ].filter(Boolean)
-    );
-    return pickRandom(suggestions, 4);
-  }
-
-  // --- Explanation / Educational responses ---
-  if (
-    /because|reason|explains|means|definition|concept|principle/i.test(lower) ||
-    entities.length >= 1
-  ) {
-    const mainEntity = entities[0];
-    suggestions.push(
-      ...[
-        mainEntity ? `Can you give a real-world example of ${mainEntity}?` : null,
-        topic ? `What are common misconceptions about ${topic}?` : null,
-        'Can you explain this in simpler terms?',
-        mainEntity ? `How does ${mainEntity} compare to similar alternatives?` : null,
-        topic ? `What should I learn next after understanding ${topic}?` : null,
-        'What are the practical implications of this?',
-      ].filter(Boolean)
-    );
-    return pickRandom(suggestions, 4);
-  }
-
-  // --- Contextual default: use topic from the user's question ---
-  if (topic && topic.length > 5) {
-    suggestions.push(
-      `Can you go deeper on ${topic} with specific examples?`,
-      `What are the most important things to know about ${topic}?`,
-      `What are common mistakes people make with ${topic}?`,
-      `How would you apply this advice on ${topic} in practice?`,
-      `What related topics should I explore alongside ${topic}?`
-    );
-    return pickRandom(suggestions, 4);
-  }
-
-  // --- Absolute fallback ---
-  const defaults = [
-    'Can you elaborate with more specific examples?',
-    'What are the practical next steps I should take?',
-    'What are the potential risks or downsides?',
-    'Can you compare the main options mentioned?',
-    'What related topics should I look into?',
-    'Can you summarize the key takeaways?',
-  ];
-  return pickRandom(defaults, 4);
-}
-
-function pickRandom(arr, n) {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, n);
-}
 
 /**
  * Extract video info (provider, ID, thumbnail, embed URL) from a URL.
@@ -4039,22 +3825,257 @@ function ResponseActions({
 /**
  * Follow-up suggestions component shown after assistant responses.
  */
-function FollowUpSuggestions({ suggestions, onSelect }) {
+function QuestionCard({ questions, onComplete, onDismiss }) {
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [customText, setCustomText] = useState('');
+  const [isCustomActive, setIsCustomActive] = useState(false);
+  const customInputRef = useRef(null);
+  const total = questions.length;
+  const current = questions[currentIdx];
+
+  const handleSelectOption = useCallback(
+    (option) => {
+      setIsCustomActive(false);
+      setCustomText('');
+      setAnswers((prev) => ({ ...prev, [currentIdx]: option }));
+    },
+    [currentIdx]
+  );
+
+  const handleCustomFocus = useCallback(() => {
+    setIsCustomActive(true);
+    setAnswers((prev) => {
+      const next = { ...prev };
+      delete next[currentIdx];
+      return next;
+    });
+  }, [currentIdx]);
+
+  const handleCustomChange = useCallback(
+    (e) => {
+      const val = e.target.value;
+      setCustomText(val);
+      if (val.trim()) {
+        setAnswers((prev) => ({ ...prev, [currentIdx]: val.trim() }));
+      } else {
+        setAnswers((prev) => {
+          const next = { ...prev };
+          delete next[currentIdx];
+          return next;
+        });
+      }
+    },
+    [currentIdx]
+  );
+
+  const handleNext = useCallback(() => {
+    if (currentIdx < total - 1) {
+      setCurrentIdx((i) => i + 1);
+      setCustomText('');
+      setIsCustomActive(false);
+    } else {
+      // Last question — bundle and send
+      const pairs = questions
+        .map((q, i) => (answers[i] ? `Q: ${q.question}\nA: ${answers[i]}` : null))
+        .filter(Boolean);
+      if (pairs.length > 0) {
+        onComplete(pairs.join('\n\n'));
+      }
+    }
+  }, [currentIdx, total, questions, answers, onComplete]);
+
+  const handlePrev = useCallback(() => {
+    if (currentIdx > 0) {
+      setCurrentIdx((i) => i - 1);
+      setCustomText('');
+      setIsCustomActive(false);
+    }
+  }, [currentIdx]);
+
+  const handleSkip = useCallback(() => {
+    if (currentIdx < total - 1) {
+      setCurrentIdx((i) => i + 1);
+      setCustomText('');
+      setIsCustomActive(false);
+    } else {
+      // Skip last question — submit whatever we have
+      const pairs = questions
+        .map((q, i) => (answers[i] ? `Q: ${q.question}\nA: ${answers[i]}` : null))
+        .filter(Boolean);
+      if (pairs.length > 0) {
+        onComplete(pairs.join('\n\n'));
+      } else {
+        onDismiss();
+      }
+    }
+  }, [currentIdx, total, questions, answers, onComplete, onDismiss]);
+
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (e.key === 'Enter' && answers[currentIdx]) {
+        e.preventDefault();
+        handleNext();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleSkip();
+      }
+    },
+    [answers, currentIdx, handleNext, handleSkip]
+  );
+
+  const selectedAnswer = answers[currentIdx];
+  const isLastQuestion = currentIdx === total - 1;
+  const hasAnswer = !!selectedAnswer;
+
+  if (!current) return null;
+
+  return (
+    <div className={styles.questionCard} onKeyDown={handleKeyDown} tabIndex={-1}>
+      <div className={styles.questionCardHeader}>
+        <span className={styles.questionText}>{current.question}</span>
+        <div className={styles.questionNav}>
+          {total > 1 && (
+            <span className={styles.questionCounter}>
+              {currentIdx + 1} of {total}
+            </span>
+          )}
+          <button className={styles.questionDismiss} onClick={onDismiss} aria-label="Dismiss">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path
+                d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className={styles.questionOptions}>
+        {current.options.map((option, idx) => (
+          <button
+            key={idx}
+            className={`${styles.questionOption} ${selectedAnswer === option && !isCustomActive ? styles.questionOptionSelected : ''}`}
+            onClick={() => handleSelectOption(option)}
+          >
+            <span className={styles.questionOptionNumber}>{idx + 1}</span>
+            <span className={styles.questionOptionLabel}>{option}</span>
+            {selectedAnswer === option && !isCustomActive && (
+              <svg className={styles.questionOptionCheck} width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M11.5 4L5.5 10L2.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        ))}
+
+        <div className={`${styles.questionCustom} ${isCustomActive ? styles.questionCustomActive : ''}`}>
+          <svg className={styles.questionCustomIcon} width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path
+              d="M9.1 1.4a1.4 1.4 0 0 1 2 2L4 10.5l-2.7.7.7-2.7L9.1 1.4z"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <input
+            ref={customInputRef}
+            className={styles.questionCustomInput}
+            type="text"
+            placeholder="Something else"
+            value={customText}
+            onFocus={handleCustomFocus}
+            onChange={handleCustomChange}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && customText.trim()) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleNext();
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      <div className={styles.questionCardFooter}>
+        <div className={styles.questionNavButtons}>
+          {total > 1 && currentIdx > 0 && (
+            <button className={styles.questionNavBtn} onClick={handlePrev}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+          {total > 1 && currentIdx < total - 1 && (
+            <button className={styles.questionNavBtn} onClick={handleNext} disabled={!hasAnswer}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <div className={styles.questionActions}>
+          <button className={styles.questionSkipBtn} onClick={handleSkip}>
+            Skip
+          </button>
+          {(isLastQuestion || total === 1) && hasAnswer && (
+            <button className={styles.questionSubmitBtn} onClick={handleNext}>
+              Continue
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SuggestionsList({ suggestions, onSelect }) {
   if (!suggestions || suggestions.length === 0) return null;
 
   return (
-    <div className={styles.followUps}>
-      <div className={styles.followUpsHeader}>
-        <span>Follow up</span>
+    <div className={styles.suggestionsList}>
+      <div className={styles.suggestionsHeader}>
+        <span>Suggestions</span>
       </div>
-      <div className={styles.followUpsList}>
+      <div className={styles.suggestionsItems}>
         {suggestions.map((suggestion, idx) => (
-          <button key={idx} className={styles.followUpItem} onClick={() => onSelect(suggestion)}>
-            <span className={styles.followUpText}>{suggestion}</span>
+          <button key={idx} className={styles.suggestionItem} onClick={() => onSelect(suggestion)}>
+            <span className={styles.suggestionText}>{suggestion}</span>
             <ArrowRightIcon />
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function FollowUpSection({ followUps, questions, onFollowUpSelect, onQuestionsComplete, onQuestionsDismiss }) {
+  const [dismissed, setDismissed] = useState(false);
+
+  const handleDismiss = useCallback(() => {
+    setDismissed(true);
+    if (onQuestionsDismiss) onQuestionsDismiss();
+  }, [onQuestionsDismiss]);
+
+  const hasQuestions = !dismissed && questions && questions.length > 0;
+  const hasSuggestions = followUps && followUps.length > 0;
+
+  if (!hasQuestions && !hasSuggestions) return null;
+
+  return (
+    <div className={styles.followUpSection}>
+      {hasQuestions && (
+        <QuestionCard
+          questions={questions}
+          onComplete={onQuestionsComplete}
+          onDismiss={handleDismiss}
+        />
+      )}
+      {hasSuggestions && (
+        <SuggestionsList suggestions={followUps} onSelect={onFollowUpSelect} />
+      )}
     </div>
   );
 }
@@ -4740,27 +4761,22 @@ function Message({
   const activeSubConversation = subConversations.find((sc) => sc.id === activeSubConvId);
   const pendingDeleteConv = subConversations.find((sc) => sc.id === pendingDeleteId);
 
-  // Memoize follow-ups so they don't regenerate on every render (which causes jitter)
-  // Prefer AI-provided follow-ups from the backend; fall back to client-side generation.
   const hasGeneratedImages = message.generatedImages && message.generatedImages.length > 0;
+
+  // Follow-ups and questions are AI-generated and provided by the backend.
   const followUps = useMemo(() => {
-    if (!isUser && isLastAssistant && !isStreaming && (message.content || hasGeneratedImages)) {
-      if (message.followUps && message.followUps.length > 0) {
-        return message.followUps.slice(0, 4);
-      }
-      return generateFollowUps(message.content, userPrompt, message.generatedImages);
+    if (!isUser && isLastAssistant && !isStreaming && message.followUps?.length > 0) {
+      return message.followUps.slice(0, 3);
     }
     return [];
-  }, [
-    isUser,
-    isLastAssistant,
-    isStreaming,
-    message.content,
-    hasGeneratedImages,
-    message.followUps,
-    userPrompt,
-    message.generatedImages,
-  ]);
+  }, [isUser, isLastAssistant, isStreaming, message.followUps]);
+
+  const questions = useMemo(() => {
+    if (!isUser && isLastAssistant && !isStreaming && message.questions?.length > 0) {
+      return message.questions;
+    }
+    return [];
+  }, [isUser, isLastAssistant, isStreaming, message.questions]);
 
   // Detect weather responses and extract structured data for rich rendering
   const weatherData = useMemo(() => {
@@ -4925,8 +4941,14 @@ function Message({
         />
       )}
 
-      {followUps.length > 0 && (
-        <FollowUpSuggestions suggestions={followUps} onSelect={onFollowUpSelect} />
+      {(followUps.length > 0 || questions.length > 0) && (
+        <FollowUpSection
+          followUps={followUps}
+          questions={questions}
+          onFollowUpSelect={onFollowUpSelect}
+          onQuestionsComplete={onFollowUpSelect}
+          onQuestionsDismiss={() => {}}
+        />
       )}
 
       {/* Sub-conversation panel (right side) */}
