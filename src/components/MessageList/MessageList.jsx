@@ -66,6 +66,7 @@ import StepsBlock from '../StepsBlock/StepsBlock';
 import FileBlock from '../FileBlock/FileBlock';
 import WeatherCard from '../WeatherCard';
 import { detectWeatherResponse, extractWeatherData } from '../WeatherCard/weatherParser';
+import { generateAndDownload } from '../../services/fileGenerator';
 import styles from './MessageList.module.css';
 
 // Initialize mermaid with sensible defaults
@@ -2490,10 +2491,12 @@ function SourcesPill({ sources }) {
 }
 
 /**
- * Share dropdown with PDF and TXT export options.
+ * Share dropdown with multiple export format options.
+ * Converts message content to structured sections for rich file generation.
  */
 function ShareDropdown({ message, onClose }) {
   const dropdownRef = useRef(null);
+  const [generating, setGenerating] = useState(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -2512,66 +2515,236 @@ function ShareDropdown({ message, onClose }) {
     };
   }, [onClose]);
 
-  const downloadAsTxt = () => {
-    const content = `${message.modelName || 'Assistant'} Response\n${'='.repeat(40)}\n\n${
-      message.content
-    }`;
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `response-${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    onClose();
-  };
+  const exportAs = useCallback(
+    async (format) => {
+      setGenerating(format);
+      try {
+        const sections = parseMessageToSections(message.content);
+        const timestamp = new Date().toISOString().slice(0, 10);
+        const spec = {
+          filename: `response-${timestamp}.${format}`,
+          format,
+          title: message.modelName ? `${message.modelName} Response` : 'Response',
+          subtitle: 'Generated via Araviel',
+          content: { sections },
+        };
 
-  const downloadAsPdf = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    const htmlContent = message.content
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/\n/g, '<br/>');
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Response - ${message.modelName || 'Assistant'}</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 40px; line-height: 1.7; color: #1a1a1a; max-width: 720px; margin: 0 auto; }
-          h1 { font-size: 18px; color: #666; border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 24px; }
-          .meta { font-size: 12px; color: #999; margin-bottom: 24px; }
-          .content { font-size: 15px; }
-        </style>
-      </head>
-      <body>
-        <h1>${message.modelName || 'Assistant'} Response</h1>
-        <div class="meta">Generated via Araviel</div>
-        <div class="content">${htmlContent}</div>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 300);
-    onClose();
-  };
+        // For spreadsheet formats, extract tables from the content
+        if (format === 'xlsx' || format === 'csv') {
+          const tables = extractTablesFromContent(message.content);
+          if (tables.length > 0) {
+            spec.content = {
+              sheets: tables.map((t, i) => ({
+                name: t.title || `Sheet${i + 1}`,
+                headers: t.headers,
+                rows: t.rows,
+              })),
+            };
+          }
+        }
+
+        await generateAndDownload(spec);
+        onClose();
+      } catch (err) {
+        console.error(`Export as ${format} failed:`, err);
+      } finally {
+        setGenerating(null);
+      }
+    },
+    [message, onClose]
+  );
+
+  const formats = [
+    { format: 'pdf', label: 'PDF Document', icon: FileDownIcon },
+    { format: 'docx', label: 'Word Document', icon: FileTextIcon },
+    { format: 'xlsx', label: 'Excel Spreadsheet', icon: FileTextIcon },
+    { format: 'txt', label: 'Plain Text', icon: FileTextIcon },
+    { format: 'md', label: 'Markdown', icon: FileTextIcon },
+    { format: 'html', label: 'HTML Page', icon: CodeIcon },
+  ];
 
   return (
     <div className={styles.shareDropdown} ref={dropdownRef}>
-      <button className={styles.shareDropdownItem} onClick={downloadAsPdf}>
-        <FileDownIcon />
-        <span>Export as PDF</span>
-      </button>
-      <button className={styles.shareDropdownItem} onClick={downloadAsTxt}>
-        <FileTextIcon />
-        <span>Export as TXT</span>
-      </button>
+      {formats.map(({ format, label, icon: Icon }) => (
+        <button
+          key={format}
+          className={styles.shareDropdownItem}
+          onClick={() => exportAs(format)}
+          disabled={generating !== null}
+        >
+          {generating === format ? (
+            <span className={styles.shareSpinner} />
+          ) : (
+            <Icon />
+          )}
+          <span>{label}</span>
+        </button>
+      ))}
     </div>
   );
+}
+
+/**
+ * Parse raw message markdown into structured sections for file generation.
+ */
+function parseMessageToSections(content) {
+  if (!content) return [{ type: 'paragraph', text: '' }];
+
+  const lines = content.split('\n');
+  const sections = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Skip empty lines
+    if (line.trim() === '') {
+      i++;
+      continue;
+    }
+
+    // Code block
+    if (line.startsWith('```')) {
+      const lang = line.slice(3).trim();
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      // Skip special blocks (chart, mermaid, file, timeline, comparison, steps)
+      if (!['chart', 'araviel-chart', 'mermaid', 'file', 'timeline', 'comparison', 'steps'].includes(lang)) {
+        sections.push({ type: 'code', text: codeLines.join('\n'), language: lang || undefined });
+      }
+      continue;
+    }
+
+    // Heading
+    const headingMatch = line.match(/^(#{1,6})\s+(.+)/);
+    if (headingMatch) {
+      sections.push({ type: 'heading', text: headingMatch[2], level: headingMatch[1].length });
+      i++;
+      continue;
+    }
+
+    // Table
+    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+      const tableRows = [];
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        tableRows.push(lines[i].trim());
+        i++;
+      }
+      if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
+        const parseCells = (row) => row.slice(1, -1).split('|').map((c) => c.trim());
+        sections.push({
+          type: 'table',
+          headers: parseCells(tableRows[0]),
+          rows: tableRows.slice(2).map(parseCells),
+        });
+        continue;
+      }
+      // Not a valid table, fall through
+      i -= tableRows.length;
+    }
+
+    // Horizontal rule
+    if (/^---+$/.test(line.trim())) {
+      sections.push({ type: 'divider' });
+      i++;
+      continue;
+    }
+
+    // Unordered list
+    if (/^[-*]\s/.test(line.trim())) {
+      const items = [];
+      while (i < lines.length && /^(\s*[-*]\s)/.test(lines[i])) {
+        items.push(lines[i].trim().replace(/^[-*]\s/, ''));
+        i++;
+      }
+      sections.push({ type: 'list', items, ordered: false });
+      continue;
+    }
+
+    // Ordered list
+    if (/^\d+\.\s/.test(line.trim())) {
+      const items = [];
+      while (i < lines.length && /^(\s*\d+\.\s)/.test(lines[i])) {
+        items.push(lines[i].trim().replace(/^\d+\.\s/, ''));
+        i++;
+      }
+      sections.push({ type: 'list', items, ordered: true });
+      continue;
+    }
+
+    // Paragraph (collect consecutive non-empty, non-special lines)
+    const paraLines = [];
+    while (
+      i < lines.length &&
+      lines[i].trim() !== '' &&
+      !lines[i].startsWith('```') &&
+      !lines[i].match(/^#{1,6}\s/) &&
+      !(lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) &&
+      !/^---+$/.test(lines[i].trim()) &&
+      !/^[-*]\s/.test(lines[i].trim()) &&
+      !/^\d+\.\s/.test(lines[i].trim())
+    ) {
+      paraLines.push(lines[i]);
+      i++;
+    }
+    if (paraLines.length > 0) {
+      // Strip markdown bold/italic for clean text in files
+      const text = paraLines
+        .join(' ')
+        .replace(/\*\*(.+?)\*\*/g, '$1')
+        .replace(/\*(.+?)\*/g, '$1');
+      sections.push({ type: 'paragraph', text });
+    }
+  }
+
+  return sections.length > 0 ? sections : [{ type: 'paragraph', text: content }];
+}
+
+/**
+ * Extract markdown tables from content for spreadsheet export.
+ */
+function extractTablesFromContent(content) {
+  if (!content) return [];
+  const tables = [];
+  const lines = content.split('\n');
+  let i = 0;
+
+  while (i < lines.length) {
+    if (lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+      const tableRows = [];
+      const startIdx = i;
+      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+        tableRows.push(lines[i].trim());
+        i++;
+      }
+      if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
+        const parseCells = (row) => row.slice(1, -1).split('|').map((c) => c.trim());
+        // Look for a heading above the table
+        let title = null;
+        for (let j = startIdx - 1; j >= Math.max(0, startIdx - 3); j--) {
+          const hMatch = lines[j].match(/^#{1,6}\s+(.+)/);
+          if (hMatch) { title = hMatch[1]; break; }
+          const boldMatch = lines[j].match(/^\*\*(.+)\*\*/);
+          if (boldMatch) { title = boldMatch[1]; break; }
+        }
+        tables.push({
+          title,
+          headers: parseCells(tableRows[0]),
+          rows: tableRows.slice(2).map(parseCells),
+        });
+        continue;
+      }
+      i = startIdx + 1;
+    } else {
+      i++;
+    }
+  }
+  return tables;
 }
 
 /**
