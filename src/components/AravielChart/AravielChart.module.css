@@ -1,19 +1,25 @@
 /* ─── AravielChart ─── */
-/* Native-feeling chart blocks that blend seamlessly into the message flow */
+/* Premium chart blocks that feel native and polished */
 
 .chartBlock {
-  margin: 14px 0;
+  margin: 16px 0;
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: 16px;
   overflow: hidden;
   background: var(--bg-primary);
-  animation: chartFadeIn 0.4s ease-out;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
+  animation: chartFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:global([data-theme='dark']) .chartBlock {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.12);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 @keyframes chartFadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -27,54 +33,65 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px 10px;
+  padding: 16px 20px 14px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-secondary);
+}
+
+:global([data-theme='dark']) .chartHeader {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .chartTitleGroup {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   min-width: 0;
 }
 
 .chartTitle {
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 650;
   color: var(--text-primary);
   line-height: 1.3;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 .chartSubtitle {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-muted);
   line-height: 1.35;
+  letter-spacing: -0.005em;
 }
 
 .chartActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
 .chartTypeBadge {
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 5px;
-  padding: 2px 7px;
-  line-height: 1.4;
+  border-radius: 6px;
+  padding: 3px 8px;
+  line-height: 1.3;
+}
+
+:global([data-theme='dark']) .chartTypeBadge {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .chartToggle {
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 550;
   color: var(--text-muted);
   background: transparent;
@@ -82,96 +99,126 @@
   border-radius: 6px;
   padding: 3px 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
 }
 
 .chartToggle:hover {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: var(--bg-hover);
+  border-color: var(--text-muted);
 }
 
 /* ─── Chart Canvas ─── */
 .chartCanvas {
-  padding: 16px 10px 12px 4px;
+  padding: 20px 16px 16px 8px;
 }
 
-/* Recharts overrides for native feel */
+/* Recharts overrides for premium feel */
 .chartCanvas :global(.recharts-cartesian-grid-horizontal) line,
 .chartCanvas :global(.recharts-cartesian-grid-vertical) line {
-  stroke-dasharray: 3 3;
+  stroke-dasharray: 3 4;
+  stroke-opacity: 0.5;
 }
 
 .chartCanvas :global(.recharts-active-dot) circle {
-  filter: drop-shadow(0 0 4px rgba(217, 119, 6, 0.35));
+  filter: drop-shadow(0 0 6px rgba(217, 119, 6, 0.3));
 }
 
 .chartCanvas :global(.recharts-legend-item-text) {
   color: var(--text-secondary) !important;
   font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.005em !important;
 }
 
 .chartCanvas :global(.recharts-default-legend) {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: 4px 20px;
   justify-content: center;
 }
 
 /* Pie chart specific */
 .chartCanvas :global(.recharts-pie-sector) {
-  transition: opacity 0.15s ease;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .chartCanvas :global(.recharts-pie-sector):hover {
-  opacity: 0.9;
-  filter: brightness(1.05);
+  opacity: 0.92;
+  filter: brightness(1.06) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+}
+
+/* Bar chart hover */
+.chartCanvas :global(.recharts-bar-rectangle) {
+  transition: filter 0.15s ease;
+}
+
+.chartCanvas :global(.recharts-bar-rectangle):hover {
+  filter: brightness(1.08);
 }
 
 /* ─── Tooltip ─── */
 .tooltip {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 10px 13px;
-  box-shadow: var(--shadow-lg);
-  min-width: 140px;
-  max-width: 260px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  min-width: 150px;
+  max-width: 280px;
+  backdrop-filter: blur(8px);
+}
+
+:global([data-theme='dark']) .tooltip {
+  background: rgba(30, 30, 30, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
 .tooltipLabel {
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--text-primary);
-  margin-bottom: 6px;
-  padding-bottom: 5px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--border-color);
+  letter-spacing: -0.01em;
 }
 
 .tooltipRow {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2.5px 0;
+  gap: 8px;
+  padding: 3px 0;
 }
 
 .tooltipDot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+:global([data-theme='light']) .tooltipDot {
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06);
 }
 
 .tooltipName {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-secondary);
   flex: 1;
+  letter-spacing: -0.005em;
 }
 
 .tooltipValue {
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 650;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 
 /* ─── Data Table View ─── */
@@ -180,12 +227,13 @@
   padding: 4px;
   max-height: 400px;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .chartDataTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .chartDataTable th {
@@ -194,10 +242,10 @@
   background: var(--bg-secondary);
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 11px;
+  font-size: 11.5px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 8px 12px;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
   text-align: right;
   border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
@@ -208,12 +256,13 @@
 }
 
 .chartDataTable td {
-  padding: 6px 12px;
+  padding: 8px 14px;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
   text-align: right;
   border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
+  font-size: 13px;
 }
 
 .chartDataTable td:first-child {
@@ -230,9 +279,13 @@
   background: var(--bg-hover);
 }
 
+.chartDataTable tbody tr {
+  transition: background-color 0.15s ease;
+}
+
 /* ─── Error State ─── */
 .chartError {
-  padding: 24px;
+  padding: 32px;
   text-align: center;
   font-size: 13px;
   color: var(--text-muted);
@@ -245,18 +298,22 @@
 /* ─── Responsive ─── */
 @media (max-width: 600px) {
   .chartCanvas {
-    padding: 12px 4px 8px 0;
+    padding: 14px 8px 10px 2px;
   }
 
   .chartHeader {
-    padding: 10px 12px 8px;
+    padding: 12px 14px 10px;
   }
 
   .chartTitle {
-    font-size: 12.5px;
+    font-size: 13px;
   }
 
   .tooltip {
     max-width: 200px;
+  }
+
+  .chartBlock {
+    border-radius: 12px;
   }
 }
