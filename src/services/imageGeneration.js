@@ -1,8 +1,16 @@
 // Image generation service — manages limits, storage, and tracking
 import { getUserTier } from '../data/models';
 
-const STORAGE_KEY = 'araviel-generated-images';
+const API_BASE =
+  import.meta.env.VITE_ARAVIEL_API_BASE ||
+  (import.meta.env.DEV ? '' : 'https://araviel-api.vercel.app');
+
 const LIMITS_KEY = 'araviel-image-gen-limits';
+
+// In-memory cache of gallery images (refreshed from API)
+let _cachedImages = null;
+let _cacheTimestamp = 0;
+const CACHE_TTL = 30_000; // 30 seconds
 
 // Limits per tier per 24 hours
 const TIER_LIMITS = {
@@ -26,7 +34,6 @@ function getUsageRecord() {
     const raw = localStorage.getItem(LIMITS_KEY);
     if (!raw) return { count: 0, resetAt: 0 };
     const data = JSON.parse(raw);
-    // Auto-reset after 24 hours
     if (Date.now() > data.resetAt) {
       return { count: 0, resetAt: 0 };
     }
@@ -86,14 +93,13 @@ export function getLimitInfo() {
 }
 
 /**
- * Save a generated image to local storage.
- * Handles localStorage quota errors by evicting oldest images when needed.
+ * Notify the gallery that a new image was saved (for real-time UI updates).
+ * The image data comes from the backend's image_generation SSE event —
+ * it already has a public URL (not base64) after being uploaded to Supabase Storage.
  */
 export function saveGeneratedImage(image) {
-  // Always read fresh from storage right before writing to avoid stale reads
-  const images = getGeneratedImages();
   const entry = {
-    id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: image.id || `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     url: image.url,
     prompt: image.prompt || '',
     model: image.model || 'unknown',
@@ -104,43 +110,13 @@ export function saveGeneratedImage(image) {
     messageId: image.messageId || null,
   };
 
-  // Prevent duplicate saves — skip if same URL + prompt already exists recently
-  const isDuplicate = images.some(
-    (existing) =>
-      existing.url === entry.url &&
-      existing.prompt === entry.prompt &&
-      Date.now() - existing.createdAt < 5000
-  );
-  if (isDuplicate) {
-    // Already saved — still dispatch event for UI sync but don't re-save
-    window.dispatchEvent(new CustomEvent('araviel-image-saved', { detail: entry }));
-    return images.find((e) => e.url === entry.url) || entry;
-  }
-
-  images.unshift(entry);
-  // Keep max 100 images
-  if (images.length > 100) images.length = 100;
-
-  // Attempt to persist — evict oldest entries if localStorage quota is exceeded
-  let saved = false;
-  const toSave = [...images];
-  while (toSave.length > 0) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-      saved = true;
-      break;
-    } catch {
-      // QuotaExceededError — remove oldest image and retry
-      toSave.pop();
-    }
-  }
-
-  if (!saved) {
-    // Last resort: store only the new entry
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([entry]));
-    } catch {
-      // localStorage completely unavailable — proceed without persistence
+  // Add to in-memory cache for instant gallery update
+  if (_cachedImages) {
+    const isDuplicate = _cachedImages.some(
+      (existing) => existing.id === entry.id || (existing.url === entry.url && existing.prompt === entry.prompt)
+    );
+    if (!isDuplicate) {
+      _cachedImages.unshift(entry);
     }
   }
 
@@ -150,21 +126,63 @@ export function saveGeneratedImage(image) {
 }
 
 /**
- * Get all locally stored generated images.
+ * Fetch generated images from the API (with in-memory cache).
+ * Returns array of image objects sorted newest first.
  */
-export function getGeneratedImages() {
+export async function fetchGeneratedImagesFromAPI({ limit = 50, offset = 0 } = {}) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const res = await fetch(`${API_BASE}/api/images?limit=${limit}&offset=${offset}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const images = (data.images || []).map((img) => ({
+      id: img.id,
+      url: img.url,
+      prompt: img.prompt || '',
+      model: img.model || 'unknown',
+      provider: img.provider || 'unknown',
+      createdAt: img.createdAt ? new Date(img.createdAt).getTime() : Date.now(),
+      size: img.size || null,
+      style: img.style || null,
+      messageId: img.messageId || null,
+      conversationId: img.conversationId || null,
+    }));
+    // Update cache
+    if (offset === 0) {
+      _cachedImages = images;
+      _cacheTimestamp = Date.now();
+    }
+    return images;
   } catch {
-    return [];
+    // Fallback to cache if available
+    return _cachedImages || [];
   }
 }
 
 /**
- * Delete a generated image by ID.
+ * Get generated images — uses in-memory cache if fresh, otherwise fetches from API.
+ * This is the synchronous-compatible version used by the gallery.
+ * Returns cached images immediately; call fetchGeneratedImagesFromAPI() for fresh data.
  */
-export function deleteGeneratedImage(imageId) {
-  const images = getGeneratedImages().filter((img) => img.id !== imageId);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+export function getGeneratedImages() {
+  return _cachedImages || [];
+}
+
+/**
+ * Delete a generated image by ID via API.
+ */
+export async function deleteGeneratedImage(imageId) {
+  // Optimistically remove from cache
+  if (_cachedImages) {
+    _cachedImages = _cachedImages.filter((img) => img.id !== imageId);
+  }
+
+  try {
+    await fetch(`${API_BASE}/api/images`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: imageId }),
+    });
+  } catch {
+    // Silently fail — image may already be deleted
+  }
 }

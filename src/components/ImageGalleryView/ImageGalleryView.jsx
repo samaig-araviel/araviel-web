@@ -10,6 +10,7 @@ import {
 } from '../../store/slices/chatSlice';
 import {
   getGeneratedImages,
+  fetchGeneratedImagesFromAPI,
   deleteGeneratedImage,
   getLimitInfo,
 } from '../../services/imageGeneration';
@@ -92,10 +93,16 @@ export default function ImageGalleryView() {
   const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
 
   const loadImagesRef = useRef(null);
-  const loadImages = useCallback(() => {
-    // Always read fresh from localStorage to avoid stale state
-    const fresh = getGeneratedImages();
-    setImages(fresh);
+  const loadImages = useCallback(async () => {
+    // Show cached images immediately, then fetch fresh from API
+    const cached = getGeneratedImages();
+    if (cached.length > 0) setImages(cached);
+    try {
+      const fresh = await fetchGeneratedImagesFromAPI();
+      setImages(fresh);
+    } catch {
+      // Keep cached images on failure
+    }
   }, []);
   loadImagesRef.current = loadImages;
 
@@ -107,27 +114,23 @@ export default function ImageGalleryView() {
     let debounceTimer = null;
     const handleImageSaved = () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => loadImagesRef.current(), 50);
+      // Show the new image immediately from cache, then refresh from API
+      const cached = getGeneratedImages();
+      if (cached.length > 0) setImages(cached);
+      debounceTimer = setTimeout(() => loadImagesRef.current(), 500);
     };
     window.addEventListener('araviel-image-saved', handleImageSaved);
 
-    // Also refresh when tab regains focus (catches cross-tab localStorage changes)
+    // Also refresh when tab regains focus
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') loadImagesRef.current();
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
-    // Refresh on storage changes from other contexts
-    const handleStorage = (e) => {
-      if (e.key === 'araviel-generated-images') loadImagesRef.current();
-    };
-    window.addEventListener('storage', handleStorage);
-
     return () => {
       clearTimeout(debounceTimer);
       window.removeEventListener('araviel-image-saved', handleImageSaved);
       document.removeEventListener('visibilitychange', handleVisibility);
-      window.removeEventListener('storage', handleStorage);
     };
   }, [loadImages]);
 
@@ -144,10 +147,11 @@ export default function ImageGalleryView() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const handleDelete = (imageId) => {
-    deleteGeneratedImage(imageId);
+  const handleDelete = async (imageId) => {
+    await deleteGeneratedImage(imageId);
     setDeleteConfirm(null);
-    loadImages();
+    // Optimistically remove from local state
+    setImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
   const handleDownload = async (img) => {

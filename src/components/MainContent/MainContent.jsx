@@ -1137,11 +1137,13 @@ export default function MainContent() {
                 dispatch(updateLastMessage({ citations: data.sources }));
               }
             } else if (type === 'image_generation') {
-              // Handle generated image from the backend (supports both URL and base64)
+              // Handle generated image from the backend
+              // Images are now uploaded to Supabase Storage; URL is a public URL (not base64)
               const imageUrl =
                 data.url || (data.b64_json ? `data:image/png;base64,${data.b64_json}` : null);
               if (assistantMsgAdded && imageUrl) {
                 const imgEntry = saveGeneratedImage({
+                  id: data.id, // Use the ID from backend (Supabase Storage)
                   url: imageUrl,
                   prompt: data.prompt || prompt,
                   model: data.model || routeInfo?.modelName,
