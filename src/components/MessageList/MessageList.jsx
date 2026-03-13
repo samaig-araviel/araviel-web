@@ -155,7 +155,7 @@ function extractVideoInfo(url) {
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  */
-function renderMarkdown(text) {
+function renderMarkdown(text, isStreaming = false) {
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -181,15 +181,15 @@ function renderMarkdown(text) {
       if (lang === 'mermaid') {
         elements.push(<MermaidBlock key={key++} code={codeContent} />);
       } else if (lang === 'chart' || lang === 'araviel-chart') {
-        elements.push(<AravielChart key={key++} spec={codeContent} />);
+        elements.push(<AravielChart key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'timeline') {
-        elements.push(<TimelineBlock key={key++} spec={codeContent} />);
+        elements.push(<TimelineBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'comparison') {
-        elements.push(<ComparisonBlock key={key++} spec={codeContent} />);
+        elements.push(<ComparisonBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'steps') {
-        elements.push(<StepsBlock key={key++} spec={codeContent} />);
+        elements.push(<StepsBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'file') {
-        elements.push(<FileBlock key={key++} spec={codeContent} />);
+        elements.push(<FileBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'json' || lang === '') {
         // Auto-detect chart specs in json/untagged code blocks
         let isChartSpec = false;
@@ -212,7 +212,7 @@ function renderMarkdown(text) {
           // not valid JSON — render as code block
         }
         if (isChartSpec) {
-          elements.push(<AravielChart key={key++} spec={codeContent} />);
+          elements.push(<AravielChart key={key++} spec={codeContent} isStreaming={isStreaming} />);
         } else {
           elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
         }
@@ -3396,7 +3396,7 @@ function SubConversationPanel({
             <div className={`${styles.subConvMsg} ${styles.subConvMsgAssistant}`}>
               <div className={styles.subConvAssistantContent}>
                 <div className={styles.subConvMarkdown}>
-                  {renderMarkdown(streamingText)}
+                  {renderMarkdown(streamingText, true)}
                   <span className={styles.subConvCursor} />
                 </div>
               </div>
@@ -5046,7 +5046,8 @@ function Message({
               // to prevent duplicate images (one from markdown, one from GeneratedImageBlock)
               message.generatedImages && message.generatedImages.length > 0
                 ? displayText.replace(/^!\[Generated image\]\([^)]+\)\s*$/gm, '').trim()
-                : displayText
+                : displayText,
+              isStreaming
             )}
             {isStreaming && <span className={styles.cursor} />}
           </div>

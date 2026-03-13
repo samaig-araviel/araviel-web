@@ -6,7 +6,7 @@ import styles from './ComparisonBlock.module.css';
  * Expects `spec` to be a JSON string:
  * { "items": [{ "name": "A", "pros": [...], "cons": [...], "description": "..." }, ...] }
  */
-export default function ComparisonBlock({ spec }) {
+export default function ComparisonBlock({ spec, isStreaming = false }) {
   const data = useMemo(() => {
     try {
       const parsed = typeof spec === 'string' ? JSON.parse(spec) : spec;
@@ -19,6 +19,19 @@ export default function ComparisonBlock({ spec }) {
   }, [spec]);
 
   if (!data) {
+    if (isStreaming) {
+      return (
+        <div className={styles.wrapper}>
+          <div className={styles.header}>
+            <span className={styles.headerLabel}>Comparison</span>
+            <span className={styles.headerCount}>Loading...</span>
+          </div>
+          <div style={{ padding: '20px', opacity: 0.5, fontSize: '12.5px', color: 'var(--text-muted)' }}>
+            Building comparison...
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.error}>
         <span>Could not parse comparison data</span>
