@@ -63,6 +63,7 @@ import AravielChart from '../AravielChart/AravielChart';
 import TimelineBlock from '../TimelineBlock/TimelineBlock';
 import ComparisonBlock from '../ComparisonBlock/ComparisonBlock';
 import StepsBlock from '../StepsBlock/StepsBlock';
+import FileBlock from '../FileBlock/FileBlock';
 import WeatherCard from '../WeatherCard';
 import { detectWeatherResponse, extractWeatherData } from '../WeatherCard/weatherParser';
 import styles from './MessageList.module.css';
@@ -186,6 +187,8 @@ function renderMarkdown(text) {
         elements.push(<ComparisonBlock key={key++} spec={codeContent} />);
       } else if (lang === 'steps') {
         elements.push(<StepsBlock key={key++} spec={codeContent} />);
+      } else if (lang === 'file') {
+        elements.push(<FileBlock key={key++} spec={codeContent} />);
       } else if (lang === 'json' || lang === '') {
         // Auto-detect chart specs in json/untagged code blocks
         let isChartSpec = false;
@@ -723,7 +726,7 @@ function extractCodeBlocksWithNames(text) {
   while ((m = codeBlockRegex.exec(text)) !== null) {
     const lang = m[1] || '';
     const code = m[2];
-    if (lang === 'chart' || lang === 'araviel-chart' || lang === 'mermaid' || lang === 'timeline' || lang === 'comparison' || lang === 'steps') continue;
+    if (lang === 'chart' || lang === 'araviel-chart' || lang === 'mermaid' || lang === 'timeline' || lang === 'comparison' || lang === 'steps' || lang === 'file') continue;
     if (lang === 'json' || lang === '') {
       try {
         const parsed = JSON.parse(code);
