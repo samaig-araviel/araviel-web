@@ -152,7 +152,8 @@ export async function fetchGeneratedImagesFromAPI({ limit = 50, offset = 0 } = {
       _cacheTimestamp = Date.now();
     }
     return images;
-  } catch {
+  } catch (err) {
+    console.error('[imageGeneration] Failed to fetch images from API:', err);
     // Fallback to cache if available
     return _cachedImages || [];
   }
