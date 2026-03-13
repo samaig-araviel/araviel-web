@@ -593,6 +593,8 @@ export default function ConversationsView() {
             adeLatencyMs: msg.adeLatencyMs,
             ...(generatedImages.length > 0 && { generatedImages }),
             feedback: msg.feedback || null,
+            followUps: msg.followUps || null,
+            questions: msg.questions || null,
           });
         }
         return base;
