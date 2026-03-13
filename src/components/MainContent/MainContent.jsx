@@ -1296,7 +1296,11 @@ export default function MainContent() {
     if (!prompt || isProcessing) return;
 
     // Check image generation limits if the selected model is an image gen model
-    if (selectedModelId && isImageGenerationModel(selectedModelId)) {
+    // or if the modality is explicitly set to 'image' (e.g. from Image Gallery)
+    const willGenerateImage =
+      (selectedModelId && isImageGenerationModel(selectedModelId)) ||
+      pendingModality === 'image';
+    if (willGenerateImage) {
       if (!canGenerateImage()) {
         setShowImageLimitPrompt(true);
         return;
@@ -1340,6 +1344,17 @@ export default function MainContent() {
     if (autoSubmitFiredRef.current === prompt) return;
     autoSubmitFiredRef.current = prompt;
     const modality = pendingModality || undefined;
+
+    // Check image generation limits before auto-submitting
+    const willGenImage =
+      modality === 'image' || (selectedModelId && isImageGenerationModel(selectedModelId));
+    if (willGenImage && !canGenerateImage()) {
+      dispatch(setPendingAutoSubmit(false));
+      dispatch(setPendingModality(null));
+      setShowImageLimitPrompt(true);
+      return;
+    }
+
     dispatch(setPendingAutoSubmit(false));
     dispatch(setPendingModality(null));
     dispatch(setInputValue(''));
