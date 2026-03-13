@@ -572,6 +572,20 @@ export default function ConversationsView() {
               }));
             }
           }
+          // Last resort: extract images from message content markdown
+          if (generatedImages.length === 0 && msg.content) {
+            const imgRe = /!\[Generated image[^\]]*\]\(([^)]+)\)/g;
+            let m;
+            while ((m = imgRe.exec(msg.content)) !== null) {
+              generatedImages.push({
+                url: m[1],
+                prompt: msg.content.match(/!\[Generated image:?\s*([^\]]*)\]/)?.[1] || '',
+                model: msg.model?.name || 'unknown',
+                provider: msg.model?.provider || 'unknown',
+                id: `content-${msg.id}-${generatedImages.length}`,
+              });
+            }
+          }
           Object.assign(base, {
             modelId: msg.model?.id,
             modelName: msg.model?.name,

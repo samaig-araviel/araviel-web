@@ -255,8 +255,13 @@ export default function Sidebar() {
           // Restore generatedImages from backend or localStorage
           let generatedImages = msg.generatedImages || [];
           if (generatedImages.length === 0) {
-            const msgTime = new Date(msg.createdAt).getTime();
-            const matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
+            // Primary: match by messageId (deterministic)
+            let matched = storedImages.filter((img) => img.messageId && img.messageId === msg.id);
+            // Fallback: timestamp proximity
+            if (matched.length === 0) {
+              const msgTime = new Date(msg.createdAt).getTime();
+              matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
+            }
             if (matched.length > 0) {
               generatedImages = matched.map((img) => ({
                 url: img.url,
@@ -265,6 +270,20 @@ export default function Sidebar() {
                 provider: img.provider,
                 id: img.id,
               }));
+            }
+          }
+          // Last resort: extract images from message content markdown
+          if (generatedImages.length === 0 && msg.content) {
+            const imgRe = /!\[Generated image[^\]]*\]\(([^)]+)\)/g;
+            let m;
+            while ((m = imgRe.exec(msg.content)) !== null) {
+              generatedImages.push({
+                url: m[1],
+                prompt: msg.content.match(/!\[Generated image:?\s*([^\]]*)\]/)?.[1] || '',
+                model: msg.model?.name || 'unknown',
+                provider: msg.model?.provider || 'unknown',
+                id: `content-${msg.id}-${generatedImages.length}`,
+              });
             }
           }
           Object.assign(base, {

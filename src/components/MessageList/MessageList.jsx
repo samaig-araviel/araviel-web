@@ -5043,9 +5043,10 @@ function Message({
           <div className={styles.markdownContent} ref={markdownContentRef}>
             {renderMarkdown(
               // Strip image markdown when generatedImages already handles rendering,
-              // to prevent duplicate images (one from markdown, one from GeneratedImageBlock)
+              // to prevent duplicate images (one from markdown, one from GeneratedImageBlock).
+              // Matches both "![Generated image](url)" and "![Generated image: prompt](url)".
               message.generatedImages && message.generatedImages.length > 0
-                ? displayText.replace(/^!\[Generated image\]\([^)]+\)\s*$/gm, '').trim()
+                ? displayText.replace(/^!\[Generated image[^\]]*\]\([^)]+\)\s*$/gm, '').trim()
                 : displayText,
               isStreaming
             )}
