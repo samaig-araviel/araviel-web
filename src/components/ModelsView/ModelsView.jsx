@@ -36,6 +36,19 @@ const TIER_CONFIG = {
 
 const TIER_ORDER = [ACCESS_TIERS.free, ACCESS_TIERS.pro, ACCESS_TIERS.premium];
 
+// Which tier is "next" for upsell
+const NEXT_TIER = {
+  [ACCESS_TIERS.free]: ACCESS_TIERS.pro,
+  [ACCESS_TIERS.pro]: ACCESS_TIERS.premium,
+  [ACCESS_TIERS.premium]: null,
+};
+
+const TIER_DISPLAY = {
+  [ACCESS_TIERS.free]: 'Free',
+  [ACCESS_TIERS.pro]: 'Pro',
+  [ACCESS_TIERS.premium]: 'Premium',
+};
+
 // ── Sub-components ──
 
 function SpeedBadge({ tier }) {
@@ -71,7 +84,6 @@ function PremiumBadge() {
 
 function SelectedModelPill({ modelId, onSelect }) {
   if (!modelId) {
-    // Auto mode
     return (
       <div className={styles.selectedPill}>
         <span className={styles.selectedPillAuto}>✦</span>
@@ -99,6 +111,25 @@ function SelectedModelPill({ modelId, onSelect }) {
       </span>
       <span className={styles.selectedPillLabel}>{model.name}</span>
       <span className={styles.selectedPillTag}>Default</span>
+    </div>
+  );
+}
+
+// ── Dev Tier Switcher ──
+
+function DevTierSwitcher({ currentTier, onTierChange }) {
+  return (
+    <div className={styles.devSwitcher}>
+      <span className={styles.devSwitcherLabel}>Tier</span>
+      {TIER_ORDER.map((tier) => (
+        <button
+          key={tier}
+          className={`${styles.devSwitcherBtn} ${currentTier === tier ? styles.devSwitcherBtnActive : ''} ${styles[`devTier_${tier}`]}`}
+          onClick={() => onTierChange(tier)}
+        >
+          {TIER_DISPLAY[tier]}
+        </button>
+      ))}
     </div>
   );
 }
@@ -210,7 +241,7 @@ function ModelCard({ model, isSelected, isLocked, onSelect }) {
       className={`${styles.card} ${isSelected ? styles.cardSelected : ''} ${
         isLocked ? styles.cardLocked : ''
       }`}
-      onClick={() => !isLocked && onSelect(model)}
+      onClick={() => onSelect(model)}
     >
       <div className={styles.cardBody}>
         {/* Header: provider chip + badges */}
@@ -309,15 +340,9 @@ function ProviderGroupHeader({ providerId, count }) {
   );
 }
 
-// ── Tier Section ──
+// ── Model Group (renders provider-grouped or flat grid) ──
 
-function TierSection({ tier, models, activeFilter, selectedModelId, userTier, onSelect }) {
-  const config = TIER_CONFIG[tier];
-  const isLocked =
-    (userTier === ACCESS_TIERS.free && tier !== ACCESS_TIERS.free) ||
-    (userTier === ACCESS_TIERS.pro && tier === ACCESS_TIERS.premium);
-
-  // Group by provider
+function ModelGroup({ models, activeFilter, selectedModelId, isLocked, onSelect }) {
   const groupedByProvider = useMemo(() => {
     const groups = {};
     for (const pid of PROVIDER_ORDER) {
@@ -334,36 +359,12 @@ function TierSection({ tier, models, activeFilter, selectedModelId, userTier, on
 
   if (models.length === 0) return null;
 
-  return (
-    <div className={`${styles.tierSection} ${isLocked ? styles.tierSectionLocked : ''}`}>
-      <div className={styles.tierHeader}>
-        <div className={styles.tierHeaderLeft}>
-          <span className={`${styles.tierBadge} ${styles[`tier_${tier}`]}`}>{config.label}</span>
-          <span className={styles.tierSublabel}>{config.sublabel}</span>
-        </div>
-        <span className={styles.tierCount}>{models.length} models</span>
-      </div>
-
-      {showProviderHeaders ? (
-        providerIds.map((pid) => (
-          <div key={pid} className={styles.providerGroup}>
-            <ProviderGroupHeader providerId={pid} count={groupedByProvider[pid].length} />
-            <div className={styles.modelGrid}>
-              {groupedByProvider[pid].map((model) => (
-                <ModelCard
-                  key={model.id}
-                  model={model}
-                  isSelected={selectedModelId === model.id}
-                  isLocked={isLocked}
-                  onSelect={onSelect}
-                />
-              ))}
-            </div>
-          </div>
-        ))
-      ) : (
+  if (showProviderHeaders) {
+    return providerIds.map((pid) => (
+      <div key={pid} className={styles.providerGroup}>
+        <ProviderGroupHeader providerId={pid} count={groupedByProvider[pid].length} />
         <div className={styles.modelGrid}>
-          {models.map((model) => (
+          {groupedByProvider[pid].map((model) => (
             <ModelCard
               key={model.id}
               model={model}
@@ -373,16 +374,65 @@ function TierSection({ tier, models, activeFilter, selectedModelId, userTier, on
             />
           ))}
         </div>
-      )}
+      </div>
+    ));
+  }
+
+  return (
+    <div className={styles.modelGrid}>
+      {models.map((model) => (
+        <ModelCard
+          key={model.id}
+          model={model}
+          isSelected={selectedModelId === model.id}
+          isLocked={isLocked}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Upgrade Banner ──
+
+function UpgradeBanner({ currentTier, lockedCount }) {
+  const nextTier = NEXT_TIER[currentTier];
+  if (!nextTier || lockedCount === 0) return null;
+
+  const nextLabel = TIER_DISPLAY[nextTier];
+  const isPro = nextTier === ACCESS_TIERS.pro;
+
+  return (
+    <div className={`${styles.upgradeBanner} ${isPro ? styles.upgradeBannerPro : styles.upgradeBannerPremium}`}>
+      <div className={styles.upgradeBannerGlow} />
+      <div className={styles.upgradeBannerContent}>
+        <div className={styles.upgradeBannerText}>
+          <span className={styles.upgradeBannerIcon}>{isPro ? '✦' : '◆'}</span>
+          <div>
+            <h3 className={styles.upgradeBannerTitle}>
+              Unlock {lockedCount} more model{lockedCount !== 1 ? 's' : ''} with {nextLabel}
+            </h3>
+            <p className={styles.upgradeBannerDesc}>
+              {isPro
+                ? 'Access Claude Sonnet, GPT-5, Gemini 2.5 Pro, and more powerful models for deeper reasoning and richer outputs.'
+                : 'Get the most powerful models including Claude Opus, GPT-5.2 Pro, Sora 2, and deep research capabilities.'}
+            </p>
+          </div>
+        </div>
+        <button className={styles.upgradeBannerBtn}>
+          Upgrade to {nextLabel}
+        </button>
+      </div>
     </div>
   );
 }
 
 // ── Model Detail Panel ──
 
-function ModelDetailPanel({ model, isSelected, onSetModel, onClose }) {
+function ModelDetailPanel({ model, isSelected, isLocked, userTier, onSetModel, onClose }) {
   const provider = PROVIDERS[model.provider];
   const panelRef = useRef(null);
+  const nextTier = NEXT_TIER[userTier];
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -434,6 +484,8 @@ function ModelDetailPanel({ model, isSelected, onSetModel, onClose }) {
             </span>
           )}
           {isSelected && <span className={styles.detailSelectedBadge}>Selected Model</span>}
+          {isLocked && model.accessTier === ACCESS_TIERS.pro && <ProBadge />}
+          {isLocked && model.accessTier === ACCESS_TIERS.premium && <PremiumBadge />}
         </div>
 
         {/* Description */}
@@ -500,17 +552,30 @@ function ModelDetailPanel({ model, isSelected, onSetModel, onClose }) {
           </div>
         </div>
 
-        {/* Single action: select this model */}
-        <button
-          className={`${styles.detailSelectBtn} ${isSelected ? styles.detailSelectBtnActive : ''}`}
-          onClick={() => {
-            onSetModel(isSelected ? null : model.id);
-            onClose();
-          }}
-        >
-          <CheckIcon />
-          {isSelected ? 'Selected — click to switch to Auto' : 'Use this model'}
-        </button>
+        {/* Action button */}
+        {isLocked ? (
+          <div className={styles.detailLockedAction}>
+            <span className={styles.detailLockedLabel}>
+              Requires {TIER_DISPLAY[model.accessTier]} plan
+            </span>
+            {nextTier && (
+              <button className={styles.detailUpgradeBtn}>
+                Upgrade to {TIER_DISPLAY[model.accessTier]}
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            className={`${styles.detailSelectBtn} ${isSelected ? styles.detailSelectBtnActive : ''}`}
+            onClick={() => {
+              onSetModel(isSelected ? null : model.id);
+              onClose();
+            }}
+          >
+            <CheckIcon />
+            {isSelected ? 'Selected — click to switch to Auto' : 'Use this model'}
+          </button>
+        )}
       </div>
     </div>,
     document.body
@@ -527,7 +592,13 @@ export default function ModelsView() {
   const [detailModel, setDetailModel] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef(null);
-  const userTier = getUserTier();
+  const [userTier, setUserTier] = useState(getUserTier());
+
+  // Dev tier switcher handler
+  const handleTierChange = useCallback((tier) => {
+    localStorage.setItem('araviel-user-tier', tier);
+    setUserTier(tier);
+  }, []);
 
   // Single unified action: set the model (Redux + localStorage)
   const handleSetModel = useCallback(
@@ -569,14 +640,41 @@ export default function ModelsView() {
     return models;
   }, [activeFilter, searchQuery]);
 
-  // Group filtered models by tier
-  const modelsByTier = useMemo(() => {
-    const grouped = {};
-    for (const tier of TIER_ORDER) {
-      grouped[tier] = filteredModels.filter((m) => m.accessTier === tier);
+  // Check if a model is accessible for the current tier
+  const isAccessible = useCallback(
+    (model) => {
+      if (userTier === ACCESS_TIERS.premium) return true;
+      if (userTier === ACCESS_TIERS.pro) return model.accessTier !== ACCESS_TIERS.premium;
+      return model.accessTier === ACCESS_TIERS.free;
+    },
+    [userTier]
+  );
+
+  // Split models into available and locked
+  const { availableModels, lockedModels } = useMemo(() => {
+    const available = [];
+    const locked = [];
+    for (const m of filteredModels) {
+      if (isAccessible(m)) {
+        available.push(m);
+      } else {
+        locked.push(m);
+      }
     }
-    return grouped;
-  }, [filteredModels]);
+    return { availableModels: available, lockedModels: locked };
+  }, [filteredModels, isAccessible]);
+
+  // Group locked models by tier for display
+  const lockedByTier = useMemo(() => {
+    const groups = {};
+    for (const tier of TIER_ORDER) {
+      const tierModels = lockedModels.filter((m) => m.accessTier === tier);
+      if (tierModels.length > 0) {
+        groups[tier] = tierModels;
+      }
+    }
+    return groups;
+  }, [lockedModels]);
 
   // Keyboard shortcut for search
   useEffect(() => {
@@ -590,6 +688,9 @@ export default function ModelsView() {
     return () => document.removeEventListener('keydown', handleKey);
   }, []);
 
+  // Check if detail model is locked
+  const isDetailLocked = detailModel ? !isAccessible(detailModel) : false;
+
   return (
     <div className={styles.container}>
       {/* Sticky header */}
@@ -601,6 +702,9 @@ export default function ModelsView() {
           </div>
 
           <div className={styles.headerActions}>
+            {/* Dev Tier Switcher */}
+            <DevTierSwitcher currentTier={userTier} onTierChange={handleTierChange} />
+
             {/* Search */}
             <div className={styles.searchWrapper}>
               <span className={styles.searchIcon}>
@@ -642,7 +746,7 @@ export default function ModelsView() {
         </div>
       </div>
 
-      {/* Tier sections */}
+      {/* Content */}
       <div className={styles.tiersContainer}>
         {filteredModels.length === 0 ? (
           <div className={styles.emptyState}>
@@ -661,17 +765,60 @@ export default function ModelsView() {
             </button>
           </div>
         ) : (
-          TIER_ORDER.map((tier) => (
-            <TierSection
-              key={tier}
-              tier={tier}
-              models={modelsByTier[tier]}
-              activeFilter={activeFilter}
-              selectedModelId={selectedModelId}
-              userTier={userTier}
-              onSelect={setDetailModel}
-            />
-          ))
+          <>
+            {/* Available Models Section */}
+            {availableModels.length > 0 && (
+              <div className={styles.availableSection}>
+                <div className={styles.sectionHeader}>
+                  <div className={styles.sectionHeaderLeft}>
+                    <span className={styles.sectionTitle}>Your Models</span>
+                    <span className={styles.sectionCount}>{availableModels.length}</span>
+                  </div>
+                  <span className={styles.sectionSublabel}>
+                    {userTier === ACCESS_TIERS.premium
+                      ? 'All models included with Premium'
+                      : `Included with your ${TIER_DISPLAY[userTier]} plan`}
+                  </span>
+                </div>
+                <ModelGroup
+                  models={availableModels}
+                  activeFilter={activeFilter}
+                  selectedModelId={selectedModelId}
+                  isLocked={false}
+                  onSelect={setDetailModel}
+                />
+              </div>
+            )}
+
+            {/* Upgrade Banner */}
+            <UpgradeBanner currentTier={userTier} lockedCount={lockedModels.length} />
+
+            {/* Locked Models Section */}
+            {lockedModels.length > 0 && (
+              <div className={styles.lockedSection}>
+                {Object.entries(lockedByTier).map(([tier, models]) => (
+                  <div key={tier} className={styles.lockedTierGroup}>
+                    <div className={styles.tierHeader}>
+                      <div className={styles.tierHeaderLeft}>
+                        <span className={`${styles.tierBadge} ${styles[`tier_${tier}`]}`}>
+                          {TIER_CONFIG[tier].label}
+                        </span>
+                        <span className={styles.tierSublabel}>{TIER_CONFIG[tier].sublabel}</span>
+                      </div>
+                      <span className={styles.tierCount}>{models.length} models</span>
+                    </div>
+                    <ModelGroup
+                      models={models}
+                      activeFilter={activeFilter}
+                      selectedModelId={selectedModelId}
+                      isLocked={true}
+                      onSelect={setDetailModel}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -680,6 +827,8 @@ export default function ModelsView() {
         <ModelDetailPanel
           model={detailModel}
           isSelected={selectedModelId === detailModel.id}
+          isLocked={isDetailLocked}
+          userTier={userTier}
           onSetModel={handleSetModel}
           onClose={() => setDetailModel(null)}
         />
