@@ -1,3 +1,5 @@
+import { getUserTier } from '../data/models';
+
 // Araviel API service layer
 // In development, Vite proxies /api/* to the backend (avoids CORS).
 // In production, use the env var or the production API URL directly.
@@ -51,7 +53,7 @@ export async function fetchConversationMessages(conversationId, limit = 50, offs
 export async function sendMessage(payload) {
   const body = {
     message: payload.message,
-    userTier: 'free',
+    userTier: getUserTier(),
     modality: payload.modality || 'text',
   };
   if (payload.conversationId) body.conversationId = payload.conversationId;
