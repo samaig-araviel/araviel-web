@@ -1,13 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import {
   setInputValue,
   createNewChat,
   setPendingAutoSubmit,
   setPendingModality,
+  selectCreditBalance,
+  selectImageQuality,
+  setImageQuality,
+  setCreditBalance,
 } from '../../store/slices/chatSlice';
+import { fetchCreditBalance } from '../../services/credits';
+import { IMAGE_QUALITY_OPTIONS } from '../../config/credits';
+import CreditBalance from '../CreditBalance/CreditBalance';
+import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
 import {
   getGeneratedImages,
   fetchGeneratedImagesFromAPI,
@@ -79,6 +87,8 @@ const QUICK_PROMPTS = [
  */
 export default function ImageGalleryView() {
   const dispatch = useDispatch();
+  const creditBalance = useSelector(selectCreditBalance);
+  const imageQuality = useSelector(selectImageQuality);
   const [images, setImages] = useState([]);
   const [lightboxIdx, setLightboxIdx] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
@@ -86,6 +96,7 @@ export default function ImageGalleryView() {
   const [showFilters, setShowFilters] = useState(false);
   const [promptInput, setPromptInput] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [showBuyPacks, setShowBuyPacks] = useState(false);
   const promptInputRef = useRef(null);
   const filterRef = useRef(null);
   const attachMenuRef = useRef(null);
@@ -105,6 +116,13 @@ export default function ImageGalleryView() {
     }
   }, []);
   loadImagesRef.current = loadImages;
+
+  // Fetch credit balance on mount
+  useEffect(() => {
+    fetchCreditBalance()
+      .then((data) => { if (data.balance) dispatch(setCreditBalance(data.balance)); })
+      .catch(() => {});
+  }, [dispatch]);
 
   useEffect(() => {
     loadImages();
@@ -343,19 +361,25 @@ export default function ImageGalleryView() {
             />
           </form>
 
-          {/* Usage pill */}
+          {/* Quality selector + Credit balance */}
           <div className={styles.usagePill}>
-            <span className={styles.usagePillDot} />
-            <span className={styles.usagePillText}>
-              {limitInfo.remaining} of {limitInfo.limit} left
+            <select
+              className={styles.qualitySelect}
+              value={imageQuality}
+              onChange={(e) => dispatch(setImageQuality(e.target.value))}
+            >
+              {IMAGE_QUALITY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label} ({opt.cost}cr)
+                </option>
+              ))}
+            </select>
+            <CreditBalance onBuyCredits={() => setShowBuyPacks(true)} />
+            <span className={styles.usagePillBadge}>
+              {creditBalance?.tier === 'pro' ? 'PRO' : creditBalance?.tier === 'premium' ? 'PREMIUM' : 'FREE'}
             </span>
-            <span className={styles.usagePillBadge}>{tier === 'pro' ? 'PRO' : 'FREE'}</span>
-            {limitInfo.isAtLimit && (
-              <span className={styles.usagePillLimit}>
-                {tier === 'free' ? 'Upgrade for more' : 'Resets soon'}
-              </span>
-            )}
           </div>
+          {showBuyPacks && <BuyPacksModal onClose={() => setShowBuyPacks(false)} />}
         </div>
 
         {/* Quick Prompts — structured 2-column grid like ChatGPT */}

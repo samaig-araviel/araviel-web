@@ -29,6 +29,9 @@ const initialState = {
   isProcessing: false,
   pendingAutoSubmit: false, // when true, MainContent auto-fires the inputValue on mount
   pendingModality: null, // null = default 'text', or 'image' when prompt originates from image view
+  selectedModality: 'text', // 'text' | 'image' — user-selected modality in ModalityBar
+  imageQuality: 'standard', // 'standard' | 'hd' | 'ultra'
+  creditBalance: null, // { monthly, packs, combined, tier, cycleResetsAt } — fetched from backend
   activeProjectId: null, // set when starting a chat from a project workspace
   // Imported conversation context for continuing imported chats
   // Shape: { importedConversationId: string, provider: string, providerName: string, title: string } | null
@@ -119,6 +122,8 @@ const chatSlice = createSlice({
       state.isProcessing = false;
       state.pendingAutoSubmit = false;
       state.pendingModality = null;
+      state.selectedModality = 'text';
+      state.imageQuality = 'standard';
       state.activeProjectId = null;
       state.importedContext = null;
     },
@@ -133,6 +138,15 @@ const chatSlice = createSlice({
     },
     setPendingModality: (state, action) => {
       state.pendingModality = action.payload;
+    },
+    setSelectedModality: (state, action) => {
+      state.selectedModality = action.payload;
+    },
+    setImageQuality: (state, action) => {
+      state.imageQuality = action.payload;
+    },
+    setCreditBalance: (state, action) => {
+      state.creditBalance = action.payload;
     },
     removeLastAssistantMessage: (state) => {
       for (let i = state.messages.length - 1; i >= 0; i--) {
@@ -179,6 +193,9 @@ export const {
   removeLastAssistantMessage,
   setPendingAutoSubmit,
   setPendingModality,
+  setSelectedModality,
+  setImageQuality,
+  setCreditBalance,
   setActiveProjectId,
   setImportedContext,
   setMessages,
@@ -202,6 +219,9 @@ export const selectIsProcessing = (state) => state.chat.isProcessing;
 export const selectCurrentChatId = (state) => state.chat.currentChatId;
 export const selectPendingAutoSubmit = (state) => state.chat.pendingAutoSubmit;
 export const selectPendingModality = (state) => state.chat.pendingModality;
+export const selectSelectedModality = (state) => state.chat.selectedModality;
+export const selectImageQuality = (state) => state.chat.imageQuality;
+export const selectCreditBalance = (state) => state.chat.creditBalance;
 export const selectActiveProjectId = (state) => state.chat.activeProjectId;
 export const selectConversations = (state) => state.chat.conversations;
 export const selectConversationsTotal = (state) => state.chat.conversationsTotal;
