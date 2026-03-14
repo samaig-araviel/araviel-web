@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectProjects, addProject } from '../../store/slices/projectsSlice';
 import { createProject as createProjectApi } from '../../services/api';
-import { ProjectsIcon, PlusIcon, ChevronLeftIcon } from '../Icons';
+import { ProjectsIcon, PlusIcon, ChevronLeftIcon, SearchIcon } from '../Icons';
 import styles from './ProjectPickerModal.module.css';
 
 /**
@@ -19,13 +19,20 @@ export default function ProjectPickerModal({ onSelect, onClose, onError }) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState('');
   const nameRef = useRef(null);
+  const searchRef = useRef(null);
 
   const activeProjects = projects.filter((p) => !p.is_archived);
+  const filteredProjects = search.trim()
+    ? activeProjects.filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase()))
+    : activeProjects;
 
   useEffect(() => {
     if (creating && nameRef.current) {
       nameRef.current.focus();
+    } else if (!creating && searchRef.current) {
+      searchRef.current.focus();
     }
   }, [creating]);
 
@@ -72,13 +79,28 @@ export default function ProjectPickerModal({ onSelect, onClose, onError }) {
             </div>
             <h3 className={styles.title}>Move to project</h3>
             <p className={styles.desc}>Choose which project this conversation belongs to.</p>
+            <div className={styles.searchWrap}>
+              <SearchIcon />
+              <input
+                ref={searchRef}
+                className={styles.searchInput}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search projects..."
+                autoComplete="off"
+              />
+            </div>
             <div className={styles.list}>
-              <button className={styles.createBtn} onClick={() => setCreating(true)}>
-                <PlusIcon />
-                <span>New project</span>
-              </button>
-              {activeProjects.length > 0 && <div className={styles.divider} />}
-              {activeProjects.map((project) => (
+              {!search.trim() && (
+                <>
+                  <button className={styles.createBtn} onClick={() => setCreating(true)}>
+                    <PlusIcon />
+                    <span>New project</span>
+                  </button>
+                  {activeProjects.length > 0 && <div className={styles.divider} />}
+                </>
+              )}
+              {filteredProjects.map((project) => (
                 <button
                   key={project.id}
                   className={styles.item}
@@ -88,8 +110,11 @@ export default function ProjectPickerModal({ onSelect, onClose, onError }) {
                   <span>{project.name}</span>
                 </button>
               ))}
-              {activeProjects.length === 0 && (
+              {filteredProjects.length === 0 && !search.trim() && (
                 <p className={styles.empty}>No projects yet. Create one above.</p>
+              )}
+              {filteredProjects.length === 0 && search.trim() && (
+                <p className={styles.empty}>No projects match "{search.trim()}"</p>
               )}
             </div>
             <div className={styles.actions}>

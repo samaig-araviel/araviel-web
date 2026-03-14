@@ -695,7 +695,9 @@ export default function MainContent() {
   const [newProjectName, setNewProjectName] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
   const [showRemoveFromProject, setShowRemoveFromProject] = useState(false);
+  const [projectSearch, setProjectSearch] = useState('');
   const newProjectInputRef = useRef(null);
+  const projectSearchRef = useRef(null);
   const projectDropdownRef = useRef(null);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
@@ -756,6 +758,7 @@ export default function MainContent() {
     setShowProjectPicker(false);
     setShowProjectCreate(false);
     setShowProjectDropdown(false);
+    setProjectSearch('');
     try {
       await updateConversation(currentChatId, { project_id: projectId });
     } catch {
@@ -865,6 +868,7 @@ export default function MainContent() {
         setShowProjectPicker(false);
         setShowProjectCreate(false);
         setNewProjectName('');
+        setProjectSearch('');
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -877,6 +881,13 @@ export default function MainContent() {
       newProjectInputRef.current.focus();
     }
   }, [showProjectCreate]);
+
+  // Focus the search input when the project picker opens
+  useEffect(() => {
+    if (showProjectPicker && !showProjectCreate && projectSearchRef.current) {
+      projectSearchRef.current.focus();
+    }
+  }, [showProjectPicker, showProjectCreate]);
 
   // Streaming / timeline state
   const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
@@ -1801,6 +1812,7 @@ export default function MainContent() {
               onClick={() => {
                 setShowProjectDropdown(!showProjectDropdown);
                 setShowProjectPicker(false);
+                setProjectSearch('');
               }}
               aria-label="Project options"
             >
@@ -1837,22 +1849,43 @@ export default function MainContent() {
                 <div className={styles.projectPickerHeader}>
                   <button
                     className={styles.projectPickerBack}
-                    onClick={() => setShowProjectPicker(false)}
+                    onClick={() => {
+                      setShowProjectPicker(false);
+                      setProjectSearch('');
+                    }}
                   >
                     <ChevronLeftIcon />
                   </button>
                   <span>Move to project</span>
                 </div>
+                <div className={styles.projectPickerSearchWrap}>
+                  <SearchIcon />
+                  <input
+                    ref={projectSearchRef}
+                    className={styles.projectPickerSearchInput}
+                    value={projectSearch}
+                    onChange={(e) => setProjectSearch(e.target.value)}
+                    placeholder="Search projects..."
+                    autoComplete="off"
+                  />
+                </div>
                 <div className={styles.projectPickerList}>
-                  <button
-                    className={styles.projectPickerCreate}
-                    onClick={() => setShowProjectCreate(true)}
-                  >
-                    <PlusIcon />
-                    <span>New project</span>
-                  </button>
+                  {!projectSearch.trim() && (
+                    <button
+                      className={styles.projectPickerCreate}
+                      onClick={() => setShowProjectCreate(true)}
+                    >
+                      <PlusIcon />
+                      <span>New project</span>
+                    </button>
+                  )}
                   {projects
                     .filter((p) => !p.is_archived && p.id !== conversationProject.id)
+                    .filter(
+                      (p) =>
+                        !projectSearch.trim() ||
+                        p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
+                    )
                     .map((project) => (
                       <button
                         key={project.id}
@@ -1863,10 +1896,26 @@ export default function MainContent() {
                         <span>{project.name}</span>
                       </button>
                     ))}
-                  {projects.filter((p) => !p.is_archived && p.id !== conversationProject.id)
-                    .length === 0 && (
-                    <p className={styles.projectPickerEmpty}>No other projects available</p>
-                  )}
+                  {projects
+                    .filter((p) => !p.is_archived && p.id !== conversationProject.id)
+                    .filter(
+                      (p) =>
+                        !projectSearch.trim() ||
+                        p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
+                    ).length === 0 &&
+                    !projectSearch.trim() && (
+                      <p className={styles.projectPickerEmpty}>No other projects available</p>
+                    )}
+                  {projects
+                    .filter((p) => !p.is_archived && p.id !== conversationProject.id)
+                    .filter((p) =>
+                      p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
+                    ).length === 0 &&
+                    projectSearch.trim() && (
+                      <p className={styles.projectPickerEmpty}>
+                        No projects match "{projectSearch.trim()}"
+                      </p>
+                    )}
                 </div>
               </div>
             )}
