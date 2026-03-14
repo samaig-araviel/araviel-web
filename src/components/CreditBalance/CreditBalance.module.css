@@ -1,0 +1,43 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.breakdown {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+}
+
+.monthly {
+  white-space: nowrap;
+}
+
+.separator {
+  opacity: 0.4;
+}
+
+.packs {
+  white-space: nowrap;
+  color: var(--accent-color, #7c5cfc);
+}
+
+.buyButton {
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-color, #7c5cfc);
+  background: transparent;
+  color: var(--accent-color, #7c5cfc);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.buyButton:hover {
+  background: var(--accent-color, #7c5cfc);
+  color: #fff;
+}

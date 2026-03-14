@@ -39,6 +39,11 @@ import {
   selectConversations,
   selectConversationsTotal,
   setConversations,
+  selectSelectedModality,
+  selectImageQuality,
+  selectCreditBalance,
+  setCreditBalance,
+  setSelectedModality,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -111,6 +116,10 @@ import {
   saveGeneratedImage,
   getLimitInfo,
 } from '../../services/imageGeneration';
+import { fetchCreditBalance } from '../../services/credits';
+import { getCreditCost } from '../../services/credits';
+import ModalityBar from '../ModalityBar/ModalityBar';
+import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
@@ -646,6 +655,9 @@ export default function MainContent() {
   const autoStrategy = useSelector(selectAutoStrategy);
   const pendingAutoSubmit = useSelector(selectPendingAutoSubmit);
   const pendingModality = useSelector(selectPendingModality);
+  const selectedModality = useSelector(selectSelectedModality);
+  const imageQuality = useSelector(selectImageQuality);
+  const creditBalance = useSelector(selectCreditBalance);
   const importedContext = useSelector(selectImportedContext);
   const activeProjectId = useSelector(selectActiveProjectId);
   const projects = useSelector(selectProjects);
@@ -675,6 +687,7 @@ export default function MainContent() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [reportReason, setReportReason] = useState('');
+  const [showBuyPacksModal, setShowBuyPacksModal] = useState(false);
   const [reportDetails, setReportDetails] = useState('');
   const [isReporting, setIsReporting] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
@@ -729,6 +742,17 @@ export default function MainContent() {
       cancelled = true;
     };
   }, [currentChatId]);
+
+  // Fetch credit balance on mount and when modality changes to image
+  useEffect(() => {
+    if (selectedModality === 'image' || !creditBalance) {
+      fetchCreditBalance()
+        .then((data) => {
+          if (data.balance) dispatch(setCreditBalance(data.balance));
+        })
+        .catch(() => {});
+    }
+  }, [selectedModality, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper to dispatch conversation updates with correct payload shape
   const updateConvState = (newConversations) => {
@@ -1056,6 +1080,7 @@ export default function MainContent() {
           conversationId: options.conversationId || currentChatId || undefined,
           selectedModelId: options.selectedModelId || undefined,
           modality: options.modality || undefined,
+          imageQuality: options.imageQuality || undefined,
           webSearch: webSearchParam,
           userLocation: locationPayload,
           tone: tone || undefined,
@@ -1251,6 +1276,17 @@ export default function MainContent() {
                   })
                 );
               }
+              // Update credit balance if image credits were charged
+              if (data.credits) {
+                dispatch(setCreditBalance((prev) => ({
+                  ...prev,
+                  combined: data.credits.remaining ?? prev?.combined,
+                })));
+                // Re-fetch full balance for accuracy
+                fetchCreditBalance()
+                  .then((res) => { if (res.balance) dispatch(setCreditBalance(res.balance)); })
+                  .catch(() => {});
+              }
               // Refresh sidebar conversations after stream completes (title may now be set)
               window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
             } else if (type === 'error') {
@@ -1258,6 +1294,21 @@ export default function MainContent() {
                 // Non-fatal — show a brief notification but keep listening
                 if (assistantMsgAdded) {
                   dispatch(updateLastMessage({ providerRetry: true }));
+                }
+              } else if (data.code === 'INSUFFICIENT_CREDITS') {
+                // Credit limit reached — show buy packs modal
+                dispatch(setIsProcessing(false));
+                setShowBuyPacksModal(true);
+                if (assistantMsgAdded) {
+                  dispatch(
+                    updateLastMessage({
+                      content: '',
+                      error: {
+                        message: data.message || 'Insufficient image credits',
+                        code: data.code,
+                      },
+                    })
+                  );
                 }
               } else {
                 // Fatal error
@@ -1347,10 +1398,18 @@ export default function MainContent() {
     if (!prompt || isProcessing) return;
 
     // Check image generation limits if the selected model is an image gen model
-    // or if the modality is explicitly set to 'image' (e.g. from Image Gallery)
+    // or if the modality is explicitly set to 'image' (e.g. from Image Gallery or ModalityBar)
     const willGenerateImage =
-      (selectedModelId && isImageGenerationModel(selectedModelId)) || pendingModality === 'image';
+      (selectedModelId && isImageGenerationModel(selectedModelId)) ||
+      pendingModality === 'image' ||
+      selectedModality === 'image';
     if (willGenerateImage) {
+      // Check credit balance (client-side fast check)
+      if (creditBalance && creditBalance.combined < getCreditCost(imageQuality)) {
+        setShowBuyPacksModal(true);
+        return;
+      }
+      // Fallback to legacy localStorage limit check
       if (!canGenerateImage()) {
         setShowImageLimitPrompt(true);
         return;
@@ -1371,9 +1430,13 @@ export default function MainContent() {
       (m) => m.generatedImages && m.generatedImages.length > 0
     );
 
-    // Set modality to 'image' when an image generation model is explicitly selected
+    // Set modality to 'image' when an image generation model is explicitly selected or ModalityBar
     const modality =
-      selectedModelId && isImageGenerationModel(selectedModelId) ? 'image' : undefined;
+      selectedModality === 'image'
+        ? 'image'
+        : selectedModelId && isImageGenerationModel(selectedModelId)
+          ? 'image'
+          : undefined;
 
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
@@ -1381,6 +1444,7 @@ export default function MainContent() {
       webSearch: webSearchEnabled,
       conversationHasImages: conversationHasImages || undefined,
       modality,
+      imageQuality: willGenerateImage ? imageQuality : undefined,
     });
   };
 
@@ -1394,6 +1458,11 @@ export default function MainContent() {
     if (autoSubmitFiredRef.current === prompt) return;
     autoSubmitFiredRef.current = prompt;
     const modality = pendingModality || undefined;
+
+    // Sync ModalityBar when coming from image gallery
+    if (modality === 'image') {
+      dispatch(setSelectedModality('image'));
+    }
 
     // Check image generation limits before auto-submitting
     const willGenImage =
@@ -1416,6 +1485,7 @@ export default function MainContent() {
       addUserMessage: true,
       webSearch: webSearchEnabled,
       modality,
+      imageQuality: willGenImage ? imageQuality : undefined,
     });
   }, [pendingAutoSubmit]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2176,6 +2246,10 @@ export default function MainContent() {
       {/* Share modal */}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
 
+      {showBuyPacksModal && (
+        <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />
+      )}
+
       {/* Gallery preview */}
       {showGallery && galleryFiles.length > 0 && (
         <GalleryPreview
@@ -2289,6 +2363,7 @@ export default function MainContent() {
                 rows={1}
                 aria-label="Message input"
               />
+              <ModalityBar />
               <div className={styles.inputActions}>
                 <div className={styles.leftActions}>
                   <button
