@@ -52,6 +52,7 @@ import {
   TrashIcon,
   LinkIcon,
 } from '../Icons';
+import ProjectPickerModal from '../ProjectPickerModal';
 import styles from './Sidebar.module.css';
 
 function groupConversationsByTime(conversations) {
@@ -210,7 +211,8 @@ export default function Sidebar() {
   useEffect(() => {
     const handleConversationUpdated = () => loadConversations(0);
     window.addEventListener('araviel-conversation-updated', handleConversationUpdated);
-    return () => window.removeEventListener('araviel-conversation-updated', handleConversationUpdated);
+    return () =>
+      window.removeEventListener('araviel-conversation-updated', handleConversationUpdated);
   }, [loadConversations]);
 
   useEffect(() => {
@@ -841,15 +843,16 @@ export default function Sidebar() {
                       </ul>
                     </div>
                   ))}
-                  {conversations.length < conversationsTotal && filteredConversations.length > 1 && (
-                    <button
-                      className={styles.loadMoreBtn}
-                      onClick={handleLoadMore}
-                      disabled={conversationsLoading}
-                    >
-                      {conversationsLoading ? 'Loading...' : 'Load more'}
-                    </button>
-                  )}
+                  {conversations.length < conversationsTotal &&
+                    filteredConversations.length > 1 && (
+                      <button
+                        className={styles.loadMoreBtn}
+                        onClick={handleLoadMore}
+                        disabled={conversationsLoading}
+                      >
+                        {conversationsLoading ? 'Loading...' : 'Load more'}
+                      </button>
+                    )}
                 </>
               ) : (
                 <p className={styles.recentsEmpty}>
@@ -949,40 +952,11 @@ export default function Sidebar() {
 
       {/* Project picker dialog */}
       {projectPickerFor && (
-        <div className={styles.confirmOverlay} onClick={() => setProjectPickerFor(null)}>
-          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.confirmIconProject}>
-              <ProjectsIcon />
-            </div>
-            <h3 className={styles.confirmTitle}>Move to project</h3>
-            <p className={styles.confirmDesc}>Choose which project this conversation belongs to.</p>
-            <div className={styles.projectPickerList}>
-              {projects.length > 0 ? (
-                projects
-                  .filter((p) => !p.is_archived)
-                  .map((project) => (
-                    <button
-                      key={project.id}
-                      className={styles.projectPickerItem}
-                      onClick={() => handleAssignProject(project.id)}
-                    >
-                      <ProjectsIcon />
-                      <span>{project.name}</span>
-                    </button>
-                  ))
-              ) : (
-                <p className={styles.projectPickerEmpty}>
-                  No projects yet. Create one in the Projects view.
-                </p>
-              )}
-            </div>
-            <div className={styles.confirmActions}>
-              <button className={styles.confirmCancelBtn} onClick={() => setProjectPickerFor(null)}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+        <ProjectPickerModal
+          onSelect={handleAssignProject}
+          onClose={() => setProjectPickerFor(null)}
+          onError={showError}
+        />
       )}
     </>
   );

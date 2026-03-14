@@ -99,9 +99,10 @@ import {
   fetchConversation,
   updateConversation,
   reportConversation,
+  createProject as createProjectApi,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
-import { selectProjects } from '../../store/slices/projectsSlice';
+import { selectProjects, addProject } from '../../store/slices/projectsSlice';
 import { setActiveItem, selectActiveItem } from '../../store/slices/sidebarSlice';
 import { getUserTier, PROVIDERS, isImageGenerationModel } from '../../data/models';
 import {
@@ -690,7 +691,11 @@ export default function MainContent() {
   const [conversationTitle, setConversationTitle] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const [showProjectCreate, setShowProjectCreate] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [creatingProject, setCreatingProject] = useState(false);
   const [showRemoveFromProject, setShowRemoveFromProject] = useState(false);
+  const newProjectInputRef = useRef(null);
   const projectDropdownRef = useRef(null);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
@@ -749,12 +754,32 @@ export default function MainContent() {
     const prev = [...conversations];
     updateConvState(conversations.map((c) => (c.id === currentChatId ? { ...c, projectId } : c)));
     setShowProjectPicker(false);
+    setShowProjectCreate(false);
     setShowProjectDropdown(false);
     try {
       await updateConversation(currentChatId, { project_id: projectId });
     } catch {
       updateConvState(prev);
       showError('Could not assign to project. Try again.');
+    }
+  };
+
+  const handleCreateAndAssignProject = async (e) => {
+    e.preventDefault();
+    const trimmed = newProjectName.trim();
+    if (!trimmed || creatingProject || !currentChatId) return;
+    setCreatingProject(true);
+    try {
+      const data = await createProjectApi({ name: trimmed });
+      const newProject = data.project || data;
+      dispatch(addProject(newProject));
+      setNewProjectName('');
+      setShowProjectCreate(false);
+      await handleChangeProject(newProject.id);
+    } catch {
+      showError("Couldn't create project. Please try again.");
+    } finally {
+      setCreatingProject(false);
     }
   };
 
@@ -838,11 +863,20 @@ export default function MainContent() {
       if (projectDropdownRef.current && !projectDropdownRef.current.contains(e.target)) {
         setShowProjectDropdown(false);
         setShowProjectPicker(false);
+        setShowProjectCreate(false);
+        setNewProjectName('');
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showProjectDropdown]);
+
+  // Focus the new project name input when the create form appears
+  useEffect(() => {
+    if (showProjectCreate && newProjectInputRef.current) {
+      newProjectInputRef.current.focus();
+    }
+  }, [showProjectCreate]);
 
   // Streaming / timeline state
   const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
@@ -1304,8 +1338,7 @@ export default function MainContent() {
     // Check image generation limits if the selected model is an image gen model
     // or if the modality is explicitly set to 'image' (e.g. from Image Gallery)
     const willGenerateImage =
-      (selectedModelId && isImageGenerationModel(selectedModelId)) ||
-      pendingModality === 'image';
+      (selectedModelId && isImageGenerationModel(selectedModelId)) || pendingModality === 'image';
     if (willGenerateImage) {
       if (!canGenerateImage()) {
         setShowImageLimitPrompt(true);
@@ -1799,7 +1832,7 @@ export default function MainContent() {
             )}
 
             {/* Project picker sub-menu */}
-            {showProjectDropdown && showProjectPicker && (
+            {showProjectDropdown && showProjectPicker && !showProjectCreate && (
               <div className={styles.projectDropdown}>
                 <div className={styles.projectPickerHeader}>
                   <button
@@ -1811,6 +1844,13 @@ export default function MainContent() {
                   <span>Move to project</span>
                 </div>
                 <div className={styles.projectPickerList}>
+                  <button
+                    className={styles.projectPickerCreate}
+                    onClick={() => setShowProjectCreate(true)}
+                  >
+                    <PlusIcon />
+                    <span>New project</span>
+                  </button>
                   {projects
                     .filter((p) => !p.is_archived && p.id !== conversationProject.id)
                     .map((project) => (
@@ -1828,6 +1868,42 @@ export default function MainContent() {
                     <p className={styles.projectPickerEmpty}>No other projects available</p>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Inline create project form */}
+            {showProjectDropdown && showProjectCreate && (
+              <div className={styles.projectDropdown}>
+                <div className={styles.projectPickerHeader}>
+                  <button
+                    className={styles.projectPickerBack}
+                    onClick={() => {
+                      setShowProjectCreate(false);
+                      setNewProjectName('');
+                    }}
+                  >
+                    <ChevronLeftIcon />
+                  </button>
+                  <span>New project</span>
+                </div>
+                <form className={styles.projectCreateForm} onSubmit={handleCreateAndAssignProject}>
+                  <input
+                    ref={newProjectInputRef}
+                    className={styles.projectCreateInput}
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="Project name"
+                    maxLength={100}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="submit"
+                    className={styles.projectCreateSubmit}
+                    disabled={!newProjectName.trim() || creatingProject}
+                  >
+                    {creatingProject ? 'Creating...' : 'Create & assign'}
+                  </button>
+                </form>
               </div>
             )}
           </div>
