@@ -1856,18 +1856,17 @@ export default function MainContent() {
                   >
                     <ChevronLeftIcon />
                   </button>
-                  <span>Move to project</span>
-                </div>
-                <div className={styles.projectPickerSearchWrap}>
-                  <SearchIcon />
-                  <input
-                    ref={projectSearchRef}
-                    className={styles.projectPickerSearchInput}
-                    value={projectSearch}
-                    onChange={(e) => setProjectSearch(e.target.value)}
-                    placeholder="Search projects..."
-                    autoComplete="off"
-                  />
+                  <div className={styles.projectPickerSearchWrap}>
+                    <SearchIcon />
+                    <input
+                      ref={projectSearchRef}
+                      className={styles.projectPickerSearchInput}
+                      value={projectSearch}
+                      onChange={(e) => setProjectSearch(e.target.value)}
+                      placeholder="Search projects..."
+                      autoComplete="off"
+                    />
+                  </div>
                 </div>
                 <div className={styles.projectPickerList}>
                   {!projectSearch.trim() && (
@@ -1902,20 +1901,13 @@ export default function MainContent() {
                       (p) =>
                         !projectSearch.trim() ||
                         p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
-                    ).length === 0 &&
-                    !projectSearch.trim() && (
-                      <p className={styles.projectPickerEmpty}>No other projects available</p>
-                    )}
-                  {projects
-                    .filter((p) => !p.is_archived && p.id !== conversationProject.id)
-                    .filter((p) =>
-                      p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
-                    ).length === 0 &&
-                    projectSearch.trim() && (
-                      <p className={styles.projectPickerEmpty}>
-                        No projects match "{projectSearch.trim()}"
-                      </p>
-                    )}
+                    ).length === 0 && (
+                    <p className={styles.projectPickerEmpty}>
+                      {projectSearch.trim()
+                        ? `No projects match "${projectSearch.trim()}"`
+                        : 'No other projects available'}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

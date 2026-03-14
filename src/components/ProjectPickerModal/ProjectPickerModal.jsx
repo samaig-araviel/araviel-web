@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectProjects, addProject } from '../../store/slices/projectsSlice';
 import { createProject as createProjectApi } from '../../services/api';
-import { ProjectsIcon, PlusIcon, ChevronLeftIcon, SearchIcon } from '../Icons';
+import { ProjectsIcon, PlusIcon, ChevronLeftIcon, ChevronDownIcon, SearchIcon } from '../Icons';
 import styles from './ProjectPickerModal.module.css';
 
 /**
@@ -19,28 +19,57 @@ export default function ProjectPickerModal({ onSelect, onClose, onError }) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [highlightIdx, setHighlightIdx] = useState(-1);
   const nameRef = useRef(null);
   const searchRef = useRef(null);
+  const comboRef = useRef(null);
 
   const activeProjects = projects.filter((p) => !p.is_archived);
   const filteredProjects = search.trim()
     ? activeProjects.filter((p) => p.name.toLowerCase().includes(search.trim().toLowerCase()))
     : activeProjects;
 
+  // Reset highlight when filtered list changes
+  useEffect(() => {
+    setHighlightIdx(-1);
+  }, [search]);
+
   useEffect(() => {
     if (creating && nameRef.current) {
       nameRef.current.focus();
-    } else if (!creating && searchRef.current) {
-      searchRef.current.focus();
     }
   }, [creating]);
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (open && searchRef.current) {
+      searchRef.current.focus();
+    }
+  }, [open]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e) => {
+      if (comboRef.current && !comboRef.current.contains(e.target)) {
+        setOpen(false);
+        setSearch('');
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
 
   // Close on Escape
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === 'Escape') {
-        if (creating) {
+        if (open) {
+          setOpen(false);
+          setSearch('');
+        } else if (creating) {
           setCreating(false);
           setName('');
         } else {
@@ -50,7 +79,24 @@ export default function ProjectPickerModal({ onSelect, onClose, onError }) {
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [creating, onClose]);
+  }, [creating, open, onClose]);
+
+  // Keyboard navigation within dropdown
+  const handleSearchKeyDown = useCallback(
+    (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlightIdx((prev) => Math.min(prev + 1, filteredProjects.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlightIdx((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter' && highlightIdx >= 0 && highlightIdx < filteredProjects.length) {
+        e.preventDefault();
+        onSelect(filteredProjects[highlightIdx].id);
+      }
+    },
+    [filteredProjects, highlightIdx, onSelect]
+  );
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -79,44 +125,75 @@ export default function ProjectPickerModal({ onSelect, onClose, onError }) {
             </div>
             <h3 className={styles.title}>Move to project</h3>
             <p className={styles.desc}>Choose which project this conversation belongs to.</p>
-            <div className={styles.searchWrap}>
-              <SearchIcon />
-              <input
-                ref={searchRef}
-                className={styles.searchInput}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search projects..."
-                autoComplete="off"
-              />
+
+            {/* Combobox dropdown */}
+            <div className={styles.comboWrap} ref={comboRef}>
+              <button
+                className={`${styles.comboTrigger} ${open ? styles.comboTriggerOpen : ''}`}
+                onClick={() => setOpen(!open)}
+                type="button"
+              >
+                <ProjectsIcon />
+                <span className={styles.comboTriggerText}>Select a project</span>
+                <ChevronDownIcon />
+              </button>
+
+              {open && (
+                <div className={styles.comboDropdown}>
+                  <div className={styles.comboSearchWrap}>
+                    <SearchIcon />
+                    <input
+                      ref={searchRef}
+                      className={styles.comboSearchInput}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="Search projects..."
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className={styles.comboList}>
+                    {filteredProjects.map((project, idx) => (
+                      <button
+                        key={project.id}
+                        className={`${styles.comboItem} ${
+                          idx === highlightIdx ? styles.comboItemHighlight : ''
+                        }`}
+                        onClick={() => onSelect(project.id)}
+                        onMouseEnter={() => setHighlightIdx(idx)}
+                      >
+                        <ProjectsIcon />
+                        <span>{project.name}</span>
+                      </button>
+                    ))}
+                    {filteredProjects.length === 0 && (
+                      <p className={styles.comboEmpty}>
+                        {search.trim() ? `No projects match "${search.trim()}"` : 'No projects yet'}
+                      </p>
+                    )}
+                  </div>
+
+                  {!search.trim() && (
+                    <>
+                      <div className={styles.comboDivider} />
+                      <button
+                        className={styles.comboCreate}
+                        onClick={() => {
+                          setOpen(false);
+                          setSearch('');
+                          setCreating(true);
+                        }}
+                      >
+                        <PlusIcon />
+                        <span>New project</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-            <div className={styles.list}>
-              {!search.trim() && (
-                <>
-                  <button className={styles.createBtn} onClick={() => setCreating(true)}>
-                    <PlusIcon />
-                    <span>New project</span>
-                  </button>
-                  {activeProjects.length > 0 && <div className={styles.divider} />}
-                </>
-              )}
-              {filteredProjects.map((project) => (
-                <button
-                  key={project.id}
-                  className={styles.item}
-                  onClick={() => onSelect(project.id)}
-                >
-                  <ProjectsIcon />
-                  <span>{project.name}</span>
-                </button>
-              ))}
-              {filteredProjects.length === 0 && !search.trim() && (
-                <p className={styles.empty}>No projects yet. Create one above.</p>
-              )}
-              {filteredProjects.length === 0 && search.trim() && (
-                <p className={styles.empty}>No projects match "{search.trim()}"</p>
-              )}
-            </div>
+
             <div className={styles.actions}>
               <button className={styles.cancelBtn} onClick={onClose}>
                 Cancel
