@@ -120,7 +120,9 @@ export default function ImageGalleryView() {
   // Fetch credit balance on mount
   useEffect(() => {
     fetchCreditBalance()
-      .then((data) => { if (data.balance) dispatch(setCreditBalance(data.balance)); })
+      .then((data) => {
+        if (data.balance) dispatch(setCreditBalance(data.balance));
+      })
       .catch(() => {});
   }, [dispatch]);
 
@@ -306,7 +308,6 @@ export default function ImageGalleryView() {
                   >
                     <PlusIcon />
                   </button>
-                  <ModelSelector imageOnly />
                   {showAttachMenu && (
                     <div className={styles.promptAttachMenu}>
                       <button
@@ -324,7 +325,6 @@ export default function ImageGalleryView() {
                           className={styles.promptAttachOption}
                           onClick={() => {
                             setShowAttachMenu(false);
-                            // Open camera on mobile
                             const input = document.createElement('input');
                             input.type = 'file';
                             input.accept = 'image/*';
@@ -338,17 +338,31 @@ export default function ImageGalleryView() {
                       )}
                     </div>
                   )}
+                  <select
+                    className={styles.qualitySelect}
+                    value={imageQuality}
+                    onChange={(e) => dispatch(setImageQuality(e.target.value))}
+                  >
+                    {IMAGE_QUALITY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label} ({opt.cost}cr)
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <button
-                  type="submit"
-                  className={`${styles.promptSubmitBtn} ${
-                    promptInput.trim() ? styles.promptSubmitBtnActive : ''
-                  }`}
-                  disabled={!promptInput.trim()}
-                  aria-label="Generate image"
-                >
-                  <SendIcon />
-                </button>
+                <div className={styles.promptActionsRight}>
+                  <ModelSelector imageOnly />
+                  <button
+                    type="submit"
+                    className={`${styles.promptSubmitBtn} ${
+                      promptInput.trim() ? styles.promptSubmitBtnActive : ''
+                    }`}
+                    disabled={!promptInput.trim()}
+                    aria-label="Generate image"
+                  >
+                    <SendIcon />
+                  </button>
+                </div>
               </div>
             </div>
             <input
@@ -361,22 +375,15 @@ export default function ImageGalleryView() {
             />
           </form>
 
-          {/* Quality selector + Credit balance */}
+          {/* Credit balance */}
           <div className={styles.usagePill}>
-            <select
-              className={styles.qualitySelect}
-              value={imageQuality}
-              onChange={(e) => dispatch(setImageQuality(e.target.value))}
-            >
-              {IMAGE_QUALITY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label} ({opt.cost}cr)
-                </option>
-              ))}
-            </select>
             <CreditBalance onBuyCredits={() => setShowBuyPacks(true)} />
             <span className={styles.usagePillBadge}>
-              {creditBalance?.tier === 'pro' ? 'PRO' : creditBalance?.tier === 'premium' ? 'PREMIUM' : 'FREE'}
+              {creditBalance?.tier === 'pro'
+                ? 'PRO'
+                : creditBalance?.tier === 'premium'
+                ? 'PREMIUM'
+                : 'FREE'}
             </span>
           </div>
           {showBuyPacks && <BuyPacksModal onClose={() => setShowBuyPacks(false)} />}

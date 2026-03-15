@@ -1114,19 +1114,28 @@
 }
 
 .attachBtn {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--border-color);
   color: var(--text-muted);
+  cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.attachBtn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .attachBtn:hover,
 .attachBtn.active {
   background-color: var(--bg-hover);
+  border-color: var(--text-muted);
   color: var(--text-primary);
 }
 
@@ -1150,7 +1159,7 @@
   gap: 2px;
   animation: attachDropdownSlide 0.15s ease;
   z-index: 100;
-  min-width: 200px;
+  min-width: 220px;
   overflow: hidden;
 }
 

@@ -73,6 +73,7 @@
   font-family: inherit;
   resize: none;
   line-height: 1.5;
+  min-height: 40px;
   max-height: 120px;
   overflow-y: auto;
   scrollbar-width: none;
@@ -98,7 +99,13 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+}
+
+.promptActionsRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .promptAttachBtn {
@@ -132,7 +139,7 @@
   bottom: calc(100% + 8px);
   left: 0;
   z-index: 200;
-  min-width: 200px;
+  min-width: 220px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: 12px;
@@ -269,18 +276,27 @@
 }
 
 .qualitySelect {
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
   cursor: pointer;
   outline: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.qualitySelect:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .qualitySelect:focus {
-  border-color: var(--accent-color, #7c5cfc);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* ===== Quick Prompts — 2-column structured grid ===== */
