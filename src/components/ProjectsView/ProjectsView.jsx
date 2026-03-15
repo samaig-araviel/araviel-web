@@ -48,6 +48,7 @@ import {
   SendIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
+import ModalityBar from '../ModalityBar/ModalityBar';
 import styles from './ProjectsView.module.css';
 
 const FILTER_TABS = [
@@ -526,18 +527,21 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
                       e.target.value = '';
                     }}
                   />
-                  <ModelSelector />
                 </div>
-                <button
-                  type="submit"
-                  className={`${styles.wsChatSend} ${
-                    chatInput.trim() ? styles.wsChatSendActive : ''
-                  }`}
-                  disabled={!chatInput.trim()}
-                  aria-label="Send message"
-                >
-                  <SendIcon />
-                </button>
+                <div className={styles.wsChatRight}>
+                  <ModalityBar compact />
+                  <ModelSelector />
+                  <button
+                    type="submit"
+                    className={`${styles.wsChatSend} ${
+                      chatInput.trim() ? styles.wsChatSendActive : ''
+                    }`}
+                    disabled={!chatInput.trim()}
+                    aria-label="Send message"
+                  >
+                    <SendIcon />
+                  </button>
+                </div>
               </div>
             </div>
           </form>

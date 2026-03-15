@@ -8,74 +8,40 @@
 }
 
 /* ───────────────────────────────
-   Trigger Button
+   Trigger Button — text + chevron, no icon
    ─────────────────────────────── */
 .trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px 5px 6px;
-  background-color: var(--bg-secondary);
-  border: 1px solid transparent;
+  gap: 4px;
+  padding: 5px 8px;
+  background: transparent;
+  border: none;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary);
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
   white-space: nowrap;
-  max-width: 200px;
+  font-family: inherit;
 }
 
 .trigger:hover {
   background-color: var(--bg-hover);
-  border-color: var(--border-color);
+  color: var(--text-primary);
 }
 
 .triggerOpen {
   background-color: var(--bg-hover);
-  border-color: var(--border-color);
-  box-shadow: 0 0 0 2px var(--bg-active);
-}
-
-.triggerWithMode {
-  border-color: var(--border-color);
-}
-
-.triggerProviderChip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  background-color: var(--chip-bg);
-  color: var(--chip-text);
-  flex-shrink: 0;
-}
-
-[data-theme='dark'] .triggerProviderChip {
-  background-color: var(--chip-bg-dark);
+  color: var(--text-primary);
 }
 
 .triggerLabel {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 140px;
-}
-
-.modeTag {
-  display: inline-flex;
-  align-items: center;
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.modeTag svg {
-  width: 13px;
-  height: 13px;
+  max-width: 160px;
 }
 
 .triggerChevron {
@@ -100,15 +66,26 @@
    ─────────────────────────────── */
 .dropdown {
   position: absolute;
-  left: 0;
+  right: 0;
   z-index: 200;
   background-color: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: 14px;
   box-shadow: var(--shadow-lg);
-  width: 280px;
+  width: 260px;
   overflow: hidden;
-  animation: dropdownAppear 0.15s ease;
+  animation: dropdownAppear 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 4px 0;
+}
+
+.dropdownDown {
+  top: calc(100% + 6px);
+  transform-origin: top right;
+}
+
+.dropdownUp {
+  bottom: calc(100% + 6px);
+  transform-origin: bottom right;
 }
 
 @keyframes dropdownAppear {
@@ -122,171 +99,13 @@
   }
 }
 
-.dropdownDown {
-  top: calc(100% + 6px);
-  transform-origin: top left;
-}
-
-.dropdownUp {
-  bottom: calc(100% + 6px);
-  transform-origin: bottom left;
-}
-
-@keyframes dropdownAppearUp {
-  from {
-    opacity: 0;
-    transform: scale(0.97) translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 /* ───────────────────────────────
-   Section Labels & Dividers
+   Divider
    ─────────────────────────────── */
-.sectionLabel {
-  padding: 6px 12px 4px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  user-select: none;
-}
-
 .divider {
   height: 1px;
   background-color: var(--border-color);
-  margin: 4px 0;
-}
-
-/* ── Auto Strategy Options ── */
-.autoStrategies {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px 8px 6px;
-}
-
-.autoStrategyOption {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background-color: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-  font-family: inherit;
-  text-align: left;
-}
-
-.autoStrategyOption:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
-  border-color: var(--border-color);
-}
-
-.autoStrategyOptionActive {
-  background-color: var(--bg-secondary);
-  border-color: var(--border-color);
-  color: var(--text-primary);
-}
-
-[data-theme='dark'] .autoStrategyOptionActive {
-  background-color: var(--bg-secondary);
-  border-color: var(--border-color);
-}
-
-.autoStrategyOptionActive:hover {
-  background-color: var(--bg-hover);
-}
-
-.autoStrategyIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
-  background: var(--bg-secondary);
-  font-size: 9px;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-
-.autoStrategyOptionActive .autoStrategyIcon {
-  background-color: var(--text-primary);
-  color: var(--bg-primary);
-}
-
-.autoStrategyLabel {
-  font-size: 11px;
-  font-weight: 550;
-  letter-spacing: 0.01em;
-}
-
-/* ───────────────────────────────
-   Auto Glyph (trigger button)
-   ─────────────────────────────── */
-.autoGlyph {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background-color: var(--text-muted);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-/* ───────────────────────────────
-   Auto Chip
-   ─────────────────────────────── */
-.autoChip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background-color: var(--text-muted);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-/* ───────────────────────────────
-   Provider Chip (in dropdown)
-   ─────────────────────────────── */
-.providerChip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  background-color: var(--chip-bg);
-  color: var(--chip-text);
-  flex-shrink: 0;
-  transition: transform 0.1s ease;
-}
-
-[data-theme='dark'] .providerChip {
-  background-color: var(--chip-bg-dark);
+  margin: 4px 8px;
 }
 
 /* ───────────────────────────────
@@ -297,19 +116,19 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
   border-radius: 0;
   text-align: left;
+  cursor: pointer;
   transition: background-color 0.12s ease;
-  position: relative;
+  font-family: inherit;
+  color: var(--text-primary);
 }
 
 .modelOption:hover {
   background-color: var(--bg-hover);
-}
-
-.modelOption:hover .providerChip {
-  transform: scale(1.08);
 }
 
 .modelOptionSelected {
@@ -374,110 +193,9 @@
   margin-left: auto;
 }
 
-/* ───────────────────────────────
-   Mode Toggles
-   ─────────────────────────────── */
-.modeOption {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 12px;
-  text-align: left;
-  transition: background-color 0.12s ease, opacity 0.15s ease;
-  cursor: pointer;
-}
-
-.modeOption:hover:not(.modeOptionDisabled) {
-  background-color: var(--bg-hover);
-}
-
-.modeOptionActive {
-  background-color: var(--bg-active);
-}
-
-.modeOptionDisabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
-
-.modeIcon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
-  background-color: var(--bg-secondary);
-  color: var(--text-muted);
-  flex-shrink: 0;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.modeIcon svg {
-  width: 14px;
-  height: 14px;
-}
-
-.modeIconActive {
-  background-color: var(--bg-icon-button);
-  color: var(--text-icon-button);
-}
-
-.modeContent {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.modeName {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.modeProvider {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* Toggle Switch */
-.toggle {
-  position: relative;
-  width: 32px;
-  height: 18px;
-  border-radius: 9px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  flex-shrink: 0;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.toggleOn {
-  background-color: var(--bg-icon-button);
-  border-color: var(--bg-icon-button);
-}
-
-.toggleDisabled {
-  opacity: 0.5;
-}
-
-.toggleThumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: var(--text-muted);
-  transition: transform 0.2s ease, background-color 0.2s ease;
-}
-
-.toggleOn .toggleThumb {
-  transform: translateX(14px);
-  background-color: var(--text-icon-button);
+.checkmark svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ───────────────────────────────
@@ -486,18 +204,29 @@
 .moreModels {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
-  padding: 9px 12px;
+  padding: 9px 14px;
+  border: none;
+  background: transparent;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
+  cursor: pointer;
   transition: background-color 0.12s ease, color 0.12s ease;
   text-align: left;
+  font-family: inherit;
 }
 
 .moreModels:hover {
   background-color: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.moreModels svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
 }
 
 /* ───────────────────────────────
@@ -515,11 +244,15 @@
   align-items: center;
   gap: 4px;
   padding: 5px 8px;
+  border: none;
+  background: transparent;
   border-radius: 7px;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
+  cursor: pointer;
   transition: background-color 0.12s ease;
+  font-family: inherit;
 }
 
 .backButton:hover {
@@ -555,7 +288,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 12px 4px;
+  padding: 8px 14px 4px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -587,7 +320,7 @@
    ─────────────────────────────── */
 @media (max-width: 768px) {
   .dropdown {
-    width: 280px;
+    width: 260px;
     max-width: calc(100vw - 24px);
   }
 

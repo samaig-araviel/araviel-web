@@ -1078,7 +1078,7 @@
   color: var(--text-primary);
   background: transparent;
   resize: none;
-  min-height: 24px;
+  min-height: 44px;
   max-height: 360px;
   line-height: 1.5;
   overflow-y: auto;
@@ -1105,6 +1105,12 @@
   align-items: center;
   gap: 8px;
   position: relative;
+}
+
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .attachBtn {
