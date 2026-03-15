@@ -1278,13 +1278,17 @@ export default function MainContent() {
               }
               // Update credit balance if image credits were charged
               if (data.credits) {
-                dispatch(setCreditBalance((prev) => ({
-                  ...prev,
-                  combined: data.credits.remaining ?? prev?.combined,
-                })));
+                dispatch(
+                  setCreditBalance((prev) => ({
+                    ...prev,
+                    combined: data.credits.remaining ?? prev?.combined,
+                  }))
+                );
                 // Re-fetch full balance for accuracy
                 fetchCreditBalance()
-                  .then((res) => { if (res.balance) dispatch(setCreditBalance(res.balance)); })
+                  .then((res) => {
+                    if (res.balance) dispatch(setCreditBalance(res.balance));
+                  })
                   .catch(() => {});
               }
               // Refresh sidebar conversations after stream completes (title may now be set)
@@ -1435,8 +1439,8 @@ export default function MainContent() {
       selectedModality === 'image'
         ? 'image'
         : selectedModelId && isImageGenerationModel(selectedModelId)
-          ? 'image'
-          : undefined;
+        ? 'image'
+        : undefined;
 
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
@@ -2246,9 +2250,7 @@ export default function MainContent() {
       {/* Share modal */}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
 
-      {showBuyPacksModal && (
-        <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />
-      )}
+      {showBuyPacksModal && <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />}
 
       {/* Gallery preview */}
       {showGallery && galleryFiles.length > 0 && (
@@ -2363,7 +2365,6 @@ export default function MainContent() {
                 rows={1}
                 aria-label="Message input"
               />
-              <ModalityBar />
               <div className={styles.inputActions}>
                 <div className={styles.leftActions}>
                   <button
@@ -2634,6 +2635,7 @@ export default function MainContent() {
                     </div>
                   )}
                   <ModelSelector />
+                  <ModalityBar />
                   <button
                     type="button"
                     className={`${styles.webSearchToggle} ${
