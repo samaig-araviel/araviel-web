@@ -13,7 +13,7 @@ export const IMAGE_QUALITY_COSTS = {
 };
 
 export const IMAGE_QUALITY_OPTIONS = [
-  { value: 'standard', label: 'Standard', cost: 1 },
+  { value: 'standard', label: 'SD', cost: 1 },
   { value: 'hd', label: 'HD', cost: 2 },
   { value: 'ultra', label: 'Ultra', cost: 4 },
 ];
