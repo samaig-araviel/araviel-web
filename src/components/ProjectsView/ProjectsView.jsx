@@ -527,9 +527,9 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
                       e.target.value = '';
                     }}
                   />
+                  <ModalityBar compact />
                 </div>
                 <div className={styles.wsChatRight}>
-                  <ModalityBar compact />
                   <ModelSelector />
                   <button
                     type="submit"
