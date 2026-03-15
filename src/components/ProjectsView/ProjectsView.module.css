@@ -1095,7 +1095,7 @@
   resize: none;
   outline: none;
   line-height: 1.5;
-  min-height: 24px;
+  min-height: 40px;
   max-height: 160px;
   overflow-y: auto;
 }
@@ -1115,6 +1115,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.wsChatRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .wsChatSend {

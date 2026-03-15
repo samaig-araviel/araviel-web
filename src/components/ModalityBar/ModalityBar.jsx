@@ -8,14 +8,14 @@ import {
   setImageQuality,
 } from '../../store/slices/chatSlice';
 import { IMAGE_QUALITY_OPTIONS } from '../../config/credits';
-import { ChevronDownIcon, CheckIcon } from '../Icons';
+import { ChevronDownIcon, ChevronLeftIcon, CheckIcon } from '../Icons';
 import styles from './ModalityBar.module.css';
 
 const MODALITIES = [
-  { id: 'text', label: 'Text', icon: '✦', enabled: true },
-  { id: 'image', label: 'Image', icon: '◐', enabled: true },
-  { id: 'voice', label: 'Voice', icon: '♪', enabled: false, comingSoon: true },
-  { id: 'video', label: 'Video', icon: '▶', enabled: false, comingSoon: true },
+  { id: 'text', label: 'Text', enabled: true },
+  { id: 'image', label: 'Image', enabled: true },
+  { id: 'voice', label: 'Voice', enabled: false, comingSoon: true },
+  { id: 'video', label: 'Video', enabled: false, comingSoon: true },
 ];
 
 export default function ModalityBar({ compact = false }) {
@@ -25,6 +25,7 @@ export default function ModalityBar({ compact = false }) {
   const creditBalance = useSelector(selectCreditBalance);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [showQuality, setShowQuality] = useState(false);
   const [dropdownDir, setDropdownDir] = useState('up');
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
@@ -45,6 +46,7 @@ export default function ModalityBar({ compact = false }) {
         !triggerRef.current.contains(e.target)
       ) {
         setIsOpen(false);
+        setShowQuality(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -54,13 +56,19 @@ export default function ModalityBar({ compact = false }) {
   // Close on Escape
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') {
+        if (showQuality) {
+          setShowQuality(false);
+        } else {
+          setIsOpen(false);
+        }
+      }
     };
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       return () => document.removeEventListener('keydown', handleEscape);
     }
-  }, [isOpen]);
+  }, [isOpen, showQuality]);
 
   const handleTriggerClick = () => {
     if (!isOpen && triggerRef.current) {
@@ -69,18 +77,31 @@ export default function ModalityBar({ compact = false }) {
       setDropdownDir(spaceBelow < 260 ? 'up' : 'down');
     }
     setIsOpen(!isOpen);
+    setShowQuality(false);
   };
 
   const handleSelectModality = (id) => {
     dispatch(setSelectedModality(id));
-    if (id !== 'image') {
+    if (id === 'image') {
+      // Show quality sub-view
+      setShowQuality(true);
+    } else {
       setIsOpen(false);
+      setShowQuality(false);
     }
   };
 
   const handleSelectQuality = (value) => {
     dispatch(setImageQuality(value));
+    setIsOpen(false);
+    setShowQuality(false);
   };
+
+  // Only show trigger when not in default text mode, or always show it
+  // Based on the user's request: Text is default, so show the label
+  const triggerLabel = isImage
+    ? `Image · ${selectedQualityOption?.label || 'Standard'}`
+    : currentModality.label;
 
   return (
     <div className={styles.wrapper}>
@@ -88,19 +109,15 @@ export default function ModalityBar({ compact = false }) {
         ref={triggerRef}
         type="button"
         className={`${styles.trigger} ${isOpen ? styles.triggerOpen : ''} ${
-          isImage ? styles.triggerImage : ''
-        } ${compact ? styles.compact : ''}`}
+          compact ? styles.compact : ''
+        }`}
         onClick={handleTriggerClick}
         aria-label="Select output type"
         aria-expanded={isOpen}
       >
-        <span className={styles.triggerIcon}>{currentModality.icon}</span>
-        <span className={styles.triggerLabel}>
-          {currentModality.label}
-          {isImage && selectedQualityOption ? ` · ${selectedQualityOption.label}` : ''}
-        </span>
+        <span className={styles.triggerLabel}>{triggerLabel}</span>
         {isImage && creditBalance && (
-          <span className={styles.creditPill}>{creditBalance.combined}cr</span>
+          <span className={styles.creditPill}>{creditBalance.combined}</span>
         )}
         <span className={`${styles.triggerChevron} ${isOpen ? styles.triggerChevronOpen : ''}`}>
           <ChevronDownIcon />
@@ -114,57 +131,73 @@ export default function ModalityBar({ compact = false }) {
             dropdownDir === 'up' ? styles.dropdownUp : styles.dropdownDown
           }`}
         >
-          <div className={styles.sectionLabel}>Output</div>
-
-          {MODALITIES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              className={`${styles.option} ${modality === m.id ? styles.optionSelected : ''} ${
-                !m.enabled ? styles.optionDisabled : ''
-              }`}
-              onClick={() => m.enabled && handleSelectModality(m.id)}
-              disabled={!m.enabled}
-            >
-              <span
-                className={`${styles.optionIcon} ${
-                  modality === m.id ? styles.optionIconActive : ''
-                }`}
-              >
-                {m.icon}
-              </span>
-              <span className={styles.optionContent}>
-                <span className={styles.optionName}>{m.label}</span>
-                {m.comingSoon && <span className={styles.comingSoon}>Soon</span>}
-              </span>
-              {modality === m.id && m.enabled && (
-                <span className={styles.checkmark}>
-                  <CheckIcon />
-                </span>
-              )}
-            </button>
-          ))}
-
-          {isImage && (
+          {showQuality ? (
+            /* Quality sub-view */
             <>
-              <div className={styles.divider} />
-              <div className={styles.sectionLabel}>Quality</div>
-              <div className={styles.qualityGrid}>
-                {IMAGE_QUALITY_OPTIONS.map((opt) => (
+              <div className={styles.subHeader}>
+                <button
+                  className={styles.backButton}
+                  onClick={() => setShowQuality(false)}
+                  type="button"
+                >
+                  <ChevronLeftIcon />
+                  <span>Quality</span>
+                </button>
+              </div>
+              {IMAGE_QUALITY_OPTIONS.map((opt) => {
+                const isActive = quality === opt.value;
+                return (
                   <button
                     key={opt.value}
                     type="button"
-                    className={`${styles.qualityOption} ${
-                      quality === opt.value ? styles.qualityOptionActive : ''
-                    }`}
+                    className={`${styles.option} ${isActive ? styles.optionSelected : ''}`}
                     onClick={() => handleSelectQuality(opt.value)}
                   >
-                    <span className={styles.qualityLabel}>{opt.label}</span>
-                    <span className={styles.qualityCost}>{opt.cost}cr</span>
+                    <div className={styles.optionContent}>
+                      <span className={styles.optionName}>{opt.label}</span>
+                      <span className={styles.optionTagline}>
+                        {opt.cost} credit{opt.cost > 1 ? 's' : ''} per image
+                      </span>
+                    </div>
+                    {isActive && (
+                      <span className={styles.checkmark}>
+                        <CheckIcon />
+                      </span>
+                    )}
                   </button>
-                ))}
-              </div>
+                );
+              })}
               {insufficientCredits && <div className={styles.warning}>Insufficient credits</div>}
+            </>
+          ) : (
+            /* Main modality view */
+            <>
+              {MODALITIES.map((m) => {
+                const isActive = modality === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    className={`${styles.option} ${isActive ? styles.optionSelected : ''} ${
+                      !m.enabled ? styles.optionDisabled : ''
+                    }`}
+                    onClick={() => m.enabled && handleSelectModality(m.id)}
+                    disabled={!m.enabled}
+                  >
+                    <div className={styles.optionContent}>
+                      <span className={styles.optionName}>
+                        {m.label}
+                        {m.comingSoon && <span className={styles.comingSoon}>Soon</span>}
+                      </span>
+                    </div>
+                    {isActive && m.enabled && (
+                      <span className={styles.checkmark}>
+                        <CheckIcon />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </>
           )}
         </div>

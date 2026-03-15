@@ -2634,8 +2634,10 @@ export default function MainContent() {
                       )}
                     </div>
                   )}
-                  <ModelSelector />
+                </div>
+                <div className={styles.rightActions}>
                   <ModalityBar />
+                  <ModelSelector />
                   <button
                     type="button"
                     className={`${styles.webSearchToggle} ${
@@ -2650,28 +2652,27 @@ export default function MainContent() {
                   >
                     <GlobeIcon />
                   </button>
-                  {/* Location is detected automatically behind the scenes */}
+                  {isProcessing ? (
+                    <button
+                      type="button"
+                      className={styles.stopBtn}
+                      onClick={handleStop}
+                      aria-label="Stop request"
+                    >
+                      <span className={styles.stopBtnRing} />
+                      <StopIcon />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      className={`${styles.submitBtn} ${inputValue.trim() ? styles.active : ''}`}
+                      disabled={!inputValue.trim()}
+                      aria-label="Send message"
+                    >
+                      <SendIcon />
+                    </button>
+                  )}
                 </div>
-                {isProcessing ? (
-                  <button
-                    type="button"
-                    className={styles.stopBtn}
-                    onClick={handleStop}
-                    aria-label="Stop request"
-                  >
-                    <span className={styles.stopBtnRing} />
-                    <StopIcon />
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className={`${styles.submitBtn} ${inputValue.trim() ? styles.active : ''}`}
-                    disabled={!inputValue.trim()}
-                    aria-label="Send message"
-                  >
-                    <SendIcon />
-                  </button>
-                )}
               </div>
             </div>
             <input

@@ -15,27 +15,20 @@ import {
   getModelsForTier,
   getModelsByProvider,
 } from '../../data/models';
-import { ChevronDownIcon, ChevronLeftIcon, CheckIcon } from '../Icons';
+import { ChevronDownIcon, ChevronLeftIcon, CheckIcon, ChevronRightIcon } from '../Icons';
 import styles from './ModelSelector.module.css';
 
 // Featured models per tier — one per major provider
-const FEATURED_MODEL_IDS_PRO = [
-  'claude-opus-4-6', // Anthropic flagship
-  'gpt-5.2', // OpenAI flagship
-  'gemini-2.5-pro', // Google flagship
-];
+const FEATURED_MODEL_IDS_PRO = ['claude-opus-4-6', 'gpt-5.2', 'gemini-2.5-pro'];
 
-const FEATURED_MODEL_IDS_FREE = [
-  'claude-haiku-4-5-20251001', // Anthropic free
-  'gpt-5-mini', // OpenAI free
-  'gemini-2.5-flash', // Google free
-];
+const FEATURED_MODEL_IDS_FREE = ['claude-haiku-4-5-20251001', 'gpt-5-mini', 'gemini-2.5-flash'];
 
-const AUTO_STRATEGIES = [
-  { id: 'default', label: 'Default', desc: 'Best model for each task', icon: '✦' },
-  { id: 'humanFactors', label: 'Human Factors', desc: 'Uses mood, tone & context', icon: '♡' },
-  { id: 'costEfficient', label: 'Cost Efficient', desc: 'Optimizes for lower cost', icon: '◎' },
-  { id: 'taskBased', label: 'Task Based', desc: 'Pure task routing only', icon: '⚡' },
+// Routing strategies shown as top-level options
+const ROUTING_OPTIONS = [
+  { id: 'default', label: 'Auto', tagline: 'Best model for each task' },
+  { id: 'costEfficient', label: 'Speed', tagline: 'Fast and cost-efficient' },
+  { id: 'taskBased', label: 'Balanced', tagline: 'Optimized for the task' },
+  { id: 'humanFactors', label: 'Quality', tagline: 'Uses context, tone and mood' },
 ];
 
 export default function ModelSelector({ imageOnly = false }) {
@@ -50,7 +43,6 @@ export default function ModelSelector({ imageOnly = false }) {
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
 
-  // Get user tier and filter models accordingly
   const userTier = getUserTier();
   const tierModels = useMemo(() => {
     const models = getModelsForTier(userTier);
@@ -61,22 +53,13 @@ export default function ModelSelector({ imageOnly = false }) {
   const selectedModel = selectedModelId ? MODELS.find((m) => m.id === selectedModelId) : null;
   const isAutoMode = !selectedModelId;
 
-  // For Auto mode tagline: check if there's a saved default model to show in subtitle
-  const savedDefaultId = localStorage.getItem('araviel-default-model');
-  const savedDefaultModel =
-    isAutoMode && savedDefaultId ? MODELS.find((m) => m.id === savedDefaultId) : null;
-
-  // Featured models based on tier — when imageOnly, show first 3 image-capable models
   const featuredModels = useMemo(() => {
-    if (imageOnly) {
-      return tierModels.slice(0, 3);
-    }
+    if (imageOnly) return tierModels.slice(0, 3);
     const featuredIds =
       userTier === ACCESS_TIERS.pro ? FEATURED_MODEL_IDS_PRO : FEATURED_MODEL_IDS_FREE;
     return featuredIds.map((id) => tierModels.find((m) => m.id === id)).filter(Boolean);
   }, [imageOnly, tierModels, userTier]);
 
-  // Active providers for the "All Models" view (only providers that have tier-accessible models)
   const activeProviders = PROVIDER_ORDER.filter((pid) => tierModelsByProvider[pid]?.length > 0);
 
   // Close on click outside
@@ -111,7 +94,6 @@ export default function ModelSelector({ imageOnly = false }) {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [showAllModels]);
 
-  // Calculate dropdown direction before opening
   const handleTriggerClick = () => {
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -119,7 +101,6 @@ export default function ModelSelector({ imageOnly = false }) {
       const isMobile = window.innerWidth <= 768;
 
       if (isMobile) {
-        // Use fixed positioning on mobile to escape overflow: hidden on .app
         const availableAbove = rect.top - 12;
         const maxHeight = Math.min(availableAbove, window.innerHeight * 0.6);
         setDropdownDir('up');
@@ -144,30 +125,18 @@ export default function ModelSelector({ imageOnly = false }) {
     setIsOpen(false);
   };
 
-  const handleAutoSelect = () => {
+  const handleRoutingSelect = (strategyId) => {
     dispatch(setSelectedModel(null));
+    dispatch(setAutoStrategy(strategyId));
     setIsOpen(false);
   };
 
-  const handleMoreModels = () => {
-    setShowAllModels(true);
-  };
-
-  const handleBackToFeatured = () => {
-    setShowAllModels(false);
-  };
-
-  // Trigger label and provider accent — only reflect the explicitly selected model, not the
-  // saved default. When in Auto mode the trigger always shows "Auto".
-  const displayProvider = !isAutoMode && selectedModel ? PROVIDERS[selectedModel.provider] : null;
-  const strategyLabel =
-    isAutoMode && autoStrategy && autoStrategy !== 'default'
-      ? AUTO_STRATEGIES.find((s) => s.id === autoStrategy)?.label
-      : null;
+  // Determine trigger label
+  const currentStrategy = isAutoMode
+    ? ROUTING_OPTIONS.find((r) => r.id === (autoStrategy || 'default'))
+    : null;
   const triggerLabel = isAutoMode
-    ? strategyLabel
-      ? `Auto (${strategyLabel})`
-      : 'Auto'
+    ? currentStrategy?.label || 'Auto'
     : selectedModel?.name ?? 'Auto';
 
   return (
@@ -181,20 +150,6 @@ export default function ModelSelector({ imageOnly = false }) {
         aria-expanded={isOpen}
         aria-label="Select AI model"
       >
-        {displayProvider ? (
-          <span
-            className={styles.triggerProviderChip}
-            style={{
-              '--chip-bg': displayProvider.accentBg,
-              '--chip-text': displayProvider.accentText,
-              '--chip-bg-dark': displayProvider.accentBgDark,
-            }}
-          >
-            {displayProvider.logoChar}
-          </span>
-        ) : (
-          <span className={styles.autoGlyph}>✦</span>
-        )}
         <span className={styles.triggerLabel}>{triggerLabel}</span>
         <span className={`${styles.triggerChevron} ${isOpen ? styles.triggerChevronOpen : ''}`}>
           <ChevronDownIcon />
@@ -212,13 +167,12 @@ export default function ModelSelector({ imageOnly = false }) {
           aria-label="Model selection"
         >
           {showAllModels ? (
-            /* ── All Models view ── */
             <>
               <div className={styles.allModelsHeader}>
                 <button
                   className={styles.backButton}
-                  onClick={handleBackToFeatured}
-                  aria-label="Back to featured models"
+                  onClick={() => setShowAllModels(false)}
+                  aria-label="Back"
                 >
                   <ChevronLeftIcon />
                   <span>All Models</span>
@@ -288,60 +242,36 @@ export default function ModelSelector({ imageOnly = false }) {
               </div>
             </>
           ) : (
-            /* ── Featured / default view ── */
             <>
-              {/* ── Auto ── */}
-              <button
-                className={`${styles.modelOption} ${isAutoMode ? styles.modelOptionSelected : ''}`}
-                onClick={handleAutoSelect}
-                role="option"
-                aria-selected={isAutoMode}
-              >
-                <span className={styles.autoChip}>✦</span>
-                <div className={styles.modelOptionContent}>
-                  <span className={styles.modelOptionName}>Auto</span>
-                  <span className={styles.modelOptionTagline}>
-                    {savedDefaultModel
-                      ? `Using ${savedDefaultModel.name} by default`
-                      : 'Best model selected for each task'}
-                  </span>
-                </div>
-                {isAutoMode && (
-                  <span className={styles.checkmark}>
-                    <CheckIcon />
-                  </span>
-                )}
-              </button>
-
-              {/* ── Auto strategy options (shown when Auto is selected) ── */}
-              {isAutoMode && (
-                <div className={styles.autoStrategies}>
-                  {AUTO_STRATEGIES.map((strategy) => {
-                    const isActive = (autoStrategy || 'default') === strategy.id;
-                    return (
-                      <button
-                        key={strategy.id}
-                        className={`${styles.autoStrategyOption} ${
-                          isActive ? styles.autoStrategyOptionActive : ''
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          dispatch(setAutoStrategy(strategy.id));
-                        }}
-                        title={strategy.desc}
-                      >
-                        <span className={styles.autoStrategyIcon}>{strategy.icon}</span>
-                        <span className={styles.autoStrategyLabel}>{strategy.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              {/* Routing options */}
+              {ROUTING_OPTIONS.map((route) => {
+                const isActive = isAutoMode && (autoStrategy || 'default') === route.id;
+                return (
+                  <button
+                    key={route.id}
+                    className={`${styles.modelOption} ${
+                      isActive ? styles.modelOptionSelected : ''
+                    }`}
+                    onClick={() => handleRoutingSelect(route.id)}
+                    role="option"
+                    aria-selected={isActive}
+                  >
+                    <div className={styles.modelOptionContent}>
+                      <span className={styles.modelOptionName}>{route.label}</span>
+                      <span className={styles.modelOptionTagline}>{route.tagline}</span>
+                    </div>
+                    {isActive && (
+                      <span className={styles.checkmark}>
+                        <CheckIcon />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
 
               <div className={styles.divider} />
-              <div className={styles.sectionLabel}>Featured Models</div>
 
-              {/* ── 3 featured models ── */}
+              {/* Featured models */}
               {featuredModels.map((model) => {
                 const provider = PROVIDERS[model.provider];
                 const isSelected = selectedModelId === model.id;
@@ -355,16 +285,6 @@ export default function ModelSelector({ imageOnly = false }) {
                     role="option"
                     aria-selected={isSelected}
                   >
-                    <span
-                      className={styles.providerChip}
-                      style={{
-                        '--chip-bg': provider.accentBg,
-                        '--chip-text': provider.accentText,
-                        '--chip-bg-dark': provider.accentBgDark,
-                      }}
-                    >
-                      {provider.logoChar}
-                    </span>
                     <div className={styles.modelOptionContent}>
                       <div className={styles.modelOptionRow}>
                         <span className={styles.modelOptionName}>{model.name}</span>
@@ -394,9 +314,9 @@ export default function ModelSelector({ imageOnly = false }) {
 
               <div className={styles.divider} />
 
-              {/* ── More models ── */}
-              <button className={styles.moreModels} onClick={handleMoreModels}>
+              <button className={styles.moreModels} onClick={() => setShowAllModels(true)}>
                 <span>More models</span>
+                <ChevronRightIcon />
               </button>
             </>
           )}
