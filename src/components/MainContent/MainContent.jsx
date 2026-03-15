@@ -2634,10 +2634,7 @@ export default function MainContent() {
                       )}
                     </div>
                   )}
-                </div>
-                <div className={styles.rightActions}>
                   <ModalityBar />
-                  <ModelSelector />
                   <button
                     type="button"
                     className={`${styles.webSearchToggle} ${
@@ -2652,6 +2649,9 @@ export default function MainContent() {
                   >
                     <GlobeIcon />
                   </button>
+                </div>
+                <div className={styles.rightActions}>
+                  <ModelSelector />
                   {isProcessing ? (
                     <button
                       type="button"
