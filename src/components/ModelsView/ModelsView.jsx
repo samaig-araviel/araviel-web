@@ -124,7 +124,9 @@ function DevTierSwitcher({ currentTier, onTierChange }) {
       {TIER_ORDER.map((tier) => (
         <button
           key={tier}
-          className={`${styles.devSwitcherBtn} ${currentTier === tier ? styles.devSwitcherBtnActive : ''} ${styles[`devTier_${tier}`]}`}
+          className={`${styles.devSwitcherBtn} ${
+            currentTier === tier ? styles.devSwitcherBtnActive : ''
+          }`}
           onClick={() => onTierChange(tier)}
         >
           {TIER_DISPLAY[tier]}
@@ -211,10 +213,7 @@ function ProviderFilterDropdown({ activeFilter, onFilterChange, providerCounts }
                   setIsOpen(false);
                 }}
               >
-                <span
-                  className={styles.filterMenuDot}
-                  style={{ backgroundColor: provider.accentColor }}
-                />
+                <span className={styles.filterMenuDot}>{provider.logoChar}</span>
                 <span className={styles.filterMenuLabel}>{provider.name}</span>
                 <span className={styles.filterMenuCount}>{count}</span>
                 {activeFilter === pid && (
@@ -403,7 +402,11 @@ function UpgradeBanner({ currentTier, lockedCount }) {
   const isPro = nextTier === ACCESS_TIERS.pro;
 
   return (
-    <div className={`${styles.upgradeBanner} ${isPro ? styles.upgradeBannerPro : styles.upgradeBannerPremium}`}>
+    <div
+      className={`${styles.upgradeBanner} ${
+        isPro ? styles.upgradeBannerPro : styles.upgradeBannerPremium
+      }`}
+    >
       <div className={styles.upgradeBannerGlow} />
       <div className={styles.upgradeBannerContent}>
         <div className={styles.upgradeBannerText}>
@@ -419,9 +422,7 @@ function UpgradeBanner({ currentTier, lockedCount }) {
             </p>
           </div>
         </div>
-        <button className={styles.upgradeBannerBtn}>
-          Upgrade to {nextLabel}
-        </button>
+        <button className={styles.upgradeBannerBtn}>Upgrade to {nextLabel}</button>
       </div>
     </div>
   );
@@ -566,7 +567,9 @@ function ModelDetailPanel({ model, isSelected, isLocked, userTier, onSetModel, o
           </div>
         ) : (
           <button
-            className={`${styles.detailSelectBtn} ${isSelected ? styles.detailSelectBtnActive : ''}`}
+            className={`${styles.detailSelectBtn} ${
+              isSelected ? styles.detailSelectBtnActive : ''
+            }`}
             onClick={() => {
               onSetModel(isSelected ? null : model.id);
               onClose();

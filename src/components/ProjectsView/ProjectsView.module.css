@@ -153,6 +153,24 @@
   color: var(--text-secondary);
 }
 
+.searchWebIcon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.searchWebIcon svg {
+  width: 14px;
+  height: 14px;
+}
+
 /* Sort dropdown */
 .sortWrapper {
   position: relative;

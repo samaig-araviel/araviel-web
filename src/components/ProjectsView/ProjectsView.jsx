@@ -46,6 +46,10 @@ import {
   FilePlusIcon,
   CheckIcon,
   SendIcon,
+  CloudIcon,
+  CameraIcon,
+  GlobeIcon,
+  BookIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import ModalityBar from '../ModalityBar/ModalityBar';
@@ -512,6 +516,38 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
                         >
                           <FilePlusIcon />
                           <span>Upload files or images</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.wsPlusDropdownItem}
+                          onClick={() => setShowPlusMenu(false)}
+                        >
+                          <CloudIcon />
+                          <span>Add files from cloud</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.wsPlusDropdownItem}
+                          onClick={() => setShowPlusMenu(false)}
+                        >
+                          <CameraIcon />
+                          <span>Take a screenshot</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.wsPlusDropdownItem}
+                          onClick={() => setShowPlusMenu(false)}
+                        >
+                          <GlobeIcon />
+                          <span>Web Search</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.wsPlusDropdownItem}
+                          onClick={() => setShowPlusMenu(false)}
+                        >
+                          <BookIcon />
+                          <span>Research</span>
                         </button>
                       </div>
                     )}
@@ -1055,6 +1091,11 @@ export default function ProjectsView() {
               <button className={styles.searchClear} onClick={() => setSearch('')}>
                 <CloseIcon />
               </button>
+            )}
+            {!search && (
+              <div className={styles.searchWebIcon} title="Web search">
+                <GlobeIcon />
+              </div>
             )}
           </div>
 
