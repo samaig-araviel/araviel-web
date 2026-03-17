@@ -37,66 +37,66 @@ export const PROVIDERS = {
     name: 'Anthropic',
     shortName: 'Anthropic',
     logoChar: 'A',
-    accentColor: '#d97706', // warm amber
-    accentBg: '#fef3c7',
-    accentBgDark: '#332b00',
-    accentText: '#92400e',
-    accentTextDark: '#fbbf24',
+    accentColor: '#8b7355',
+    accentBg: '#f5f0eb',
+    accentBgDark: '#2a2520',
+    accentText: '#6b5a45',
+    accentTextDark: '#c4b49a',
   },
   openai: {
     id: 'openai',
     name: 'OpenAI',
     shortName: 'OpenAI',
     logoChar: 'O',
-    accentColor: '#38bdf8', // sky blue
-    accentBg: '#e0f2fe',
-    accentBgDark: '#0c2436',
-    accentText: '#0369a1',
-    accentTextDark: '#7dd3fc',
+    accentColor: '#6b7b8d',
+    accentBg: '#f0f3f6',
+    accentBgDark: '#1e252c',
+    accentText: '#4a5a6a',
+    accentTextDark: '#9aabb8',
   },
   google: {
     id: 'google',
     name: 'Google',
     shortName: 'Google',
     logoChar: 'G',
-    accentColor: '#22c55e', // green
-    accentBg: '#dcfce7',
-    accentBgDark: '#0a2618',
-    accentText: '#15803d',
-    accentTextDark: '#86efac',
+    accentColor: '#6b8a6b',
+    accentBg: '#f0f5f0',
+    accentBgDark: '#1e261e',
+    accentText: '#4a6a4a',
+    accentTextDark: '#9ab89a',
   },
   xai: {
     id: 'xai',
     name: 'xAI',
     shortName: 'xAI',
     logoChar: 'X',
-    accentColor: '#f43f5e', // rose
-    accentBg: '#ffe4e6',
-    accentBgDark: '#3b0d14',
-    accentText: '#be123c',
-    accentTextDark: '#fb7185',
+    accentColor: '#7a6b8d',
+    accentBg: '#f3f0f6',
+    accentBgDark: '#252028',
+    accentText: '#5a4a6a',
+    accentTextDark: '#b09ac4',
   },
   perplexity: {
     id: 'perplexity',
     name: 'Perplexity',
     shortName: 'Perplexity',
     logoChar: 'P',
-    accentColor: '#a78bfa', // violet
-    accentBg: '#ede9fe',
-    accentBgDark: '#1e1340',
-    accentText: '#6d28d9',
-    accentTextDark: '#c4b5fd',
+    accentColor: '#7a7a8d',
+    accentBg: '#f0f0f5',
+    accentBgDark: '#202025',
+    accentText: '#555568',
+    accentTextDark: '#a8a8c0',
   },
   elevenlabs: {
     id: 'elevenlabs',
     name: 'ElevenLabs',
     shortName: 'ElevenLabs',
     logoChar: 'E',
-    accentColor: '#ec4899', // pink
-    accentBg: '#fce7f3',
-    accentBgDark: '#3b0d24',
-    accentText: '#be185d',
-    accentTextDark: '#f9a8d4',
+    accentColor: '#8d6b7a',
+    accentBg: '#f5f0f3',
+    accentBgDark: '#281e24',
+    accentText: '#6a4a5a',
+    accentTextDark: '#c49ab0',
   },
 };
 
@@ -341,8 +341,7 @@ export const MODELS = [
     name: 'GPT-5 Mini',
     provider: 'openai',
     tagline: 'Fast, cost-efficient reasoning',
-    description:
-      'Fast, cost-efficient reasoning. Great balance of power and cost. 400K context.',
+    description: 'Fast, cost-efficient reasoning. Great balance of power and cost. 400K context.',
     speedTier: getSpeedTier(800),
     pricing: { inputPerM: 0.25, outputPerM: 2.0 },
     context: { inputTokens: 400000, outputTokens: 128000 },
@@ -411,8 +410,7 @@ export const MODELS = [
     name: 'GPT-4.1 Mini',
     provider: 'openai',
     tagline: 'Fast and capable with 1M context',
-    description:
-      'Fast GPT-4.1. Great starting point for most tasks. 1M context.',
+    description: 'Fast GPT-4.1. Great starting point for most tasks. 1M context.',
     speedTier: getSpeedTier(600),
     pricing: { inputPerM: 0.4, outputPerM: 1.6 },
     context: { inputTokens: 1047576, outputTokens: 32768 },
@@ -434,8 +432,7 @@ export const MODELS = [
     name: 'GPT-4.1 Nano',
     provider: 'openai',
     tagline: 'Fastest GPT-4.1 for speed and cost',
-    description:
-      'Fastest, cheapest GPT-4.1. Speed and price optimization. 1M context.',
+    description: 'Fastest, cheapest GPT-4.1. Speed and price optimization. 1M context.',
     speedTier: getSpeedTier(300),
     pricing: { inputPerM: 0.1, outputPerM: 0.4 },
     context: { inputTokens: 1047576, outputTokens: 32768 },
@@ -481,8 +478,7 @@ export const MODELS = [
     name: 'GPT-4o Mini',
     provider: 'openai',
     tagline: 'Fast multimodal at budget pricing',
-    description:
-      'Fast, affordable multimodal with audio support. 128K context.',
+    description: 'Fast, affordable multimodal with audio support. 128K context.',
     speedTier: getSpeedTier(500),
     pricing: { inputPerM: 0.15, outputPerM: 0.6 },
     context: { inputTokens: 128000, outputTokens: 16384 },
@@ -573,8 +569,7 @@ export const MODELS = [
     name: 'o4-mini Deep Research',
     provider: 'openai',
     tagline: 'Faster, more affordable deep research',
-    description:
-      'Faster, more affordable deep research. 200K context.',
+    description: 'Faster, more affordable deep research. 200K context.',
     speedTier: getSpeedTier(15000),
     pricing: { inputPerM: 2.0, outputPerM: 8.0 },
     context: { inputTokens: 200000, outputTokens: 100000 },
@@ -644,8 +639,7 @@ export const MODELS = [
     name: 'Sora 2',
     provider: 'openai',
     tagline: 'Flagship video generation with synced audio',
-    description:
-      'Flagship video generation with synced audio. $0.10/sec at 720p/1280p.',
+    description: 'Flagship video generation with synced audio. $0.10/sec at 720p/1280p.',
     speedTier: getSpeedTier(30000),
     pricing: { inputPerM: 100.0, outputPerM: 200.0 },
     context: { inputTokens: 4000, outputTokens: 1 },
@@ -668,8 +662,7 @@ export const MODELS = [
     name: 'GPT-4o Mini TTS',
     provider: 'openai',
     tagline: 'Natural-sounding text-to-speech',
-    description:
-      'Text-to-speech powered by GPT-4o Mini. ~$0.015/minute. Natural-sounding voices.',
+    description: 'Text-to-speech powered by GPT-4o Mini. ~$0.015/minute. Natural-sounding voices.',
     speedTier: getSpeedTier(500),
     pricing: { inputPerM: 0.6, outputPerM: 12.0 },
     context: { inputTokens: 4096, outputTokens: 1 },
@@ -692,8 +685,7 @@ export const MODELS = [
     name: 'GPT-4o Mini Transcribe',
     provider: 'openai',
     tagline: 'Fast speech-to-text transcription',
-    description:
-      'Speech-to-text powered by GPT-4o Mini. ~$0.003/minute. Fast and affordable.',
+    description: 'Speech-to-text powered by GPT-4o Mini. ~$0.003/minute. Fast and affordable.',
     speedTier: getSpeedTier(1000),
     pricing: { inputPerM: 3.0, outputPerM: 5.0 },
     context: { inputTokens: 128000, outputTokens: 16384 },
@@ -765,8 +757,7 @@ export const MODELS = [
     name: 'Gemini 3 Flash Preview',
     provider: 'google',
     tagline: 'Frontier-class performance at fraction of cost',
-    description:
-      'Frontier-class performance at fraction of cost. $0.50/$3.00/MTok. 1M context.',
+    description: 'Frontier-class performance at fraction of cost. $0.50/$3.00/MTok. 1M context.',
     speedTier: getSpeedTier(600),
     pricing: { inputPerM: 0.5, outputPerM: 3.0 },
     context: { inputTokens: 1048576, outputTokens: 65536 },
@@ -882,8 +873,7 @@ export const MODELS = [
     name: 'Nano Banana',
     provider: 'google',
     tagline: 'Native image generation and editing',
-    description:
-      'Native image generation and editing. ~$0.039/image at 1024x1024.',
+    description: 'Native image generation and editing. ~$0.039/image at 1024x1024.',
     speedTier: getSpeedTier(4000),
     pricing: { inputPerM: 0.3, outputPerM: 30.0 },
     context: { inputTokens: 32000, outputTokens: 4096 },
@@ -906,8 +896,7 @@ export const MODELS = [
     name: 'Imagen 4 Fast',
     provider: 'google',
     tagline: 'Fast text-to-image with exceptional clarity',
-    description:
-      'Fast text-to-image. $0.02/image. Exceptional clarity up to 2K resolution.',
+    description: 'Fast text-to-image. $0.02/image. Exceptional clarity up to 2K resolution.',
     speedTier: getSpeedTier(3000),
     pricing: { inputPerM: 20.0, outputPerM: 20.0 },
     context: { inputTokens: 4000, outputTokens: 1 },
@@ -930,8 +919,7 @@ export const MODELS = [
     name: 'Imagen 4 Standard',
     provider: 'google',
     tagline: 'Best text rendering and highest quality images',
-    description:
-      'Standard text-to-image. $0.04/image. Best text rendering, highest quality.',
+    description: 'Standard text-to-image. $0.04/image. Best text rendering, highest quality.',
     speedTier: getSpeedTier(5000),
     pricing: { inputPerM: 40.0, outputPerM: 40.0 },
     context: { inputTokens: 4000, outputTokens: 1 },
@@ -978,8 +966,7 @@ export const MODELS = [
     name: 'Gemini 2.5 Flash TTS',
     provider: 'google',
     tagline: 'Text-to-speech audio generation',
-    description:
-      'Text-to-speech audio gen. $0.50 text input / $10 audio output per MTok.',
+    description: 'Text-to-speech audio gen. $0.50 text input / $10 audio output per MTok.',
     speedTier: getSpeedTier(400),
     pricing: { inputPerM: 0.5, outputPerM: 10.0 },
     context: { inputTokens: 32000, outputTokens: 16384 },
@@ -1051,8 +1038,7 @@ export const MODELS = [
     name: 'Grok 4',
     provider: 'xai',
     tagline: 'xAI flagship reasoning with built-in web and X search',
-    description:
-      'xAI flagship reasoning model. Built-in web search and X search. 256K context.',
+    description: 'xAI flagship reasoning model. Built-in web search and X search. 256K context.',
     speedTier: getSpeedTier(1500),
     pricing: { inputPerM: 3.0, outputPerM: 15.0 },
     context: { inputTokens: 256000, outputTokens: 32768 },
@@ -1074,8 +1060,7 @@ export const MODELS = [
     name: 'Grok 4.1 Fast',
     provider: 'xai',
     tagline: 'Near-frontier at ultra-low cost with 2M context',
-    description:
-      'Near-frontier at ultra-low cost. Industry-largest 2M context. $0.20/$0.50/MTok.',
+    description: 'Near-frontier at ultra-low cost. Industry-largest 2M context. $0.20/$0.50/MTok.',
     speedTier: getSpeedTier(400),
     pricing: { inputPerM: 0.2, outputPerM: 0.5 },
     context: { inputTokens: 2000000, outputTokens: 32768 },
@@ -1216,8 +1201,7 @@ export const MODELS = [
     name: 'ElevenLabs TTS Flash',
     provider: 'elevenlabs',
     tagline: 'Ultra-low latency TTS in 32 languages',
-    description:
-      'Ultra-low latency TTS (~75ms). 32 languages. $0.06/1K chars.',
+    description: 'Ultra-low latency TTS (~75ms). 32 languages. $0.06/1K chars.',
     speedTier: getSpeedTier(75),
     pricing: { inputPerM: 30.0, outputPerM: 30.0 },
     context: { inputTokens: 40000, outputTokens: 1 },
@@ -1240,8 +1224,7 @@ export const MODELS = [
     name: 'ElevenLabs TTS Multilingual',
     provider: 'elevenlabs',
     tagline: 'High quality voice generation in 32 languages',
-    description:
-      'High quality voice gen. 32 languages. $0.12/1K chars. Low latency ~250ms.',
+    description: 'High quality voice gen. 32 languages. $0.12/1K chars. Low latency ~250ms.',
     speedTier: getSpeedTier(250),
     pricing: { inputPerM: 60.0, outputPerM: 60.0 },
     context: { inputTokens: 40000, outputTokens: 1 },
@@ -1264,8 +1247,7 @@ export const MODELS = [
     name: 'ElevenLabs Scribe STT',
     provider: 'elevenlabs',
     tagline: 'Speech-to-text with 98%+ accuracy in 90+ languages',
-    description:
-      'Speech-to-text. 98%+ accuracy. 90+ languages. $0.22/hour.',
+    description: 'Speech-to-text. 98%+ accuracy. 90+ languages. $0.22/hour.',
     speedTier: getSpeedTier(2000),
     pricing: { inputPerM: 10.0, outputPerM: 10.0 },
     context: { inputTokens: 128000, outputTokens: 32000 },
@@ -1288,8 +1270,7 @@ export const MODELS = [
     name: 'ElevenLabs Music',
     provider: 'elevenlabs',
     tagline: 'Text-to-music generation',
-    description:
-      'Text-to-music generation. $0.28/minute. 5-minute duration limit.',
+    description: 'Text-to-music generation. $0.28/minute. 5-minute duration limit.',
     speedTier: getSpeedTier(10000),
     pricing: { inputPerM: 50.0, outputPerM: 50.0 },
     context: { inputTokens: 4000, outputTokens: 1 },
@@ -1312,8 +1293,7 @@ export const MODELS = [
     name: 'ElevenLabs Sound Effects',
     provider: 'elevenlabs',
     tagline: 'Text-to-sound-effects generation',
-    description:
-      'Text-to-sound-effects. $0.07/generation. Royalty-free.',
+    description: 'Text-to-sound-effects. $0.07/generation. Royalty-free.',
     speedTier: getSpeedTier(5000),
     pricing: { inputPerM: 20.0, outputPerM: 20.0 },
     context: { inputTokens: 4000, outputTokens: 1 },
@@ -1335,8 +1315,7 @@ export const MODELS = [
     name: 'ElevenLabs Voice Isolator',
     provider: 'elevenlabs',
     tagline: 'Remove background noise from audio',
-    description:
-      'Remove background noise from audio. $0.12/minute.',
+    description: 'Remove background noise from audio. $0.12/minute.',
     speedTier: getSpeedTier(3000),
     pricing: { inputPerM: 20.0, outputPerM: 20.0 },
     context: { inputTokens: 128000, outputTokens: 1 },
@@ -1356,14 +1335,7 @@ export const MODELS = [
 ];
 
 // Get all unique providers in display order
-export const PROVIDER_ORDER = [
-  'anthropic',
-  'openai',
-  'google',
-  'xai',
-  'perplexity',
-  'elevenlabs',
-];
+export const PROVIDER_ORDER = ['anthropic', 'openai', 'google', 'xai', 'perplexity', 'elevenlabs'];
 
 // Get models grouped by provider
 export function getModelsByProvider(modelList) {
@@ -1417,7 +1389,8 @@ export function isImageGenerationModel(modelId) {
 // Get models only available at a higher tier (for upgrade prompts)
 export function getUpgradeModels(currentTier) {
   if (currentTier === ACCESS_TIERS.premium) return [];
-  if (currentTier === ACCESS_TIERS.pro) return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.premium);
+  if (currentTier === ACCESS_TIERS.pro)
+    return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.premium);
   return MODELS.filter((m) => m.accessTier !== ACCESS_TIERS.free);
 }
 

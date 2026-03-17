@@ -408,14 +408,17 @@
 
 .recentItemWrapper {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .recentItem {
   display: flex;
   align-items: center;
-  width: 100%;
-  padding: 6px 12px;
-  padding-right: 28px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
   border-radius: 8px;
   color: var(--text-secondary);
   font-size: 13px;
@@ -451,22 +454,18 @@
 
 /* 3-dot menu button */
 .recentItemMenu {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
   color: var(--text-muted);
-  opacity: 0;
+  opacity: 0.4;
   transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
   cursor: pointer;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   flex-shrink: 0;
 }
 
@@ -478,11 +477,14 @@
 .recentItemWrapper:hover .recentItemMenu,
 .recentItemMenu.recentItemMenuVisible {
   opacity: 1;
+  border-color: var(--border-color);
+  background-color: var(--bg-secondary);
 }
 
 .recentItemMenu:hover {
   background-color: var(--bg-hover);
   color: var(--text-primary);
+  border-color: var(--border-color);
 }
 
 /* Dropdown menu — position: fixed + z-index set via inline style to escape overflow containers */
@@ -582,6 +584,8 @@
 /* Rename input */
 .renameWrapper {
   padding: 2px 4px;
+  flex: 1;
+  min-width: 0;
 }
 
 .renameInput {
@@ -687,20 +691,161 @@
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .collapsed .footer {
   border-top: 1px solid var(--border-color);
 }
 
+.userMenuWrapper {
+  position: relative;
+}
+
 .userSection {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
+  gap: 10px;
+  padding: 8px 10px;
   color: var(--text-secondary);
   font-size: 14px;
-  margin-bottom: 8px;
+  width: 100%;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  text-align: left;
+}
+
+.userSection:hover,
+.userSectionOpen {
+  background-color: var(--bg-hover);
+}
+
+.userAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.userAvatar svg {
+  width: 16px;
+  height: 16px;
+}
+
+.userInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.userName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.userPlan {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.userChevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.userChevron svg {
+  width: 14px;
+  height: 14px;
+}
+
+.userChevronOpen {
+  transform: rotate(180deg);
+}
+
+.userDropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
+  z-index: 100;
+  animation: userDropdownIn 0.15s ease;
+}
+
+:global([data-theme='dark']) .userDropdown {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes userDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.userDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+  text-align: left;
+}
+
+.userDropdownItem svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.userDropdownItem:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.userDropdownItem:hover svg {
+  color: var(--text-secondary);
+}
+
+.userDropdownDivider {
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 3px 8px;
 }
 
 .collapsed .userSection {

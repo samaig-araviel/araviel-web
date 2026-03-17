@@ -34,6 +34,7 @@ import {
   PlusIcon,
   ChevronLeftIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
   ChatIcon,
   UserIcon,
   SunIcon,
@@ -51,6 +52,10 @@ import {
   ArchiveIcon,
   TrashIcon,
   LinkIcon,
+  SettingsIcon,
+  HelpCircleIcon,
+  LogOutIcon,
+  UpgradePlanIcon,
 } from '../Icons';
 import ProjectPickerModal from '../ProjectPickerModal';
 import styles from './Sidebar.module.css';
@@ -148,6 +153,8 @@ export default function Sidebar() {
   const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const renameInputRef = useRef(null);
 
   const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
@@ -391,6 +398,25 @@ export default function Sidebar() {
       document.removeEventListener('keydown', handleEscape);
     };
   }, [menuOpenId, menuBtnRef, menuRef]);
+
+  // Close user menu on outside click
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [userMenuOpen]);
 
   // Focus rename input when renaming starts
   useEffect(() => {
@@ -872,9 +898,58 @@ export default function Sidebar() {
         )}
 
         <div className={styles.footer}>
-          <div className={styles.userSection}>
-            <UserIcon />
-            {showFullContent && <span>Pro User</span>}
+          <div className={styles.userMenuWrapper} ref={userMenuRef}>
+            <button
+              className={`${styles.userSection} ${userMenuOpen ? styles.userSectionOpen : ''}`}
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+            >
+              <div className={styles.userAvatar}>
+                <UserIcon />
+              </div>
+              {showFullContent && (
+                <>
+                  <div className={styles.userInfo}>
+                    <span className={styles.userName}>User</span>
+                    <span className={styles.userPlan}>Pro plan</span>
+                  </div>
+                  <span
+                    className={`${styles.userChevron} ${
+                      userMenuOpen ? styles.userChevronOpen : ''
+                    }`}
+                  >
+                    <ChevronUpIcon />
+                  </span>
+                </>
+              )}
+            </button>
+
+            {userMenuOpen && showFullContent && (
+              <div className={styles.userDropdown}>
+                <button
+                  className={styles.userDropdownItem}
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    dispatch(setActiveItem('settings'));
+                  }}
+                >
+                  <SettingsIcon />
+                  <span>Settings</span>
+                </button>
+                <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
+                  <UpgradePlanIcon />
+                  <span>Upgrade plan</span>
+                </button>
+                <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
+                  <HelpCircleIcon />
+                  <span>Help</span>
+                </button>
+                <div className={styles.userDropdownDivider} />
+                <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
+                  <LogOutIcon />
+                  <span>Log out</span>
+                </button>
+              </div>
+            )}
           </div>
           <div className={styles.themeToggle}>
             <button
