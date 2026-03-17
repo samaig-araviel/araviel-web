@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
 import {
   selectSidebarCollapsed,
   toggleSidebar,
@@ -99,7 +99,7 @@ function useDropdownPosition(menuOpenId) {
   const menuBtnRef = useRef(null);
   const menuRef = useRef(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!menuOpenId || !menuBtnRef.current) return;
     const btn = menuBtnRef.current;
     const rect = btn.getBoundingClientRect();
