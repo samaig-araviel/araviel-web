@@ -842,6 +842,15 @@
   color: var(--text-secondary);
 }
 
+.userDropdownCollapsed {
+  position: fixed;
+  bottom: auto;
+  left: 56px;
+  right: auto;
+  width: 200px;
+  bottom: 60px;
+}
+
 .userDropdownDivider {
   height: 1px;
   background-color: var(--border-color);
