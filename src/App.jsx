@@ -9,6 +9,7 @@ import ModelsView from './components/ModelsView';
 import ImageGalleryView from './components/ImageGalleryView';
 import ConversationsView from './components/ConversationsView';
 import ProjectsView from './components/ProjectsView';
+import SettingsView from './components/SettingsView';
 import './App.css';
 
 export default function App() {
@@ -44,6 +45,8 @@ export default function App() {
         <ModelsView />
       ) : activeItem === 'gallery' ? (
         <ImageGalleryView />
+      ) : activeItem === 'settings' ? (
+        <SettingsView />
       ) : (
         <MainContent />
       )}

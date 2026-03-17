@@ -923,8 +923,12 @@ export default function Sidebar() {
               )}
             </button>
 
-            {userMenuOpen && showFullContent && (
-              <div className={styles.userDropdown}>
+            {userMenuOpen && (
+              <div
+                className={`${styles.userDropdown} ${
+                  !showFullContent ? styles.userDropdownCollapsed : ''
+                }`}
+              >
                 <button
                   className={styles.userDropdownItem}
                   onClick={() => {
@@ -946,7 +950,7 @@ export default function Sidebar() {
                 <div className={styles.userDropdownDivider} />
                 <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
                   <LogOutIcon />
-                  <span>Log out</span>
+                  <span>Login / Signup</span>
                 </button>
               </div>
             )}
