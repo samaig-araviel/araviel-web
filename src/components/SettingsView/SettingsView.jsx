@@ -737,7 +737,7 @@ export default function SettingsView() {
                         </div>
                         <button
                           className={styles.planUpgradeBtn}
-                          onClick={() => dispatch(setActiveItem('home'))}
+                          onClick={() => dispatch(setActiveItem('pricing'))}
                         >
                           {creditBalance.balance?.tier === 'premium' ? 'Manage' : 'Upgrade'}
                         </button>

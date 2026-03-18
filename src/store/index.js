@@ -4,6 +4,7 @@ import sidebarReducer from './slices/sidebarSlice';
 import chatReducer from './slices/chatSlice';
 import analyticsReducer from './slices/analyticsSlice';
 import projectsReducer from './slices/projectsSlice';
+import subscriptionReducer from './slices/subscriptionSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,5 +13,6 @@ export const store = configureStore({
     chat: chatReducer,
     analytics: analyticsReducer,
     projects: projectsReducer,
+    subscription: subscriptionReducer,
   },
 });
