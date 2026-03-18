@@ -73,7 +73,7 @@ export default function PricingView() {
 
         {/* Footer Note */}
         <div className={styles.footerNote}>
-          <p>All plans include access to 6 AI providers. The Free plan has no time limit.</p>
+          <p>All plans include access to 6 AI providers.</p>
           <p>Prices shown in GBP. Cancel or change your plan anytime.</p>
         </div>
       </div>
