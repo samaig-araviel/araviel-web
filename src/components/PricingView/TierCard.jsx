@@ -1,13 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  getDisplayPrice,
-  isUpgrade,
-  isDowngrade,
-  SubscriptionTier,
-} from '../../config/subscription';
+import { getDisplayPrice, isDowngrade, SubscriptionTier } from '../../config/subscription';
 import styles from './PricingView.module.css';
 
-// Per-tier highlight features — what's NEW vs the tier below (incremental)
+// Per-tier highlight features (incremental, what's new vs previous tier)
 const TIER_HIGHLIGHTS = {
   [SubscriptionTier.Free]: {
     sectionLabel: 'Includes',
@@ -20,7 +15,7 @@ const TIER_HIGHLIGHTS = {
     limited: ['Budget models only', 'No file uploads or projects'],
   },
   [SubscriptionTier.Lite]: {
-    sectionLabel: 'Everything in Free, and',
+    sectionLabel: 'Everything in Free, and:',
     features: [
       '31 models across all 6 providers',
       'Claude Sonnet 4.5, GPT-4.1, Gemini 3 Flash',
@@ -31,11 +26,11 @@ const TIER_HIGHLIGHTS = {
     ],
   },
   [SubscriptionTier.Pro]: {
-    sectionLabel: 'Everything in Lite, and',
+    sectionLabel: 'Everything in Lite, and:',
     features: [
       '41 models including all flagships',
       'Claude Sonnet 4.6, GPT-5.2, Gemini 2.5 Pro',
-      'Thinking/reasoning mode',
+      'Thinking and reasoning mode',
       'Deep research',
       'Unlimited history, projects, and uploads',
       'Routing transparency panel',
@@ -43,7 +38,7 @@ const TIER_HIGHLIGHTS = {
     ],
   },
   [SubscriptionTier.Ultra]: {
-    sectionLabel: 'Everything in Pro, and',
+    sectionLabel: 'Everything in Pro, and:',
     features: [
       '52 models incl. Claude Opus and GPT-5.2 Pro',
       'Video generation with Sora and Veo',
@@ -53,7 +48,7 @@ const TIER_HIGHLIGHTS = {
     ],
   },
   [SubscriptionTier.Apex]: {
-    sectionLabel: 'Everything in Ultra, and',
+    sectionLabel: 'Everything in Ultra, and:',
     features: [
       'Personal API access key',
       'Custom routing profiles',
@@ -103,6 +98,44 @@ function AnimatedPrice({ value }) {
   );
 }
 
+// Thin check icon
+function CheckIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+// Thin minus/dash icon for limited features
+function MinusIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
 export default function TierCard({ tier, billingCycle, currentTier }) {
   const price = getDisplayPrice(tier, billingCycle);
   const isCurrent = currentTier === tier.id;
@@ -115,12 +148,17 @@ export default function TierCard({ tier, billingCycle, currentTier }) {
     return tier.ctaText;
   };
 
+  // Launch offer pricing for Pro
+  const hasLaunchOffer = tier.isLaunchOffer;
+  const fullPrice =
+    billingCycle === 'annual' ? tier.fullAnnualPricePerMonth : tier.fullMonthlyPrice;
+
   return (
     <div
       className={`${styles.tierCard} ${tier.highlighted ? styles.tierCardHighlighted : ''} ${
         isCurrent ? styles.tierCardCurrent : ''
       }`}
-      aria-label={`${tier.name} plan — ${price === 0 ? 'Free' : `£${price.toFixed(2)} per month`}`}
+      aria-label={`${tier.name} plan, ${price === 0 ? 'Free' : `£${price.toFixed(2)} per month`}`}
     >
       {tier.highlighted && <div className={styles.popularBadge}>Most Popular</div>}
 
@@ -130,21 +168,41 @@ export default function TierCard({ tier, billingCycle, currentTier }) {
       </div>
 
       <div className={styles.priceBlock}>
+        {hasLaunchOffer && fullPrice && (
+          <span className={styles.priceStrikethrough}>£{fullPrice.toFixed(2)}</span>
+        )}
         <AnimatedPrice value={price} />
         {tier.monthlyPrice > 0 ? (
-          <span className={styles.priceUnit}>/mo</span>
+          <span className={styles.priceUnit}>/month</span>
         ) : (
-          <div className={styles.priceFreeLabel}>Free forever</div>
+          <span className={styles.priceUnit}>Free forever</span>
         )}
       </div>
 
       {tier.monthlyPrice > 0 && (
         <div className={styles.priceSubtext}>
-          {billingCycle === 'annual' ? (
-            <>£{tier.annualTotal.toFixed(2)} billed annually</>
-          ) : (
-            <>Or £{tier.annualPricePerMonth.toFixed(2)}/mo billed annually</>
-          )}
+          {billingCycle === 'annual'
+            ? `£${tier.annualTotal.toFixed(2)} billed annually`
+            : `Or £${tier.annualPricePerMonth.toFixed(2)}/mo billed annually`}
+        </div>
+      )}
+
+      {hasLaunchOffer && (
+        <div className={styles.launchBadge}>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          Launch price for the first {tier.launchSpotsTotal} users
         </div>
       )}
 
@@ -156,68 +214,17 @@ export default function TierCard({ tier, billingCycle, currentTier }) {
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
           </svg>
           First month: 2x credits ({tier.firstMonthBonusCredits}/day)
         </div>
       )}
 
       <div className={styles.cardDivider} />
-
-      {/* Incremental features */}
-      <div className={styles.cardFeaturesSection}>
-        <div className={styles.cardFeaturesLabel}>{highlights.sectionLabel}</div>
-        <ul className={styles.featureList}>
-          {highlights.features.map((text) => (
-            <li key={text} className={styles.featureItem}>
-              <svg
-                className={styles.featureIconCheck}
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
-
-        {highlights.limited && (
-          <>
-            <div className={styles.cardLimitedLabel}>Limited access to</div>
-            <ul className={styles.featureList}>
-              {highlights.limited.map((text) => (
-                <li key={text} className={styles.featureItemLimited}>
-                  <svg
-                    className={styles.featureIconLimited}
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                  </svg>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
 
       <button
         className={`${styles.ctaButton} ${isCurrent ? styles.ctaButtonCurrent : ''} ${
@@ -228,6 +235,33 @@ export default function TierCard({ tier, billingCycle, currentTier }) {
       >
         {getCtaText()}
       </button>
+
+      {/* Incremental features */}
+      <div className={styles.cardFeaturesSection}>
+        <div className={styles.cardFeaturesLabel}>{highlights.sectionLabel}</div>
+        <ul className={styles.featureList}>
+          {highlights.features.map((text) => (
+            <li key={text} className={styles.featureItem}>
+              <CheckIcon className={styles.featureIconCheck} />
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+
+        {highlights.limited && (
+          <>
+            <div className={styles.cardLimitedLabel}>Limitations</div>
+            <ul className={styles.featureList}>
+              {highlights.limited.map((text) => (
+                <li key={text} className={styles.featureItemLimited}>
+                  <MinusIcon className={styles.featureIconLimited} />
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }

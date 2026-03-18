@@ -26,6 +26,24 @@ function getDefaultSuggestedTier(currentTier) {
   return SubscriptionTier.Pro;
 }
 
+// Thin check icon
+function CheckIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
 export default function UpgradeModal() {
   const dispatch = useDispatch();
   const show = useSelector(selectShowUpgradeModal);
@@ -56,9 +74,9 @@ export default function UpgradeModal() {
 
   const handleUpgrade = () => {
     dispatch(initiateUpgrade(suggestedTierId));
-    // Stripe integration placeholder — log intent and clear
+    // Stripe integration placeholder
     console.log(
-      `[Araveil] Upgrade initiated: ${currentTier} → ${suggestedTierId} (${billingCycle})`
+      `[Araveil] Upgrade initiated: ${currentTier} to ${suggestedTierId} (${billingCycle})`
     );
     setTimeout(() => {
       dispatch(clearUpgradeLoading());
@@ -84,12 +102,12 @@ export default function UpgradeModal() {
           {context?.reason === 'model_gated' && context?.modelName && (
             <p className={styles.contextModel}>
               <svg
-                width="16"
-                height="16"
+                width="14"
+                height="14"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="2"
+                strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               >
@@ -110,55 +128,31 @@ export default function UpgradeModal() {
           </div>
 
           <div className={styles.tierPreviewPrice}>
+            {suggestedTier.isLaunchOffer && suggestedTier.fullMonthlyPrice && (
+              <span className={styles.tierPreviewStrike}>
+                £
+                {(billingCycle === 'annual'
+                  ? suggestedTier.fullAnnualPricePerMonth
+                  : suggestedTier.fullMonthlyPrice
+                ).toFixed(2)}
+              </span>
+            )}
             <span className={styles.tierPreviewAmount}>£{price.toFixed(2)}</span>
             <span className={styles.tierPreviewUnit}>/month</span>
           </div>
 
           <ul className={styles.tierPreviewFeatures}>
             <li>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              {suggestedTier.dailyCredits} credits/day
+              <CheckIcon />
+              {suggestedTier.dailyCredits} credits per day
             </li>
             <li>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              {suggestedTier.modelCount} models across {suggestedTier.providerCount} providers
+              <CheckIcon />
+              {suggestedTier.modelCount} models, {suggestedTier.providerCount} providers
             </li>
             {suggestedTier.firstMonthBonusCredits > 0 && (
-              <li className={styles.bonusLine}>
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                </svg>
+              <li>
+                <CheckIcon />
                 First month: {suggestedTier.firstMonthBonusCredits} credits/day
               </li>
             )}

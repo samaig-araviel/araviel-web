@@ -1,4 +1,4 @@
-// Subscription tier configuration — single source of truth for all pricing display
+// Subscription tier configuration: single source of truth for all pricing display
 
 export const SubscriptionTier = {
   Free: 'free',
@@ -110,8 +110,11 @@ export const SUBSCRIPTION_TIERS = [
     name: 'Pro',
     tagline: 'Every major AI, one subscription',
     monthlyPrice: 19.99,
+    fullMonthlyPrice: 24.99, // standard price after launch
     annualPricePerMonth: 15.99,
+    fullAnnualPricePerMonth: 19.99, // standard annual price after launch
     annualTotal: 191.88,
+    fullAnnualTotal: 239.88, // standard annual total after launch
     currency: 'GBP',
     dailyCredits: 400,
     firstMonthBonusCredits: 800,
@@ -119,6 +122,8 @@ export const SUBSCRIPTION_TIERS = [
     providerCount: 6,
     highlighted: false,
     available: true,
+    isLaunchOffer: true,
+    launchSpotsTotal: 100,
     ctaText: 'Upgrade to Pro',
     modelAccess: ModelAccessLevel.Flagship,
     features: [
