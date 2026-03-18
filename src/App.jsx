@@ -10,6 +10,8 @@ import ImageGalleryView from './components/ImageGalleryView';
 import ConversationsView from './components/ConversationsView';
 import ProjectsView from './components/ProjectsView';
 import SettingsView from './components/SettingsView';
+import PricingView from './components/PricingView/PricingView';
+import UpgradeModal from './components/UpgradeModal/UpgradeModal';
 import './App.css';
 
 export default function App() {
@@ -47,9 +49,12 @@ export default function App() {
         <ImageGalleryView />
       ) : activeItem === 'settings' ? (
         <SettingsView />
+      ) : activeItem === 'pricing' ? (
+        <PricingView />
       ) : (
         <MainContent />
       )}
+      <UpgradeModal />
       <SpeedInsights />
     </div>
   );
