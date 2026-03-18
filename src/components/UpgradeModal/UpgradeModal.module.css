@@ -26,7 +26,7 @@
 .modal {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border-radius: 16px;
   padding: 28px;
   max-width: 400px;
   width: 90vw;
@@ -81,7 +81,7 @@
   padding: 20px;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: 12px;
   margin-bottom: 20px;
 }
 
@@ -91,7 +91,7 @@
 
 .tierPreviewName {
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.02em;
   margin-bottom: 2px;
@@ -105,8 +105,16 @@
 .tierPreviewPrice {
   display: flex;
   align-items: baseline;
-  gap: 3px;
+  gap: 5px;
   margin-bottom: 16px;
+}
+
+.tierPreviewStrike {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.6;
 }
 
 .tierPreviewAmount {
@@ -118,44 +126,27 @@
 
 .tierPreviewUnit {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text-muted);
 }
 
 .tierPreviewFeatures {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .tierPreviewFeatures li {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
   color: var(--text-secondary);
 }
 
 .tierPreviewFeatures li svg {
-  color: #22c55e;
+  color: var(--text-muted);
   flex-shrink: 0;
-}
-
-.bonusLine {
-  color: #d97706 !important;
-  font-weight: 600;
-}
-
-.bonusLine svg {
-  color: #d97706 !important;
-}
-
-[data-theme='dark'] .bonusLine {
-  color: #fbbf24 !important;
-}
-
-[data-theme='dark'] .bonusLine svg {
-  color: #fbbf24 !important;
 }
 
 /* ── Actions ── */
@@ -169,19 +160,17 @@
 .upgradeBtn {
   width: 100%;
   padding: 12px 20px;
-  border-radius: 12px;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   background-color: var(--text-primary);
   color: var(--bg-primary);
   border: none;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .upgradeBtn:hover {
   opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .upgradeBtn:active {
@@ -191,7 +180,6 @@
 .upgradeBtn:disabled {
   opacity: 0.6;
   cursor: wait;
-  transform: none;
 }
 
 .viewPlansBtn {
@@ -202,7 +190,7 @@
   font-weight: 600;
   color: var(--text-secondary);
   background: transparent;
-  border: 1.5px solid var(--border-color);
+  border: 1px solid var(--border-color);
   transition: all 0.15s ease;
 }
 
@@ -235,7 +223,7 @@
   }
 
   .modal {
-    border-radius: 20px 20px 0 0;
+    border-radius: 16px 16px 0 0;
     max-width: 100%;
     width: 100%;
     animation: modalSlideUp 0.3s cubic-bezier(0.2, 0, 0, 1);
