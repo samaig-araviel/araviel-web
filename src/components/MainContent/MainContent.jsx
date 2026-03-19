@@ -309,7 +309,7 @@ function createStages(status, modelName, isManualSelection) {
       status: 'pending',
       showModel: true,
     },
-    { label: 'Writing response...', status: 'pending', showModel: false },
+    { label: 'Generating response...', status: 'pending', showModel: false },
   ];
 
   if (status === 'routing') {

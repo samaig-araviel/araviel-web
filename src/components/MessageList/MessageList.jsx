@@ -101,8 +101,6 @@ hljs.registerLanguage('rs', rust);
 hljs.registerLanguage('cpp', cpp);
 hljs.registerLanguage('c', cpp);
 
-
-
 /**
  * Extract video info (provider, ID, thumbnail, embed URL) from a URL.
  * Returns null if the URL is not a recognized video link.
@@ -727,7 +725,16 @@ function extractCodeBlocksWithNames(text) {
   while ((m = codeBlockRegex.exec(text)) !== null) {
     const lang = m[1] || '';
     const code = m[2];
-    if (lang === 'chart' || lang === 'araviel-chart' || lang === 'mermaid' || lang === 'timeline' || lang === 'comparison' || lang === 'steps' || lang === 'file') continue;
+    if (
+      lang === 'chart' ||
+      lang === 'araviel-chart' ||
+      lang === 'mermaid' ||
+      lang === 'timeline' ||
+      lang === 'comparison' ||
+      lang === 'steps' ||
+      lang === 'file'
+    )
+      continue;
     if (lang === 'json' || lang === '') {
       try {
         const parsed = JSON.parse(code);
@@ -2574,11 +2581,7 @@ function ShareDropdown({ message, onClose }) {
           onClick={() => exportAs(format)}
           disabled={generating !== null}
         >
-          {generating === format ? (
-            <span className={styles.shareSpinner} />
-          ) : (
-            <Icon />
-          )}
+          {generating === format ? <span className={styles.shareSpinner} /> : <Icon />}
           <span>{label}</span>
         </button>
       ))}
@@ -2616,7 +2619,11 @@ function parseMessageToSections(content) {
       }
       i++; // skip closing ```
       // Skip special blocks (chart, mermaid, file, timeline, comparison, steps)
-      if (!['chart', 'araviel-chart', 'mermaid', 'file', 'timeline', 'comparison', 'steps'].includes(lang)) {
+      if (
+        !['chart', 'araviel-chart', 'mermaid', 'file', 'timeline', 'comparison', 'steps'].includes(
+          lang
+        )
+      ) {
         sections.push({ type: 'code', text: codeLines.join('\n'), language: lang || undefined });
       }
       continue;
@@ -2638,7 +2645,11 @@ function parseMessageToSections(content) {
         i++;
       }
       if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
-        const parseCells = (row) => row.slice(1, -1).split('|').map((c) => c.trim());
+        const parseCells = (row) =>
+          row
+            .slice(1, -1)
+            .split('|')
+            .map((c) => c.trim());
         sections.push({
           type: 'table',
           headers: parseCells(tableRows[0]),
@@ -2725,14 +2736,24 @@ function extractTablesFromContent(content) {
         i++;
       }
       if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
-        const parseCells = (row) => row.slice(1, -1).split('|').map((c) => c.trim());
+        const parseCells = (row) =>
+          row
+            .slice(1, -1)
+            .split('|')
+            .map((c) => c.trim());
         // Look for a heading above the table
         let title = null;
         for (let j = startIdx - 1; j >= Math.max(0, startIdx - 3); j--) {
           const hMatch = lines[j].match(/^#{1,6}\s+(.+)/);
-          if (hMatch) { title = hMatch[1]; break; }
+          if (hMatch) {
+            title = hMatch[1];
+            break;
+          }
           const boldMatch = lines[j].match(/^\*\*(.+)\*\*/);
-          if (boldMatch) { title = boldMatch[1]; break; }
+          if (boldMatch) {
+            title = boldMatch[1];
+            break;
+          }
         }
         tables.push({
           title,
@@ -2875,11 +2896,7 @@ function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlterna
   const fitLabel = getFitLabel(message.score);
 
   const dropdown = (
-    <div
-      className={styles.modelDropdown}
-      ref={dropdownRef}
-      style={fixedStyle || {}}
-    >
+    <div className={styles.modelDropdown} ref={dropdownRef} style={fixedStyle || {}}>
       {/* Current / chosen model */}
       <div className={styles.modelDropdownSection}>
         <span className={styles.modelDropdownSectionLabel}>Responded with</span>
@@ -3102,7 +3119,7 @@ function SubConvThinkingTimeline({ status }) {
       {status === 'streaming' && (
         <div className={`${styles.subConvTimelineStage} ${styles.subConvTimelineActive}`}>
           <span className={styles.subConvTimelinePulse} />
-          <span>Writing response...</span>
+          <span>Generating response...</span>
         </div>
       )}
     </div>
@@ -4191,21 +4208,45 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
         {current.options.map((option, idx) => (
           <button
             key={idx}
-            className={`${styles.questionOption} ${selectedAnswer === option && !isCustomActive ? styles.questionOptionSelected : ''}`}
+            className={`${styles.questionOption} ${
+              selectedAnswer === option && !isCustomActive ? styles.questionOptionSelected : ''
+            }`}
             onClick={() => handleSelectOption(option)}
           >
             <span className={styles.questionOptionNumber}>{idx + 1}</span>
             <span className={styles.questionOptionLabel}>{option}</span>
             {selectedAnswer === option && !isCustomActive && (
-              <svg className={styles.questionOptionCheck} width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path d="M11.5 4L5.5 10L2.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg
+                className={styles.questionOptionCheck}
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+              >
+                <path
+                  d="M11.5 4L5.5 10L2.5 7"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             )}
           </button>
         ))}
 
-        <div className={`${styles.questionCustom} ${isCustomActive ? styles.questionCustomActive : ''}`}>
-          <svg className={styles.questionCustomIcon} width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <div
+          className={`${styles.questionCustom} ${
+            isCustomActive ? styles.questionCustomActive : ''
+          }`}
+        >
+          <svg
+            className={styles.questionCustomIcon}
+            width="13"
+            height="13"
+            viewBox="0 0 13 13"
+            fill="none"
+          >
             <path
               d="M9.1 1.4a1.4 1.4 0 0 1 2 2L4 10.5l-2.7.7.7-2.7L9.1 1.4z"
               stroke="currentColor"
@@ -4238,14 +4279,26 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
           {total > 1 && currentIdx > 0 && (
             <button className={styles.questionNavBtn} onClick={handlePrev}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M7.5 2.5L4 6l3.5 3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
           )}
           {total > 1 && currentIdx < total - 1 && (
             <button className={styles.questionNavBtn} onClick={handleNext} disabled={!hasAnswer}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M4.5 2.5L8 6l-3.5 3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
           )}
@@ -4285,7 +4338,13 @@ function SuggestionsList({ suggestions, onSelect }) {
   );
 }
 
-function FollowUpSection({ followUps, questions, onFollowUpSelect, onQuestionsComplete, onQuestionsDismiss }) {
+function FollowUpSection({
+  followUps,
+  questions,
+  onFollowUpSelect,
+  onQuestionsComplete,
+  onQuestionsDismiss,
+}) {
   const [dismissed, setDismissed] = useState(false);
 
   const handleDismiss = useCallback(() => {
@@ -4307,17 +4366,14 @@ function FollowUpSection({ followUps, questions, onFollowUpSelect, onQuestionsCo
           onDismiss={handleDismiss}
         />
       )}
-      {hasSuggestions && (
-        <SuggestionsList suggestions={followUps} onSelect={onFollowUpSelect} />
-      )}
+      {hasSuggestions && <SuggestionsList suggestions={followUps} onSelect={onFollowUpSelect} />}
     </div>
   );
 }
 
 /**
  * Collapsible thinking block shown before assistant responses.
- * Shows routing + thinking + web search stages with a clean timeline.
- * Persists at the top of the response so users can always expand it.
+ * Premium Claude-inspired design with clean timeline and smooth animations.
  */
 function ThinkingBlock({
   thinkingData,
@@ -4340,19 +4396,23 @@ function ThinkingBlock({
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
 
-  // Build a summary label for the toggle
-  const stepsCount = 2 + (webSearchUsed ? 1 : 0);
+  const stepsCount = 2 + (webSearchUsed ? 1 : 0) + (thinkingContent ? 1 : 0);
   const summaryLabel = `Thought for ${totalDuration}s`;
+  const hasManySources = webSearchSources && webSearchSources.length > 6;
 
   return (
     <div className={styles.thinkingBlock}>
       <button
-        className={styles.thinkingToggle}
+        className={`${styles.thinkingToggle} ${isExpanded ? styles.thinkingToggleExpanded : ''}`}
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
       >
-        <span className={styles.thinkingToggleIcon}>
-          {isExpanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
+        <span
+          className={`${styles.thinkingToggleIcon} ${
+            isExpanded ? styles.thinkingToggleIconRotated : ''
+          }`}
+        >
+          <ChevronRightIcon />
         </span>
         <span className={styles.thinkingToggleLabel}>{summaryLabel}</span>
         <span className={styles.thinkingStepCount}>{stepsCount} steps</span>
@@ -4389,53 +4449,74 @@ function ThinkingBlock({
                 >
                   <GlobeIcon />
                   <span>Searched the web</span>
-                  <span className={styles.thinkingStageChevron}>
-                    {showWebSources ? <ChevronDownIcon /> : <ChevronRightIcon />}
+                  {webSearchSources && webSearchSources.length > 0 && (
+                    <span className={styles.thinkingWebSourceCount}>
+                      {webSearchSources.length} results
+                    </span>
+                  )}
+                  <span
+                    className={`${styles.thinkingStageChevron} ${
+                      showWebSources ? styles.thinkingStageChevronOpen : ''
+                    }`}
+                  >
+                    <ChevronRightIcon />
                   </span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* Web search sources detail */}
+          {/* Web search sources — scrollable card when >6 */}
           {showWebSources && webSearchSources && webSearchSources.length > 0 && (
-            <div className={styles.thinkingWebSources}>
-              {webSearchSources.map((source, idx) => {
-                let hostname = '';
-                let favicon = '';
-                try {
-                  const url = new URL(source.url);
-                  hostname = url.hostname.replace(/^www\./, '');
-                  favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
-                } catch {
-                  /* ignore */
-                }
-                return (
-                  <a
-                    key={idx}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.thinkingWebSourceItem}
-                  >
-                    {favicon && (
-                      <img src={favicon} alt="" className={styles.thinkingWebSourceFavicon} />
-                    )}
-                    <span className={styles.thinkingWebSourceTitle}>
-                      {source.title || hostname}
-                    </span>
-                    {hostname && <span className={styles.thinkingWebSourceDomain}>{hostname}</span>}
-                  </a>
-                );
-              })}
+            <div
+              className={`${styles.thinkingWebSources} ${
+                hasManySources ? styles.thinkingWebSourcesScrollable : ''
+              }`}
+            >
+              <div className={styles.thinkingWebSourcesInner}>
+                {webSearchSources.map((source, idx) => {
+                  let hostname = '';
+                  let favicon = '';
+                  try {
+                    const url = new URL(source.url);
+                    hostname = url.hostname.replace(/^www\./, '');
+                    favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
+                  } catch {
+                    /* ignore */
+                  }
+                  return (
+                    <a
+                      key={idx}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.thinkingWebSourceItem}
+                    >
+                      <span className={styles.thinkingWebSourceIconWrap}>
+                        {favicon ? (
+                          <img src={favicon} alt="" className={styles.thinkingWebSourceFavicon} />
+                        ) : (
+                          <GlobeIcon />
+                        )}
+                      </span>
+                      <span className={styles.thinkingWebSourceTitle}>
+                        {source.title || hostname}
+                      </span>
+                      {hostname && (
+                        <span className={styles.thinkingWebSourceDomain}>{hostname}</span>
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
             </div>
           )}
 
-          {/* Stage 3: Thinking */}
+          {/* Stage 3: Thinking with model */}
           <div className={styles.thinkingStage}>
             <div className={styles.thinkingDotLine}>
               <span className={styles.thinkingStageDotComplete} />
-              <span className={styles.thinkingVerticalLine} />
+              {thinkingContent ? <span className={styles.thinkingVerticalLine} /> : null}
             </div>
             <div className={styles.thinkingStageContent}>
               <span className={styles.thinkingStageLabel}>
@@ -4468,13 +4549,27 @@ function ThinkingBlock({
             </div>
           )}
 
-          {/* Stage 4: Response written */}
+          {/* Final: Done indicator */}
           <div className={`${styles.thinkingStage} ${styles.thinkingStageLast}`}>
             <div className={styles.thinkingDotLine}>
-              <span className={styles.thinkingStageDotComplete} />
+              <span className={styles.thinkingStageDotDone} />
             </div>
             <div className={styles.thinkingStageContent}>
-              <span className={styles.thinkingStageLabel}>Wrote response</span>
+              <span className={styles.thinkingStageLabelDone}>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Done
+              </span>
             </div>
           </div>
         </div>
