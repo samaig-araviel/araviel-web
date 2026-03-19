@@ -186,181 +186,115 @@ const MOOD_OPTIONS = [
   { id: 'calm', label: 'Calm', desc: 'Relaxed and at ease' },
 ];
 
+import { promptsData, quickPromptKeys } from '../../utils/quickPromptsData';
+
+// SVG icon components for cloud providers
+function GoogleDriveIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8.5 2L1 15h7l7.5-13z" />
+      <path d="M15.5 2L23 15H8.5" />
+      <path d="M1 15l3.5 7h15l3.5-7" />
+    </svg>
+  );
+}
+
+function OneDriveIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+    </svg>
+  );
+}
+
+function SharePointIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="12" cy="8" r="5" />
+      <circle cx="7" cy="16" r="4" />
+      <circle cx="17" cy="16" r="4" />
+    </svg>
+  );
+}
+
+function DropboxIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 2L5.5 6 12 10 18.5 6z" />
+      <path d="M5.5 6L12 10 5.5 14 12 18" />
+      <path d="M18.5 6L12 10 18.5 14 12 18" />
+    </svg>
+  );
+}
+
+const CLOUD_PROVIDER_ICONS = {
+  'google-drive': GoogleDriveIcon,
+  onedrive: OneDriveIcon,
+  sharepoint: SharePointIcon,
+  dropbox: DropboxIcon,
+};
+
 // Cloud storage providers for file import
 const CLOUD_PROVIDERS = [
   {
     id: 'google-drive',
     name: 'Google Drive',
-    color: '#4285F4',
-    icon: '📁',
     pickerUrl: 'https://drive.google.com/file/d/',
   },
   {
     id: 'onedrive',
     name: 'OneDrive',
-    color: '#0078D4',
-    icon: '☁️',
     pickerUrl: 'https://onedrive.live.com/picker',
   },
   {
     id: 'sharepoint',
     name: 'SharePoint',
-    color: '#038387',
-    icon: '🏢',
     pickerUrl: null,
   },
   {
     id: 'dropbox',
     name: 'Dropbox',
-    color: '#0061FF',
-    icon: '💧',
-    pickerUrl: null,
-  },
-  {
-    id: 'box',
-    name: 'Box',
-    color: '#0061D5',
-    icon: '📦',
     pickerUrl: null,
   },
 ];
 
-const promptsData = {
-  code: {
-    title: 'Code',
-    icon: CodeIcon,
-    items: [
-      {
-        text: 'Help me debug this error: "TypeError: Cannot read properties of undefined" in my React component',
-        icon: BugIcon,
-      },
-      {
-        text: 'Write a Python function that takes a CSV file and returns a cleaned pandas DataFrame with duplicates removed and missing values handled',
-        icon: CodeIcon,
-      },
-      {
-        text: 'Explain how JavaScript closures work with a practical example I can use in my project',
-        icon: LightbulbIcon,
-      },
-      {
-        text: 'Review my API endpoint for performance bottlenecks and suggest optimizations for handling 10k+ concurrent requests',
-        icon: ZapIcon,
-      },
-    ],
-  },
-  write: {
-    title: 'Write',
-    icon: PenIcon,
-    items: [
-      {
-        text: 'Draft a professional email to my team announcing a new project timeline with key milestones and deadlines',
-        icon: MailIcon,
-      },
-      {
-        text: 'Summarize this 2000-word article into a concise 3-paragraph executive brief with key takeaways',
-        icon: FileTextIcon,
-      },
-      {
-        text: 'Write compelling landing page copy for a SaaS product that helps teams collaborate on design projects',
-        icon: CopyIcon,
-      },
-      {
-        text: 'Create comprehensive API documentation for a REST endpoint with request/response examples and error codes',
-        icon: ClipboardIcon,
-      },
-    ],
-  },
-  research: {
-    title: 'Research',
-    icon: SearchIcon,
-    items: [
-      {
-        text: 'Research the latest advancements in large language models from the past 6 months and summarize the key breakthroughs',
-        icon: SearchIcon,
-      },
-      {
-        text: 'Compare React, Vue, and Svelte for building a large-scale enterprise dashboard — pros, cons, and performance benchmarks',
-        icon: LayersIcon,
-      },
-      {
-        text: 'Analyze the current AI startup landscape: top funded companies, emerging trends, and market opportunities in 2026',
-        icon: TrendingUpIcon,
-      },
-      {
-        text: 'Compile a research brief on the environmental impact of cloud computing with statistics and recent studies',
-        icon: ClipboardIcon,
-      },
-    ],
-  },
-  analyze: {
-    title: 'Analyze',
-    icon: ChartIcon,
-    items: [
-      {
-        text: 'Analyze this dataset of customer churn rates and identify the top 5 factors driving customer attrition',
-        icon: EyeIcon,
-      },
-      {
-        text: 'Find patterns in my monthly sales data and predict trends for the next quarter using statistical methods',
-        icon: PuzzleIcon,
-      },
-      {
-        text: 'Generate actionable business insights from our user engagement metrics — what should we prioritize next?',
-        icon: LightbulbIcon,
-      },
-      {
-        text: 'Create a comprehensive competitive analysis report comparing our product features against our top 3 competitors',
-        icon: ClipboardIcon,
-      },
-    ],
-  },
-  create: {
-    title: 'Create',
-    icon: SparkleIcon,
-    items: [
-      {
-        text: 'Generate 10 creative startup ideas that combine AI with healthcare to solve real-world problems',
-        icon: LightbulbIcon,
-      },
-      {
-        text: 'Design a modern, accessible dashboard layout for a project management tool with dark mode support',
-        icon: PuzzleIcon,
-      },
-      {
-        text: 'Build a prototype specification for a mobile app that helps users track their daily habits and productivity',
-        icon: LayersIcon,
-      },
-      {
-        text: 'Create a comprehensive content calendar for a tech blog with 12 article ideas, titles, and brief outlines',
-        icon: SparkleIcon,
-      },
-    ],
-  },
-  learn: {
-    title: 'Learn',
-    icon: BookIcon,
-    items: [
-      {
-        text: 'Explain how neural networks learn through backpropagation — use simple analogies and build up to the math',
-        icon: LightbulbIcon,
-      },
-      {
-        text: 'Teach me about distributed systems architecture: CAP theorem, consistency models, and real-world trade-offs',
-        icon: BookIcon,
-      },
-      {
-        text: 'Break down how Git branching strategies work — compare GitFlow, trunk-based development, and GitHub Flow',
-        icon: LayersIcon,
-      },
-      {
-        text: 'Quiz me on data structures and algorithms — start with medium difficulty and adjust based on my answers',
-        icon: HelpCircleIcon,
-      },
-    ],
-  },
-};
-
-const quickPromptKeys = ['code', 'write', 'research', 'analyze', 'create', 'learn'];
+// promptsData and quickPromptKeys imported from ../../utils/quickPromptsData
 
 // Timeline stage factory
 function createStages(status, modelName, isManualSelection) {
@@ -2505,27 +2439,24 @@ export default function MainContent() {
                             <span>Back</span>
                           </button>
                           <div className={styles.submenuLabel}>Cloud Storage</div>
-                          {CLOUD_PROVIDERS.map((provider) => (
-                            <button
-                              key={provider.id}
-                              className={styles.cloudProviderOption}
-                              onClick={() => handleCloudProviderClick(provider)}
-                            >
-                              <span
-                                className={styles.cloudProviderIcon}
-                                style={{
-                                  backgroundColor: provider.color + '15',
-                                  color: provider.color,
-                                }}
+                          {CLOUD_PROVIDERS.map((provider) => {
+                            const ProviderIcon = CLOUD_PROVIDER_ICONS[provider.id];
+                            return (
+                              <button
+                                key={provider.id}
+                                className={styles.cloudProviderOption}
+                                onClick={() => handleCloudProviderClick(provider)}
                               >
-                                {provider.icon}
-                              </span>
-                              <span className={styles.cloudProviderName}>{provider.name}</span>
-                              <span className={styles.cloudProviderArrow}>
-                                <ExternalLinkIcon />
-                              </span>
-                            </button>
-                          ))}
+                                <span className={styles.cloudProviderIcon}>
+                                  {ProviderIcon && <ProviderIcon />}
+                                </span>
+                                <span className={styles.cloudProviderName}>{provider.name}</span>
+                                <span className={styles.cloudProviderArrow}>
+                                  <ExternalLinkIcon />
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
                       ) : showMoodSubmenu ? (
                         <div className={styles.attachSubmenu}>
@@ -2700,18 +2631,23 @@ export default function MainContent() {
 
           {!hasMessages && activeDropdown && currentPromptData && (
             <div className={styles.promptsDropdown} ref={dropdownRef}>
-              <div className={styles.dropdownHeader}>
-                <div className={styles.dropdownTitleWrapper}>
-                  <currentPromptData.icon />
-                  <span className={styles.dropdownTitle}>{currentPromptData.title}</span>
-                </div>
-                <button
-                  className={styles.dropdownClose}
-                  onClick={handleCloseDropdown}
-                  aria-label="Close"
-                >
-                  <CloseIcon />
-                </button>
+              <div className={styles.promptsTabs}>
+                {quickPromptKeys.map((key) => {
+                  const tabData = promptsData[key];
+                  const TabIcon = tabData.icon;
+                  return (
+                    <button
+                      key={key}
+                      className={`${styles.promptsTab} ${
+                        activeDropdown === key ? styles.promptsTabActive : ''
+                      }`}
+                      onClick={() => setActiveDropdown(key)}
+                    >
+                      <TabIcon />
+                      <span>{tabData.title}</span>
+                    </button>
+                  );
+                })}
               </div>
               <div className={styles.promptsList}>
                 {currentPromptData.items.map((item, index) => {

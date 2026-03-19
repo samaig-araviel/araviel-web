@@ -110,14 +110,9 @@
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
   letter-spacing: 0.01em;
-}
-
-[data-theme='dark'] .saveBadge {
-  background-color: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
 }
 
 /* ═══════════════════════════════════════════════
@@ -629,10 +624,8 @@
   border-right: 1px solid var(--border-color);
 }
 
-.tableSection:last-child {
+.tableSection:last-of-type {
   border-bottom: 1px solid var(--border-color);
-  border-radius: 0 0 14px 14px;
-  overflow: hidden;
 }
 
 .tableSectionHeader {
@@ -727,6 +720,77 @@
   font-size: 12.5px;
   font-weight: 500;
   text-align: center;
+}
+
+/* ── Table Footer CTA Row ── */
+
+.tableFooter {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: 0;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 14px 14px;
+  background-color: var(--bg-secondary);
+}
+
+.tableFooterLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.tableFooterCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tableFooterBtn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tableFooterBtn:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+.tableFooterBtnCurrent {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tableFooterBtnCurrent:hover {
+  background-color: var(--bg-primary);
+  border-color: var(--border-color);
+}
+
+.tableFooterBtnUpgrade {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  border-color: var(--bg-icon-button);
+}
+
+.tableFooterBtnUpgrade:hover {
+  opacity: 0.88;
+  background-color: var(--bg-icon-button);
+  border-color: var(--bg-icon-button);
+}
+
+.tableFooterBtnDowngrade {
+  color: var(--text-muted);
+  border-color: var(--border-color);
 }
 
 /* ═══════════════════════════════════════════════

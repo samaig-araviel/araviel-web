@@ -10,6 +10,9 @@ import {
   setProjectsLoading,
 } from '../../store/slices/projectsSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { showUpgradeModal } from '../../store/slices/subscriptionSlice';
+import { getProjectLimit, getNextTier } from '../../config/subscription';
+import { getUserTier } from '../../data/models';
 import {
   createNewChat,
   setInputValue,
@@ -884,6 +887,24 @@ export default function ProjectsView() {
 
   // Handlers
   const handleCreate = async (data) => {
+    const currentTier = getUserTier();
+    const limit = getProjectLimit(currentTier);
+    const activeProjects = projects.filter((p) => !p.is_archived).length;
+
+    if (activeProjects >= limit) {
+      const suggestedTier = getNextTier(currentTier);
+      dispatch(
+        showUpgradeModal({
+          reason: 'feature_gated',
+          suggestedTier,
+          message: `You've reached the limit of ${limit} project${limit === 1 ? '' : 's'} on the ${
+            currentTier.charAt(0).toUpperCase() + currentTier.slice(1)
+          } plan.`,
+        })
+      );
+      return;
+    }
+
     const result = await createProjectApi(data);
     const newProject = result.project || result;
     dispatch(addProject(newProject));
