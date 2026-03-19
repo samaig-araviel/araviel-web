@@ -601,6 +601,15 @@ export default function ConversationsView() {
               reasoning: m.reasoning,
             })),
             thinkingContent: msg.thinkingContent,
+            thinkingData: {
+              routingDuration: msg.adeLatencyMs ? (msg.adeLatencyMs / 1000).toFixed(1) : '0.0',
+              thinkingDuration: msg.thinkingDurationMs
+                ? (msg.thinkingDurationMs / 1000).toFixed(1)
+                : '0.0',
+              totalDuration: msg.latencyMs
+                ? ((msg.latencyMs + (msg.adeLatencyMs || 0)) / 1000).toFixed(1)
+                : '0.0',
+            },
             citations: msg.citations,
             usage: msg.usage,
             costUsd: msg.costUsd,

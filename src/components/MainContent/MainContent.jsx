@@ -993,6 +993,7 @@ export default function MainContent() {
       let assistantMsgAdded = false;
       let accumulatedContent = '';
       let accumulatedThinking = '';
+      let thinkingPhaseStart = null;
       let accumulatedImages = null;
       let receivedDone = false;
       let routeInfo = null;
@@ -1116,11 +1117,22 @@ export default function MainContent() {
               dispatch(addMessage(assistantMsg));
               assistantMsgAdded = true;
             } else if (type === 'thinking') {
+              if (!thinkingPhaseStart) thinkingPhaseStart = Date.now();
               accumulatedThinking += data.content || '';
               if (assistantMsgAdded) {
                 dispatch(updateLastMessage({ thinkingContent: accumulatedThinking }));
               }
             } else if (type === 'delta') {
+              // On first content delta, snapshot the client-side thinking duration
+              if (thinkingPhaseStart && assistantMsgAdded) {
+                const clientThinkingSec = ((Date.now() - thinkingPhaseStart) / 1000).toFixed(1);
+                dispatch(
+                  updateLastMessage({
+                    thinkingData: { thinkingDuration: clientThinkingSec },
+                  })
+                );
+                thinkingPhaseStart = null; // Only compute once
+              }
               setPipelineStatus('writing');
               accumulatedContent += data.content || '';
               setStreamedText(accumulatedContent);
@@ -1181,6 +1193,10 @@ export default function MainContent() {
             } else if (type === 'done') {
               receivedDone = true;
               const totalDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
+              // Use authoritative thinking duration from backend (ms → seconds)
+              const thinkingSec = data.thinkingDurationMs
+                ? (data.thinkingDurationMs / 1000).toFixed(1)
+                : '0.0';
               if (assistantMsgAdded) {
                 dispatch(
                   updateLastMessage({
@@ -1190,7 +1206,7 @@ export default function MainContent() {
                     adeLatencyMs: data.adeLatencyMs,
                     thinkingData: {
                       routingDuration: ((data.adeLatencyMs || 0) / 1000).toFixed(1),
-                      thinkingDuration: '0.0',
+                      thinkingDuration: thinkingSec,
                       totalDuration,
                     },
                   })
