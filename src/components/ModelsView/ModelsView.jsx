@@ -15,6 +15,7 @@ import {
   formatTokens,
 } from '../../data/models';
 import { CloseIcon, SearchIcon, CheckIcon, FilterIcon, ChevronDownIcon } from '../Icons';
+import { updateUserTier } from '../../services/credits';
 import styles from './ModelsView.module.css';
 
 // ── Helpers ──
@@ -24,29 +25,29 @@ const TIER_CONFIG = {
     label: 'Included',
     sublabel: 'Available on all plans',
   },
+  [ACCESS_TIERS.lite]: {
+    label: 'Lite',
+    sublabel: 'Unlock with Lite plan',
+  },
   [ACCESS_TIERS.pro]: {
     label: 'Pro',
     sublabel: 'Unlock with Pro plan',
   },
-  [ACCESS_TIERS.premium]: {
-    label: 'Premium',
-    sublabel: 'Unlock with Premium plan',
-  },
 };
 
-const TIER_ORDER = [ACCESS_TIERS.free, ACCESS_TIERS.pro, ACCESS_TIERS.premium];
+const TIER_ORDER = [ACCESS_TIERS.free, ACCESS_TIERS.lite, ACCESS_TIERS.pro];
 
 // Which tier is "next" for upsell
 const NEXT_TIER = {
-  [ACCESS_TIERS.free]: ACCESS_TIERS.pro,
-  [ACCESS_TIERS.pro]: ACCESS_TIERS.premium,
-  [ACCESS_TIERS.premium]: null,
+  [ACCESS_TIERS.free]: ACCESS_TIERS.lite,
+  [ACCESS_TIERS.lite]: ACCESS_TIERS.pro,
+  [ACCESS_TIERS.pro]: null,
 };
 
 const TIER_DISPLAY = {
   [ACCESS_TIERS.free]: 'Free',
+  [ACCESS_TIERS.lite]: 'Lite',
   [ACCESS_TIERS.pro]: 'Pro',
-  [ACCESS_TIERS.premium]: 'Premium',
 };
 
 // ── Sub-components ──
@@ -72,12 +73,12 @@ function CapabilityDot({ supported, label }) {
   );
 }
 
-function ProBadge() {
-  return <span className={styles.proBadge}>PRO</span>;
+function LiteBadge() {
+  return <span className={styles.proBadge}>LITE</span>;
 }
 
-function PremiumBadge() {
-  return <span className={styles.premiumBadge}>PREMIUM</span>;
+function ProBadge() {
+  return <span className={styles.premiumBadge}>PRO</span>;
 }
 
 // ── Selected Model Pill (top of page) ──
@@ -269,8 +270,8 @@ function ModelCard({ model, isSelected, isLocked, onSelect }) {
                 {model.badge}
               </span>
             )}
+            {isLocked && model.accessTier === ACCESS_TIERS.lite && <LiteBadge />}
             {isLocked && model.accessTier === ACCESS_TIERS.pro && <ProBadge />}
-            {isLocked && model.accessTier === ACCESS_TIERS.premium && <PremiumBadge />}
           </div>
         </div>
 
@@ -399,24 +400,24 @@ function UpgradeBanner({ currentTier, lockedCount }) {
   if (!nextTier || lockedCount === 0) return null;
 
   const nextLabel = TIER_DISPLAY[nextTier];
-  const isPro = nextTier === ACCESS_TIERS.pro;
+  const isLiteUpgrade = nextTier === ACCESS_TIERS.lite;
 
   return (
     <div
       className={`${styles.upgradeBanner} ${
-        isPro ? styles.upgradeBannerPro : styles.upgradeBannerPremium
+        isLiteUpgrade ? styles.upgradeBannerPro : styles.upgradeBannerPremium
       }`}
     >
       <div className={styles.upgradeBannerGlow} />
       <div className={styles.upgradeBannerContent}>
         <div className={styles.upgradeBannerText}>
-          <span className={styles.upgradeBannerIcon}>{isPro ? '✦' : '◆'}</span>
+          <span className={styles.upgradeBannerIcon}>{isLiteUpgrade ? '✦' : '◆'}</span>
           <div>
             <h3 className={styles.upgradeBannerTitle}>
               Unlock {lockedCount} more model{lockedCount !== 1 ? 's' : ''} with {nextLabel}
             </h3>
             <p className={styles.upgradeBannerDesc}>
-              {isPro
+              {isLiteUpgrade
                 ? 'Access Claude Sonnet, GPT-5, Gemini 2.5 Pro, and more powerful models for deeper reasoning and richer outputs.'
                 : 'Get the most powerful models including Claude Opus, GPT-5.2 Pro, Sora 2, and deep research capabilities.'}
             </p>
@@ -485,8 +486,8 @@ function ModelDetailPanel({ model, isSelected, isLocked, userTier, onSetModel, o
             </span>
           )}
           {isSelected && <span className={styles.detailSelectedBadge}>Selected Model</span>}
+          {isLocked && model.accessTier === ACCESS_TIERS.lite && <LiteBadge />}
           {isLocked && model.accessTier === ACCESS_TIERS.pro && <ProBadge />}
-          {isLocked && model.accessTier === ACCESS_TIERS.premium && <PremiumBadge />}
         </div>
 
         {/* Description */}
@@ -597,10 +598,14 @@ export default function ModelsView() {
   const searchRef = useRef(null);
   const [userTier, setUserTier] = useState(getUserTier());
 
-  // Dev tier switcher handler
+  // Dev tier switcher handler — syncs to localStorage, backend, and notifies other components
   const handleTierChange = useCallback((tier) => {
     localStorage.setItem('araviel-user-tier', tier);
     setUserTier(tier);
+    // Notify other components (Sidebar, etc.) of the tier change
+    window.dispatchEvent(new Event('araviel-tier-changed'));
+    // Sync tier to backend credit system (fire-and-forget)
+    updateUserTier(tier).catch(() => {});
   }, []);
 
   // Single unified action: set the model (Redux + localStorage)
@@ -646,8 +651,8 @@ export default function ModelsView() {
   // Check if a model is accessible for the current tier
   const isAccessible = useCallback(
     (model) => {
-      if (userTier === ACCESS_TIERS.premium) return true;
-      if (userTier === ACCESS_TIERS.pro) return model.accessTier !== ACCESS_TIERS.premium;
+      if (userTier === ACCESS_TIERS.pro) return true;
+      if (userTier === ACCESS_TIERS.lite) return model.accessTier !== ACCESS_TIERS.pro;
       return model.accessTier === ACCESS_TIERS.free;
     },
     [userTier]
@@ -778,8 +783,8 @@ export default function ModelsView() {
                     <span className={styles.sectionCount}>{availableModels.length}</span>
                   </div>
                   <span className={styles.sectionSublabel}>
-                    {userTier === ACCESS_TIERS.premium
-                      ? 'All models included with Premium'
+                    {userTier === ACCESS_TIERS.pro
+                      ? 'All models included with Pro'
                       : `Included with your ${TIER_DISPLAY[userTier]} plan`}
                   </span>
                 </div>
