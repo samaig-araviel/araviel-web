@@ -2814,6 +2814,7 @@ function getEstimatedCost(modelId) {
  */
 function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlternate, triggerRef }) {
   const dropdownRef = useRef(null);
+  const [fixedStyle, setFixedStyle] = useState(null);
   const providerData = message.provider ? PROVIDERS[message.provider] : null;
   const LogoComponent = message.provider ? getProviderLogo(message.provider) : null;
   const alternates = message.alternateModels || [];
@@ -2839,12 +2840,45 @@ function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlterna
     };
   }, [onClose, triggerRef]);
 
+  // Position with fixed coordinates, clamped to viewport
+  useEffect(() => {
+    if (!triggerRef?.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const dropdownHeight = 260;
+    const dropdownWidth = 340;
+    const pad = 8;
+
+    let top;
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    if (position === 'above' && spaceAbove >= dropdownHeight + pad) {
+      top = rect.top - dropdownHeight - pad;
+    } else if (spaceBelow >= dropdownHeight + pad) {
+      top = rect.bottom + pad;
+    } else if (spaceAbove > spaceBelow) {
+      top = Math.max(pad, rect.top - dropdownHeight - pad);
+    } else {
+      top = rect.bottom + pad;
+    }
+
+    // Clamp vertically
+    top = Math.max(pad, Math.min(top, window.innerHeight - dropdownHeight - pad));
+
+    // Horizontal: align to left of trigger, clamp to viewport
+    let left = rect.left;
+    left = Math.max(pad, Math.min(left, window.innerWidth - dropdownWidth - pad));
+
+    setFixedStyle({ position: 'fixed', top, left, zIndex: 10000 });
+  }, [triggerRef, position]);
+
   const fitLabel = getFitLabel(message.score);
 
-  return (
+  const dropdown = (
     <div
-      className={`${styles.modelDropdown} ${position === 'above' ? styles.modelDropdownAbove : ''}`}
+      className={styles.modelDropdown}
       ref={dropdownRef}
+      style={fixedStyle || {}}
     >
       {/* Current / chosen model */}
       <div className={styles.modelDropdownSection}>
@@ -2931,6 +2965,8 @@ function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlterna
       )}
     </div>
   );
+
+  return createPortal(dropdown, document.body);
 }
 
 /**
