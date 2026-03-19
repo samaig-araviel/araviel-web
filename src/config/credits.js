@@ -2,8 +2,8 @@
 
 export const TIER_CREDITS = {
   free: 5,
-  pro: 50,
-  premium: 200,
+  lite: 50,
+  pro: 200,
 };
 
 export const IMAGE_QUALITY_COSTS = {

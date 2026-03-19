@@ -15,6 +15,7 @@ const CACHE_TTL = 30_000; // 30 seconds
 // Limits per tier per 24 hours
 const TIER_LIMITS = {
   free: 2,
+  lite: 5,
   pro: 10,
 };
 

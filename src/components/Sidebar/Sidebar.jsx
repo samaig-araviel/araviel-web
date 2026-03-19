@@ -30,6 +30,7 @@ import {
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
+import { getUserTier } from '../../data/models';
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -167,8 +168,16 @@ export default function Sidebar() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userTier, setUserTier] = useState(getUserTier());
   const userMenuRef = useRef(null);
   const renameInputRef = useRef(null);
+
+  // Listen for tier changes (from DevTierSwitcher or other sources)
+  useEffect(() => {
+    const handleTierChanged = () => setUserTier(getUserTier());
+    window.addEventListener('araviel-tier-changed', handleTierChanged);
+    return () => window.removeEventListener('araviel-tier-changed', handleTierChanged);
+  }, []);
 
   const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
 
@@ -923,7 +932,7 @@ export default function Sidebar() {
                 <>
                   <div className={styles.userInfo}>
                     <span className={styles.userName}>User</span>
-                    <span className={styles.userPlan}>Pro plan</span>
+                    <span className={styles.userPlan}>{userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan</span>
                   </div>
                   <span
                     className={`${styles.userChevron} ${
@@ -952,6 +961,18 @@ export default function Sidebar() {
                   <SettingsIcon />
                   <span>Settings</span>
                 </button>
+                {userTier !== 'pro' && (
+                  <button
+                    className={styles.userDropdownItem}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      dispatch(setActiveItem('settings'));
+                    }}
+                  >
+                    <UpgradePlanIcon />
+                    <span>Upgrade plan</span>
+                  </button>
+                )}
                 <button
                   className={styles.userDropdownItem}
                   onClick={() => {
