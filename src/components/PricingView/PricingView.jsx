@@ -1,11 +1,14 @@
 import { useSelector, useDispatch } from 'react-redux';
+import { useEffect } from 'react';
 import {
   selectCurrentTier,
   selectBillingCycle,
   setBillingCycle,
+  setCurrentTier,
 } from '../../store/slices/subscriptionSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { getAvailableTiers } from '../../config/subscription';
+import { getUserTier } from '../../data/models';
 import BillingToggle from './BillingToggle';
 import TierCard from './TierCard';
 import FeatureComparisonTable from './FeatureComparisonTable';
@@ -16,6 +19,14 @@ export default function PricingView() {
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
   const tiers = getAvailableTiers();
+
+  // Sync Redux tier with localStorage on mount and on tier-change events
+  useEffect(() => {
+    const syncTier = () => dispatch(setCurrentTier(getUserTier()));
+    syncTier();
+    window.addEventListener('araviel-tier-changed', syncTier);
+    return () => window.removeEventListener('araviel-tier-changed', syncTier);
+  }, [dispatch]);
 
   return (
     <div className={styles.container}>
