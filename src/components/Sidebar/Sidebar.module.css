@@ -713,8 +713,8 @@
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
-  color: var(--bg-primary);
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
+  color: var(--text-icon-button);
+  background-color: var(--bg-icon-button);
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -722,9 +722,9 @@
 }
 
 .upgradeBtn:hover {
-  filter: brightness(1.1);
+  opacity: 0.88;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .upgradeBtn:active {
