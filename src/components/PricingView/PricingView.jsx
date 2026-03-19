@@ -69,7 +69,7 @@ export default function PricingView() {
         </div>
 
         {/* Feature Comparison Table */}
-        <FeatureComparisonTable currentTier={currentTier} billingCycle={billingCycle} />
+        <FeatureComparisonTable currentTier={currentTier} />
 
         {/* Footer Note */}
         <div className={styles.footerNote}>

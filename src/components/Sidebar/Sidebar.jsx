@@ -920,6 +920,31 @@ export default function Sidebar() {
         )}
 
         <div className={styles.footer}>
+          {/* Upgrade button - visible for users not on highest available tier */}
+          {userTier !== 'pro' && (
+            <button
+              className={`${styles.upgradeBtn} ${
+                !showFullContent ? styles.upgradeBtnCollapsed : ''
+              }`}
+              onClick={() => dispatch(setActiveItem('pricing'))}
+              title="Upgrade your plan"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              {showFullContent && <span>Upgrade Plan</span>}
+            </button>
+          )}
+
           <div className={styles.userMenuWrapper} ref={userMenuRef}>
             <button
               className={`${styles.userSection} ${userMenuOpen ? styles.userSectionOpen : ''}`}
@@ -932,7 +957,9 @@ export default function Sidebar() {
                 <>
                   <div className={styles.userInfo}>
                     <span className={styles.userName}>User</span>
-                    <span className={styles.userPlan}>{userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan</span>
+                    <span className={styles.userPlan}>
+                      {userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan
+                    </span>
                   </div>
                   <span
                     className={`${styles.userChevron} ${
