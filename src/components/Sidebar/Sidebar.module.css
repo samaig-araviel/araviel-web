@@ -700,6 +700,55 @@
   border-top: 1px solid var(--border-color);
 }
 
+/* ── Upgrade Button ── */
+
+.upgradeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bg-primary);
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 50%, #5b21b6 100%);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.upgradeBtn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.3);
+}
+
+.upgradeBtn:active {
+  transform: translateY(0);
+}
+
+.upgradeBtn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
+.upgradeBtnCollapsed {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.upgradeBtnCollapsed span {
+  display: none;
+}
+
 .userMenuWrapper {
   position: relative;
 }
