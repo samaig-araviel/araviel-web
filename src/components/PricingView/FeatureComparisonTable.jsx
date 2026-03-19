@@ -1,5 +1,11 @@
 import { useState, useMemo } from 'react';
-import { FeatureCategory, COMPARISON_FEATURES, getAvailableTiers } from '../../config/subscription';
+import {
+  FeatureCategory,
+  COMPARISON_FEATURES,
+  getAvailableTiers,
+  isUpgrade,
+  isDowngrade,
+} from '../../config/subscription';
 import styles from './PricingView.module.css';
 
 const CATEGORIES = [
@@ -240,6 +246,29 @@ export default function FeatureComparisonTable({ currentTier }) {
             </div>
           );
         })}
+
+        {/* Footer CTA row */}
+        <div className={styles.tableFooter}>
+          <div className={styles.tableFooterLabel}>Ready to upgrade?</div>
+          {tiers.map((tier) => {
+            const isCurrent = currentTier === tier.id;
+            const isUp = currentTier && isUpgrade(currentTier, tier.id);
+            const isDown = currentTier && isDowngrade(currentTier, tier.id);
+            return (
+              <div key={tier.id} className={styles.tableFooterCell}>
+                <button
+                  className={`${styles.tableFooterBtn} ${
+                    isCurrent ? styles.tableFooterBtnCurrent : ''
+                  } ${isUp ? styles.tableFooterBtnUpgrade : ''}
+                  ${isDown ? styles.tableFooterBtnDowngrade : ''}`}
+                  disabled={isCurrent}
+                >
+                  {isCurrent ? 'Current Plan' : isDown ? 'Downgrade' : `Go ${tier.name}`}
+                </button>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

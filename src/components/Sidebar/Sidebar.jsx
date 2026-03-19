@@ -780,40 +780,42 @@ export default function Sidebar() {
                       <ul className={styles.recentsList}>
                         {group.items.map((chat) => (
                           <li key={chat.id} className={styles.recentItemWrapper}>
-                            {renamingId === chat.id ? (
-                              <div className={styles.renameWrapper}>
-                                <input
-                                  ref={renameInputRef}
-                                  className={styles.renameInput}
-                                  value={renameValue}
-                                  onChange={(e) => setRenameValue(e.target.value)}
-                                  onKeyDown={(e) => handleRenameKeyDown(e, chat.id)}
-                                  onBlur={() => handleRenameSubmit(chat.id)}
-                                />
-                              </div>
-                            ) : (
+                            <div className={styles.recentItemRow}>
+                              {renamingId === chat.id ? (
+                                <div className={styles.renameWrapper}>
+                                  <input
+                                    ref={renameInputRef}
+                                    className={styles.renameInput}
+                                    value={renameValue}
+                                    onChange={(e) => setRenameValue(e.target.value)}
+                                    onKeyDown={(e) => handleRenameKeyDown(e, chat.id)}
+                                    onBlur={() => handleRenameSubmit(chat.id)}
+                                  />
+                                </div>
+                              ) : (
+                                <button
+                                  className={`${styles.recentItem} ${
+                                    currentChatId === chat.id ? styles.recentItemActive : ''
+                                  }`}
+                                  onClick={() => handleChatClick(chat.id)}
+                                >
+                                  {chat.isReported && (
+                                    <span className={styles.reportedDot} title="Reported" />
+                                  )}
+                                  <span>{chat.title}</span>
+                                </button>
+                              )}
                               <button
-                                className={`${styles.recentItem} ${
-                                  currentChatId === chat.id ? styles.recentItemActive : ''
+                                ref={menuOpenId === chat.id ? menuBtnRef : null}
+                                className={`${styles.recentItemMenu} ${
+                                  menuOpenId === chat.id ? styles.recentItemMenuVisible : ''
                                 }`}
-                                onClick={() => handleChatClick(chat.id)}
+                                onClick={(e) => handleMenuToggle(e, chat.id)}
+                                aria-label="Chat options"
                               >
-                                {chat.isReported && (
-                                  <span className={styles.reportedDot} title="Reported" />
-                                )}
-                                <span>{chat.title}</span>
+                                <MoreVerticalIcon />
                               </button>
-                            )}
-                            <button
-                              ref={menuOpenId === chat.id ? menuBtnRef : null}
-                              className={`${styles.recentItemMenu} ${
-                                menuOpenId === chat.id ? styles.recentItemMenuVisible : ''
-                              }`}
-                              onClick={(e) => handleMenuToggle(e, chat.id)}
-                              aria-label="Chat options"
-                            >
-                              <MoreVerticalIcon />
-                            </button>
+                            </div>
                             {menuOpenId === chat.id && (
                               <div
                                 ref={menuRef}
@@ -920,31 +922,6 @@ export default function Sidebar() {
         )}
 
         <div className={styles.footer}>
-          {/* Upgrade button - visible for users not on highest available tier */}
-          {userTier !== 'pro' && (
-            <button
-              className={`${styles.upgradeBtn} ${
-                !showFullContent ? styles.upgradeBtnCollapsed : ''
-              }`}
-              onClick={() => dispatch(setActiveItem('pricing'))}
-              title="Upgrade your plan"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
-              {showFullContent && <span>Upgrade Plan</span>}
-            </button>
-          )}
-
           <div className={styles.userMenuWrapper} ref={userMenuRef}>
             <button
               className={`${styles.userSection} ${userMenuOpen ? styles.userSectionOpen : ''}`}
@@ -996,7 +973,7 @@ export default function Sidebar() {
                   }}
                 >
                   <UpgradePlanIcon />
-                  <span>Plans & Pricing</span>
+                  <span>Upgrade Plan</span>
                 </button>
                 <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
                   <HelpCircleIcon />

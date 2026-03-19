@@ -50,8 +50,9 @@ export const SUBSCRIPTION_TIERS = [
       { name: 'Manual model selection', value: false, category: FeatureCategory.Models },
       { name: 'ADE routing', value: 'Basic', category: FeatureCategory.ADE },
       { name: 'Routing transparency', value: false, category: FeatureCategory.ADE },
-      { name: 'Chat history', value: '3 days', category: FeatureCategory.Features },
-      { name: 'Projects', value: false, category: FeatureCategory.Features },
+      { name: 'Chat history', value: '3-day rolling', category: FeatureCategory.Features },
+      { name: 'Projects', value: '1 project', category: FeatureCategory.Features },
+      { name: 'Conversations per project', value: '5', category: FeatureCategory.Features },
       { name: 'File uploads', value: false, category: FeatureCategory.Features },
       { name: 'Web search', value: 'Basic (Sonar)', category: FeatureCategory.Features },
       { name: 'Image generation', value: 'Basic', category: FeatureCategory.Features },
@@ -93,8 +94,9 @@ export const SUBSCRIPTION_TIERS = [
       { name: 'Manual model selection', value: true, category: FeatureCategory.Models },
       { name: 'ADE routing', value: 'Full (cost-optimised)', category: FeatureCategory.ADE },
       { name: 'Routing transparency', value: false, category: FeatureCategory.ADE },
-      { name: 'Chat history', value: '30 days', category: FeatureCategory.Features },
-      { name: 'Projects', value: '3 projects', category: FeatureCategory.Features },
+      { name: 'Chat history', value: '30-day rolling', category: FeatureCategory.Features },
+      { name: 'Projects', value: '4 projects', category: FeatureCategory.Features },
+      { name: 'Conversations per project', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'File uploads', value: '3 per conversation', category: FeatureCategory.Features },
       { name: 'Web search', value: 'Full', category: FeatureCategory.Features },
       { name: 'Image generation', value: 'Premium', category: FeatureCategory.Features },
@@ -143,6 +145,7 @@ export const SUBSCRIPTION_TIERS = [
       { name: 'Routing transparency', value: true, category: FeatureCategory.ADE },
       { name: 'Chat history', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'Projects', value: 'Unlimited', category: FeatureCategory.Features },
+      { name: 'Conversations per project', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'File uploads', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'Web search', value: 'Full + Sonar Pro', category: FeatureCategory.Features },
       { name: 'Image generation', value: 'Premium', category: FeatureCategory.Features },
@@ -182,6 +185,7 @@ export const SUBSCRIPTION_TIERS = [
       { name: 'Routing transparency', value: true, category: FeatureCategory.ADE },
       { name: 'Chat history', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'Projects', value: 'Unlimited', category: FeatureCategory.Features },
+      { name: 'Conversations per project', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'File uploads', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'Web search', value: 'Full + Sonar Pro', category: FeatureCategory.Features },
       { name: 'Image generation', value: 'Premium + Video', category: FeatureCategory.Features },
@@ -221,6 +225,7 @@ export const SUBSCRIPTION_TIERS = [
       { name: 'Routing transparency', value: true, category: FeatureCategory.ADE },
       { name: 'Chat history', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'Projects', value: 'Unlimited', category: FeatureCategory.Features },
+      { name: 'Conversations per project', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'File uploads', value: 'Unlimited', category: FeatureCategory.Features },
       { name: 'Web search', value: 'Full + Sonar Pro', category: FeatureCategory.Features },
       { name: 'Image generation', value: 'Premium + Video', category: FeatureCategory.Features },
@@ -273,6 +278,7 @@ export const COMPARISON_FEATURES = [
   // Features
   { name: 'Chat history', category: FeatureCategory.Features },
   { name: 'Projects', category: FeatureCategory.Features },
+  { name: 'Conversations per project', category: FeatureCategory.Features },
   { name: 'File uploads', category: FeatureCategory.Features },
   { name: 'Web search', category: FeatureCategory.Features },
   { name: 'Image generation', category: FeatureCategory.Features },
@@ -298,4 +304,30 @@ export function isUpgrade(fromTier, toTier) {
 
 export function isDowngrade(fromTier, toTier) {
   return TIER_ORDER.indexOf(toTier) < TIER_ORDER.indexOf(fromTier);
+}
+
+// Project limits by tier
+const PROJECT_LIMITS = {
+  [SubscriptionTier.Free]: 1,
+  [SubscriptionTier.Lite]: 4,
+  [SubscriptionTier.Pro]: Infinity,
+  [SubscriptionTier.Ultra]: Infinity,
+  [SubscriptionTier.Apex]: Infinity,
+};
+
+export function getProjectLimit(tierId) {
+  return PROJECT_LIMITS[tierId] ?? 1;
+}
+
+// Next tier for upgrade suggestions
+const NEXT_TIER_MAP = {
+  [SubscriptionTier.Free]: SubscriptionTier.Lite,
+  [SubscriptionTier.Lite]: SubscriptionTier.Pro,
+  [SubscriptionTier.Pro]: null,
+  [SubscriptionTier.Ultra]: null,
+  [SubscriptionTier.Apex]: null,
+};
+
+export function getNextTier(tierId) {
+  return NEXT_TIER_MAP[tierId] ?? null;
 }
