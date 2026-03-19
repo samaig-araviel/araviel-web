@@ -2199,6 +2199,8 @@ function UpgradeHint({ upgradeHint }) {
     upgradeHint.recommendedModel.reasoning ||
     `This model would provide a more detailed and accurate response for your query.`;
 
+  const tierLabel = upgradeHint.targetTier === 'pro' ? 'Pro' : 'Lite';
+
   // Look up the full model data
   const fullModel = MODELS.find((m) => m.id === modelId || m.name === modelName);
   const providerData = fullModel?.provider ? PROVIDERS[fullModel.provider] : null;
@@ -2227,7 +2229,7 @@ function UpgradeHint({ upgradeHint }) {
           </span>
         </div>
         <div className={styles.upgradeBannerActions}>
-          <button className={styles.upgradeBannerButton}>Upgrade</button>
+          <button className={styles.upgradeBannerButton}>Upgrade to {tierLabel}</button>
           <button
             className={styles.upgradeBannerDismiss}
             onClick={() => setDismissed(true)}
@@ -3639,21 +3641,23 @@ function UpgradePill({ upgradeHint }) {
   const fullModel = MODELS.find((m) => m.id === modelId || m.name === modelName);
   const providerData = fullModel?.provider ? PROVIDERS[fullModel.provider] : null;
   const accentColor = providerData?.accentColor || '#d4a574';
+  const tierLabel = upgradeHint.targetTier === 'pro' ? 'Pro' : 'Lite';
 
   return (
     <>
       <button
         className={styles.upgradePill}
         onClick={() => setShowPopup(true)}
-        title={`Try ${modelName} — Upgrade to Pro`}
+        title={`Try ${modelName} — Upgrade to ${tierLabel}`}
         style={{ '--upgrade-accent': accentColor }}
       >
-        <span className={styles.upgradePillLabel}>Go Pro</span>
+        <span className={styles.upgradePillLabel}>Go {tierLabel}</span>
       </button>
       {showPopup && fullModel && (
         <UpgradePopup
           model={fullModel}
           reason={reason}
+          targetTier={upgradeHint.targetTier}
           onClose={() => setShowPopup(false)}
           isDark={isDark}
         />
@@ -3666,7 +3670,7 @@ function UpgradePill({ upgradeHint }) {
  * Delightful upgrade popup — shown when clicking the upgrade pill.
  * Elegant card with model branding, warm Araviel aesthetics, and compelling CTA.
  */
-function UpgradePopup({ model, reason, onClose, isDark }) {
+function UpgradePopup({ model, reason, targetTier, onClose, isDark }) {
   const popupRef = useRef(null);
   const providerData = model?.provider ? PROVIDERS[model.provider] : null;
   const LogoComponent = model?.provider ? getProviderLogo(model.provider) : null;
@@ -3694,17 +3698,26 @@ function UpgradePopup({ model, reason, onClose, isDark }) {
 
   if (!model) return null;
 
+  const isPro = targetTier === 'pro';
+  const tierLabel = isPro ? 'Pro' : 'Lite';
+
   const accentColor = providerData?.accentColor || '#d4a574';
   const accentBg = isDark ? providerData?.accentBgDark : providerData?.accentBg;
   const accentText = isDark
     ? providerData?.accentTextDark || providerData?.accentColor
     : providerData?.accentText;
 
-  const features = [
-    { label: 'All premium models', desc: 'Access every model in the catalog' },
-    { label: 'Priority routing', desc: 'Faster queue times and optimized paths' },
-    { label: 'Higher limits', desc: 'Extended usage with generous quotas' },
-  ];
+  const features = isPro
+    ? [
+        { label: 'All models', desc: 'Access every model in the catalog' },
+        { label: 'Priority routing', desc: 'Faster queue times and optimized paths' },
+        { label: 'Higher limits', desc: 'Extended usage with generous quotas' },
+      ]
+    : [
+        { label: 'More models', desc: 'Access mid-tier and balanced models' },
+        { label: 'Smarter routing', desc: 'Better model selection for your prompts' },
+        { label: 'More credits', desc: 'More daily credits for your conversations' },
+      ];
 
   return createPortal(
     <div className={styles.upgradeOverlay} onClick={onClose}>
@@ -3809,7 +3822,7 @@ function UpgradePopup({ model, reason, onClose, isDark }) {
         {/* CTA footer */}
         <div className={styles.upgradePopupFooter}>
           <div className={styles.upgradePopupPricing}>
-            <span className={styles.upgradePopupPrice}>$20</span>
+            <span className={styles.upgradePopupPrice}>{isPro ? '$20' : '$8'}</span>
             <span className={styles.upgradePopupPeriod}>/month</span>
           </div>
           <button
@@ -3819,7 +3832,7 @@ function UpgradePopup({ model, reason, onClose, isDark }) {
             }}
           >
             <SparkleIcon />
-            Upgrade to Pro
+            Upgrade to {tierLabel}
           </button>
         </div>
       </div>

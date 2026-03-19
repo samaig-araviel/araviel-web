@@ -27,8 +27,8 @@
 // Access tiers
 export const ACCESS_TIERS = {
   free: 'free',
+  lite: 'lite',
   pro: 'pro',
-  premium: 'premium',
 };
 
 export const PROVIDERS = {
@@ -144,7 +144,7 @@ export const MODELS = [
     },
     bestFor: ['Complex reasoning', 'Coding', 'Agentic workflows', 'Creative writing'],
     badge: 'Flagship',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 22,
   },
   {
@@ -167,7 +167,7 @@ export const MODELS = [
     },
     bestFor: ['Complex reasoning', 'Long-form coding', 'Agentic workflows', 'Research & analysis'],
     badge: null,
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 22,
   },
   {
@@ -190,7 +190,7 @@ export const MODELS = [
     },
     bestFor: ['Coding', 'Agentic tasks', 'Default model', 'Balanced workloads'],
     badge: 'New Default',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 14,
   },
   {
@@ -213,7 +213,7 @@ export const MODELS = [
     },
     bestFor: ['Coding', 'Agentic tasks', 'Balanced workloads'],
     badge: null,
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 14,
   },
   {
@@ -285,7 +285,7 @@ export const MODELS = [
     },
     bestFor: ['Coding', 'Reasoning', 'Math', 'Agentic tasks'],
     badge: 'Flagship',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 10,
   },
   {
@@ -309,7 +309,7 @@ export const MODELS = [
     },
     bestFor: ['Research', 'Math', 'Frontier problems'],
     badge: 'Max Power',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 50,
   },
   {
@@ -333,7 +333,7 @@ export const MODELS = [
     },
     bestFor: ['Reasoning', 'Coding', 'General tasks'],
     badge: null,
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 8,
   },
   {
@@ -402,7 +402,7 @@ export const MODELS = [
     },
     bestFor: ['Long documents', 'Tool use', 'Instruction following'],
     badge: '1M Context',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 8,
   },
   {
@@ -470,7 +470,7 @@ export const MODELS = [
     },
     bestFor: ['Voice apps', 'Multimodal tasks', 'Creative work'],
     badge: 'Audio',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 8,
   },
   {
@@ -515,7 +515,7 @@ export const MODELS = [
     },
     bestFor: ['Complex code generation', 'Multi-file refactors', 'Agentic coding'],
     badge: 'Best for Code',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 10,
   },
   {
@@ -561,7 +561,7 @@ export const MODELS = [
     },
     bestFor: ['Deep research', 'Multi-step analysis', 'Web browsing'],
     badge: 'Deep Research',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 30,
   },
   {
@@ -583,7 +583,7 @@ export const MODELS = [
     },
     bestFor: ['Research', 'Analysis', 'Budget deep research'],
     badge: 'Deep Research',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 15,
   },
   {
@@ -607,7 +607,7 @@ export const MODELS = [
     },
     bestFor: ['Image creation', 'Image editing', 'Visual design'],
     badge: 'Image Gen',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 8,
   },
   {
@@ -654,7 +654,7 @@ export const MODELS = [
     },
     bestFor: ['Video creation', 'Cinematic content', 'Visual storytelling'],
     badge: 'Video Gen',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 30,
   },
   {
@@ -677,7 +677,7 @@ export const MODELS = [
     },
     bestFor: ['Voice narration', 'Accessibility', 'Audio content'],
     badge: 'TTS',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 6,
   },
   {
@@ -700,7 +700,7 @@ export const MODELS = [
     },
     bestFor: ['Transcription', 'Speech-to-text'],
     badge: 'STT',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 4,
   },
   {
@@ -724,7 +724,7 @@ export const MODELS = [
     },
     bestFor: ['Voice agents', 'Low-latency audio', 'Realtime conversation'],
     badge: 'Realtime',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 20,
   },
 
@@ -749,7 +749,7 @@ export const MODELS = [
     },
     bestFor: ['Multilingual', 'Multimodal', 'Reasoning', 'Coding'],
     badge: 'Flagship',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 10,
   },
   {
@@ -771,7 +771,7 @@ export const MODELS = [
     },
     bestFor: ['Fast tasks', 'Multilingual', 'Multimodal', 'Long context'],
     badge: null,
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 3,
   },
   {
@@ -794,7 +794,7 @@ export const MODELS = [
     },
     bestFor: ['Long documents', 'Multimodal tasks', 'Translation', 'Research'],
     badge: null,
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 8,
   },
   {
@@ -865,7 +865,7 @@ export const MODELS = [
     },
     bestFor: ['Image generation', 'Image editing'],
     badge: 'Image Gen',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 8,
   },
   {
@@ -934,7 +934,7 @@ export const MODELS = [
     },
     bestFor: ['Highest quality images', 'Text rendering', 'Visual content'],
     badge: 'Image Gen',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 8,
   },
   {
@@ -958,7 +958,7 @@ export const MODELS = [
     },
     bestFor: ['Video creation', 'Cinematic content', 'High-fidelity video'],
     badge: 'Video Gen',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 30,
   },
   {
@@ -981,7 +981,7 @@ export const MODELS = [
     },
     bestFor: ['Text-to-speech', 'Multilingual voice'],
     badge: 'TTS',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 6,
   },
   {
@@ -1005,7 +1005,7 @@ export const MODELS = [
     },
     bestFor: ['Voice agents', 'Low-latency audio', 'Multilingual voice'],
     badge: 'Realtime',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 15,
   },
   {
@@ -1028,7 +1028,7 @@ export const MODELS = [
     },
     bestFor: ['Deep research', 'Analysis', 'Citations', 'Comprehensive reports'],
     badge: 'Deep Research',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 35,
   },
 
@@ -1052,7 +1052,7 @@ export const MODELS = [
     },
     bestFor: ['Research', 'Real-time data', 'Reasoning', 'X search'],
     badge: 'Web Search',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 14,
   },
   {
@@ -1145,7 +1145,7 @@ export const MODELS = [
     },
     bestFor: ['Research', 'Fact-checking', 'Current events', 'Market analysis'],
     badge: 'Web Search',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 18,
   },
   {
@@ -1168,7 +1168,7 @@ export const MODELS = [
     },
     bestFor: ['Reasoning + search', 'Fact-checking', 'Complex analysis'],
     badge: 'Reasoning',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 14,
   },
   {
@@ -1191,7 +1191,7 @@ export const MODELS = [
     },
     bestFor: ['Expert research', 'Comprehensive reports', 'Citations'],
     badge: 'Deep Research',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 35,
   },
 
@@ -1216,7 +1216,7 @@ export const MODELS = [
     },
     bestFor: ['Ultra-low latency TTS', 'Voice cloning', 'Multilingual voice'],
     badge: 'TTS',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 6,
   },
   {
@@ -1239,7 +1239,7 @@ export const MODELS = [
     },
     bestFor: ['Premium voice', 'Voice cloning', 'Multilingual TTS'],
     badge: 'TTS',
-    accessTier: ACCESS_TIERS.premium,
+    accessTier: ACCESS_TIERS.pro,
     creditCost: 10,
   },
   {
@@ -1262,7 +1262,7 @@ export const MODELS = [
     },
     bestFor: ['Transcription', 'Multilingual STT'],
     badge: 'STT',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 4,
   },
   {
@@ -1285,7 +1285,7 @@ export const MODELS = [
     },
     bestFor: ['Music generation'],
     badge: 'Music Gen',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 10,
   },
   {
@@ -1307,7 +1307,7 @@ export const MODELS = [
     },
     bestFor: ['Sound effects', 'Audio generation'],
     badge: 'SFX',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 4,
   },
   {
@@ -1329,7 +1329,7 @@ export const MODELS = [
     },
     bestFor: ['Noise removal', 'Voice isolation', 'Audio processing'],
     badge: 'Audio',
-    accessTier: ACCESS_TIERS.pro,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 4,
   },
 ];
@@ -1366,8 +1366,8 @@ export function getUserTier() {
 
 // Get models available for a specific access tier
 export function getModelsForTier(tier) {
-  if (tier === ACCESS_TIERS.premium) return MODELS;
-  if (tier === ACCESS_TIERS.pro) return MODELS.filter((m) => m.accessTier !== ACCESS_TIERS.premium);
+  if (tier === ACCESS_TIERS.pro) return MODELS;
+  if (tier === ACCESS_TIERS.lite) return MODELS.filter((m) => m.accessTier !== ACCESS_TIERS.pro);
   return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.free);
 }
 
@@ -1375,8 +1375,8 @@ export function getModelsForTier(tier) {
 export function isModelAccessible(modelId, tier) {
   const model = MODELS.find((m) => m.id === modelId);
   if (!model) return false;
-  if (tier === ACCESS_TIERS.premium) return true;
-  if (tier === ACCESS_TIERS.pro) return model.accessTier !== ACCESS_TIERS.premium;
+  if (tier === ACCESS_TIERS.pro) return true;
+  if (tier === ACCESS_TIERS.lite) return model.accessTier !== ACCESS_TIERS.pro;
   return model.accessTier === ACCESS_TIERS.free;
 }
 
@@ -1388,9 +1388,9 @@ export function isImageGenerationModel(modelId) {
 
 // Get models only available at a higher tier (for upgrade prompts)
 export function getUpgradeModels(currentTier) {
-  if (currentTier === ACCESS_TIERS.premium) return [];
-  if (currentTier === ACCESS_TIERS.pro)
-    return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.premium);
+  if (currentTier === ACCESS_TIERS.pro) return [];
+  if (currentTier === ACCESS_TIERS.lite)
+    return MODELS.filter((m) => m.accessTier === ACCESS_TIERS.pro);
   return MODELS.filter((m) => m.accessTier !== ACCESS_TIERS.free);
 }
 

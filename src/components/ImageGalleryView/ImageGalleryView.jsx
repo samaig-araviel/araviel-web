@@ -381,8 +381,8 @@ export default function ImageGalleryView() {
             <span className={styles.usagePillBadge}>
               {creditBalance?.tier === 'pro'
                 ? 'PRO'
-                : creditBalance?.tier === 'premium'
-                ? 'PREMIUM'
+                : creditBalance?.tier === 'lite'
+                ? 'LITE'
                 : 'FREE'}
             </span>
           </div>

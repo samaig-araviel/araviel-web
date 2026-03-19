@@ -729,8 +729,8 @@ export default function SettingsView() {
                           </span>
                           <span className={styles.planDesc}>
                             {creditBalance.balance?.tier === 'free' && '5 image credits per month'}
-                            {creditBalance.balance?.tier === 'pro' && '50 image credits per month'}
-                            {creditBalance.balance?.tier === 'premium' &&
+                            {creditBalance.balance?.tier === 'lite' && '50 image credits per month'}
+                            {creditBalance.balance?.tier === 'pro' &&
                               '200 image credits per month'}
                             {!creditBalance.balance?.tier && '5 image credits per month'}
                           </span>
@@ -739,7 +739,7 @@ export default function SettingsView() {
                           className={styles.planUpgradeBtn}
                           onClick={() => dispatch(setActiveItem('home'))}
                         >
-                          {creditBalance.balance?.tier === 'premium' ? 'Manage' : 'Upgrade'}
+                          {creditBalance.balance?.tier === 'pro' ? 'Manage' : 'Upgrade'}
                         </button>
                       </div>
                     </div>
