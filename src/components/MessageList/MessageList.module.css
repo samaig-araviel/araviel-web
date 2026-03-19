@@ -329,6 +329,20 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
   animation: webSearchDropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.webSearchSourcesDropdown::-webkit-scrollbar {
+  width: 4px;
+}
+
+.webSearchSourcesDropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.webSearchSourcesDropdown::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
 }
 
 @keyframes webSearchDropdownIn {
@@ -1910,7 +1924,9 @@
 }
 
 @keyframes shareSpinnerSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ===== Follow-Up Section (Questions + Suggestions) ===== */
@@ -2282,10 +2298,10 @@
   }
 }
 
-/* ===== Thinking Block (Claude-style collapsible) ===== */
+/* ===== Thinking Block (Premium Claude-inspired collapsible) ===== */
 .thinkingBlock {
-  margin-bottom: 14px;
-  animation: thinkingBlockFadeIn 0.3s ease;
+  margin-bottom: 16px;
+  animation: thinkingBlockFadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes thinkingBlockFadeIn {
@@ -2302,37 +2318,45 @@
 .thinkingToggle {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px 4px 4px;
+  gap: 5px;
+  padding: 5px 12px 5px 4px;
   border-radius: 8px;
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
-  color: var(--text-muted);
-  transition: all 0.15s ease;
+  color: var(--text-secondary);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
 }
 
 .thinkingToggle:hover {
   background-color: var(--bg-secondary);
-  color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.thinkingToggleExpanded {
+  color: var(--text-primary);
 }
 
 .thinkingToggleIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  color: var(--text-muted);
-  transition: transform 0.2s ease;
+  width: 20px;
+  height: 20px;
+  color: inherit;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thinkingToggleIconRotated {
+  transform: rotate(90deg);
 }
 
 .thinkingToggleIcon svg {
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
 }
 
 .thinkingToggleLabel {
@@ -2340,46 +2364,46 @@
 }
 
 .thinkingStepCount {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 500;
   color: var(--text-muted);
-  opacity: 0.6;
-  margin-left: 2px;
+  opacity: 0.55;
+  margin-left: 4px;
 }
 
 .thinkingDetails {
   display: flex;
   flex-direction: column;
-  margin-top: 6px;
-  margin-left: 9px;
+  margin-top: 8px;
+  margin-left: 10px;
   padding-left: 0;
-  animation: thinkingDetailsSlide 0.25s ease;
+  animation: thinkingDetailsReveal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-@keyframes thinkingDetailsSlide {
+@keyframes thinkingDetailsReveal {
   from {
     opacity: 0;
-    max-height: 0;
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
-    max-height: 200px;
+    transform: translateY(0);
   }
 }
 
 .thinkingStage {
   display: flex;
-  gap: 10px;
-  min-height: 32px;
+  gap: 12px;
+  min-height: 34px;
 }
 
 .thinkingDotLine {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 12px;
+  width: 14px;
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: 6px;
 }
 
 .thinkingStageDot {
@@ -2388,26 +2412,39 @@
   height: 7px;
   border-radius: 50%;
   background-color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.4;
   flex-shrink: 0;
 }
 
 .thinkingStageDotComplete {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background-color: #22c55e;
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.85;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.12);
+}
+
+.thinkingStageDotDone {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  flex-shrink: 0;
+  opacity: 0.85;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.12);
 }
 
 .thinkingVerticalLine {
   display: block;
-  width: 1px;
+  width: 0;
   flex: 1;
   min-height: 14px;
-  border-left: 2px dotted var(--border-color);
+  border-left: 1.5px dashed var(--border-color);
+  opacity: 0.6;
 }
 
 .thinkingStageLast .thinkingVerticalLine {
@@ -2420,54 +2457,72 @@
   gap: 8px;
   flex: 1;
   min-width: 0;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 }
 
 .thinkingStageLast .thinkingStageContent {
-  padding-bottom: 0;
+  padding-bottom: 2px;
 }
 
 .thinkingStageLabel {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12.5px;
-  font-weight: 450;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-secondary);
-  line-height: 1.3;
+  line-height: 1.4;
+}
+
+.thinkingStageLabelDone {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #22c55e;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.thinkingStageLabelDone svg {
+  width: 12px;
+  height: 12px;
 }
 
 .thinkingStageDuration {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .thinkingModelBadge {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 1px 7px;
-  border-radius: 5px;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 6px;
   font-size: 11.5px;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
   vertical-align: middle;
+  letter-spacing: 0.01em;
 }
 
 /* Web search button inside thinking timeline */
 .thinkingStageWebSearch {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 0;
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   transition: color 0.15s ease;
@@ -2479,39 +2534,84 @@
 }
 
 .thinkingStageWebSearch svg {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+
+.thinkingWebSourceCount {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .thinkingStageChevron {
   display: flex;
   align-items: center;
-  transition: transform 0.2s ease;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thinkingStageChevronOpen {
+  transform: rotate(90deg);
 }
 
 .thinkingStageChevron svg {
   width: 11px;
   height: 11px;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
-/* Web sources list inside thinking block */
+/* Web sources list inside thinking block — card style */
 .thinkingWebSources {
+  margin-left: 26px;
+  margin-bottom: 6px;
+  padding: 4px 0;
+  animation: thinkingDetailsReveal 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thinkingWebSourcesScrollable {
+  max-height: 260px;
+  overflow: hidden;
+}
+
+.thinkingWebSourcesScrollable .thinkingWebSourcesInner {
+  max-height: 260px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.thinkingWebSourcesScrollable .thinkingWebSourcesInner::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thinkingWebSourcesScrollable .thinkingWebSourcesInner::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thinkingWebSourcesScrollable .thinkingWebSourcesInner::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+}
+
+.thinkingWebSourcesInner {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-left: 22px;
-  margin-bottom: 4px;
-  padding: 6px 0;
-  animation: thinkingDetailsSlide 0.2s ease;
+  gap: 1px;
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
 }
 
 .thinkingWebSourceItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 10px;
-  border-radius: 7px;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
   text-decoration: none;
   transition: background-color 0.15s ease;
 }
@@ -2520,27 +2620,45 @@
   background-color: var(--bg-hover);
 }
 
-.thinkingWebSourceFavicon {
+.thinkingWebSourceIconWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.thinkingWebSourceIconWrap svg {
   width: 14px;
   height: 14px;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.thinkingWebSourceFavicon {
+  width: 16px;
+  height: 16px;
   border-radius: 3px;
   flex-shrink: 0;
 }
 
 .thinkingWebSourceTitle {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--text-secondary);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 .thinkingWebSourceDomain {
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--text-muted);
   flex-shrink: 0;
+  opacity: 0.7;
 }
 
 /* Timeline wrapper */
@@ -4140,14 +4258,18 @@
   }
 
   .thinkingBlock {
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   .thinkingToggle {
-    font-size: 12px;
+    font-size: 12.5px;
   }
 
   .thinkingStageLabel {
+    font-size: 12px;
+  }
+
+  .thinkingStageLabelDone {
     font-size: 12px;
   }
 
@@ -4157,6 +4279,18 @@
 
   .thinkingModelBadge {
     font-size: 11px;
+  }
+
+  .thinkingWebSources {
+    margin-left: 20px;
+  }
+
+  .thinkingWebSourcesScrollable {
+    max-height: 200px;
+  }
+
+  .thinkingWebSourcesScrollable .thinkingWebSourcesInner {
+    max-height: 200px;
   }
 
   .userPromptCard {
@@ -5012,22 +5146,38 @@
 
 /* ===== Thinking Content (real AI reasoning text) ===== */
 .thinkingContentBlock {
-  margin: 8px 0 8px 22px;
-  padding: 10px 14px;
+  margin: 4px 0 8px 26px;
+  padding: 12px 16px;
   border-left: 2px solid var(--border-color);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 10px 10px 0;
   background-color: var(--bg-secondary);
+  animation: thinkingDetailsReveal 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .thinkingContentText {
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--text-muted);
   font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 300px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.thinkingContentText::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thinkingContentText::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thinkingContentText::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
 }
 
 /* ===== Citations Section ===== */

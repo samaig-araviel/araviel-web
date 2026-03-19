@@ -8,10 +8,10 @@ import styles from './ThinkingTimeline.module.css';
 /**
  * Stage status: 'pending' | 'active' | 'complete'
  *
- * ThinkingTimeline shows 3 stages:
+ * ThinkingTimeline shows 3 stages during streaming:
  *  1. Routing to optimal model...
  *  2. Thinking with [Model Name]...
- *  3. Writing response...
+ *  3. Generating response...
  */
 export default function ThinkingTimeline({ stages, modelName, provider, fading }) {
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -41,6 +41,7 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading }
         const isActive = stage.status === 'active';
         const isComplete = stage.status === 'complete';
         const isPending = stage.status === 'pending';
+        const isLast = index === stages.length - 1;
 
         return (
           <div
@@ -49,24 +50,11 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading }
               isComplete ? styles.complete : ''
             } ${isPending ? styles.pending : ''}`}
           >
-            <div className={styles.stageIndicator}>
-              {isComplete && (
-                <svg
-                  className={styles.checkIcon}
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-              )}
+            <div className={styles.dotLine}>
+              {isComplete && <span className={styles.dotComplete} />}
               {isActive && <span className={styles.pulse} />}
               {isPending && <span className={styles.dot} />}
+              {!isLast && <span className={styles.verticalLine} />}
             </div>
 
             <div className={styles.stageContent}>
@@ -83,7 +71,7 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading }
                           : providerData.accentText,
                       }}
                     >
-                      <LogoComponent size={13} />
+                      <LogoComponent size={12} />
                       {modelName}
                     </span>
                   </span>
