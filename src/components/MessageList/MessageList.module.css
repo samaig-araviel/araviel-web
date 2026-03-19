@@ -3697,10 +3697,6 @@
 
 /* ===== Model Pill Dropdown ===== */
 .modelDropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 200;
   min-width: 300px;
   max-width: 380px;
   background-color: var(--bg-primary);
@@ -3709,12 +3705,6 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
   animation: modelDropdownIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
-}
-
-.modelDropdownAbove {
-  top: auto;
-  bottom: calc(100% + 8px);
-  animation: modelDropdownInAbove 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 [data-theme='dark'] .modelDropdown {

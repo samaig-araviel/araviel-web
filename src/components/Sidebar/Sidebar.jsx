@@ -104,27 +104,40 @@ function useDropdownPosition(menuOpenId) {
     const btn = menuBtnRef.current;
     const rect = btn.getBoundingClientRect();
     const menuHeight = 220;
+    const menuWidth = 180;
+    const pad = 8;
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    const openUpward = spaceBelow < menuHeight + 8 && spaceAbove > spaceBelow;
+    const openUpward = spaceBelow < menuHeight + pad && spaceAbove > spaceBelow;
 
-    // Use fixed positioning so the dropdown escapes overflow-y: auto containers
     const newStyle = {
       position: 'fixed',
       zIndex: 9000,
     };
 
+    // Vertical positioning with viewport clamping
     if (openUpward) {
-      newStyle.bottom = `${window.innerHeight - rect.top + 4}px`;
+      const bottom = window.innerHeight - rect.top + 4;
+      newStyle.bottom = `${Math.max(pad, bottom)}px`;
       newStyle.top = 'auto';
     } else {
-      newStyle.top = `${rect.bottom + 4}px`;
+      const top = rect.bottom + 4;
+      newStyle.top = `${Math.min(top, window.innerHeight - menuHeight - pad)}px`;
       newStyle.bottom = 'auto';
     }
 
-    // Align to the right edge of the button
-    newStyle.right = `${window.innerWidth - rect.right}px`;
-    newStyle.left = 'auto';
+    // Horizontal: align to right edge of button, but clamp so menu stays in viewport
+    let left = rect.right - menuWidth;
+    // Ensure menu doesn't go off the left edge
+    if (left < pad) {
+      left = pad;
+    }
+    // Ensure menu doesn't go off the right edge
+    if (left + menuWidth > window.innerWidth - pad) {
+      left = window.innerWidth - menuWidth - pad;
+    }
+    newStyle.left = `${left}px`;
+    newStyle.right = 'auto';
 
     setDropdownStyle(newStyle);
   }, [menuOpenId]);
