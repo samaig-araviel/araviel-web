@@ -961,18 +961,6 @@ export default function Sidebar() {
                   <SettingsIcon />
                   <span>Settings</span>
                 </button>
-                {userTier !== 'pro' && (
-                  <button
-                    className={styles.userDropdownItem}
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      dispatch(setActiveItem('settings'));
-                    }}
-                  >
-                    <UpgradePlanIcon />
-                    <span>Upgrade plan</span>
-                  </button>
-                )}
                 <button
                   className={styles.userDropdownItem}
                   onClick={() => {
@@ -981,7 +969,7 @@ export default function Sidebar() {
                   }}
                 >
                   <UpgradePlanIcon />
-                  <span>Upgrade plan</span>
+                  <span>Plans & Pricing</span>
                 </button>
                 <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
                   <HelpCircleIcon />
