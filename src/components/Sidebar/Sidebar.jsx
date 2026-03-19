@@ -973,6 +973,16 @@ export default function Sidebar() {
                     <span>Upgrade plan</span>
                   </button>
                 )}
+                <button
+                  className={styles.userDropdownItem}
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    dispatch(setActiveItem('pricing'));
+                  }}
+                >
+                  <UpgradePlanIcon />
+                  <span>Upgrade plan</span>
+                </button>
                 <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
                   <HelpCircleIcon />
                   <span>Help</span>
