@@ -103,13 +103,6 @@ const chatSlice = createSlice({
     updateLastMessage: (state, action) => {
       if (state.messages.length > 0) {
         const last = state.messages[state.messages.length - 1];
-        // Deep-merge thinkingData so partial updates don't clobber existing fields
-        if (action.payload.thinkingData && last.thinkingData) {
-          action.payload.thinkingData = {
-            ...last.thinkingData,
-            ...action.payload.thinkingData,
-          };
-        }
         Object.assign(last, action.payload);
       }
     },
