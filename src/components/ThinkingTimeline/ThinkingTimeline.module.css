@@ -1,10 +1,12 @@
+/* ===== ThinkingTimeline — Claude-inspired dashed-line timeline ===== */
+
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 16px 0;
+  padding: 8px 0;
   animation: timelineFadeIn 0.3s ease;
-  transition: opacity 0.5s ease, max-height 0.5s ease;
+  transition: opacity 0.4s ease, max-height 0.4s ease;
+  will-change: opacity, max-height;
 }
 
 .timeline.fading {
@@ -17,7 +19,7 @@
 @keyframes timelineFadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -25,58 +27,139 @@
   }
 }
 
-.stage {
-  display: flex;
+/* ===== Toggle header ===== */
+
+.toggle {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  transition: opacity 0.3s ease;
+  gap: 4px;
+  padding: 4px 10px 4px 4px;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: background-color 0.15s ease, color 0.15s ease;
+  user-select: none;
+  font-family: inherit;
 }
 
-.stage.pending {
-  opacity: 0.35;
+.toggle:hover {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
 }
 
-.stage.active {
-  opacity: 1;
-}
-
-.stage.complete {
-  opacity: 0.6;
-}
-
-.stageIndicator {
-  width: 20px;
-  height: 20px;
+.toggleChevron {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  will-change: transform;
+}
+
+.toggleChevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+.toggleChevronOpen {
+  transform: rotate(90deg);
+}
+
+.toggleLabel {
+  letter-spacing: 0.01em;
+}
+
+/* ===== Expandable details ===== */
+
+.details {
+  display: flex;
+  flex-direction: column;
+  margin-left: 9px;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+  will-change: max-height, opacity;
+}
+
+.detailsOpen {
+  max-height: 600px;
+  opacity: 1;
+  margin-top: 4px;
+}
+
+/* ===== Stages container ===== */
+
+.stagesContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Individual stage ===== */
+
+.stage {
+  display: flex;
+  gap: 10px;
+  min-height: 28px;
+}
+
+/* ===== Dot + dashed line column ===== */
+
+.dotLineCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 12px;
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.dotComplete {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  opacity: 0.6;
+  flex-shrink: 0;
+  animation: dotIn 0.2s ease;
+}
+
+.dotActive {
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  flex-shrink: 0;
+  animation: pulseAnim 1.5s ease-in-out infinite;
+}
+
+.dotPending {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  opacity: 0.3;
   flex-shrink: 0;
 }
 
-.checkIcon {
-  color: var(--text-muted);
-  animation: checkFadeIn 0.25s ease;
-}
-
-@keyframes checkFadeIn {
+@keyframes dotIn {
   from {
     opacity: 0;
     transform: scale(0.5);
   }
   to {
-    opacity: 1;
+    opacity: 0.6;
     transform: scale(1);
   }
-}
-
-.pulse {
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--text-secondary);
-  animation: pulseAnim 1.5s ease-in-out infinite;
 }
 
 @keyframes pulseAnim {
@@ -87,61 +170,126 @@
   }
   50% {
     opacity: 1;
-    transform: scale(1.1);
+    transform: scale(1.15);
   }
 }
 
-.dot {
+.dashedLine {
   display: block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--text-muted);
-  opacity: 0.4;
+  width: 0;
+  flex: 1;
+  min-height: 12px;
+  border-left: 1.5px dashed var(--border-color);
+  margin: 3px 0;
 }
+
+/* ===== Stage content ===== */
 
 .stageContent {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+  padding-bottom: 6px;
+  transition: opacity 0.3s ease;
+}
+
+.stagePending {
+  opacity: 0.35;
+}
+
+.stageComplete {
+  opacity: 0.7;
+}
+
+.stageRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .stageLabel {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  line-height: 1.4;
-}
-
-.mutedText {
-  color: var(--text-muted);
-}
-
-.modelLabel {
   display: inline-flex;
   align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--text-muted);
+  line-height: 1.3;
 }
 
 .modelBadge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 12px;
+  gap: 3px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
 .duration {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
+  opacity: 0.7;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.activeDuration {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===== Thinking content block ===== */
+
+.thinkingContentBlock {
+  margin: 6px 0 2px;
+  animation: contentFadeIn 0.2s ease;
+}
+
+.thinkingContentText {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  opacity: 0.7;
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  border-left: 1.5px solid var(--border-color);
+  border-radius: 0 6px 6px 0;
+  background-color: var(--bg-secondary);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.thinkingContentText::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thinkingContentText::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
