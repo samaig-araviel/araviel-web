@@ -1,5 +1,6 @@
 // Image generation service — manages limits, storage, and tracking
 import { getUserTier } from '../data/models';
+import { getAuthHeaders } from './authHeaders';
 
 const API_BASE =
   import.meta.env.VITE_ARAVIEL_API_BASE ||
@@ -132,7 +133,8 @@ export function saveGeneratedImage(image) {
  */
 export async function fetchGeneratedImagesFromAPI({ limit = 50, offset = 0 } = {}) {
   try {
-    const res = await fetch(`${API_BASE}/api/images?limit=${limit}&offset=${offset}`);
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/images?limit=${limit}&offset=${offset}`, { headers });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const images = (data.images || []).map((img) => ({
@@ -179,9 +181,10 @@ export async function deleteGeneratedImage(imageId) {
   }
 
   try {
+    const headers = await getAuthHeaders();
     await fetch(`${API_BASE}/api/images`, {
       method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ id: imageId }),
     });
   } catch {

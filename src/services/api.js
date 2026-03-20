@@ -1,5 +1,5 @@
 import { getUserTier } from '../data/models';
-import { getUserId } from './credits';
+import { getAuthHeaders } from './authHeaders';
 
 // Araviel API service layer
 // In development, Vite proxies /api/* to the backend (avoids CORS).
@@ -19,7 +19,8 @@ const API_BASE =
 export async function fetchConversations(limit = 20, offset = 0, params = {}) {
   const query = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (params.projectId) query.set('projectId', params.projectId);
-  const res = await fetch(`${API_BASE}/api/conversations?${query}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/conversations?${query}`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch conversations: ${res.status}`);
   return res.json();
 }
@@ -32,8 +33,10 @@ export async function fetchConversations(limit = 20, offset = 0, params = {}) {
  * @returns {Promise<{ messages: Array }>}
  */
 export async function fetchConversationMessages(conversationId, limit = 50, offset = 0) {
+  const headers = await getAuthHeaders();
   const res = await fetch(
-    `${API_BASE}/api/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`
+    `${API_BASE}/api/conversations/${conversationId}/messages?limit=${limit}&offset=${offset}`,
+    { headers }
   );
   if (!res.ok) throw new Error(`Failed to fetch messages: ${res.status}`);
   return res.json();
@@ -55,7 +58,6 @@ export async function sendMessage(payload) {
   const body = {
     message: payload.message,
     userTier: getUserTier(),
-    userId: getUserId(),
     modality: payload.modality || 'text',
   };
   if (payload.imageQuality) body.imageQuality = payload.imageQuality;
@@ -80,7 +82,7 @@ export async function sendMessage(payload) {
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await getAuthHeaders(),
     body: JSON.stringify(body),
   });
 
@@ -143,11 +145,12 @@ export async function consumeSSEStream(response, onEvent, signal) {
  * @returns {Promise<object>}
  */
 export async function createSubConversation(conversationId, messageId, highlightedText) {
+  const headers = await getAuthHeaders();
   const res = await fetch(
     `${API_BASE}/api/conversations/${conversationId}/messages/${messageId}/sub-conversations`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ highlightedText }),
     }
   );
@@ -162,8 +165,10 @@ export async function createSubConversation(conversationId, messageId, highlight
  * @returns {Promise<{ subConversations: Array }>}
  */
 export async function fetchSubConversations(conversationId, messageId) {
+  const headers = await getAuthHeaders();
   const res = await fetch(
-    `${API_BASE}/api/conversations/${conversationId}/messages/${messageId}/sub-conversations`
+    `${API_BASE}/api/conversations/${conversationId}/messages/${messageId}/sub-conversations`,
+    { headers }
   );
   if (!res.ok) throw new Error(`Failed to fetch sub-conversations: ${res.status}`);
   return res.json();
@@ -177,8 +182,10 @@ export async function fetchSubConversations(conversationId, messageId) {
  * @returns {Promise<{ subConversation: object, messages: Array }>}
  */
 export async function fetchSubConversationMessages(subId, limit = 50, offset = 0) {
+  const headers = await getAuthHeaders();
   const res = await fetch(
-    `${API_BASE}/api/sub-conversations/${subId}/messages?limit=${limit}&offset=${offset}`
+    `${API_BASE}/api/sub-conversations/${subId}/messages?limit=${limit}&offset=${offset}`,
+    { headers }
   );
   if (!res.ok) throw new Error(`Failed to fetch sub-conversation messages: ${res.status}`);
   return res.json();
@@ -201,9 +208,10 @@ export async function checkHealth() {
  * @returns {Promise<object>}
  */
 export async function updateConversation(conversationId, updates) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error(`Failed to update conversation: ${res.status}`);
@@ -216,8 +224,10 @@ export async function updateConversation(conversationId, updates) {
  * @returns {Promise<{ success: boolean }>}
  */
 export async function deleteConversation(conversationId) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`, {
     method: 'DELETE',
+    headers,
   });
   if (!res.ok) throw new Error(`Failed to delete conversation: ${res.status}`);
   return res.json();
@@ -229,7 +239,8 @@ export async function deleteConversation(conversationId) {
  * @returns {Promise<object>}
  */
 export async function fetchConversation(conversationId) {
-  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch conversation: ${res.status}`);
   return res.json();
 }
@@ -244,9 +255,10 @@ export async function fetchConversation(conversationId) {
  * @returns {Promise<{ success: boolean }>}
  */
 export async function reportConversation(conversationId, reason, details) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/conversations/${conversationId}/report`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ reason, details: details || undefined }),
   });
   if (!res.ok) throw new Error(`Failed to report conversation: ${res.status}`);
@@ -261,11 +273,12 @@ export async function reportConversation(conversationId, reason, details) {
  * @returns {Promise<{ success: boolean, feedback: string | null }>}
  */
 export async function submitMessageFeedback(conversationId, messageId, feedback) {
+  const headers = await getAuthHeaders();
   const res = await fetch(
     `${API_BASE}/api/conversations/${conversationId}/messages/${messageId}/feedback`,
     {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ feedback }),
     }
   );
@@ -281,8 +294,10 @@ export async function submitMessageFeedback(conversationId, messageId, feedback)
  * @returns {Promise<{ success: boolean }>}
  */
 export async function deleteSubConversation(subId) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/sub-conversations/${subId}`, {
     method: 'DELETE',
+    headers,
   });
   if (!res.ok) throw new Error(`Failed to delete sub-conversation: ${res.status}`);
   return res.json();
@@ -295,9 +310,10 @@ export async function deleteSubConversation(subId) {
  * @returns {Promise<object>}
  */
 export async function updateSubConversation(subId, updates) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/sub-conversations/${subId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error(`Failed to update sub-conversation: ${res.status}`);
@@ -312,9 +328,10 @@ export async function updateSubConversation(subId, updates) {
  * @returns {Promise<{ success: boolean }>}
  */
 export async function reportSubConversation(subId, reason, details) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/sub-conversations/${subId}/report`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ reason, details: details || undefined }),
   });
   if (!res.ok) throw new Error(`Failed to report sub-conversation: ${res.status}`);
@@ -329,9 +346,10 @@ export async function reportSubConversation(subId, reason, details) {
  * @returns {Promise<{ imported: number, skipped: number, conversations: Array }>}
  */
 export async function importConversations(conversations) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/imported-conversations`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ conversations }),
   });
   if (!res.ok) throw new Error(`Failed to import conversations: ${res.status}`);
@@ -352,7 +370,8 @@ export async function fetchImportedConversations(params = {}) {
   if (params.archived !== undefined) query.set('archived', String(params.archived));
   if (params.starred !== undefined) query.set('starred', String(params.starred));
   const qs = query.toString();
-  const res = await fetch(`${API_BASE}/api/imported-conversations${qs ? `?${qs}` : ''}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/imported-conversations${qs ? `?${qs}` : ''}`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch imported conversations: ${res.status}`);
   return res.json();
 }
@@ -363,7 +382,8 @@ export async function fetchImportedConversations(params = {}) {
  * @returns {Promise<{ messages: Array }>}
  */
 export async function fetchImportedConversationMessages(conversationId) {
-  const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}/messages`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}/messages`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch imported messages: ${res.status}`);
   return res.json();
 }
@@ -375,9 +395,10 @@ export async function fetchImportedConversationMessages(conversationId) {
  * @returns {Promise<object>}
  */
 export async function updateImportedConversation(conversationId, updates) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error(`Failed to update imported conversation: ${res.status}`);
@@ -391,9 +412,10 @@ export async function updateImportedConversation(conversationId, updates) {
  * @returns {Promise<{ updated: number }>}
  */
 export async function bulkUpdateImportedConversations(ids, updates) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/imported-conversations/bulk`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ ids, updates }),
   });
   if (!res.ok) throw new Error(`Failed to bulk update imported conversations: ${res.status}`);
@@ -406,8 +428,10 @@ export async function bulkUpdateImportedConversations(ids, updates) {
  * @returns {Promise<{ success: boolean }>}
  */
 export async function deleteImportedConversation(conversationId) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}`, {
     method: 'DELETE',
+    headers,
   });
   if (!res.ok) throw new Error(`Failed to delete imported conversation: ${res.status}`);
   return res.json();
@@ -419,9 +443,10 @@ export async function deleteImportedConversation(conversationId) {
  * @returns {Promise<{ deleted: number }>}
  */
 export async function bulkDeleteImportedConversations(ids) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/imported-conversations/bulk`, {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ ids }),
   });
   if (!res.ok) throw new Error(`Failed to bulk delete imported conversations: ${res.status}`);
@@ -435,7 +460,8 @@ export async function bulkDeleteImportedConversations(ids) {
  * @returns {Promise<{ projects: Array }>}
  */
 export async function fetchProjects() {
-  const res = await fetch(`${API_BASE}/api/projects`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/projects`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch projects: ${res.status}`);
   return res.json();
 }
@@ -446,9 +472,10 @@ export async function fetchProjects() {
  * @returns {Promise<object>}
  */
 export async function createProject(project) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/projects`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(project),
   });
   if (!res.ok) throw new Error(`Failed to create project: ${res.status}`);
@@ -462,9 +489,10 @@ export async function createProject(project) {
  * @returns {Promise<object>}
  */
 export async function updateProject(projectId, updates) {
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(updates),
   });
   if (!res.ok) throw new Error(`Failed to update project: ${res.status}`);
@@ -482,8 +510,10 @@ export async function deleteProject(projectId, options = {}) {
   const query = new URLSearchParams();
   if (options.deleteConversations) query.set('deleteConversations', 'true');
   const qs = query.toString();
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/projects/${projectId}${qs ? `?${qs}` : ''}`, {
     method: 'DELETE',
+    headers,
   });
   if (!res.ok) throw new Error(`Failed to delete project: ${res.status}`);
   return res.json();
