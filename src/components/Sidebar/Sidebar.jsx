@@ -336,6 +336,8 @@ export default function Sidebar() {
             costUsd: msg.costUsd,
             latencyMs: msg.latencyMs,
             adeLatencyMs: msg.adeLatencyMs,
+            followUps: msg.followUps || [],
+            questions: msg.questions || [],
             ...(generatedImages.length > 0 && { generatedImages }),
           });
         }
