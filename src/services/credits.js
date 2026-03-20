@@ -1,15 +1,25 @@
 // Credit service — communicates with /api/credits backend
 import { IMAGE_QUALITY_COSTS } from '../config/credits';
+import { getAuthHeaders } from './authHeaders';
 
 const API_BASE =
   import.meta.env.VITE_ARAVIEL_API_BASE ||
   (import.meta.env.DEV ? '' : 'https://araviel-api.vercel.app');
 
 /**
- * Get the current user ID.
- * Until auth is implemented, uses a localStorage-based anonymous ID.
+ * Get the current user ID from the Supabase session.
+ * Falls back to a localStorage-based anonymous ID if no session exists.
  */
 export function getUserId() {
+  // Try synchronous access first — Supabase stores session in localStorage
+  const sessionStr = localStorage.getItem('sb-' + (import.meta.env.VITE_SUPABASE_URL || '').split('//')[1]?.split('.')[0] + '-auth-token');
+  if (sessionStr) {
+    try {
+      const parsed = JSON.parse(sessionStr);
+      if (parsed?.user?.id) return parsed.user.id;
+    } catch { /* fall through */ }
+  }
+  // Fallback for pre-auth state
   let userId = localStorage.getItem('araviel-user-id');
   if (!userId) {
     userId = `anon-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -22,8 +32,8 @@ export function getUserId() {
  * Fetch the user's full credit balance from the backend.
  */
 export async function fetchCreditBalance() {
-  const userId = getUserId();
-  const res = await fetch(`${API_BASE}/api/credits?userId=${encodeURIComponent(userId)}`);
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/credits`, { headers });
   if (!res.ok) throw new Error(`Failed to fetch credits: ${res.status}`);
   return res.json();
 }
@@ -32,11 +42,11 @@ export async function fetchCreditBalance() {
  * Check if user can generate at given quality.
  */
 export async function checkCanGenerate(quality = 'standard') {
-  const userId = getUserId();
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/credits`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'check', userId, quality }),
+    headers,
+    body: JSON.stringify({ action: 'check', quality }),
   });
   if (!res.ok) throw new Error(`Credit check failed: ${res.status}`);
   return res.json();
@@ -46,11 +56,11 @@ export async function checkCanGenerate(quality = 'standard') {
  * Buy a credit pack (no payment — placeholder for Stripe).
  */
 export async function buyPack(packType) {
-  const userId = getUserId();
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/credits`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'buy-pack', userId, packType }),
+    headers,
+    body: JSON.stringify({ action: 'buy-pack', packType }),
   });
   if (!res.ok) throw new Error(`Failed to buy pack: ${res.status}`);
   return res.json();
@@ -60,11 +70,11 @@ export async function buyPack(packType) {
  * Update user tier.
  */
 export async function updateUserTier(tier) {
-  const userId = getUserId();
+  const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}/api/credits`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'update-tier', userId, tier }),
+    headers,
+    body: JSON.stringify({ action: 'update-tier', tier }),
   });
   if (!res.ok) throw new Error(`Failed to update tier: ${res.status}`);
   return res.json();

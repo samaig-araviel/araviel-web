@@ -1,4 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './slices/authSlice';
 import themeReducer from './slices/themeSlice';
 import sidebarReducer from './slices/sidebarSlice';
 import chatReducer from './slices/chatSlice';
@@ -8,6 +9,7 @@ import subscriptionReducer from './slices/subscriptionSlice';
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
     theme: themeReducer,
     sidebar: sidebarReducer,
     chat: chatReducer,

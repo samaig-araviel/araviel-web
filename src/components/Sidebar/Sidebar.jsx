@@ -21,6 +21,11 @@ import {
 } from '../../store/slices/chatSlice';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import {
+  selectAuthUser,
+  selectIsAuthenticated,
+  signOut,
+} from '../../store/slices/authSlice';
+import {
   fetchConversations,
   fetchConversationMessages,
   updateConversation,
@@ -31,6 +36,7 @@ import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import { getUserTier } from '../../data/models';
+import { AuthModal } from '../Auth';
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -169,8 +175,12 @@ export default function Sidebar() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userTier, setUserTier] = useState(getUserTier());
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const userMenuRef = useRef(null);
   const renameInputRef = useRef(null);
+
+  const authUser = useSelector(selectAuthUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   // Listen for tier changes (from DevTierSwitcher or other sources)
   useEffect(() => {
@@ -930,14 +940,28 @@ export default function Sidebar() {
               onClick={() => setUserMenuOpen(!userMenuOpen)}
             >
               <div className={styles.userAvatar}>
-                <UserIcon />
+                {authUser?.avatarUrl ? (
+                  <img
+                    src={authUser.avatarUrl}
+                    alt=""
+                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <UserIcon />
+                )}
               </div>
               {showFullContent && (
                 <>
                   <div className={styles.userInfo}>
-                    <span className={styles.userName}>User</span>
+                    <span className={styles.userName}>
+                      {isAuthenticated
+                        ? authUser?.fullName || authUser?.email?.split('@')[0] || 'User'
+                        : 'Guest'}
+                    </span>
                     <span className={styles.userPlan}>
-                      {userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan
+                      {isAuthenticated
+                        ? `${userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan`
+                        : 'Sign in to save'}
                     </span>
                   </div>
                   <span
@@ -982,10 +1006,29 @@ export default function Sidebar() {
                   <span>Help</span>
                 </button>
                 <div className={styles.userDropdownDivider} />
-                <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
-                  <LogOutIcon />
-                  <span>Login / Signup</span>
-                </button>
+                {isAuthenticated ? (
+                  <button
+                    className={styles.userDropdownItem}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      dispatch(signOut());
+                    }}
+                  >
+                    <LogOutIcon />
+                    <span>Sign out</span>
+                  </button>
+                ) : (
+                  <button
+                    className={styles.userDropdownItem}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      setAuthModalOpen(true);
+                    }}
+                  >
+                    <LogOutIcon />
+                    <span>Sign in / Sign up</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1071,6 +1114,12 @@ export default function Sidebar() {
           onError={showError}
         />
       )}
+
+      {/* Auth modal */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+      />
     </>
   );
 }

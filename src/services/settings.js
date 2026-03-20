@@ -1,5 +1,5 @@
 // Settings service — communicates with /api/settings backend
-import { getUserId } from './credits';
+import { getAuthHeaders } from './authHeaders';
 
 const API_BASE =
   import.meta.env.VITE_ARAVIEL_API_BASE ||
@@ -113,9 +113,9 @@ const toCamelCase = (settings) => {
  * Falls back to localStorage then defaults if backend is unavailable.
  */
 export async function fetchSettings() {
-  const userId = getUserId();
   try {
-    const res = await fetch(`${API_BASE}/api/settings?userId=${encodeURIComponent(userId)}`);
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_BASE}/api/settings`, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     const data = await res.json();
     const settings = { ...DEFAULT_SETTINGS, ...toCamelCase(data.settings || {}) };
@@ -137,16 +137,15 @@ export async function fetchSettings() {
  * Save user settings to the backend and localStorage.
  */
 export async function saveSettings(settings) {
-  const userId = getUserId();
   // Always save to localStorage immediately
   localStorage.setItem('araviel-settings', JSON.stringify(settings));
 
   try {
+    const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/api/settings`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({
-        userId,
         settings: toSnakeCase(settings),
       }),
     });
