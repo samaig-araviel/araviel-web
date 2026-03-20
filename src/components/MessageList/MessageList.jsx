@@ -4384,7 +4384,7 @@ function ThinkingBlock({
   webSearchUsed,
   webSearchSources,
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(!!thinkingContent);
   const [showWebSources, setShowWebSources] = useState(false);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
