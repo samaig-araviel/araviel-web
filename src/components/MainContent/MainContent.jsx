@@ -2224,6 +2224,7 @@ export default function MainContent() {
         <MessageList
           messages={messages}
           isProcessing={pipelineStatus !== 'idle'}
+          pipelineStatus={pipelineStatus}
           timelineStages={timelineStages}
           timelineFading={pipelineStatus === 'complete'}
           modelName={routeResult ? routeResult.modelName : null}
