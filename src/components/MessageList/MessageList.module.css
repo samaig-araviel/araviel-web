@@ -2285,6 +2285,8 @@
 }
 
 /* ===== Thinking Block (Claude-style collapsible) ===== */
+/* ===== ThinkingBlock — Claude-inspired dashed-line timeline ===== */
+
 .thinkingBlock {
   margin-bottom: 14px;
   animation: thinkingBlockFadeIn 0.3s ease;
@@ -2310,11 +2312,12 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--text-muted);
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   user-select: none;
+  font-family: inherit;
 }
 
 .thinkingToggle:hover {
@@ -2330,6 +2333,7 @@
   height: 18px;
   color: var(--text-muted);
   transition: transform 0.2s ease;
+  will-change: transform;
 }
 
 .thinkingToggleIcon svg {
@@ -2337,42 +2341,36 @@
   height: 12px;
 }
 
+.thinkingToggleIconOpen {
+  transform: rotate(90deg);
+}
+
 .thinkingToggleLabel {
   letter-spacing: 0.01em;
 }
 
-.thinkingStepCount {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-  opacity: 0.6;
-  margin-left: 2px;
-}
-
+/* CSS-controlled expand/collapse — no mount/unmount flickering */
 .thinkingDetails {
   display: flex;
   flex-direction: column;
-  margin-top: 6px;
   margin-left: 9px;
-  padding-left: 0;
-  animation: thinkingDetailsSlide 0.25s ease;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.25s ease, margin-top 0.3s ease;
+  will-change: max-height, opacity;
 }
 
-@keyframes thinkingDetailsSlide {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 200px;
-  }
+.thinkingDetailsOpen {
+  max-height: 800px;
+  opacity: 1;
+  margin-top: 6px;
 }
 
 .thinkingStage {
   display: flex;
   gap: 10px;
-  min-height: 32px;
+  min-height: 28px;
 }
 
 .thinkingDotLine {
@@ -2381,35 +2379,36 @@
   align-items: center;
   width: 12px;
   flex-shrink: 0;
-  padding-top: 2px;
+  padding-top: 3px;
 }
 
 .thinkingStageDot {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.4;
   flex-shrink: 0;
 }
 
 .thinkingStageDotComplete {
   display: block;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background-color: #22c55e;
+  background-color: var(--text-muted);
   flex-shrink: 0;
-  opacity: 0.7;
+  opacity: 0.55;
 }
 
 .thinkingVerticalLine {
   display: block;
-  width: 1px;
+  width: 0;
   flex: 1;
-  min-height: 14px;
-  border-left: 2px dotted var(--border-color);
+  min-height: 12px;
+  border-left: 1.5px dashed var(--border-color);
+  margin: 3px 0;
 }
 
 .thinkingStageLast .thinkingVerticalLine {
@@ -2422,7 +2421,7 @@
   gap: 8px;
   flex: 1;
   min-width: 0;
-  padding-bottom: 8px;
+  padding-bottom: 6px;
 }
 
 .thinkingStageLast .thinkingStageContent {
@@ -2433,15 +2432,16 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12.5px;
-  font-weight: 450;
-  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
   line-height: 1.3;
 }
 
 .thinkingStageDuration {
-  font-size: 11.5px;
+  font-size: 11px;
   color: var(--text-muted);
+  opacity: 0.7;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   flex-shrink: 0;
@@ -2453,7 +2453,7 @@
   gap: 3px;
   padding: 1px 7px;
   border-radius: 5px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
@@ -2469,53 +2469,88 @@
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--text-muted);
   transition: color 0.15s ease;
   font-family: inherit;
 }
 
 .thinkingStageWebSearch:hover {
-  color: var(--text-primary);
+  color: var(--text-secondary);
 }
 
 .thinkingStageWebSearch svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
+}
+
+.thinkingWebSourceCount {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  opacity: 0.6;
+  margin-left: 2px;
 }
 
 .thinkingStageChevron {
   display: flex;
   align-items: center;
   transition: transform 0.2s ease;
+  will-change: transform;
+}
+
+.thinkingStageChevronOpen {
+  transform: rotate(90deg);
 }
 
 .thinkingStageChevron svg {
-  width: 11px;
-  height: 11px;
-  opacity: 0.5;
+  width: 10px;
+  height: 10px;
+  opacity: 0.45;
 }
 
-/* Web sources list inside thinking block */
+/* Web sources list — scrollable when many items, CSS-controlled open/close */
 .thinkingWebSources {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   margin-left: 22px;
-  margin-bottom: 4px;
-  padding: 6px 0;
-  animation: thinkingDetailsSlide 0.2s ease;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.25s ease, margin-bottom 0.25s ease;
+  will-change: max-height, opacity;
+}
+
+.thinkingWebSourcesOpen {
+  max-height: 220px;
+  opacity: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+  margin-bottom: 2px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.thinkingWebSourcesOpen::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thinkingWebSourcesOpen::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
 }
 
 .thinkingWebSourceItem {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 10px;
-  border-radius: 7px;
+  padding: 4px 10px;
+  border-radius: 6px;
   text-decoration: none;
   transition: background-color 0.15s ease;
+  flex-shrink: 0;
 }
 
 .thinkingWebSourceItem:hover {
@@ -2530,9 +2565,9 @@
 }
 
 .thinkingWebSourceTitle {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 450;
+  color: var(--text-muted);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2540,8 +2575,9 @@
 }
 
 .thinkingWebSourceDomain {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--text-muted);
+  opacity: 0.6;
   flex-shrink: 0;
 }
 
@@ -4146,19 +4182,19 @@
   }
 
   .thinkingToggle {
-    font-size: 12px;
+    font-size: 11.5px;
   }
 
   .thinkingStageLabel {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .thinkingStageDuration {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .thinkingModelBadge {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .userPromptCard {
@@ -5014,22 +5050,46 @@
 
 /* ===== Thinking Content (real AI reasoning text) ===== */
 .thinkingContentBlock {
-  margin: 8px 0 8px 22px;
-  padding: 10px 14px;
-  border-left: 2px solid var(--border-color);
-  border-radius: 0 8px 8px 0;
-  background-color: var(--bg-secondary);
+  margin: 6px 0 4px 22px;
+  animation: thinkingContentFadeIn 0.2s ease;
 }
 
 .thinkingContentText {
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 11.5px;
+  line-height: 1.55;
   color: var(--text-muted);
+  opacity: 0.7;
   font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 300px;
+  max-height: 200px;
   overflow-y: auto;
+  padding: 8px 12px;
+  border-left: 1.5px solid var(--border-color);
+  border-radius: 0 6px 6px 0;
+  background-color: var(--bg-secondary);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.thinkingContentText::-webkit-scrollbar {
+  width: 4px;
+}
+
+.thinkingContentText::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+@keyframes thinkingContentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ===== Citations Section ===== */
