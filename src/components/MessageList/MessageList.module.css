@@ -2324,7 +2324,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2371,13 +2371,66 @@
   margin-left: 4px;
 }
 
+.thinkingToggleLive {
+  color: var(--text-primary);
+}
+
+.thinkingLivePulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  margin-left: 4px;
+  animation: thinkingPulseAnim 1.5s ease-in-out infinite;
+}
+
+@keyframes thinkingPulseAnim {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+.thinkingStageDotPulse {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  flex-shrink: 0;
+  animation: thinkingPulseAnim 1.5s ease-in-out infinite;
+}
+
+.thinkingDetailsWrap {
+  overflow: hidden;
+  transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.thinkingDetailsCollapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.thinkingDetailsExpanded {
+  max-height: 800px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
 .thinkingDetails {
   display: flex;
   flex-direction: column;
   margin-top: 8px;
   margin-left: 10px;
   padding-left: 0;
-  animation: thinkingDetailsReveal 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @keyframes thinkingDetailsReveal {
@@ -2389,6 +2442,12 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.thinkingContentPlaceholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+  font-style: italic;
 }
 
 .thinkingStage {
@@ -2468,9 +2527,10 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--text-secondary);
+  opacity: 0.85;
   line-height: 1.4;
 }
 
@@ -2478,10 +2538,10 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   color: #22c55e;
-  opacity: 0.85;
+  opacity: 0.8;
   line-height: 1.4;
 }
 
@@ -5155,9 +5215,10 @@
 }
 
 .thinkingContentText {
-  font-size: 13px;
-  line-height: 1.65;
+  font-size: 12.5px;
+  line-height: 1.6;
   color: var(--text-muted);
+  opacity: 0.85;
   font-family: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
   white-space: pre-wrap;
   word-break: break-word;
@@ -5165,6 +5226,11 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border-color) transparent;
+}
+
+.thinkingContentTextLive {
+  max-height: 200px;
+  scroll-behavior: smooth;
 }
 
 .thinkingContentText::-webkit-scrollbar {

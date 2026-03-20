@@ -4382,13 +4382,83 @@ function ThinkingBlock({
   provider,
   webSearchUsed,
   webSearchSources,
+  isLiveStreaming,
+  pipelineStatus,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showWebSources, setShowWebSources] = useState(false);
+  const wasAutoExpandedRef = useRef(false);
+  const thinkingTextRef = useRef(null);
+  const prevPipelineRef = useRef(pipelineStatus);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
+  const [liveElapsed, setLiveElapsed] = useState(0);
+  const liveStartRef = useRef(null);
+  const liveTimerRef = useRef(null);
 
-  if (!thinkingData && !thinkingContent) return null;
+  // Auto-expand when live thinking starts
+  useEffect(() => {
+    if (isLiveStreaming && (pipelineStatus === 'thinking' || pipelineStatus === 'routing')) {
+      if (!wasAutoExpandedRef.current) {
+        setIsExpanded(true);
+        wasAutoExpandedRef.current = true;
+      }
+    }
+  }, [isLiveStreaming, pipelineStatus]);
+
+  // Auto-collapse when transitioning from thinking to writing
+  useEffect(() => {
+    if (
+      prevPipelineRef.current === 'thinking' &&
+      (pipelineStatus === 'writing' || pipelineStatus === 'complete') &&
+      wasAutoExpandedRef.current
+    ) {
+      // Small delay so the user sees the final thinking state briefly
+      const timer = setTimeout(() => {
+        setIsExpanded(false);
+        wasAutoExpandedRef.current = false;
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+    prevPipelineRef.current = pipelineStatus;
+  }, [pipelineStatus]);
+
+  // Reset auto-expand tracking when streaming ends
+  useEffect(() => {
+    if (!isLiveStreaming) {
+      wasAutoExpandedRef.current = false;
+    }
+  }, [isLiveStreaming]);
+
+  // Live elapsed timer during thinking phase
+  useEffect(() => {
+    if (isLiveStreaming && (pipelineStatus === 'thinking' || pipelineStatus === 'routing')) {
+      if (!liveStartRef.current) liveStartRef.current = Date.now();
+      liveTimerRef.current = setInterval(() => {
+        setLiveElapsed((Date.now() - liveStartRef.current) / 1000);
+      }, 100);
+      return () => clearInterval(liveTimerRef.current);
+    } else {
+      if (liveTimerRef.current) clearInterval(liveTimerRef.current);
+      if (!isLiveStreaming) {
+        liveStartRef.current = null;
+        setLiveElapsed(0);
+      }
+    }
+  }, [isLiveStreaming, pipelineStatus]);
+
+  // Auto-scroll thinking text during live streaming
+  useEffect(() => {
+    if (isLiveStreaming && thinkingTextRef.current) {
+      requestAnimationFrame(() => {
+        if (thinkingTextRef.current) {
+          thinkingTextRef.current.scrollTop = thinkingTextRef.current.scrollHeight;
+        }
+      });
+    }
+  }, [thinkingContent, isLiveStreaming]);
+
+  if (!thinkingData && !thinkingContent && !isLiveStreaming) return null;
 
   const routingDuration = thinkingData?.routingDuration || '0.0';
   const thinkingDuration = thinkingData?.thinkingDuration || '0.0';
@@ -4396,14 +4466,38 @@ function ThinkingBlock({
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
 
+  const isLiveThinking =
+    isLiveStreaming && (pipelineStatus === 'thinking' || pipelineStatus === 'routing');
+  const isLiveWriting = isLiveStreaming && pipelineStatus === 'writing';
+
   const stepsCount = 2 + (webSearchUsed ? 1 : 0) + (thinkingContent ? 1 : 0);
-  const summaryLabel = `Thought for ${totalDuration}s`;
+
+  // During live streaming, show elapsed time; after, show final total
+  const displayDuration = isLiveThinking ? liveElapsed.toFixed(1) : totalDuration;
+  const summaryLabel = isLiveThinking
+    ? `Thinking for ${displayDuration}s`
+    : isLiveWriting
+    ? `Thought for ${liveElapsed.toFixed(1)}s`
+    : `Thought for ${displayDuration}s`;
+
   const hasManySources = webSearchSources && webSearchSources.length > 6;
+
+  // Determine stage statuses for live mode
+  const routingStageComplete = pipelineStatus !== 'routing';
+  const thinkingStageComplete =
+    pipelineStatus === 'writing' ||
+    pipelineStatus === 'complete' ||
+    pipelineStatus === 'idle' ||
+    !isLiveStreaming;
+  const allComplete =
+    !isLiveStreaming || pipelineStatus === 'complete' || pipelineStatus === 'idle';
 
   return (
     <div className={styles.thinkingBlock}>
       <button
-        className={`${styles.thinkingToggle} ${isExpanded ? styles.thinkingToggleExpanded : ''}`}
+        className={`${styles.thinkingToggle} ${isExpanded ? styles.thinkingToggleExpanded : ''} ${
+          isLiveThinking ? styles.thinkingToggleLive : ''
+        }`}
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
       >
@@ -4415,20 +4509,36 @@ function ThinkingBlock({
           <ChevronRightIcon />
         </span>
         <span className={styles.thinkingToggleLabel}>{summaryLabel}</span>
-        <span className={styles.thinkingStepCount}>{stepsCount} steps</span>
+        {isLiveThinking ? (
+          <span className={styles.thinkingLivePulse} />
+        ) : (
+          <span className={styles.thinkingStepCount}>{stepsCount} steps</span>
+        )}
       </button>
 
-      {isExpanded && (
+      <div
+        className={`${styles.thinkingDetailsWrap} ${
+          isExpanded ? styles.thinkingDetailsExpanded : styles.thinkingDetailsCollapsed
+        }`}
+      >
         <div className={styles.thinkingDetails}>
           {/* Stage 1: Routing */}
           <div className={styles.thinkingStage}>
             <div className={styles.thinkingDotLine}>
-              <span className={styles.thinkingStageDotComplete} />
+              {routingStageComplete ? (
+                <span className={styles.thinkingStageDotComplete} />
+              ) : (
+                <span className={styles.thinkingStageDotPulse} />
+              )}
               <span className={styles.thinkingVerticalLine} />
             </div>
             <div className={styles.thinkingStageContent}>
-              <span className={styles.thinkingStageLabel}>Routed to optimal model</span>
-              <span className={styles.thinkingStageDuration}>{routingDuration}s</span>
+              <span className={styles.thinkingStageLabel}>
+                {routingStageComplete ? 'Routed to optimal model' : 'Routing to optimal model...'}
+              </span>
+              {routingStageComplete && (
+                <span className={styles.thinkingStageDuration}>{routingDuration}s</span>
+              )}
             </div>
           </div>
 
@@ -4515,12 +4625,18 @@ function ThinkingBlock({
           {/* Stage 3: Thinking with model */}
           <div className={styles.thinkingStage}>
             <div className={styles.thinkingDotLine}>
-              <span className={styles.thinkingStageDotComplete} />
-              {thinkingContent ? <span className={styles.thinkingVerticalLine} /> : null}
+              {thinkingStageComplete ? (
+                <span className={styles.thinkingStageDotComplete} />
+              ) : (
+                <span className={styles.thinkingStageDotPulse} />
+              )}
+              {thinkingContent || isLiveThinking ? (
+                <span className={styles.thinkingVerticalLine} />
+              ) : null}
             </div>
             <div className={styles.thinkingStageContent}>
               <span className={styles.thinkingStageLabel}>
-                Thought with{' '}
+                {thinkingStageComplete ? 'Thought with ' : 'Thinking with '}
                 {providerData && LogoComponent ? (
                   <span
                     className={styles.thinkingModelBadge}
@@ -4535,45 +4651,66 @@ function ThinkingBlock({
                     {modelName}
                   </span>
                 ) : (
-                  modelName
+                  modelName || 'model'
                 )}
               </span>
-              <span className={styles.thinkingStageDuration}>{thinkingDuration}s</span>
+              {thinkingStageComplete && (
+                <span className={styles.thinkingStageDuration}>{thinkingDuration}s</span>
+              )}
             </div>
           </div>
 
-          {/* Real thinking content from the AI */}
-          {thinkingContent && (
+          {/* Thinking content — live streaming or static */}
+          {(thinkingContent || isLiveThinking) && (
             <div className={styles.thinkingContentBlock}>
-              <div className={styles.thinkingContentText}>{thinkingContent}</div>
+              <div
+                ref={thinkingTextRef}
+                className={`${styles.thinkingContentText} ${
+                  isLiveThinking ? styles.thinkingContentTextLive : ''
+                }`}
+              >
+                {thinkingContent || (
+                  <span className={styles.thinkingContentPlaceholder}>Processing...</span>
+                )}
+              </div>
             </div>
           )}
 
           {/* Final: Done indicator */}
           <div className={`${styles.thinkingStage} ${styles.thinkingStageLast}`}>
             <div className={styles.thinkingDotLine}>
-              <span className={styles.thinkingStageDotDone} />
+              {allComplete ? (
+                <span className={styles.thinkingStageDotDone} />
+              ) : (
+                <span className={styles.thinkingStageDot} />
+              )}
             </div>
             <div className={styles.thinkingStageContent}>
-              <span className={styles.thinkingStageLabelDone}>
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                Done
-              </span>
+              {allComplete ? (
+                <span className={styles.thinkingStageLabelDone}>
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Done
+                </span>
+              ) : (
+                <span className={styles.thinkingStageLabel} style={{ opacity: 0.4 }}>
+                  Generating response...
+                </span>
+              )}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -4669,6 +4806,7 @@ function Message({
   isDark,
   isLastAssistant,
   hideThinking,
+  pipelineStatus,
   onFollowUpSelect,
   onQuestionsSend,
   onRetry,
@@ -5147,9 +5285,9 @@ function Message({
       )}
 
       {!isUser &&
-        !isStreaming &&
-        !hideThinking &&
-        (message.thinkingData || message.thinkingContent) && (
+        (message.thinkingData ||
+          message.thinkingContent ||
+          (isStreaming && pipelineStatus && pipelineStatus !== 'idle')) && (
           <ThinkingBlock
             thinkingData={message.thinkingData}
             thinkingContent={message.thinkingContent}
@@ -5157,6 +5295,8 @@ function Message({
             provider={message.provider}
             webSearchUsed={message.webSearchUsed}
             webSearchSources={message.sources || message.citations}
+            isLiveStreaming={isStreaming}
+            pipelineStatus={pipelineStatus}
           />
         )}
 
@@ -5318,6 +5458,7 @@ function Message({
 export default function MessageList({
   messages,
   isProcessing,
+  pipelineStatus,
   timelineStages,
   timelineFading,
   modelName,
@@ -5532,24 +5673,14 @@ export default function MessageList({
 
           return (
             <div key={msg.id || index}>
-              {/* Insert timeline before the streaming assistant message */}
-              {isLast && timelineBeforeLastMsg && isProcessing && timelineStages && (
-                <div className={styles.timelineWrapper}>
-                  <ThinkingTimeline
-                    stages={timelineStages}
-                    modelName={modelName}
-                    provider={provider}
-                    fading={timelineFading}
-                  />
-                </div>
-              )}
               <Message
                 message={msg}
                 isStreaming={shouldStream}
                 streamedText={shouldStream ? streamedText : msg.content}
                 isDark={isDark}
                 isLastAssistant={isLastAssistant}
-                hideThinking={isLast && isProcessing && msg.role === 'assistant'}
+                hideThinking={false}
+                pipelineStatus={isLast && isProcessing ? pipelineStatus : null}
                 onFollowUpSelect={handleFollowUpSelect}
                 onQuestionsSend={handleQuestionsSend}
                 onRetry={onRetry}
@@ -5568,7 +5699,7 @@ export default function MessageList({
           );
         })}
 
-        {/* Timeline after all messages (routing/thinking phase, no assistant msg yet) */}
+        {/* Standalone timeline only when no assistant message exists yet (early routing) */}
         {!timelineBeforeLastMsg && isProcessing && timelineStages && (
           <div className={styles.timelineWrapper}>
             <ThinkingTimeline
