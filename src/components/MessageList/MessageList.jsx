@@ -4458,7 +4458,7 @@ function ThinkingBlock({
     }
   }, [thinkingContent, isLiveStreaming]);
 
-  if (!thinkingData && !thinkingContent && !isLiveStreaming) return null;
+  if (!thinkingData && !thinkingContent) return null;
 
   const routingDuration = thinkingData?.routingDuration || '0.0';
   const thinkingDuration = thinkingData?.thinkingDuration || '0.0';
@@ -5284,21 +5284,18 @@ function Message({
         />
       )}
 
-      {!isUser &&
-        (message.thinkingData ||
-          message.thinkingContent ||
-          (isStreaming && pipelineStatus && pipelineStatus !== 'idle')) && (
-          <ThinkingBlock
-            thinkingData={message.thinkingData}
-            thinkingContent={message.thinkingContent}
-            modelName={message.modelName}
-            provider={message.provider}
-            webSearchUsed={message.webSearchUsed}
-            webSearchSources={message.sources || message.citations}
-            isLiveStreaming={isStreaming}
-            pipelineStatus={pipelineStatus}
-          />
-        )}
+      {!isUser && (message.thinkingData || message.thinkingContent) && (
+        <ThinkingBlock
+          thinkingData={message.thinkingData}
+          thinkingContent={message.thinkingContent}
+          modelName={message.modelName}
+          provider={message.provider}
+          webSearchUsed={message.webSearchUsed}
+          webSearchSources={message.sources || message.citations}
+          isLiveStreaming={isStreaming}
+          pipelineStatus={pipelineStatus}
+        />
+      )}
 
       {/* Web search indicator during tool_use */}
       {!isUser && isStreaming && message.toolUse && message.toolUse.tool === 'web_search' && (
@@ -5700,16 +5697,19 @@ export default function MessageList({
         })}
 
         {/* Standalone timeline only when no assistant message exists yet (early routing) */}
-        {!timelineBeforeLastMsg && isProcessing && timelineStages && (
-          <div className={styles.timelineWrapper}>
-            <ThinkingTimeline
-              stages={timelineStages}
-              modelName={modelName}
-              provider={provider}
-              fading={timelineFading}
-            />
-          </div>
-        )}
+        {!timelineBeforeLastMsg &&
+          isProcessing &&
+          timelineStages &&
+          !(lastMsg && lastMsg.role === 'assistant' && lastMsg.thinkingData) && (
+            <div className={styles.timelineWrapper}>
+              <ThinkingTimeline
+                stages={timelineStages}
+                modelName={modelName}
+                provider={provider}
+                fading={timelineFading}
+              />
+            </div>
+          )}
 
         <div ref={bottomRef} className={styles.scrollAnchor} />
       </div>
