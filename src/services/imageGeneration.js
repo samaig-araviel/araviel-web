@@ -13,6 +13,15 @@ let _cachedImages = null;
 let _cacheTimestamp = 0;
 const CACHE_TTL = 30_000; // 30 seconds
 
+/**
+ * Clear the in-memory image cache. Must be called on sign-out
+ * to prevent leaking images between user sessions.
+ */
+export function clearImageCache() {
+  _cachedImages = null;
+  _cacheTimestamp = 0;
+}
+
 // Limits per tier per 24 hours
 const TIER_LIMITS = {
   free: 2,

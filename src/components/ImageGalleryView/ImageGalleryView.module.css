@@ -636,6 +636,11 @@
   transform: scale(1.05);
 }
 
+.cardDeleteBtn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
 .cardOverlayBtn svg {
   width: 14px;
   height: 14px;

@@ -112,8 +112,14 @@ export default function ImageGalleryView() {
   const fileInputRef = useRef(null);
   const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
 
+  // Ref to track current auth state — prevents stale closures in event listeners
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  useEffect(() => { isAuthenticatedRef.current = isAuthenticated; }, [isAuthenticated]);
+
   const loadImagesRef = useRef(null);
   const loadImages = useCallback(async () => {
+    // Guard against stale calls after sign-out (e.g. from visibility change)
+    if (!isAuthenticatedRef.current) return;
     // Show cached images immediately, then fetch fresh from API
     const cached = getGeneratedImages();
     if (cached.length > 0) setImages(cached);
@@ -585,6 +591,16 @@ export default function ImageGalleryView() {
                             title="Download"
                           >
                             <FileDownIcon />
+                          </button>
+                          <button
+                            className={`${styles.cardOverlayBtn} ${styles.cardDeleteBtn}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm(img.id);
+                            }}
+                            title="Delete"
+                          >
+                            <TrashIcon />
                           </button>
                         </div>
                       </div>
