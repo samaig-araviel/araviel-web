@@ -592,6 +592,16 @@ export default function ImageGalleryView() {
                           >
                             <FileDownIcon />
                           </button>
+                          <button
+                            className={`${styles.cardOverlayBtn} ${styles.cardDeleteBtn}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm(img.id);
+                            }}
+                            title="Delete"
+                          >
+                            <TrashIcon />
+                          </button>
                         </div>
                       </div>
                     </div>
