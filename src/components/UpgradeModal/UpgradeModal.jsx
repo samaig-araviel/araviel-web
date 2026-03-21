@@ -10,6 +10,7 @@ import {
   initiateUpgrade,
   clearUpgradeLoading,
 } from '../../store/slices/subscriptionSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { getTierById, getDisplayPrice, SubscriptionTier } from '../../config/subscription';
 import styles from './UpgradeModal.module.css';
@@ -51,6 +52,7 @@ export default function UpgradeModal() {
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
   const upgradeLoading = useSelector(selectUpgradeLoading);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   useEffect(() => {
     if (!show) return;
@@ -162,7 +164,11 @@ export default function UpgradeModal() {
         {/* Actions */}
         <div className={styles.actions}>
           <button className={styles.upgradeBtn} onClick={handleUpgrade} disabled={isLoading}>
-            {isLoading ? 'Processing...' : `Upgrade to ${suggestedTier.name}`}
+            {isLoading
+              ? 'Processing...'
+              : isAuthenticated
+              ? `Upgrade to ${suggestedTier.name}`
+              : `Start with ${suggestedTier.name}`}
           </button>
           <button className={styles.viewPlansBtn} onClick={handleViewPlans}>
             View all plans

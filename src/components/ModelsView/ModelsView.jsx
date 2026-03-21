@@ -5,6 +5,7 @@ import {
   selectSelectedModelId,
   setSelectedModel as setReduxSelectedModel,
 } from '../../store/slices/chatSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import {
   MODELS,
   PROVIDERS,
@@ -461,12 +462,13 @@ function ModelGroup({ models, activeFilter, selectedModelId, isLocked, onSelect 
 
 // ── Upgrade Banner ──
 
-function UpgradeBanner({ currentTier, lockedCount }) {
+function UpgradeBanner({ currentTier, lockedCount, isAuthenticated }) {
   const nextTier = NEXT_TIER[currentTier];
   if (!nextTier || lockedCount === 0) return null;
 
   const nextLabel = TIER_DISPLAY[nextTier];
   const isLiteUpgrade = nextTier === ACCESS_TIERS.lite;
+  const ctaText = isAuthenticated ? `Upgrade to ${nextLabel}` : `Sign up for ${nextLabel}`;
 
   return (
     <div
@@ -489,7 +491,7 @@ function UpgradeBanner({ currentTier, lockedCount }) {
             </p>
           </div>
         </div>
-        <button className={styles.upgradeBannerBtn}>Upgrade to {nextLabel}</button>
+        <button className={styles.upgradeBannerBtn}>{ctaText}</button>
       </div>
     </div>
   );
@@ -497,7 +499,15 @@ function UpgradeBanner({ currentTier, lockedCount }) {
 
 // ── Model Detail Panel ──
 
-function ModelDetailPanel({ model, isSelected, isLocked, userTier, onSetModel, onClose }) {
+function ModelDetailPanel({
+  model,
+  isSelected,
+  isLocked,
+  userTier,
+  isAuthenticated,
+  onSetModel,
+  onClose,
+}) {
   const provider = PROVIDERS[model.provider];
   const panelRef = useRef(null);
   const nextTier = NEXT_TIER[userTier];
@@ -628,7 +638,9 @@ function ModelDetailPanel({ model, isSelected, isLocked, userTier, onSetModel, o
             </span>
             {nextTier && (
               <button className={styles.detailUpgradeBtn}>
-                Upgrade to {TIER_DISPLAY[model.accessTier]}
+                {isAuthenticated
+                  ? `Upgrade to ${TIER_DISPLAY[model.accessTier]}`
+                  : `Sign up for ${TIER_DISPLAY[model.accessTier]}`}
               </button>
             )}
           </div>
@@ -657,6 +669,7 @@ function ModelDetailPanel({ model, isSelected, isLocked, userTier, onSetModel, o
 export default function ModelsView() {
   const dispatch = useDispatch();
   const selectedModelId = useSelector(selectSelectedModelId);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [tierFilter, setTierFilter] = useState('all'); // 'all' | 'free' | 'lite' | 'pro'
@@ -875,7 +888,11 @@ export default function ModelsView() {
             )}
 
             {/* Upgrade Banner */}
-            <UpgradeBanner currentTier={userTier} lockedCount={lockedModels.length} />
+            <UpgradeBanner
+              currentTier={userTier}
+              lockedCount={lockedModels.length}
+              isAuthenticated={isAuthenticated}
+            />
 
             {/* Locked Models Section */}
             {lockedModels.length > 0 && (
@@ -913,6 +930,7 @@ export default function ModelsView() {
           isSelected={selectedModelId === detailModel.id}
           isLocked={isDetailLocked}
           userTier={userTier}
+          isAuthenticated={isAuthenticated}
           onSetModel={handleSetModel}
           onClose={() => setDetailModel(null)}
         />
