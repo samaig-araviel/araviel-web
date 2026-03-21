@@ -275,28 +275,142 @@
   margin-left: 2px;
 }
 
-.qualitySelect {
-  padding: 4px 8px;
-  border-radius: 8px;
-  border: none;
+/* ===== Quality Dropdown ===== */
+.qualityDropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.qualityTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
   background: transparent;
-  color: var(--text-secondary);
+  border: none;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  font-family: inherit;
+  color: var(--text-secondary);
   cursor: pointer;
-  outline: none;
   transition: background-color 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  font-family: inherit;
 }
 
-.qualitySelect:hover {
-  background: var(--bg-hover);
+.qualityTrigger:hover {
+  background-color: var(--bg-hover);
   color: var(--text-primary);
 }
 
-.qualitySelect:focus {
-  background: var(--bg-hover);
+.qualityTriggerOpen {
+  background-color: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.qualityTriggerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qualityTriggerChevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.qualityTriggerChevron svg {
+  width: 12px;
+  height: 12px;
+}
+
+.qualityTriggerChevronOpen {
+  transform: rotate(180deg);
+}
+
+.qualityMenu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 200;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  width: 220px;
+  overflow: hidden;
+  animation: qualityMenuIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 4px 0;
+}
+
+@keyframes qualityMenuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.qualityOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  font-family: inherit;
+  color: var(--text-primary);
+}
+
+.qualityOption:hover {
+  background-color: var(--bg-hover);
+}
+
+.qualityOptionSelected {
+  background-color: var(--bg-active);
+}
+
+.qualityOptionContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.qualityOptionLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.qualityOptionCost {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.qualityCheckmark {
+  display: flex;
+  align-items: center;
+  color: var(--text-primary);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.qualityCheckmark svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ===== Quick Prompts — 2-column structured grid ===== */
