@@ -292,8 +292,32 @@ export default function ImageGalleryView() {
   const filteredImages =
     filterModel === 'all' ? images : images.filter((img) => img.model === filterModel);
 
+  // For guest users, intercept any click on interactive elements
+  const handleGuestClick = useCallback(
+    (e) => {
+      if (isAuthenticated) return;
+      // Allow the page to render but intercept all interactive elements
+      const target = e.target;
+      const isInteractive =
+        target.closest('button') ||
+        target.closest('textarea') ||
+        target.closest('input') ||
+        target.closest('a') ||
+        target.closest('[role="button"]');
+      if (isInteractive) {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowAuthModal(true);
+      }
+    },
+    [isAuthenticated]
+  );
+
   return (
-    <div className={styles.galleryPage}>
+    <div
+      className={styles.galleryPage}
+      onClickCapture={!isAuthenticated ? handleGuestClick : undefined}
+    >
       <div className={styles.galleryInner}>
         {/* Hero */}
         <div className={styles.heroSection}>
