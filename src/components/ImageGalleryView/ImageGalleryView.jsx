@@ -14,6 +14,11 @@ import {
   setCreditBalance,
 } from '../../store/slices/chatSlice';
 import { AuthModal } from '../Auth';
+import {
+  hasReachedGuestImageLimit,
+  incrementGuestImageCount,
+  getRemainingGuestImages,
+} from '../../utils/guestSession';
 import { fetchCreditBalance } from '../../services/credits';
 import { IMAGE_QUALITY_OPTIONS } from '../../config/credits';
 import CreditBalance from '../CreditBalance/CreditBalance';
@@ -228,6 +233,15 @@ export default function ImageGalleryView() {
   };
 
   const firePromptInChat = (prompt) => {
+    // Guest image limit check
+    if (!isAuthenticated && hasReachedGuestImageLimit()) {
+      setShowAuthModal(true);
+      return;
+    }
+    // Track guest image usage
+    if (!isAuthenticated) {
+      incrementGuestImageCount();
+    }
     dispatch(createNewChat());
     dispatch(setInputValue(prompt));
     dispatch(setPendingModality('image'));
@@ -251,10 +265,6 @@ export default function ImageGalleryView() {
 
   const handlePromptSubmit = (e) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
     const prompt = promptInput.trim();
     if (!prompt) return;
     setPromptInput('');
@@ -270,10 +280,7 @@ export default function ImageGalleryView() {
   };
 
   const handleQuickPromptClick = (item) => {
-    if (!isAuthenticated) {
-      setShowAuthModal(true);
-      return;
-    }
+    // Allow guests to preview the prompt — gate happens on submit
     setPromptInput(item.prompt);
     if (promptInputRef.current) {
       promptInputRef.current.focus();
@@ -292,32 +299,8 @@ export default function ImageGalleryView() {
   const filteredImages =
     filterModel === 'all' ? images : images.filter((img) => img.model === filterModel);
 
-  // For guest users, intercept any click on interactive elements
-  const handleGuestClick = useCallback(
-    (e) => {
-      if (isAuthenticated) return;
-      // Allow the page to render but intercept all interactive elements
-      const target = e.target;
-      const isInteractive =
-        target.closest('button') ||
-        target.closest('textarea') ||
-        target.closest('input') ||
-        target.closest('a') ||
-        target.closest('[role="button"]');
-      if (isInteractive) {
-        e.preventDefault();
-        e.stopPropagation();
-        setShowAuthModal(true);
-      }
-    },
-    [isAuthenticated]
-  );
-
   return (
-    <div
-      className={styles.galleryPage}
-      onClickCapture={!isAuthenticated ? handleGuestClick : undefined}
-    >
+    <div className={styles.galleryPage}>
       <div className={styles.galleryInner}>
         {/* Hero */}
         <div className={styles.heroSection}>
@@ -325,7 +308,28 @@ export default function ImageGalleryView() {
           <p className={styles.heroSubtitle}>Describe what you imagine and bring it to life</p>
 
           <form className={styles.promptForm} onSubmit={handlePromptSubmit}>
-            <div className={styles.promptInputWrapper}>
+            {/* Guest image limit banner */}
+            {!isAuthenticated && !hasReachedGuestImageLimit() && getRemainingGuestImages() === 1 && (
+              <div className={styles.guestBanner}>
+                <span className={styles.guestBannerText}>1 free image creation</span>
+                <span className={styles.guestBannerDot} />
+                <button type="button" className={styles.guestBannerLink} onClick={() => setShowAuthModal(true)}>
+                  Sign up for more
+                </button>
+              </div>
+            )}
+            {!isAuthenticated && hasReachedGuestImageLimit() && (
+              <div className={`${styles.guestBanner} ${styles.guestBannerUrgent}`}>
+                <span className={styles.guestBannerText}>Free image creation used</span>
+                <span className={styles.guestBannerDot} />
+                <button type="button" className={styles.guestBannerLink} onClick={() => setShowAuthModal(true)}>
+                  Sign up to create more
+                </button>
+              </div>
+            )}
+            <div className={`${styles.promptInputWrapper} ${
+              !isAuthenticated ? styles.promptInputWrapperWithBanner : ''
+            }`}>
               <textarea
                 ref={promptInputRef}
                 className={styles.promptInput}
