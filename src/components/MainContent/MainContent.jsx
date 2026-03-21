@@ -2271,7 +2271,7 @@ export default function MainContent() {
                   className={styles.guestBannerLink}
                   onClick={() => setShowGuestLimitModal(true)}
                 >
-                  Sign up for unlimited
+                  Sign up for more
                 </button>
               </div>
             )}

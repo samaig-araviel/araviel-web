@@ -6,33 +6,66 @@
  */
 
 const GUEST_PROMPT_COUNT_KEY = 'araviel-guest-prompt-count';
+const GUEST_IMAGE_COUNT_KEY = 'araviel-guest-image-count';
 
-/** Maximum prompts a guest user can send before being required to sign up. */
+/** Maximum text prompts a guest user can send before being required to sign up. */
 export const GUEST_PROMPT_LIMIT = 2;
 
-/** Get the number of prompts the guest has already sent. */
+/** Maximum image prompts a guest user can send before being required to sign up. */
+export const GUEST_IMAGE_LIMIT = 1;
+
+// ── Text prompts ──
+
+/** Get the number of text prompts the guest has already sent. */
 export function getGuestPromptCount() {
   const count = localStorage.getItem(GUEST_PROMPT_COUNT_KEY);
   return count ? parseInt(count, 10) : 0;
 }
 
-/** Increment the guest prompt count by 1. */
+/** Increment the guest text prompt count by 1. */
 export function incrementGuestPromptCount() {
   const current = getGuestPromptCount();
   localStorage.setItem(GUEST_PROMPT_COUNT_KEY, String(current + 1));
 }
 
-/** Check whether the guest has reached their prompt limit. */
+/** Check whether the guest has reached their text prompt limit. */
 export function hasReachedGuestLimit() {
   return getGuestPromptCount() >= GUEST_PROMPT_LIMIT;
 }
 
-/** Get remaining prompts for the guest. */
+/** Get remaining text prompts for the guest. */
 export function getRemainingGuestPrompts() {
   return Math.max(0, GUEST_PROMPT_LIMIT - getGuestPromptCount());
 }
 
-/** Reset the guest prompt count (called when user signs up or signs in). */
+// ── Image prompts ──
+
+/** Get the number of image prompts the guest has already sent. */
+export function getGuestImageCount() {
+  const count = localStorage.getItem(GUEST_IMAGE_COUNT_KEY);
+  return count ? parseInt(count, 10) : 0;
+}
+
+/** Increment the guest image prompt count by 1. */
+export function incrementGuestImageCount() {
+  const current = getGuestImageCount();
+  localStorage.setItem(GUEST_IMAGE_COUNT_KEY, String(current + 1));
+}
+
+/** Check whether the guest has reached their image prompt limit. */
+export function hasReachedGuestImageLimit() {
+  return getGuestImageCount() >= GUEST_IMAGE_LIMIT;
+}
+
+/** Get remaining image prompts for the guest. */
+export function getRemainingGuestImages() {
+  return Math.max(0, GUEST_IMAGE_LIMIT - getGuestImageCount());
+}
+
+// ── Reset ──
+
+/** Reset all guest prompt counts (called when user signs up or signs in). */
 export function resetGuestPromptCount() {
   localStorage.removeItem(GUEST_PROMPT_COUNT_KEY);
+  localStorage.removeItem(GUEST_IMAGE_COUNT_KEY);
 }

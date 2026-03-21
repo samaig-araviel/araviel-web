@@ -379,7 +379,7 @@ export const MODELS = [
     },
     bestFor: ['Summarization', 'Classification', 'High-throughput pipelines'],
     badge: 'Most Affordable',
-    accessTier: ACCESS_TIERS.free,
+    accessTier: ACCESS_TIERS.lite,
     creditCost: 1,
   },
   {
