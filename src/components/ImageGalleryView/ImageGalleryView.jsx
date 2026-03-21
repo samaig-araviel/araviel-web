@@ -681,6 +681,13 @@ export default function ImageGalleryView() {
           />,
           document.body
         )}
+
+      {/* Guest auth modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialTab="signup"
+      />
     </div>
   );
 }
@@ -871,13 +878,6 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
           </div>
         )}
       </div>
-
-      {/* Guest auth modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        initialTab="signup"
-      />
     </div>
   );
 }
