@@ -11,7 +11,6 @@ import { getAvailableTiers } from '../../config/subscription';
 import { getUserTier } from '../../data/models';
 import BillingToggle from './BillingToggle';
 import TierCard from './TierCard';
-import FeatureComparisonTable from './FeatureComparisonTable';
 import styles from './PricingView.module.css';
 
 export default function PricingView() {
@@ -78,9 +77,6 @@ export default function PricingView() {
             />
           ))}
         </div>
-
-        {/* Feature Comparison Table */}
-        <FeatureComparisonTable currentTier={currentTier} />
 
         {/* Footer Note */}
         <div className={styles.footerNote}>

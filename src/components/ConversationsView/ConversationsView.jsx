@@ -457,6 +457,50 @@ export default function ConversationsView() {
 
   const handleAssignProject = async (projectId) => {
     if (!projectPickerFor) return;
+
+    // Bulk mode
+    if (projectPickerFor === 'bulk') {
+      const ids = [...selectedIds];
+      const prevStates = conversations
+        .filter((c) => ids.includes(c.id))
+        .map((c) => ({ id: c.id, projectId: c.projectId }));
+      // Optimistic update
+      dispatch(
+        setConversations({
+          conversations: conversations.map((c) =>
+            selectedIds.has(c.id) ? { ...c, projectId } : c
+          ),
+          total: conversationsTotal,
+        })
+      );
+      setProjectPickerFor(null);
+      exitSelectMode();
+      let failCount = 0;
+      await Promise.all(
+        ids.map((id) =>
+          updateConversation(id, { project_id: projectId }).catch(() => {
+            failCount++;
+          })
+        )
+      );
+      if (failCount > 0) {
+        dispatch(
+          setConversations({
+            conversations: conversations.map((c) => {
+              const prev = prevStates.find((p) => p.id === c.id);
+              return prev ? { ...c, projectId: prev.projectId } : c;
+            }),
+            total: conversationsTotal,
+          })
+        );
+        showError(`Couldn't add ${failCount} conversation(s) to project.`);
+      } else {
+        showSuccess(`${ids.length} conversation(s) added to project.`);
+      }
+      return;
+    }
+
+    // Single mode
     const chatId = projectPickerFor;
     const prevProjectId = conversations.find((c) => c.id === chatId)?.projectId;
     // Optimistic update
@@ -504,6 +548,52 @@ export default function ConversationsView() {
         })
       );
       showError("Couldn't remove conversation from project.");
+    }
+  };
+
+  const handleBulkAddToProject = () => {
+    if (!hasSelection) return;
+    setProjectPickerFor('bulk');
+  };
+
+  const handleBulkRemoveFromProject = async () => {
+    if (!hasSelection) return;
+    const ids = [...selectedIds];
+    const prevStates = conversations
+      .filter((c) => ids.includes(c.id))
+      .map((c) => ({ id: c.id, projectId: c.projectId }));
+    // Optimistic update
+    dispatch(
+      setConversations({
+        conversations: conversations.map((c) =>
+          selectedIds.has(c.id) ? { ...c, projectId: null } : c
+        ),
+        total: conversationsTotal,
+      })
+    );
+    exitSelectMode();
+    let failCount = 0;
+    await Promise.all(
+      ids.map((id) =>
+        updateConversation(id, { project_id: null }).catch(() => {
+          failCount++;
+        })
+      )
+    );
+    if (failCount > 0) {
+      // Rollback on failure
+      dispatch(
+        setConversations({
+          conversations: conversations.map((c) => {
+            const prev = prevStates.find((p) => p.id === c.id);
+            return prev ? { ...c, projectId: prev.projectId } : c;
+          }),
+          total: conversationsTotal,
+        })
+      );
+      showError(`Couldn't remove ${failCount} conversation(s) from project.`);
+    } else {
+      showSuccess('Conversations removed from project.');
     }
   };
 
@@ -1201,6 +1291,22 @@ export default function ConversationsView() {
                   )}
                 </div>
                 <div className={styles.selectionActions}>
+                  <button
+                    className={styles.selectionAction}
+                    onClick={() => hasSelection && handleBulkAddToProject()}
+                    disabled={!hasSelection}
+                    title="Add to project"
+                  >
+                    <ProjectsIcon />
+                  </button>
+                  <button
+                    className={styles.selectionAction}
+                    onClick={() => hasSelection && handleBulkRemoveFromProject()}
+                    disabled={!hasSelection}
+                    title="Remove from project"
+                  >
+                    <LinkIcon />
+                  </button>
                   <button
                     className={styles.selectionAction}
                     onClick={() => hasSelection && toggleStar(selectedIds)}
