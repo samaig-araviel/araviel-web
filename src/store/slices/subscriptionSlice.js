@@ -46,6 +46,7 @@ const subscriptionSlice = createSlice({
     clearUpgradeLoading: (state) => {
       state.upgradeLoading = null;
     },
+    resetSubscriptionState: () => initialState,
   },
 });
 
@@ -59,6 +60,7 @@ export const {
   hideUpgradeModal,
   initiateUpgrade,
   clearUpgradeLoading,
+  resetSubscriptionState,
 } = subscriptionSlice.actions;
 
 export const selectCurrentTier = (state) => state.subscription.currentTier;

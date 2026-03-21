@@ -139,7 +139,13 @@ export default function ImageGalleryView() {
   useEffect(() => {
     if (isAuthenticated) {
       loadImages();
+    } else {
+      // Clear stale images when user signs out
+      setImages([]);
     }
+
+    // Only attach listeners for authenticated users
+    if (!isAuthenticated) return;
 
     // Refresh gallery when new images are saved (e.g. from chat)
     // Use a small debounce to handle rapid successive saves
@@ -164,7 +170,7 @@ export default function ImageGalleryView() {
       window.removeEventListener('araviel-image-saved', handleImageSaved);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [loadImages]);
+  }, [loadImages, isAuthenticated]);
 
   useEffect(() => {
     const handleClick = (e) => {

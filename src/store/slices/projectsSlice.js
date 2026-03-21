@@ -32,6 +32,7 @@ const projectsSlice = createSlice({
     setProjectsError: (state, action) => {
       state.error = action.payload;
     },
+    resetProjectsState: () => initialState,
   },
 });
 
@@ -42,6 +43,7 @@ export const {
   removeProject,
   setProjectsLoading,
   setProjectsError,
+  resetProjectsState,
 } = projectsSlice.actions;
 
 export const selectProjects = (state) => state.projects.projects;

@@ -688,8 +688,9 @@ export default function MainContent() {
     };
   }, [currentChatId]);
 
-  // Fetch credit balance on mount and when modality changes to image
+  // Fetch credit balance on mount and when modality changes to image (authenticated users only)
   useEffect(() => {
+    if (!isAuthenticated) return;
     if (selectedModality === 'image' || !creditBalance) {
       fetchCreditBalance()
         .then((data) => {
@@ -697,7 +698,7 @@ export default function MainContent() {
         })
         .catch(() => {});
     }
-  }, [selectedModality, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedModality, isAuthenticated, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Helper to dispatch conversation updates with correct payload shape
   const updateConvState = (newConversations) => {

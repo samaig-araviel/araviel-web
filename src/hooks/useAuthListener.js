@@ -6,7 +6,12 @@ import {
   setAuth,
   clearAuth,
 } from '../store/slices/authSlice';
+import { resetChatState, setCreditBalance } from '../store/slices/chatSlice';
+import { resetProjectsState } from '../store/slices/projectsSlice';
+import { resetSubscriptionState } from '../store/slices/subscriptionSlice';
 import { resetGuestPromptCount } from '../utils/guestSession';
+import { setUserTier } from '../data/models';
+import { fetchCreditBalance } from '../services/credits';
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -34,6 +39,18 @@ function mapSession(session) {
     expires_at: session.expires_at,
   };
 }
+
+// ---------------------------------------------------------------------------
+// localStorage keys to clear on sign-out (user-specific data)
+// ---------------------------------------------------------------------------
+
+const USER_STORAGE_KEYS = [
+  'araviel-user-tier',
+  'araviel-image-gen-limits',
+  'araviel-settings',
+  'araviel-user-id',
+  'araviel-imported-context-providers',
+];
 
 // ---------------------------------------------------------------------------
 // Hook
@@ -64,14 +81,40 @@ export default function useAuthListener() {
                 session: mapSession(session),
               }),
             );
-            // Reset guest prompt counter when a real (non-anonymous) user signs in
+            // On real (non-anonymous) sign-in, sync tier/credits from backend
             if (event === 'SIGNED_IN' && user && !user.isAnonymous) {
               resetGuestPromptCount();
+              fetchCreditBalance()
+                .then((data) => {
+                  if (data.balance) {
+                    dispatch(setCreditBalance(data.balance));
+                    if (data.balance.tier) {
+                      setUserTier(data.balance.tier);
+                    }
+                  }
+                })
+                .catch(() => {});
             }
             break;
           }
           case 'SIGNED_OUT': {
+            // 1. Reset guest prompt counters
+            resetGuestPromptCount();
+
+            // 2. Clear user-specific localStorage
+            USER_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+
+            // 3. Reset all Redux slices
             dispatch(clearAuth());
+            dispatch(resetChatState());
+            dispatch(resetProjectsState());
+            dispatch(resetSubscriptionState());
+
+            // 4. Reset tier to free
+            setUserTier('free');
+
+            // 5. Re-create anonymous session so guest flow works
+            dispatch(initializeAuth());
             break;
           }
           default:
