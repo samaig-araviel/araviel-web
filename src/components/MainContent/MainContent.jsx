@@ -2258,21 +2258,43 @@ export default function MainContent() {
         )}
 
         <div className={styles.inputSection}>
-          {/* Guest prompt limit info */}
-          {!isAuthenticated && !hasReachedGuestLimit() && getRemainingGuestPrompts() <= 1 && (
-            <div className={styles.guestLimitInfo}>
-              <span>{getRemainingGuestPrompts()} free prompt remaining.</span>
-              <button onClick={() => setShowGuestLimitModal(true)}>Sign up for unlimited</button>
-            </div>
-          )}
-          {!isAuthenticated && hasReachedGuestLimit() && (
-            <div className={styles.guestLimitReached}>
-              <span>You&apos;ve used your free prompts.</span>
-              <button onClick={() => setShowGuestLimitModal(true)}>Sign up to continue</button>
-            </div>
-          )}
           <form className={styles.inputContainer} onSubmit={handleSubmit}>
-            <div className={styles.inputWrapper}>
+            {/* Guest prompt limit banner — sits flush on top of input box */}
+            {!isAuthenticated && !hasReachedGuestLimit() && getRemainingGuestPrompts() <= 1 && (
+              <div className={styles.guestBanner}>
+                <span className={styles.guestBannerText}>
+                  {getRemainingGuestPrompts()} free prompt remaining
+                </span>
+                <span className={styles.guestBannerDot} />
+                <button
+                  type="button"
+                  className={styles.guestBannerLink}
+                  onClick={() => setShowGuestLimitModal(true)}
+                >
+                  Sign up for unlimited
+                </button>
+              </div>
+            )}
+            {!isAuthenticated && hasReachedGuestLimit() && (
+              <div className={`${styles.guestBanner} ${styles.guestBannerUrgent}`}>
+                <span className={styles.guestBannerText}>
+                  You&apos;ve used your free prompts
+                </span>
+                <span className={styles.guestBannerDot} />
+                <button
+                  type="button"
+                  className={styles.guestBannerLink}
+                  onClick={() => setShowGuestLimitModal(true)}
+                >
+                  Sign up to continue
+                </button>
+              </div>
+            )}
+            <div className={`${styles.inputWrapper} ${
+              !isAuthenticated && (getRemainingGuestPrompts() <= 1 || hasReachedGuestLimit())
+                ? styles.inputWrapperWithBanner
+                : ''
+            }`}>
               {attachedFiles.length > 0 && (
                 <div className={styles.attachedFiles}>
                   <div className={styles.attachedFilesScroll}>

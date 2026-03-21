@@ -633,13 +633,9 @@ export default function ModelsView() {
       models = models.filter((m) => m.provider === activeFilter);
     }
 
-    // Tier filter — show only models available at the selected tier
+    // Tier filter — show only models that belong to the selected tier
     if (tierFilter !== 'all') {
-      models = models.filter((m) => {
-        if (tierFilter === ACCESS_TIERS.pro) return true; // Pro sees all
-        if (tierFilter === ACCESS_TIERS.lite) return m.accessTier !== ACCESS_TIERS.pro;
-        return m.accessTier === ACCESS_TIERS.free; // Free tier only
-      });
+      models = models.filter((m) => m.accessTier === tierFilter);
     }
 
     if (searchQuery.trim()) {

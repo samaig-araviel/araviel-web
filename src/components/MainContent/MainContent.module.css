@@ -2608,72 +2608,72 @@
   font-weight: 500;
 }
 
-/* Guest prompt limit banners */
-.guestLimitInfo {
+/* ── Guest prompt limit banner ──
+   Sits flush on top of the input box, matching its width and border-radius.
+   Looks like a cap attached to the input. */
+
+.guestBanner {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-  margin-bottom: 8px;
-  border-radius: 10px;
-  background-color: rgba(59, 130, 246, 0.08);
+  gap: 0;
+  padding: 10px 20px;
+  border-radius: 16px 16px 0 0;
+  background: var(--bg-icon-button);
+  color: var(--text-icon-button);
   font-size: 13px;
-  color: var(--text-secondary);
-  animation: guestBannerIn 0.3s ease;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  animation: guestBannerSlideIn 0.35s cubic-bezier(0.2, 0, 0, 1);
 }
 
-.guestLimitInfo button {
+.guestBannerUrgent {
+  background: var(--bg-icon-button);
+}
+
+.guestBannerText {
+  opacity: 0.85;
+}
+
+.guestBannerDot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.35;
+  margin: 0 10px;
+  flex-shrink: 0;
+}
+
+.guestBannerLink {
   background: none;
   border: none;
-  color: #3b82f6;
-  font-weight: 600;
+  color: inherit;
   font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   padding: 0;
   text-decoration: underline;
   text-underline-offset: 2px;
+  text-decoration-thickness: 1.5px;
+  opacity: 1;
+  transition: opacity 0.15s ease;
 }
 
-.guestLimitInfo button:hover {
-  opacity: 0.8;
+.guestBannerLink:hover {
+  opacity: 0.75;
 }
 
-.guestLimitReached {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 16px;
-  margin-bottom: 8px;
-  border-radius: 10px;
-  background-color: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  font-size: 13px;
-  color: var(--text-secondary);
-  animation: guestBannerIn 0.3s ease;
+/* When the banner is showing, remove the top border-radius from the input */
+.inputWrapperWithBanner {
+  border-radius: 0 0 16px 16px;
+  border-top-color: transparent;
 }
 
-.guestLimitReached button {
-  background: none;
-  border: none;
-  color: #f59e0b;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.guestLimitReached button:hover {
-  opacity: 0.8;
-}
-
-@keyframes guestBannerIn {
+@keyframes guestBannerSlideIn {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
