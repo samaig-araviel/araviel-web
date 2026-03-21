@@ -170,6 +170,11 @@ const chatSlice = createSlice({
     setConversationsLoading: (state, action) => {
       state.conversationsLoading = action.payload;
     },
+    resetChatState: (state) => {
+      // Preserve user's model preference (persisted in localStorage), reset everything else
+      const selectedModelId = state.selectedModelId;
+      Object.assign(state, initialState, { selectedModelId });
+    },
   },
 });
 
@@ -202,6 +207,7 @@ export const {
   setConversations,
   appendConversations,
   setConversationsLoading,
+  resetChatState,
 } = chatSlice.actions;
 
 export const selectInputValue = (state) => state.chat.inputValue;
