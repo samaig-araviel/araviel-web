@@ -36,6 +36,7 @@ import {
   FilterIcon,
   SendIcon,
   ChevronDownIcon,
+  CheckIcon,
   MaximizeIcon,
   UserIcon,
   CameraIcon,
@@ -105,16 +106,20 @@ export default function ImageGalleryView() {
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showBuyPacks, setShowBuyPacks] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [qualityOpen, setQualityOpen] = useState(false);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const promptInputRef = useRef(null);
   const filterRef = useRef(null);
   const attachMenuRef = useRef(null);
   const fileInputRef = useRef(null);
+  const qualityRef = useRef(null);
   const isMobile = typeof window !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent);
 
   // Ref to track current auth state — prevents stale closures in event listeners
   const isAuthenticatedRef = useRef(isAuthenticated);
-  useEffect(() => { isAuthenticatedRef.current = isAuthenticated; }, [isAuthenticated]);
+  useEffect(() => {
+    isAuthenticatedRef.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   const loadImagesRef = useRef(null);
   const loadImages = useCallback(async () => {
@@ -185,6 +190,9 @@ export default function ImageGalleryView() {
       }
       if (attachMenuRef.current && !attachMenuRef.current.contains(e.target)) {
         setShowAttachMenu(false);
+      }
+      if (qualityRef.current && !qualityRef.current.contains(e.target)) {
+        setQualityOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -321,29 +329,41 @@ export default function ImageGalleryView() {
 
           <form className={styles.promptForm} onSubmit={handlePromptSubmit}>
             {/* Guest image limit banner */}
-            {!isAuthenticated && !hasReachedGuestImageLimit() && getRemainingGuestImages() === 1 && (
-              <div className={styles.guestBanner}>
-                <span className={styles.guestBannerText}>1 free image creation</span>
-                <span className={styles.guestBannerDot} />
-                <button type="button" className={styles.guestBannerLink} onClick={() => setShowAuthModal(true)}>
-                  Sign up for more
-                </button>
-              </div>
-            )}
+            {!isAuthenticated &&
+              !hasReachedGuestImageLimit() &&
+              getRemainingGuestImages() === 1 && (
+                <div className={styles.guestBanner}>
+                  <span className={styles.guestBannerText}>1 free image creation</span>
+                  <span className={styles.guestBannerDot} />
+                  <button
+                    type="button"
+                    className={styles.guestBannerLink}
+                    onClick={() => setShowAuthModal(true)}
+                  >
+                    Sign up for more
+                  </button>
+                </div>
+              )}
             {!isAuthenticated && hasReachedGuestImageLimit() && (
               <div className={`${styles.guestBanner} ${styles.guestBannerUrgent}`}>
                 <span className={styles.guestBannerText}>Free image creation used</span>
                 <span className={styles.guestBannerDot} />
-                <button type="button" className={styles.guestBannerLink} onClick={() => setShowAuthModal(true)}>
+                <button
+                  type="button"
+                  className={styles.guestBannerLink}
+                  onClick={() => setShowAuthModal(true)}
+                >
                   Sign up to create more
                 </button>
               </div>
             )}
-            <div className={`${styles.promptInputWrapper} ${
-              !isAuthenticated && (getRemainingGuestImages() <= 1 || hasReachedGuestImageLimit())
-                ? styles.promptInputWrapperWithBanner
-                : ''
-            }`}>
+            <div
+              className={`${styles.promptInputWrapper} ${
+                !isAuthenticated && (getRemainingGuestImages() <= 1 || hasReachedGuestImageLimit())
+                  ? styles.promptInputWrapperWithBanner
+                  : ''
+              }`}
+            >
               <textarea
                 ref={promptInputRef}
                 className={styles.promptInput}
@@ -395,17 +415,58 @@ export default function ImageGalleryView() {
                       )}
                     </div>
                   )}
-                  <select
-                    className={styles.qualitySelect}
-                    value={imageQuality}
-                    onChange={(e) => dispatch(setImageQuality(e.target.value))}
-                  >
-                    {IMAGE_QUALITY_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label} ({opt.cost}cr)
-                      </option>
-                    ))}
-                  </select>
+                  <div className={styles.qualityDropdown} ref={qualityRef}>
+                    <button
+                      type="button"
+                      className={`${styles.qualityTrigger} ${
+                        qualityOpen ? styles.qualityTriggerOpen : ''
+                      }`}
+                      onClick={() => setQualityOpen(!qualityOpen)}
+                    >
+                      <span className={styles.qualityTriggerLabel}>
+                        {IMAGE_QUALITY_OPTIONS.find((o) => o.value === imageQuality)?.label || 'SD'}
+                      </span>
+                      <span
+                        className={`${styles.qualityTriggerChevron} ${
+                          qualityOpen ? styles.qualityTriggerChevronOpen : ''
+                        }`}
+                      >
+                        <ChevronDownIcon />
+                      </span>
+                    </button>
+                    {qualityOpen && (
+                      <div className={styles.qualityMenu}>
+                        {IMAGE_QUALITY_OPTIONS.map((opt) => {
+                          const isActive = imageQuality === opt.value;
+                          return (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              className={`${styles.qualityOption} ${
+                                isActive ? styles.qualityOptionSelected : ''
+                              }`}
+                              onClick={() => {
+                                dispatch(setImageQuality(opt.value));
+                                setQualityOpen(false);
+                              }}
+                            >
+                              <div className={styles.qualityOptionContent}>
+                                <span className={styles.qualityOptionLabel}>{opt.label}</span>
+                                <span className={styles.qualityOptionCost}>
+                                  {opt.cost} credit{opt.cost > 1 ? 's' : ''} per image
+                                </span>
+                              </div>
+                              {isActive && (
+                                <span className={styles.qualityCheckmark}>
+                                  <CheckIcon />
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className={styles.promptActionsRight}>
                   <ModelSelector imageOnly />

@@ -139,7 +139,7 @@ function MinusIcon({ className }) {
   );
 }
 
-export default function TierCard({ tier, billingCycle, currentTier }) {
+export default function TierCard({ tier, billingCycle, currentTier, isAuthenticated }) {
   const price = getDisplayPrice(tier, billingCycle);
   const isCurrent = currentTier === tier.id;
   const isDown = currentTier && isDowngrade(currentTier, tier.id);
@@ -148,6 +148,10 @@ export default function TierCard({ tier, billingCycle, currentTier }) {
 
   const getCtaText = () => {
     if (isCurrent) return 'Current Plan';
+    if (!isAuthenticated) {
+      if (tier.monthlyPrice === 0) return 'Get started';
+      return `Start with ${tier.name}`;
+    }
     if (isDown) return 'Downgrade';
     if (isUp) return `Upgrade to ${tier.name}`;
     return tier.ctaText;

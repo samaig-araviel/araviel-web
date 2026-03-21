@@ -7,6 +7,7 @@ import {
   setCurrentTier,
 } from '../../store/slices/subscriptionSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { getAvailableTiers } from '../../config/subscription';
 import { getUserTier } from '../../data/models';
 import BillingToggle from './BillingToggle';
@@ -17,6 +18,7 @@ export default function PricingView() {
   const dispatch = useDispatch();
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const tiers = getAvailableTiers();
 
   // Sync Redux tier with localStorage on mount and on tier-change events
@@ -74,6 +76,7 @@ export default function PricingView() {
               tier={tier}
               billingCycle={billingCycle}
               currentTier={currentTier}
+              isAuthenticated={isAuthenticated}
             />
           ))}
         </div>
