@@ -116,32 +116,89 @@ function SelectedModelPill({ modelId, onSelect }) {
   );
 }
 
-// ── Tier Filter ── (filters the model grid by tier, does NOT change the user's actual tier)
+// ── Plan Filter Dropdown ── (filters the model grid by tier, does NOT change the user's actual tier)
 
-function TierFilter({ activeTier, onTierChange }) {
-  const ALL_OPTION = 'all';
+function PlanFilterDropdown({ activeTier, onTierChange, userTier }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const PLAN_OPTIONS = [
+    { id: 'all', label: 'All plans' },
+    { id: 'myplan', label: 'My Plan' },
+    ...TIER_ORDER.map((tier) => ({ id: tier, label: TIER_DISPLAY[tier] })),
+  ];
+
+  const activeLabel =
+    activeTier === 'all'
+      ? 'All plans'
+      : activeTier === 'myplan'
+      ? 'My Plan'
+      : TIER_DISPLAY[activeTier] || 'All plans';
+
   return (
-    <div className={styles.devSwitcher}>
-      <span className={styles.devSwitcherLabel}>Plan</span>
+    <div className={styles.filterDropdown} ref={dropdownRef}>
       <button
-        className={`${styles.devSwitcherBtn} ${
-          activeTier === ALL_OPTION ? styles.devSwitcherBtnActive : ''
+        className={`${styles.filterTrigger} ${isOpen ? styles.filterTriggerOpen : ''} ${
+          activeTier !== 'all' ? styles.filterTriggerActive : ''
         }`}
-        onClick={() => onTierChange(ALL_OPTION)}
+        onClick={() => setIsOpen(!isOpen)}
       >
-        All
-      </button>
-      {TIER_ORDER.map((tier) => (
-        <button
-          key={tier}
-          className={`${styles.devSwitcherBtn} ${
-            activeTier === tier ? styles.devSwitcherBtnActive : ''
+        <span className={styles.filterTriggerIcon}>
+          <FilterIcon />
+        </span>
+        <span className={styles.filterTriggerLabel}>{activeLabel}</span>
+        <span
+          className={`${styles.filterTriggerChevron} ${
+            isOpen ? styles.filterTriggerChevronOpen : ''
           }`}
-          onClick={() => onTierChange(tier)}
         >
-          {TIER_DISPLAY[tier]}
-        </button>
-      ))}
+          <ChevronDownIcon />
+        </span>
+      </button>
+
+      {isOpen && (
+        <div className={styles.filterMenu}>
+          {PLAN_OPTIONS.map((option, idx) => (
+            <span key={option.id}>
+              {option.id === 'myplan' && <div className={styles.filterMenuDivider} />}
+              <button
+                className={`${styles.filterMenuItem} ${
+                  activeTier === option.id ? styles.filterMenuItemActive : ''
+                }`}
+                onClick={() => {
+                  onTierChange(option.id);
+                  setIsOpen(false);
+                }}
+              >
+                <span className={styles.filterMenuLabel}>
+                  {option.label}
+                  {option.id === 'myplan' && (
+                    <span className={styles.planFilterMyPlanBadge}>
+                      {TIER_DISPLAY[userTier] || 'Free'}
+                    </span>
+                  )}
+                </span>
+                {activeTier === option.id && (
+                  <span className={styles.filterMenuCheck}>
+                    <CheckIcon />
+                  </span>
+                )}
+              </button>
+              {idx === 1 && <div className={styles.filterMenuDivider} />}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -634,7 +691,16 @@ export default function ModelsView() {
     }
 
     // Tier filter — show only models that belong to the selected tier
-    if (tierFilter !== 'all') {
+    if (tierFilter === 'myplan') {
+      // Show models accessible with the user's current plan
+      if (userTier === ACCESS_TIERS.pro) {
+        // Pro users can access all models
+      } else if (userTier === ACCESS_TIERS.lite) {
+        models = models.filter((m) => m.accessTier !== ACCESS_TIERS.pro);
+      } else {
+        models = models.filter((m) => m.accessTier === ACCESS_TIERS.free);
+      }
+    } else if (tierFilter !== 'all') {
       models = models.filter((m) => m.accessTier === tierFilter);
     }
 
@@ -715,8 +781,12 @@ export default function ModelsView() {
           </div>
 
           <div className={styles.headerActions}>
-            {/* Tier Filter */}
-            <TierFilter activeTier={tierFilter} onTierChange={setTierFilter} />
+            {/* Plan Filter */}
+            <PlanFilterDropdown
+              activeTier={tierFilter}
+              onTierChange={setTierFilter}
+              userTier={userTier}
+            />
 
             {/* Search */}
             <div className={styles.searchWrapper}>

@@ -375,6 +375,19 @@
   margin: 4px 8px;
 }
 
+.planFilterMyPlanBadge {
+  display: inline-flex;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+}
+
 /* ===================== */
 /* Selected Model Pill   */
 /* ===================== */
@@ -639,6 +652,12 @@
 .upgradeBannerPremium .upgradeBannerBtn {
   background: var(--text-primary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:global([data-theme='dark']) .upgradeBannerPro .upgradeBannerBtn,
+:global([data-theme='dark']) .upgradeBannerPremium .upgradeBannerBtn {
+  background: #ffffff;
+  color: #111111;
 }
 
 .upgradeBannerPro .upgradeBannerBtn:hover,
@@ -1419,6 +1438,11 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+:global([data-theme='dark']) .detailUpgradeBtn {
+  background: #ffffff;
+  color: #111111;
 }
 
 .detailUpgradeBtn:hover {
