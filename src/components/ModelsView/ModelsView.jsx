@@ -15,7 +15,7 @@ import {
   formatTokens,
 } from '../../data/models';
 import { CloseIcon, SearchIcon, CheckIcon, FilterIcon, ChevronDownIcon } from '../Icons';
-import { updateUserTier } from '../../services/credits';
+// updateUserTier removed — tier is now determined by subscription, not a manual toggle
 import styles from './ModelsView.module.css';
 
 // ── Helpers ──
@@ -116,17 +116,26 @@ function SelectedModelPill({ modelId, onSelect }) {
   );
 }
 
-// ── Dev Tier Switcher ──
+// ── Tier Filter ── (filters the model grid by tier, does NOT change the user's actual tier)
 
-function DevTierSwitcher({ currentTier, onTierChange }) {
+function TierFilter({ activeTier, onTierChange }) {
+  const ALL_OPTION = 'all';
   return (
     <div className={styles.devSwitcher}>
-      <span className={styles.devSwitcherLabel}>Tier</span>
+      <span className={styles.devSwitcherLabel}>Plan</span>
+      <button
+        className={`${styles.devSwitcherBtn} ${
+          activeTier === ALL_OPTION ? styles.devSwitcherBtnActive : ''
+        }`}
+        onClick={() => onTierChange(ALL_OPTION)}
+      >
+        All
+      </button>
       {TIER_ORDER.map((tier) => (
         <button
           key={tier}
           className={`${styles.devSwitcherBtn} ${
-            currentTier === tier ? styles.devSwitcherBtnActive : ''
+            activeTier === tier ? styles.devSwitcherBtnActive : ''
           }`}
           onClick={() => onTierChange(tier)}
         >
@@ -593,20 +602,11 @@ export default function ModelsView() {
   const selectedModelId = useSelector(selectSelectedModelId);
 
   const [activeFilter, setActiveFilter] = useState('all');
+  const [tierFilter, setTierFilter] = useState('all'); // 'all' | 'free' | 'lite' | 'pro'
   const [detailModel, setDetailModel] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef(null);
-  const [userTier, setUserTier] = useState(getUserTier());
-
-  // Dev tier switcher handler — syncs to localStorage, backend, and notifies other components
-  const handleTierChange = useCallback((tier) => {
-    localStorage.setItem('araviel-user-tier', tier);
-    setUserTier(tier);
-    // Notify other components (Sidebar, etc.) of the tier change
-    window.dispatchEvent(new Event('araviel-tier-changed'));
-    // Sync tier to backend credit system (fire-and-forget)
-    updateUserTier(tier).catch(() => {});
-  }, []);
+  const userTier = getUserTier(); // Read-only — determined by user's subscription
 
   // Single unified action: set the model (Redux + localStorage)
   const handleSetModel = useCallback(
@@ -625,12 +625,21 @@ export default function ModelsView() {
     return counts;
   }, []);
 
-  // Filter models by provider and search
+  // Filter models by provider, tier filter, and search
   const filteredModels = useMemo(() => {
     let models = MODELS;
 
     if (activeFilter !== 'all') {
       models = models.filter((m) => m.provider === activeFilter);
+    }
+
+    // Tier filter — show only models available at the selected tier
+    if (tierFilter !== 'all') {
+      models = models.filter((m) => {
+        if (tierFilter === ACCESS_TIERS.pro) return true; // Pro sees all
+        if (tierFilter === ACCESS_TIERS.lite) return m.accessTier !== ACCESS_TIERS.pro;
+        return m.accessTier === ACCESS_TIERS.free; // Free tier only
+      });
     }
 
     if (searchQuery.trim()) {
@@ -646,7 +655,7 @@ export default function ModelsView() {
     }
 
     return models;
-  }, [activeFilter, searchQuery]);
+  }, [activeFilter, tierFilter, searchQuery]);
 
   // Check if a model is accessible for the current tier
   const isAccessible = useCallback(
@@ -710,8 +719,8 @@ export default function ModelsView() {
           </div>
 
           <div className={styles.headerActions}>
-            {/* Dev Tier Switcher */}
-            <DevTierSwitcher currentTier={userTier} onTierChange={handleTierChange} />
+            {/* Tier Filter */}
+            <TierFilter activeTier={tierFilter} onTierChange={setTierFilter} />
 
             {/* Search */}
             <div className={styles.searchWrapper}>
@@ -767,6 +776,7 @@ export default function ModelsView() {
               onClick={() => {
                 setSearchQuery('');
                 setActiveFilter('all');
+                setTierFilter('all');
               }}
             >
               Reset filters

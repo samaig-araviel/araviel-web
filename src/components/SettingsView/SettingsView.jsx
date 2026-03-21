@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { fetchCreditBalance } from '../../services/credits';
 import { fetchSettings, saveSettings, DEFAULT_SETTINGS } from '../../services/settings';
+import { GuestGate } from '../GuestGate';
 import {
   ChevronLeftIcon,
   SunIcon,
@@ -76,6 +78,7 @@ const modKey = isMac ? '⌘' : 'Ctrl';
 export default function SettingsView() {
   const dispatch = useDispatch();
   const themeMode = useSelector(selectTheme);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [activeSection, setActiveSection] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -88,12 +91,16 @@ export default function SettingsView() {
   const [creditBalance, setCreditBalance] = useState(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  // Load settings from backend on mount
+  // Load settings from backend on mount (authenticated users only)
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
     fetchSettings()
       .then((s) => setSettings(s))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAuthenticated]);
 
   // Load credit balance when usage tab is shown
   const loadCredits = useCallback(() => {
@@ -123,6 +130,31 @@ export default function SettingsView() {
   const handleBack = () => {
     dispatch(setActiveItem('home'));
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.inner}>
+          <div className={styles.header}>
+            <button className={styles.backBtn} onClick={handleBack}>
+              <ChevronLeftIcon />
+              <span>Back</span>
+            </button>
+            <div className={styles.headerTitle}>
+              <SettingsIcon />
+              <h1>Settings</h1>
+            </div>
+          </div>
+          <GuestGate
+            icon={<SettingsIcon />}
+            title="Your settings, your way"
+            description="Sign in to personalise your experience, manage your profile, and configure preferences."
+            actionLabel="Sign in to access Settings"
+          />
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

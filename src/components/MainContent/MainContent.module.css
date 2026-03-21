@@ -2607,3 +2607,76 @@
   color: var(--text-muted);
   font-weight: 500;
 }
+
+/* Guest prompt limit banners */
+.guestLimitInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background-color: rgba(59, 130, 246, 0.08);
+  font-size: 13px;
+  color: var(--text-secondary);
+  animation: guestBannerIn 0.3s ease;
+}
+
+.guestLimitInfo button {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.guestLimitInfo button:hover {
+  opacity: 0.8;
+}
+
+.guestLimitReached {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  font-size: 13px;
+  color: var(--text-secondary);
+  animation: guestBannerIn 0.3s ease;
+}
+
+.guestLimitReached button {
+  background: none;
+  border: none;
+  color: #f59e0b;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.guestLimitReached button:hover {
+  opacity: 0.8;
+}
+
+@keyframes guestBannerIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
