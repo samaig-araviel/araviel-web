@@ -12,6 +12,7 @@ import { resetSubscriptionState } from '../store/slices/subscriptionSlice';
 import { resetGuestPromptCount } from '../utils/guestSession';
 import { setUserTier } from '../data/models';
 import { fetchCreditBalance } from '../services/credits';
+import { clearImageCache } from '../services/imageGeneration';
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -98,8 +99,9 @@ export default function useAuthListener() {
             break;
           }
           case 'SIGNED_OUT': {
-            // 1. Reset guest prompt counters
+            // 1. Reset guest prompt counters and clear image cache
             resetGuestPromptCount();
+            clearImageCache();
 
             // 2. Clear user-specific localStorage
             USER_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
