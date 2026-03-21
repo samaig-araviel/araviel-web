@@ -122,7 +122,13 @@ import ModalityBar from '../ModalityBar/ModalityBar';
 import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
-import { hasReachedGuestLimit, incrementGuestPromptCount, getRemainingGuestPrompts } from '../../utils/guestSession';
+import {
+  hasReachedGuestLimit,
+  incrementGuestPromptCount,
+  getRemainingGuestPrompts,
+  hasReachedGuestImageLimit,
+  incrementGuestImageCount,
+} from '../../utils/guestSession';
 import { AuthModal } from '../Auth';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
@@ -1340,19 +1346,26 @@ export default function MainContent() {
     const prompt = inputValue.trim();
     if (!prompt || isProcessing) return;
 
-    // Guest prompt limit — after 2 prompts, require sign-up
-    if (!isAuthenticated && hasReachedGuestLimit()) {
-      setShowGuestLimitModal(true);
-      return;
-    }
-
-    // Check image generation limits if the selected model is an image gen model
-    // or if the modality is explicitly set to 'image' (e.g. from Image Gallery or ModalityBar)
+    // Determine if this prompt will generate an image
     const willGenerateImage =
       (selectedModelId && isImageGenerationModel(selectedModelId)) ||
       pendingModality === 'image' ||
       selectedModality === 'image';
-    if (willGenerateImage) {
+
+    // Guest limit checks — separate text and image counters
+    if (!isAuthenticated) {
+      if (willGenerateImage && hasReachedGuestImageLimit()) {
+        setShowGuestLimitModal(true);
+        return;
+      }
+      if (!willGenerateImage && hasReachedGuestLimit()) {
+        setShowGuestLimitModal(true);
+        return;
+      }
+    }
+
+    // Authenticated user image generation limits
+    if (willGenerateImage && isAuthenticated) {
       // Check credit balance (client-side fast check)
       if (creditBalance && creditBalance.combined < getCreditCost(imageQuality)) {
         setShowBuyPacksModal(true);
@@ -1387,9 +1400,13 @@ export default function MainContent() {
         ? 'image'
         : undefined;
 
-    // Track guest prompt usage
+    // Track guest prompt usage — separate text and image counters
     if (!isAuthenticated) {
-      incrementGuestPromptCount();
+      if (willGenerateImage) {
+        incrementGuestImageCount();
+      } else {
+        incrementGuestPromptCount();
+      }
     }
 
     await runSSEPipeline(prompt, {
@@ -1421,7 +1438,17 @@ export default function MainContent() {
     // Check image generation limits before auto-submitting
     const willGenImage =
       modality === 'image' || (selectedModelId && isImageGenerationModel(selectedModelId));
-    if (willGenImage && !canGenerateImage()) {
+
+    // Guest image limit — show AuthModal (sign up), not "Upgrade to Pro"
+    if (!isAuthenticated && willGenImage && hasReachedGuestImageLimit()) {
+      dispatch(setPendingAutoSubmit(false));
+      dispatch(setPendingModality(null));
+      setShowGuestLimitModal(true);
+      return;
+    }
+
+    // Authenticated user image rate limit
+    if (isAuthenticated && willGenImage && !canGenerateImage()) {
       dispatch(setPendingAutoSubmit(false));
       dispatch(setPendingModality(null));
       setShowImageLimitPrompt(true);

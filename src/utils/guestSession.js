@@ -9,10 +9,10 @@ const GUEST_PROMPT_COUNT_KEY = 'araviel-guest-prompt-count';
 const GUEST_IMAGE_COUNT_KEY = 'araviel-guest-image-count';
 
 /** Maximum text prompts a guest user can send before being required to sign up. */
-export const GUEST_PROMPT_LIMIT = 2;
+export const GUEST_PROMPT_LIMIT = 3;
 
 /** Maximum image prompts a guest user can send before being required to sign up. */
-export const GUEST_IMAGE_LIMIT = 1;
+export const GUEST_IMAGE_LIMIT = 2;
 
 // ── Text prompts ──
 

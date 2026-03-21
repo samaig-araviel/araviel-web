@@ -328,7 +328,9 @@ export default function ImageGalleryView() {
               </div>
             )}
             <div className={`${styles.promptInputWrapper} ${
-              !isAuthenticated ? styles.promptInputWrapperWithBanner : ''
+              !isAuthenticated && (getRemainingGuestImages() <= 1 || hasReachedGuestImageLimit())
+                ? styles.promptInputWrapperWithBanner
+                : ''
             }`}>
               <textarea
                 ref={promptInputRef}
