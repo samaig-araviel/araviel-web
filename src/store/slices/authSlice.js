@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { supabase } from '../../lib/supabase';
+import { resetGuestPromptCount } from '../../utils/guestSession';
 
 // ---------------------------------------------------------------------------
 // Helper: map a Supabase user object to our app's user shape
@@ -34,7 +35,7 @@ function mapSession(session) {
 // Async thunks
 // ---------------------------------------------------------------------------
 
-/** Check for an existing session on app start. */
+/** Check for an existing session on app start. Auto-creates anonymous session if none. */
 export const initializeAuth = createAsyncThunk(
   'auth/initializeAuth',
   async (_, { rejectWithValue }) => {
@@ -49,8 +50,21 @@ export const initializeAuth = createAsyncThunk(
         };
       }
 
-      // No active session — user is unauthenticated
-      return { user: null, session: null };
+      // No active session — create an anonymous session so guest users
+      // get a valid JWT for the limited prompts they're allowed.
+      const { data: anonData, error: anonError } =
+        await supabase.auth.signInAnonymously();
+      if (anonError) {
+        // If anonymous auth is not enabled on the Supabase project, fail
+        // gracefully — the user can still browse but chat won't work.
+        console.warn('Anonymous sign-in unavailable:', anonError.message);
+        return { user: null, session: null };
+      }
+
+      return {
+        user: mapUser(anonData.session?.user ?? anonData.user),
+        session: mapSession(anonData.session),
+      };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -226,6 +240,7 @@ const authSlice = createSlice({
         state.session = action.payload.session;
         state.isLoading = false;
         state.error = null;
+        resetGuestPromptCount();
       })
       .addCase(signInWithEmail.rejected, (state, action) => {
         state.isLoading = false;
@@ -243,6 +258,7 @@ const authSlice = createSlice({
         state.session = action.payload.session;
         state.isLoading = false;
         state.error = null;
+        resetGuestPromptCount();
       })
       .addCase(signUpWithEmail.rejected, (state, action) => {
         state.isLoading = false;

@@ -10,7 +10,9 @@ import {
   setProjectsLoading,
 } from '../../store/slices/projectsSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { showUpgradeModal } from '../../store/slices/subscriptionSlice';
+import { GuestGate } from '../GuestGate';
 import { getProjectLimit, getNextTier } from '../../config/subscription';
 import { getUserTier } from '../../data/models';
 import {
@@ -779,6 +781,7 @@ export default function ProjectsView() {
   const dispatch = useDispatch();
   const projects = useSelector(selectProjects);
   const loading = useSelector(selectProjectsLoading);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -808,8 +811,10 @@ export default function ProjectsView() {
   }, [dispatch]);
 
   useEffect(() => {
-    loadProjects();
-  }, [loadProjects]);
+    if (isAuthenticated) {
+      loadProjects();
+    }
+  }, [loadProjects, isAuthenticated]);
 
   // Handle navigation from MainContent project header
   useEffect(() => {
@@ -1072,6 +1077,27 @@ export default function ProjectsView() {
           />
         )}
       </>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.inner}>
+          <div className={styles.header}>
+            <div className={styles.headerLeft}>
+              <h1 className={styles.title}>Projects</h1>
+              <p className={styles.subtitle}>Organise your conversations with custom context</p>
+            </div>
+          </div>
+          <GuestGate
+            icon={<ProjectsIcon />}
+            title="Organise with Projects"
+            description="Sign in to create projects, group conversations, and add custom context to your chats."
+            actionLabel="Sign in to use Projects"
+          />
+        </div>
+      </div>
     );
   }
 

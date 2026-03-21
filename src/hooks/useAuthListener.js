@@ -6,6 +6,7 @@ import {
   setAuth,
   clearAuth,
 } from '../store/slices/authSlice';
+import { resetGuestPromptCount } from '../utils/guestSession';
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -56,12 +57,17 @@ export default function useAuthListener() {
           case 'SIGNED_IN':
           case 'TOKEN_REFRESHED':
           case 'USER_UPDATED': {
+            const user = mapUser(session?.user);
             dispatch(
               setAuth({
-                user: mapUser(session?.user),
+                user,
                 session: mapSession(session),
               }),
             );
+            // Reset guest prompt counter when a real (non-anonymous) user signs in
+            if (event === 'SIGNED_IN' && user && !user.isAnonymous) {
+              resetGuestPromptCount();
+            }
             break;
           }
           case 'SIGNED_OUT': {

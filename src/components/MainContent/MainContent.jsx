@@ -121,6 +121,9 @@ import { getCreditCost } from '../../services/credits';
 import ModalityBar from '../ModalityBar/ModalityBar';
 import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import { hasReachedGuestLimit, incrementGuestPromptCount, getRemainingGuestPrompts } from '../../utils/guestSession';
+import { AuthModal } from '../Auth';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
 
@@ -634,6 +637,8 @@ export default function MainContent() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [showLimitToast, setShowLimitToast] = useState(false);
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
+  const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   // conversationProject is now derived from Redux — see below
   const [conversationTitle, setConversationTitle] = useState('');
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
@@ -1335,6 +1340,12 @@ export default function MainContent() {
     const prompt = inputValue.trim();
     if (!prompt || isProcessing) return;
 
+    // Guest prompt limit — after 2 prompts, require sign-up
+    if (!isAuthenticated && hasReachedGuestLimit()) {
+      setShowGuestLimitModal(true);
+      return;
+    }
+
     // Check image generation limits if the selected model is an image gen model
     // or if the modality is explicitly set to 'image' (e.g. from Image Gallery or ModalityBar)
     const willGenerateImage =
@@ -1375,6 +1386,11 @@ export default function MainContent() {
         : selectedModelId && isImageGenerationModel(selectedModelId)
         ? 'image'
         : undefined;
+
+    // Track guest prompt usage
+    if (!isAuthenticated) {
+      incrementGuestPromptCount();
+    }
 
     await runSSEPipeline(prompt, {
       selectedModelId: selectedModelId || undefined,
@@ -2186,6 +2202,13 @@ export default function MainContent() {
 
       {showBuyPacksModal && <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />}
 
+      {/* Guest prompt limit modal */}
+      <AuthModal
+        isOpen={showGuestLimitModal}
+        onClose={() => setShowGuestLimitModal(false)}
+        initialTab="signup"
+      />
+
       {/* Gallery preview */}
       {showGallery && galleryFiles.length > 0 && (
         <GalleryPreview
@@ -2235,6 +2258,19 @@ export default function MainContent() {
         )}
 
         <div className={styles.inputSection}>
+          {/* Guest prompt limit info */}
+          {!isAuthenticated && !hasReachedGuestLimit() && getRemainingGuestPrompts() <= 1 && (
+            <div className={styles.guestLimitInfo}>
+              <span>{getRemainingGuestPrompts()} free prompt remaining.</span>
+              <button onClick={() => setShowGuestLimitModal(true)}>Sign up for unlimited</button>
+            </div>
+          )}
+          {!isAuthenticated && hasReachedGuestLimit() && (
+            <div className={styles.guestLimitReached}>
+              <span>You&apos;ve used your free prompts.</span>
+              <button onClick={() => setShowGuestLimitModal(true)}>Sign up to continue</button>
+            </div>
+          )}
           <form className={styles.inputContainer} onSubmit={handleSubmit}>
             <div className={styles.inputWrapper}>
               {attachedFiles.length > 0 && (

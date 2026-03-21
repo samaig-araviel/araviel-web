@@ -174,7 +174,7 @@ export default function Sidebar() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [userTier, setUserTier] = useState(getUserTier());
+  const userTier = getUserTier();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const userMenuRef = useRef(null);
   const renameInputRef = useRef(null);
@@ -182,12 +182,7 @@ export default function Sidebar() {
   const authUser = useSelector(selectAuthUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
-  // Listen for tier changes (from DevTierSwitcher or other sources)
-  useEffect(() => {
-    const handleTierChanged = () => setUserTier(getUserTier());
-    window.addEventListener('araviel-tier-changed', handleTierChanged);
-    return () => window.removeEventListener('araviel-tier-changed', handleTierChanged);
-  }, []);
+  // userTier is now read once from getUserTier() — no longer changes via DevTierSwitcher
 
   const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
 
@@ -226,33 +221,37 @@ export default function Sidebar() {
     [dispatch, showError]
   );
 
+  // Only fetch conversations and projects for authenticated (non-guest) users
   useEffect(() => {
-    loadConversations(0);
-  }, [loadConversations]);
+    if (isAuthenticated) {
+      loadConversations(0);
+    }
+  }, [loadConversations, isAuthenticated]);
 
-  // Ensure projects are loaded for project picker
+  // Ensure projects are loaded for project picker (authenticated users only)
   useEffect(() => {
-    if (projects.length === 0) {
+    if (isAuthenticated && projects.length === 0) {
       fetchProjectsApi()
         .then((data) => dispatch(setProjects(data.projects || [])))
         .catch(() => showError("Couldn't load projects."));
     }
-  }, [projects.length, dispatch, showError]);
+  }, [projects.length, dispatch, showError, isAuthenticated]);
 
   // Refresh conversations when currentChatId changes (new conversation created)
   useEffect(() => {
-    if (currentChatId) {
+    if (isAuthenticated && currentChatId) {
       loadConversations(0);
     }
-  }, [currentChatId, loadConversations]);
+  }, [currentChatId, loadConversations, isAuthenticated]);
 
   // Listen for conversation-updated events from chat stream (covers creation + title updates)
   useEffect(() => {
+    if (!isAuthenticated) return;
     const handleConversationUpdated = () => loadConversations(0);
     window.addEventListener('araviel-conversation-updated', handleConversationUpdated);
     return () =>
       window.removeEventListener('araviel-conversation-updated', handleConversationUpdated);
-  }, [loadConversations]);
+  }, [loadConversations, isAuthenticated]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -778,7 +777,11 @@ export default function Sidebar() {
             <div
               className={`${styles.recentsContent} ${recentsExpanded ? styles.recentsOpen : ''}`}
             >
-              {conversationsLoading && conversations.length === 0 ? (
+              {!isAuthenticated ? (
+                <p className={styles.recentsEmpty}>
+                  Sign in to see your chats
+                </p>
+              ) : conversationsLoading && conversations.length === 0 ? (
                 <div className={styles.recentsSkeleton}>
                   {[1, 2, 3].map((i) => (
                     <div key={i} className={styles.skeletonItem} />
@@ -985,7 +988,11 @@ export default function Sidebar() {
                   className={styles.userDropdownItem}
                   onClick={() => {
                     setUserMenuOpen(false);
-                    dispatch(setActiveItem('settings'));
+                    if (!isAuthenticated) {
+                      setAuthModalOpen(true);
+                    } else {
+                      dispatch(setActiveItem('settings'));
+                    }
                   }}
                 >
                   <SettingsIcon />

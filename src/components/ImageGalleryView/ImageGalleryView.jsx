@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import {
   setInputValue,
   createNewChat,
@@ -12,6 +13,7 @@ import {
   setImageQuality,
   setCreditBalance,
 } from '../../store/slices/chatSlice';
+import { AuthModal } from '../Auth';
 import { fetchCreditBalance } from '../../services/credits';
 import { IMAGE_QUALITY_OPTIONS } from '../../config/credits';
 import CreditBalance from '../CreditBalance/CreditBalance';
@@ -97,6 +99,8 @@ export default function ImageGalleryView() {
   const [promptInput, setPromptInput] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showBuyPacks, setShowBuyPacks] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const promptInputRef = useRef(null);
   const filterRef = useRef(null);
   const attachMenuRef = useRef(null);
@@ -117,17 +121,20 @@ export default function ImageGalleryView() {
   }, []);
   loadImagesRef.current = loadImages;
 
-  // Fetch credit balance on mount
+  // Fetch credit balance on mount (authenticated users only)
   useEffect(() => {
+    if (!isAuthenticated) return;
     fetchCreditBalance()
       .then((data) => {
         if (data.balance) dispatch(setCreditBalance(data.balance));
       })
       .catch(() => {});
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
-    loadImages();
+    if (isAuthenticated) {
+      loadImages();
+    }
 
     // Refresh gallery when new images are saved (e.g. from chat)
     // Use a small debounce to handle rapid successive saves
@@ -244,6 +251,10 @@ export default function ImageGalleryView() {
 
   const handlePromptSubmit = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     const prompt = promptInput.trim();
     if (!prompt) return;
     setPromptInput('');
@@ -259,6 +270,10 @@ export default function ImageGalleryView() {
   };
 
   const handleQuickPromptClick = (item) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
     setPromptInput(item.prompt);
     if (promptInputRef.current) {
       promptInputRef.current.focus();
@@ -804,6 +819,13 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
           </div>
         )}
       </div>
+
+      {/* Guest auth modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialTab="signup"
+      />
     </div>
   );
 }

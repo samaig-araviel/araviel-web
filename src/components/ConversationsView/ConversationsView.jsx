@@ -14,6 +14,8 @@ import {
   createNewChat,
 } from '../../store/slices/chatSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import { GuestGate } from '../GuestGate';
 import {
   fetchConversations,
   fetchConversationMessages,
@@ -301,6 +303,7 @@ export default function ConversationsView() {
   const currentChatId = useSelector(selectCurrentChatId);
   const projects = useSelector(selectProjects);
 
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [projectPickerFor, setProjectPickerFor] = useState(null);
 
   // Section: 'my-chats' or 'imported'
@@ -429,21 +432,23 @@ export default function ConversationsView() {
   }, []);
 
   useEffect(() => {
-    loadImportedConversations();
-  }, [loadImportedConversations]);
+    if (isAuthenticated) {
+      loadImportedConversations();
+    }
+  }, [loadImportedConversations, isAuthenticated]);
 
   useEffect(() => {
     localStorage.setItem(IMPORTED_CONTEXT_KEY, JSON.stringify(contextProviders));
   }, [contextProviders]);
 
-  // Ensure projects are loaded
+  // Ensure projects are loaded (authenticated users only)
   useEffect(() => {
-    if (projects.length === 0) {
+    if (isAuthenticated && projects.length === 0) {
       fetchProjectsApi()
         .then((data) => dispatch(setProjects(data.projects || [])))
         .catch(() => showError('Could not load projects.'));
     }
-  }, [projects.length, dispatch, showError]);
+  }, [projects.length, dispatch, showError, isAuthenticated]);
 
   const handleAddToProject = (chatId) => {
     menu.closeMenu();
@@ -1049,6 +1054,24 @@ export default function ConversationsView() {
   const currentFilteredList = isImportedSection
     ? filteredImportedConversations
     : filteredConversations;
+
+  if (!isAuthenticated) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.inner}>
+          <div className={styles.header}>
+            <h1 className={styles.title}>Chats</h1>
+          </div>
+          <GuestGate
+            icon={<ChatIcon />}
+            title="Your conversations live here"
+            description="Sign in to save your chats, access conversation history, and pick up where you left off."
+            actionLabel="Sign in to view chats"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
