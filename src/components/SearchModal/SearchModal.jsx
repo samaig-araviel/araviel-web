@@ -403,18 +403,7 @@ export default function SearchModal({ onClose }) {
 
         {/* Results area — fixed height, scrollable */}
         <div className={styles.results} ref={resultsRef}>
-          {/* Empty state — no query */}
-          {!hasQuery && !apiLoading && (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyIcon}>
-                <SearchIcon />
-              </div>
-              <span className={styles.emptyTitle}>Search your workspace</span>
-              <span className={styles.emptyHint}>Find conversations, projects, and images</span>
-            </div>
-          )}
-
-          {/* No results */}
+          {/* No results — only when user has typed something */}
           {noResults && (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
