@@ -516,6 +516,20 @@ export async function searchProjects(query) {
 }
 
 /**
+ * Search images by prompt text.
+ * @param {string} query - Search query
+ * @param {number} [limit=12] - Max results
+ * @returns {Promise<{ images: Array }>}
+ */
+export async function searchImages(query, limit = 12) {
+  const headers = await getAuthHeaders();
+  const params = new URLSearchParams({ search: query, limit: String(limit) });
+  const res = await fetch(`${API_BASE}/api/images?${params}`, { headers });
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  return res.json();
+}
+
+/**
  * Update a project.
  * @param {string} projectId
  * @param {object} updates - { name?, description?, instructions?, is_archived?, is_starred? }
