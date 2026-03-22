@@ -20,11 +20,7 @@ import {
   selectCurrentChatId,
 } from '../../store/slices/chatSlice';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
-import {
-  selectAuthUser,
-  selectIsAuthenticated,
-  signOut,
-} from '../../store/slices/authSlice';
+import { selectAuthUser, selectIsAuthenticated, signOut } from '../../store/slices/authSlice';
 import {
   fetchConversations,
   fetchConversationMessages,
@@ -63,8 +59,10 @@ import {
   HelpCircleIcon,
   LogOutIcon,
   UpgradePlanIcon,
+  SearchIcon,
 } from '../Icons';
 import ProjectPickerModal from '../ProjectPickerModal';
+import SearchModal from '../SearchModal/SearchModal';
 import styles from './Sidebar.module.css';
 
 function groupConversationsByTime(conversations) {
@@ -176,6 +174,7 @@ export default function Sidebar() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userTier = getUserTier();
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const userMenuRef = useRef(null);
   const renameInputRef = useRef(null);
 
@@ -262,6 +261,19 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Global Cmd/Ctrl+K shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchOpen((prev) => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
   const showFullContent = isMobile || !collapsed;
 
   const handleNewChat = () => {
@@ -700,6 +712,21 @@ export default function Sidebar() {
           {showFullContent && <span>New chat</span>}
         </button>
 
+        <button
+          className={styles.searchBtn}
+          onClick={() => setSearchOpen(true)}
+          title="Search"
+          aria-label="Search"
+        >
+          <SearchIcon />
+          {showFullContent && (
+            <>
+              <span>Search</span>
+              <kbd className={styles.searchKbd}>{isMac ? '\u2318' : 'Ctrl+'}K</kbd>
+            </>
+          )}
+        </button>
+
         <nav className={styles.nav}>
           <button
             className={`${styles.navItem} ${activeItem === 'conversations' ? styles.active : ''}`}
@@ -778,9 +805,7 @@ export default function Sidebar() {
               className={`${styles.recentsContent} ${recentsExpanded ? styles.recentsOpen : ''}`}
             >
               {!isAuthenticated ? (
-                <p className={styles.recentsEmpty}>
-                  Sign in to see your chats
-                </p>
+                <p className={styles.recentsEmpty}>Sign in to see your chats</p>
               ) : conversationsLoading && conversations.length === 0 ? (
                 <div className={styles.recentsSkeleton}>
                   {[1, 2, 3].map((i) => (
@@ -947,7 +972,12 @@ export default function Sidebar() {
                   <img
                     src={authUser.avatarUrl}
                     alt=""
-                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                    }}
                   />
                 ) : (
                   <UserIcon />
@@ -1123,10 +1153,10 @@ export default function Sidebar() {
       )}
 
       {/* Auth modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-      />
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
+
+      {/* Search modal */}
+      {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
     </>
   );
 }

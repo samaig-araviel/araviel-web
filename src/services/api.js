@@ -371,7 +371,9 @@ export async function fetchImportedConversations(params = {}) {
   if (params.starred !== undefined) query.set('starred', String(params.starred));
   const qs = query.toString();
   const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/imported-conversations${qs ? `?${qs}` : ''}`, { headers });
+  const res = await fetch(`${API_BASE}/api/imported-conversations${qs ? `?${qs}` : ''}`, {
+    headers,
+  });
   if (!res.ok) throw new Error(`Failed to fetch imported conversations: ${res.status}`);
   return res.json();
 }
@@ -383,7 +385,9 @@ export async function fetchImportedConversations(params = {}) {
  */
 export async function fetchImportedConversationMessages(conversationId) {
   const headers = await getAuthHeaders();
-  const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}/messages`, { headers });
+  const res = await fetch(`${API_BASE}/api/imported-conversations/${conversationId}/messages`, {
+    headers,
+  });
   if (!res.ok) throw new Error(`Failed to fetch imported messages: ${res.status}`);
   return res.json();
 }
@@ -479,6 +483,35 @@ export async function createProject(project) {
     body: JSON.stringify(project),
   });
   if (!res.ok) throw new Error(`Failed to create project: ${res.status}`);
+  return res.json();
+}
+
+// ─── Search ─────────────────────────────────────────────────────────────────
+
+/**
+ * Search conversations by title.
+ * @param {string} query - Search query
+ * @param {number} [limit=20] - Max results
+ * @returns {Promise<{ conversations: Array, total: number }>}
+ */
+export async function searchConversations(query, limit = 20) {
+  const headers = await getAuthHeaders();
+  const params = new URLSearchParams({ search: query, limit: String(limit) });
+  const res = await fetch(`${API_BASE}/api/conversations?${params}`, { headers });
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Search projects by name.
+ * @param {string} query - Search query
+ * @returns {Promise<{ projects: Array }>}
+ */
+export async function searchProjects(query) {
+  const headers = await getAuthHeaders();
+  const params = new URLSearchParams({ search: query });
+  const res = await fetch(`${API_BASE}/api/projects?${params}`, { headers });
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   return res.json();
 }
 
