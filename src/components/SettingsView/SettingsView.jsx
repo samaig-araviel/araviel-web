@@ -263,11 +263,15 @@ export default function SettingsView() {
                           <img
                             src={resolvedAvatar}
                             alt="Avatar"
+                            referrerPolicy="no-referrer"
+                            crossOrigin="anonymous"
                             className={styles.avatarImage}
+                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = ''; }}
                           />
-                        ) : (
+                        ) : null}
+                        <span style={{ display: resolvedAvatar ? 'none' : '' }}>
                           <UserIcon />
-                        )}
+                        </span>
                       </div>
                       <div className={styles.avatarInfo}>
                         <span className={styles.avatarName}>{resolvedName}</span>
