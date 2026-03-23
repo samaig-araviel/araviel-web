@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import { selectIsAuthenticated, selectAuthUser } from '../../store/slices/authSlice';
 import { fetchCreditBalance } from '../../services/credits';
-import { fetchSettings, saveSettings, DEFAULT_SETTINGS } from '../../services/settings';
+import { fetchSettings, saveSettings, uploadAvatar, DEFAULT_SETTINGS } from '../../services/settings';
 import { GuestGate } from '../GuestGate';
 import {
   ChevronLeftIcon,
@@ -79,6 +79,7 @@ export default function SettingsView() {
   const dispatch = useDispatch();
   const themeMode = useSelector(selectTheme);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const authUser = useSelector(selectAuthUser);
   const [activeSection, setActiveSection] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,6 +87,10 @@ export default function SettingsView() {
 
   // All settings state
   const [settings, setSettings] = useState({ ...DEFAULT_SETTINGS });
+
+  // Avatar upload state
+  const avatarInputRef = useRef(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   // Credit balance state
   const [creditBalance, setCreditBalance] = useState(null);
@@ -129,6 +134,21 @@ export default function SettingsView() {
 
   const handleBack = () => {
     dispatch(setActiveItem('home'));
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const { avatarUrl } = await uploadAvatar(file);
+      updateSetting('avatarUrl', avatarUrl);
+    } catch (err) {
+      console.error('Avatar upload failed:', err);
+    } finally {
+      setAvatarUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
   };
 
   if (!isAuthenticated) {
@@ -218,17 +238,50 @@ export default function SettingsView() {
                 </div>
 
                 <div className={styles.avatarRow}>
-                  <div className={styles.avatarLarge}>
-                    <UserIcon />
+                  <div className={`${styles.avatarLarge} ${avatarUploading ? styles.avatarUploading : ''}`}>
+                    {settings.avatarUrl || authUser?.avatarUrl ? (
+                      <img
+                        src={settings.avatarUrl || authUser.avatarUrl}
+                        alt="Avatar"
+                        className={styles.avatarImage}
+                      />
+                    ) : (
+                      <UserIcon />
+                    )}
                   </div>
                   <div className={styles.avatarInfo}>
-                    <span className={styles.avatarName}>{settings.displayName}</span>
-                    <span className={styles.avatarPlan}>Pro plan</span>
-                    <button className={styles.avatarEditBtn}>
+                    <span className={styles.avatarName}>
+                      {settings.displayName || authUser?.fullName || 'User'}
+                    </span>
+                    {authUser?.email && (
+                      <span className={styles.avatarPlan}>{authUser.email}</span>
+                    )}
+                    <button
+                      className={styles.avatarEditBtn}
+                      onClick={() => avatarInputRef.current?.click()}
+                      disabled={avatarUploading}
+                    >
                       <EditIcon />
-                      <span>Change avatar</span>
+                      <span>{avatarUploading ? 'Uploading...' : 'Change avatar'}</span>
                     </button>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      style={{ display: 'none' }}
+                      onChange={handleAvatarChange}
+                    />
                   </div>
+                </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>Full name</label>
+                  <input
+                    className={styles.fieldInput}
+                    value={settings.fullName}
+                    onChange={(e) => updateSetting('fullName', e.target.value)}
+                    placeholder="Your full name"
+                  />
                 </div>
 
                 <div className={styles.fieldGroup}>
@@ -237,8 +290,23 @@ export default function SettingsView() {
                     className={styles.fieldInput}
                     value={settings.displayName}
                     onChange={(e) => updateSetting('displayName', e.target.value)}
-                    placeholder="Your name"
+                    placeholder="What should Araviel call you?"
                   />
+                  <span className={styles.fieldHint}>
+                    This is the name Araviel uses to address you.
+                  </span>
+                </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>Email</label>
+                  <input
+                    className={styles.fieldInputReadonly}
+                    value={authUser?.email || ''}
+                    readOnly
+                  />
+                  <span className={styles.fieldHint}>
+                    Managed by your authentication provider.
+                  </span>
                 </div>
 
                 <div className={styles.fieldGroup}>
@@ -274,6 +342,38 @@ export default function SettingsView() {
                   <span className={styles.fieldHint}>
                     Araviel will tailor responses to your expertise level.
                   </span>
+                </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>Phone</label>
+                  <input
+                    className={styles.fieldInput}
+                    type="tel"
+                    value={settings.phone}
+                    onChange={(e) => updateSetting('phone', e.target.value)}
+                    placeholder="e.g. +1 (555) 123-4567"
+                  />
+                </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>Website</label>
+                  <input
+                    className={styles.fieldInput}
+                    type="url"
+                    value={settings.website}
+                    onChange={(e) => updateSetting('website', e.target.value)}
+                    placeholder="e.g. https://yoursite.com"
+                  />
+                </div>
+
+                <div className={styles.fieldGroup}>
+                  <label className={styles.fieldLabel}>Location</label>
+                  <input
+                    className={styles.fieldInput}
+                    value={settings.location}
+                    onChange={(e) => updateSetting('location', e.target.value)}
+                    placeholder="e.g. San Francisco, CA"
+                  />
                 </div>
               </section>
             )}
@@ -481,10 +581,11 @@ export default function SettingsView() {
                 </div>
 
                 <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>Custom instructions</label>
+                  <label className={styles.fieldLabel}>
+                    What personal preferences should Araviel consider in responses?
+                  </label>
                   <p className={styles.fieldLabelDesc}>
-                    Tell Araviel anything specific about how you&apos;d like it to respond. These
-                    instructions apply to all new conversations.
+                    Your preferences will apply to all conversations.
                   </p>
                   <textarea
                     className={styles.fieldTextarea}
@@ -494,8 +595,8 @@ export default function SettingsView() {
                         updateSetting('customInstructions', e.target.value);
                       }
                     }}
-                    placeholder="e.g. I'm a software engineer. I prefer code examples in TypeScript. Always explain your reasoning step by step..."
-                    rows={5}
+                    placeholder="e.g. When writing code, be very concise. Follow good coding principles and practices. Always adhere to good programming principles, OOP, DRY, SOLID, etc when writing code. All code must be written at top quality, clean, easy to read and understand..."
+                    rows={6}
                   />
                   <div className={styles.textareaFooter}>
                     <span className={styles.fieldHint}>

@@ -32,6 +32,11 @@ export const DEFAULT_SETTINGS = {
   notifyNewFeatures: true,
   notifyUsageLimits: true,
   notifySounds: true,
+  avatarUrl: '',
+  fullName: '',
+  phone: '',
+  website: '',
+  location: '',
 };
 
 // Map camelCase frontend keys to snake_case backend keys
@@ -62,6 +67,11 @@ const toSnakeCase = (settings) => {
     notifyNewFeatures: 'notify_new_features',
     notifyUsageLimits: 'notify_usage_limits',
     notifySounds: 'notify_sounds',
+    avatarUrl: 'avatar_url',
+    fullName: 'full_name',
+    phone: 'phone',
+    website: 'website',
+    location: 'location',
   };
   const result = {};
   for (const [key, value] of Object.entries(settings)) {
@@ -99,6 +109,11 @@ const toCamelCase = (settings) => {
     notify_new_features: 'notifyNewFeatures',
     notify_usage_limits: 'notifyUsageLimits',
     notify_sounds: 'notifySounds',
+    avatar_url: 'avatarUrl',
+    full_name: 'fullName',
+    phone: 'phone',
+    website: 'website',
+    location: 'location',
   };
   const result = {};
   for (const [key, value] of Object.entries(settings)) {
@@ -155,4 +170,32 @@ export async function saveSettings(settings) {
     // Silently fail — localStorage has the data
     return { settings, source: 'local' };
   }
+}
+
+/**
+ * Upload a user avatar image.
+ * @param {File} file - The image file to upload.
+ * @returns {Promise<{ avatarUrl: string }>}
+ */
+export async function uploadAvatar(file) {
+  const dataUri = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/avatar`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ image: dataUri }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Upload failed (${res.status})`);
+  }
+
+  return await res.json();
 }
