@@ -22,7 +22,7 @@ const initialState = {
   deepResearch: false,
   googleThinking: false,
   webSearchEnabled: null, // null = Auto/let ADE decide, true = user toggled on, false = user toggled off
-  tone: null, // null = ADE auto-detects, or: casual, focused, curious, frustrated, urgent, playful, professional
+  tone: 'default', // 'default' | 'professional' | 'friendly' | 'candid' | 'quirky' | 'efficient' | 'cynical'
   mood: null, // null = not set, or: happy, neutral, stressed, frustrated, excited, tired, anxious, calm
   autoStrategy: 'default', // 'default' | 'humanFactors' | 'costEfficient' | 'taskBased'
   currentChatId: null, // current conversationId from backend

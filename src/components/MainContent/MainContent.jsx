@@ -118,6 +118,7 @@ import {
 } from '../../services/imageGeneration';
 import { fetchCreditBalance } from '../../services/credits';
 import { getCreditCost } from '../../services/credits';
+import { saveSettings } from '../../services/settings';
 import ModalityBar from '../ModalityBar/ModalityBar';
 import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
@@ -172,14 +173,13 @@ const MODE_CONFIG = [
 
 // Tone options matching ADE Tone enum
 const TONE_OPTIONS = [
-  { id: null, label: 'Auto-detect', desc: 'ADE detects tone from your message' },
-  { id: 'casual', label: 'Casual', desc: 'Relaxed, informal conversation' },
-  { id: 'focused', label: 'Focused', desc: 'Clear and direct responses' },
-  { id: 'curious', label: 'Curious', desc: 'Exploratory and inquisitive' },
-  { id: 'frustrated', label: 'Frustrated', desc: 'Patient, empathetic responses' },
-  { id: 'urgent', label: 'Urgent', desc: 'Quick, action-oriented answers' },
-  { id: 'playful', label: 'Playful', desc: 'Fun and lighthearted style' },
-  { id: 'professional', label: 'Professional', desc: 'Formal and business-like' },
+  { id: 'default', label: 'Default', desc: 'Preset style and tone' },
+  { id: 'professional', label: 'Professional', desc: 'Polished and precise' },
+  { id: 'friendly', label: 'Friendly', desc: 'Warm and chatty' },
+  { id: 'candid', label: 'Candid', desc: 'Direct and encouraging' },
+  { id: 'quirky', label: 'Quirky', desc: 'Playful and imaginative' },
+  { id: 'efficient', label: 'Efficient', desc: 'Concise and plain' },
+  { id: 'cynical', label: 'Cynical', desc: 'Critical and sarcastic' },
 ];
 
 // Mood options matching ADE Mood enum
@@ -700,6 +700,18 @@ export default function MainContent() {
     }
   }, [selectedModality, isAuthenticated, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync tone from saved settings on mount (read from localStorage cache for speed)
+  useEffect(() => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('araviel-settings') || '{}');
+      if (cached.responseTone && cached.responseTone !== 'default') {
+        dispatch(setTone(cached.responseTone));
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Helper to dispatch conversation updates with correct payload shape
   const updateConvState = (newConversations) => {
     dispatch(setConversations({ conversations: newConversations, total: conversationsTotal }));
@@ -1029,7 +1041,7 @@ export default function MainContent() {
           imageQuality: options.imageQuality || undefined,
           webSearch: webSearchParam,
           userLocation: locationPayload,
-          tone: tone || undefined,
+          tone: tone && tone !== 'default' ? tone : undefined,
           mood: mood || undefined,
           autoStrategy: autoStrategy || undefined,
           weather: userLocation?.weather || undefined,
@@ -1599,7 +1611,7 @@ export default function MainContent() {
     { id: 'research', label: 'Research', icon: BookIcon },
     {
       id: 'tone',
-      label: tone ? `Tone: ${tone.charAt(0).toUpperCase() + tone.slice(1)}` : 'Tone',
+      label: tone && tone !== 'default' ? `Tone: ${tone.charAt(0).toUpperCase() + tone.slice(1)}` : 'Tone',
       icon: MicIcon,
     },
     {
@@ -2501,6 +2513,8 @@ export default function MainContent() {
                                 onClick={() => {
                                   dispatch(setTone(opt.id));
                                   setShowToneSubmenu(false);
+                                  // Persist tone to user settings
+                                  saveSettings({ responseTone: opt.id });
                                 }}
                                 data-tooltip={opt.desc}
                               >
