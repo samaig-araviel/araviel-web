@@ -100,15 +100,25 @@ export default function SettingsView() {
   const [creditsLoading, setCreditsLoading] = useState(false);
 
   // Load settings from backend on mount (authenticated users only)
+  // Pre-populate empty fields from auth provider (e.g. Google OAuth)
   useEffect(() => {
     if (!isAuthenticated) {
       setLoading(false);
       return;
     }
     fetchSettings()
-      .then((s) => setSettings(s))
+      .then((s) => {
+        const merged = { ...s };
+        if (!merged.fullName && authUser?.fullName) {
+          merged.fullName = authUser.fullName;
+        }
+        if ((!merged.displayName || merged.displayName === 'User') && authUser?.fullName) {
+          merged.displayName = authUser.fullName;
+        }
+        setSettings(merged);
+      })
       .finally(() => setLoading(false));
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authUser]);
 
   // Load credit balance when usage tab is shown
   const loadCredits = useCallback(() => {
@@ -240,42 +250,49 @@ export default function SettingsView() {
                   </p>
                 </div>
 
-                <div className={styles.avatarRow}>
-                  <div className={`${styles.avatarLarge} ${avatarUploading ? styles.avatarUploading : ''}`}>
-                    {settings.avatarUrl || authUser?.avatarUrl ? (
-                      <img
-                        src={settings.avatarUrl || authUser.avatarUrl}
-                        alt="Avatar"
-                        className={styles.avatarImage}
-                      />
-                    ) : (
-                      <UserIcon />
-                    )}
-                  </div>
-                  <div className={styles.avatarInfo}>
-                    <span className={styles.avatarName}>
-                      {settings.displayName || authUser?.fullName || 'User'}
-                    </span>
-                    {authUser?.email && (
-                      <span className={styles.avatarPlan}>{authUser.email}</span>
-                    )}
-                    <button
-                      className={styles.avatarEditBtn}
-                      onClick={() => avatarInputRef.current?.click()}
-                      disabled={avatarUploading}
-                    >
-                      <EditIcon />
-                      <span>{avatarUploading ? 'Uploading...' : 'Change avatar'}</span>
-                    </button>
-                    <input
-                      ref={avatarInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp"
-                      style={{ display: 'none' }}
-                      onChange={handleAvatarChange}
-                    />
-                  </div>
-                </div>
+                {(() => {
+                  const resolvedAvatar = settings.avatarUrl || authUser?.avatarUrl;
+                  const resolvedName =
+                    settings.displayName && settings.displayName !== 'User'
+                      ? settings.displayName
+                      : authUser?.fullName || settings.displayName || 'User';
+                  return (
+                    <div className={styles.avatarRow}>
+                      <div className={`${styles.avatarLarge} ${avatarUploading ? styles.avatarUploading : ''}`}>
+                        {resolvedAvatar ? (
+                          <img
+                            src={resolvedAvatar}
+                            alt="Avatar"
+                            className={styles.avatarImage}
+                          />
+                        ) : (
+                          <UserIcon />
+                        )}
+                      </div>
+                      <div className={styles.avatarInfo}>
+                        <span className={styles.avatarName}>{resolvedName}</span>
+                        {authUser?.email && (
+                          <span className={styles.avatarPlan}>{authUser.email}</span>
+                        )}
+                        <button
+                          className={styles.avatarEditBtn}
+                          onClick={() => avatarInputRef.current?.click()}
+                          disabled={avatarUploading}
+                        >
+                          <EditIcon />
+                          <span>{avatarUploading ? 'Uploading...' : 'Change avatar'}</span>
+                        </button>
+                        <input
+                          ref={avatarInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          style={{ display: 'none' }}
+                          onChange={handleAvatarChange}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>Full name</label>
