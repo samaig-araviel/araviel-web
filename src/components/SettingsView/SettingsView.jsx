@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated, selectAuthUser } from '../../store/slices/authSlice';
+import { setTone } from '../../store/slices/chatSlice';
 import { fetchCreditBalance } from '../../services/credits';
 import { fetchSettings, saveSettings, uploadAvatar, DEFAULT_SETTINGS } from '../../services/settings';
 import { GuestGate } from '../GuestGate';
@@ -54,11 +55,13 @@ const LANGUAGES = [
 ];
 
 const TONES = [
-  { id: 'default', label: 'Default', description: 'Balanced and natural responses' },
-  { id: 'concise', label: 'Concise', description: 'Brief, straight to the point' },
-  { id: 'detailed', label: 'Detailed', description: 'Thorough and comprehensive' },
-  { id: 'friendly', label: 'Friendly', description: 'Warm and conversational' },
-  { id: 'professional', label: 'Professional', description: 'Formal and polished' },
+  { id: 'default', label: 'Default', description: 'Preset style and tone' },
+  { id: 'professional', label: 'Professional', description: 'Polished and precise' },
+  { id: 'friendly', label: 'Friendly', description: 'Warm and chatty' },
+  { id: 'candid', label: 'Candid', description: 'Direct and encouraging' },
+  { id: 'quirky', label: 'Quirky', description: 'Playful and imaginative' },
+  { id: 'efficient', label: 'Efficient', description: 'Concise and plain' },
+  { id: 'cynical', label: 'Cynical', description: 'Critical and sarcastic' },
 ];
 
 const SHORTCUTS = [
@@ -571,7 +574,10 @@ export default function SettingsView() {
                         className={`${styles.toneCard} ${
                           settings.responseTone === tone.id ? styles.toneCardActive : ''
                         }`}
-                        onClick={() => updateSetting('responseTone', tone.id)}
+                        onClick={() => {
+                          updateSetting('responseTone', tone.id);
+                          dispatch(setTone(tone.id));
+                        }}
                       >
                         <span className={styles.toneCardLabel}>{tone.label}</span>
                         <span className={styles.toneCardDesc}>{tone.description}</span>
