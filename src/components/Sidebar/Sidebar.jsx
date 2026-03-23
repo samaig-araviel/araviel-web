@@ -972,6 +972,9 @@ export default function Sidebar() {
                   <img
                     src={authUser.avatarUrl}
                     alt=""
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = ''; }}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -979,9 +982,10 @@ export default function Sidebar() {
                       objectFit: 'cover',
                     }}
                   />
-                ) : (
+                ) : null}
+                <span style={{ display: authUser?.avatarUrl ? 'none' : '' }}>
                   <UserIcon />
-                )}
+                </span>
               </div>
               {showFullContent && (
                 <>
