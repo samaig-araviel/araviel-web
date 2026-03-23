@@ -133,7 +133,12 @@ export async function fetchSettings() {
     const res = await fetch(`${API_BASE}/api/settings`, { headers });
     if (!res.ok) throw new Error(`${res.status}`);
     const data = await res.json();
-    const settings = { ...DEFAULT_SETTINGS, ...toCamelCase(data.settings || {}) };
+    const camelSettings = toCamelCase(data.settings || {});
+    // Filter out null/undefined so DB nulls don't override defaults
+    const cleanSettings = Object.fromEntries(
+      Object.entries(camelSettings).filter(([, v]) => v != null)
+    );
+    const settings = { ...DEFAULT_SETTINGS, ...cleanSettings };
     // Cache to localStorage as fallback
     localStorage.setItem('araviel-settings', JSON.stringify(settings));
     return settings;
