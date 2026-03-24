@@ -29,12 +29,12 @@ const PALETTE = [
   '#d97706', // warm amber (primary)
   '#3b82f6', // royal blue
   '#10b981', // emerald
-  '#8b5cf6', // violet
+  '#8b7355', // warm brown
   '#f43f5e', // rose
   '#06b6d4', // cyan
   '#ec4899', // pink
   '#f97316', // orange
-  '#6366f1', // indigo
+  '#6e6354', // earth
   '#84cc16', // lime
 ];
 

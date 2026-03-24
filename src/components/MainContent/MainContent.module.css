@@ -799,13 +799,13 @@
 }
 
 .reportReasonSelected {
-  border-color: var(--accent-color, #8b5cf6);
-  background-color: var(--accent-color-alpha, rgba(139, 92, 246, 0.08));
+  border-color: var(--text-primary);
+  background-color: var(--bg-hover);
   color: var(--text-primary);
 }
 
 .reportReasonRadio {
-  accent-color: var(--accent-color, #8b5cf6);
+  accent-color: var(--text-primary);
   width: 16px;
   height: 16px;
   margin: 0;
@@ -832,7 +832,7 @@
 
 .reportDetailsInput:focus {
   outline: none;
-  border-color: var(--accent-color, #8b5cf6);
+  border-color: var(--text-muted);
 }
 
 /* Share modal overlay */
@@ -1962,7 +1962,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  background: var(--bg-icon-button);
   border-radius: 10px;
   color: #fff;
   flex-shrink: 0;

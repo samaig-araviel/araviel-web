@@ -33,27 +33,27 @@
 }
 
 .icon_pdf {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
+  background: #ef4444;
 }
 
 .icon_word {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: #3b82f6;
 }
 
 .icon_excel {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: #10b981;
 }
 
 .icon_powerpoint {
-  background: linear-gradient(135deg, #f97316, #ea580c);
+  background: #f97316;
 }
 
 .icon_text {
-  background: linear-gradient(135deg, #6b7280, #4b5563);
+  background: #6b7280;
 }
 
 .icon_code {
-  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  background: #6b7280;
 }
 
 .iconBadge {
