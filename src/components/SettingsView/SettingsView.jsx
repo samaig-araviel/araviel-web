@@ -2,8 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { selectIsAuthenticated, selectAuthUser } from '../../store/slices/authSlice';
-import { setTone } from '../../store/slices/chatSlice';
+import { selectIsAuthenticated, selectAuthUser, setUserAvatarUrl } from '../../store/slices/authSlice';
+import {
+  setTone,
+  setWebSearchEnabled,
+  setExtendedThinking,
+  setImageQuality,
+} from '../../store/slices/chatSlice';
 import { fetchCreditBalance } from '../../services/credits';
 import { fetchSettings, saveSettings, uploadAvatar, DEFAULT_SETTINGS } from '../../services/settings';
 import { GuestGate } from '../GuestGate';
@@ -115,10 +120,14 @@ export default function SettingsView() {
         if ((!merged.displayName || merged.displayName === 'User') && authUser?.fullName) {
           merged.displayName = authUser.fullName;
         }
+        // Sync avatar to Redux so sidebar and other components reflect it
+        if (merged.avatarUrl) {
+          dispatch(setUserAvatarUrl(merged.avatarUrl));
+        }
         setSettings(merged);
       })
       .finally(() => setLoading(false));
-  }, [isAuthenticated, authUser]);
+  }, [isAuthenticated, authUser, dispatch]);
 
   // Load credit balance when usage tab is shown
   const loadCredits = useCallback(() => {
@@ -156,6 +165,7 @@ export default function SettingsView() {
     try {
       const { avatarUrl } = await uploadAvatar(file);
       updateSetting('avatarUrl', avatarUrl);
+      dispatch(setUserAvatarUrl(avatarUrl));
     } catch (err) {
       console.error('Avatar upload failed:', err);
     } finally {
@@ -645,33 +655,6 @@ export default function SettingsView() {
                 </div>
 
                 <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>Default model selection</label>
-                  <div className={styles.segmentedControl}>
-                    <button
-                      className={`${styles.segmentedBtn} ${
-                        settings.defaultModel === 'auto' ? styles.segmentedBtnActive : ''
-                      }`}
-                      onClick={() => updateSetting('defaultModel', 'auto')}
-                    >
-                      Auto (recommended)
-                    </button>
-                    <button
-                      className={`${styles.segmentedBtn} ${
-                        settings.defaultModel === 'manual' ? styles.segmentedBtnActive : ''
-                      }`}
-                      onClick={() => updateSetting('defaultModel', 'manual')}
-                    >
-                      Manual
-                    </button>
-                  </div>
-                  <span className={styles.fieldHint}>
-                    {settings.defaultModel === 'auto'
-                      ? 'Araviel automatically picks the best model for each query via ADE.'
-                      : 'You choose which model to use for each conversation.'}
-                  </span>
-                </div>
-
-                <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>Web search</label>
                   <p className={styles.fieldLabelDesc}>
                     Control when Araviel searches the web for current information.
@@ -687,7 +670,11 @@ export default function SettingsView() {
                         className={`${styles.segmentedBtn} ${
                           settings.webSearchDefault === opt.id ? styles.segmentedBtnActive : ''
                         }`}
-                        onClick={() => updateSetting('webSearchDefault', opt.id)}
+                        onClick={() => {
+                          updateSetting('webSearchDefault', opt.id);
+                          const val = opt.id === 'always' ? true : opt.id === 'never' ? false : null;
+                          dispatch(setWebSearchEnabled(val));
+                        }}
                       >
                         {opt.label}
                       </button>
@@ -719,7 +706,10 @@ export default function SettingsView() {
                         className={`${styles.segmentedBtn} ${
                           settings.imageQualityDefault === q.id ? styles.segmentedBtnActive : ''
                         }`}
-                        onClick={() => updateSetting('imageQualityDefault', q.id)}
+                        onClick={() => {
+                          updateSetting('imageQualityDefault', q.id);
+                          dispatch(setImageQuality(q.id));
+                        }}
                       >
                         {q.label}
                       </button>
@@ -732,12 +722,15 @@ export default function SettingsView() {
                     <div className={styles.toggleInfo}>
                       <span className={styles.toggleLabel}>Enable reasoning / thinking</span>
                       <span className={styles.toggleDesc}>
-                        Show the model&apos;s step-by-step reasoning process when available.
+                        Enable deep chain-of-thought reasoning when available.
                       </span>
                     </div>
                     <ToggleSwitch
                       value={settings.enableReasoning}
-                      onChange={(v) => updateSetting('enableReasoning', v)}
+                      onChange={(v) => {
+                        updateSetting('enableReasoning', v);
+                        dispatch(setExtendedThinking(v));
+                      }}
                     />
                   </div>
                 </div>
