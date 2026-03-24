@@ -3170,7 +3170,7 @@
 }
 
 .subConvActionBtnActive {
-  color: var(--accent-color, #8b5cf6);
+  color: var(--text-primary);
 }
 
 .subConvActionBtnCopied {
@@ -3187,7 +3187,7 @@
 
 .subConvCitationLink {
   font-size: 11px;
-  color: var(--accent-color, #8b5cf6);
+  color: #d97706;
   text-decoration: none;
   background: var(--bg-secondary);
   padding: 3px 8px;

@@ -779,13 +779,13 @@
 }
 
 .tierBadgeLite {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
 }
 
 .tierBadgePro {
-  background: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
+  background: var(--bg-active);
+  color: var(--text-primary);
 }
 
 .planDesc {
@@ -850,18 +850,19 @@
 
 .usageProgressFill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  background: var(--bg-icon-button);
   border-radius: 4px;
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   min-width: 2px;
 }
 
 .usageProgressFillWarn {
-  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  background: #d97706;
 }
 
 .usageProgressFillPack {
-  background: linear-gradient(90deg, #a855f7, #8b5cf6);
+  background: #d97706;
+  opacity: 0.7;
 }
 
 .usageRowFooter {
@@ -879,7 +880,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.06), rgba(168, 85, 247, 0.06));
+  background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 14px;
   margin-bottom: 28px;

@@ -1653,7 +1653,7 @@ export default function MainContent() {
       XLSX: '#22c55e',
       PPT: '#f97316',
       PPTX: '#f97316',
-      TXT: '#8b5cf6',
+      TXT: '#6b7280',
       CSV: '#22c55e',
       JSON: '#eab308',
       XML: '#06b6d4',
