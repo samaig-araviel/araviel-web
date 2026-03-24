@@ -732,135 +732,60 @@
   border-color: var(--text-muted);
 }
 
-/* ── Credit cards ── */
-
-.creditCards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 28px;
-}
-
-.creditCard {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px 16px;
-  background-color: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.creditCard:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-}
-
-.creditCardIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  background: rgba(59, 130, 246, 0.08);
-  color: #3b82f6;
-}
-
-.creditCardIcon svg {
-  width: 20px;
-  height: 20px;
-}
-
-.creditCardIconPack {
-  background: rgba(168, 85, 247, 0.08);
-  color: #a855f7;
-}
-
-.creditCardIconTotal {
-  background: rgba(34, 197, 94, 0.08);
-  color: #22c55e;
-}
-
-.creditCardBody {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.creditCardValue {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text-primary);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-}
-
-.creditCardLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.creditCardSub {
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-/* ── Usage bar ── */
-
-.usageBarContainer {
-  margin-top: 4px;
-}
-
-.usageBar {
-  height: 8px;
-  background-color: var(--bg-secondary);
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-}
-
-.usageBarFill {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #6366f1);
-  border-radius: 4px;
-  transition: width 0.5s ease;
-  min-width: 2px;
-}
-
-.usageBarLabels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
 /* ── Plan card ── */
 
 .planCard {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding: 20px 24px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 14px;
+  margin-bottom: 28px;
 }
 
 .planInfo {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .planName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.tierBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.tierBadgeFree {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.tierBadgeLite {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.tierBadgePro {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
 }
 
 .planDesc {
@@ -883,6 +808,107 @@
 .planUpgradeBtn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
+}
+
+/* ── Usage rows (Claude-style progress bars) ── */
+
+.usageRow {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.usageRow:last-child {
+  border-bottom: none;
+}
+
+.usageRowHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.usageRowLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.usageRowValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.usageProgressBar {
+  height: 8px;
+  background-color: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.usageProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 2px;
+}
+
+.usageProgressFillWarn {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.usageProgressFillPack {
+  background: linear-gradient(90deg, #a855f7, #8b5cf6);
+}
+
+.usageRowFooter {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Total credits card ── */
+
+.totalCreditsCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.06), rgba(168, 85, 247, 0.06));
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  margin-bottom: 28px;
+}
+
+.totalCreditsLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.totalCreditsValue {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.totalCreditsLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.totalCreditsSub {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 /* ── Cost table ── */
@@ -911,6 +937,73 @@
   font-weight: 600;
   color: var(--text-primary);
 }
+
+/* ── Pack cards ── */
+
+.packCards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.packCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.packCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+}
+
+.packCardBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.packCardCredits {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.packCardLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.packCardBtn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.packCardBtn:hover {
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+
+/* ── Refresh / Loading / Empty ── */
 
 .refreshBtn {
   padding: 8px 20px;

@@ -9,7 +9,7 @@ import {
   setExtendedThinking,
   setImageQuality,
 } from '../../store/slices/chatSlice';
-import { fetchCreditBalance } from '../../services/credits';
+import { fetchCreditBalance, buyPack } from '../../services/credits';
 import { fetchSettings, saveSettings, uploadAvatar, DEFAULT_SETTINGS } from '../../services/settings';
 import { GuestGate } from '../GuestGate';
 import {
@@ -773,7 +773,7 @@ export default function SettingsView() {
                 <div className={styles.sectionHeader}>
                   <h2 className={styles.sectionTitle}>Usage & credits</h2>
                   <p className={styles.sectionDesc}>
-                    Monitor your credit balance and usage across the platform.
+                    Monitor your credit balance and manage your plan.
                   </p>
                 </div>
 
@@ -782,137 +782,155 @@ export default function SettingsView() {
                     <div className={styles.loadingSpinner} />
                     <span>Loading usage data...</span>
                   </div>
-                ) : creditBalance ? (
+                ) : creditBalance?.balance ? (
                   <>
-                    {/* Credit overview cards */}
-                    <div className={styles.creditCards}>
-                      <div className={styles.creditCard}>
-                        <div className={styles.creditCardIcon}>
-                          <ZapIcon />
+                    {/* ── Current plan card ── */}
+                    {(() => {
+                      const tier = creditBalance.balance.tier || 'free';
+                      const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
+                      const tierCredits = creditBalance.tiers?.[tier] ?? 5;
+                      return (
+                        <div className={styles.planCard}>
+                          <div className={styles.planInfo}>
+                            <span className={styles.planName}>
+                              <span className={`${styles.tierBadge} ${styles[`tierBadge${tierLabel}`] || ''}`}>
+                                {tierLabel}
+                              </span>
+                              {tierLabel} plan
+                            </span>
+                            <span className={styles.planDesc}>
+                              {tierCredits} image credits per month
+                            </span>
+                          </div>
+                          <button
+                            className={styles.planUpgradeBtn}
+                            onClick={() => dispatch(setActiveItem('pricing'))}
+                          >
+                            {tier === 'pro' ? 'Manage plan' : 'Upgrade plan'}
+                          </button>
                         </div>
-                        <div className={styles.creditCardBody}>
-                          <span className={styles.creditCardValue}>
-                            {creditBalance.balance?.monthlyRemaining ?? 0}
-                          </span>
-                          <span className={styles.creditCardLabel}>Monthly credits</span>
-                          <span className={styles.creditCardSub}>
-                            of {creditBalance.balance?.monthlyTotal ?? 0} included
-                          </span>
-                        </div>
-                      </div>
-                      <div className={styles.creditCard}>
-                        <div className={`${styles.creditCardIcon} ${styles.creditCardIconPack}`}>
-                          <GlobeIcon />
-                        </div>
-                        <div className={styles.creditCardBody}>
-                          <span className={styles.creditCardValue}>
-                            {creditBalance.balance?.packCredits ?? 0}
-                          </span>
-                          <span className={styles.creditCardLabel}>Pack credits</span>
-                          <span className={styles.creditCardSub}>purchased separately</span>
-                        </div>
-                      </div>
-                      <div className={styles.creditCard}>
-                        <div className={`${styles.creditCardIcon} ${styles.creditCardIconTotal}`}>
-                          <SunIcon />
-                        </div>
-                        <div className={styles.creditCardBody}>
-                          <span className={styles.creditCardValue}>
-                            {creditBalance.balance?.totalAvailable ?? 0}
-                          </span>
-                          <span className={styles.creditCardLabel}>Total available</span>
-                          <span className={styles.creditCardSub}>combined balance</span>
-                        </div>
-                      </div>
+                      );
+                    })()}
+
+                    {/* ── Plan usage limits ── */}
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Plan usage limits</label>
+
+                      {/* Monthly image credits */}
+                      {(() => {
+                        const monthly = creditBalance.balance.monthly || { total: 0, used: 0, remaining: 0 };
+                        const pct = monthly.total ? Math.round((monthly.used / monthly.total) * 100) : 0;
+                        const resetDate = creditBalance.balance.cycleResetsAt
+                          ? new Date(creditBalance.balance.cycleResetsAt)
+                          : null;
+                        const daysUntilReset = resetDate
+                          ? Math.max(0, Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                          : null;
+                        return (
+                          <div className={styles.usageRow}>
+                            <div className={styles.usageRowHeader}>
+                              <span className={styles.usageRowLabel}>Image credits</span>
+                              <span className={styles.usageRowValue}>{pct}% used</span>
+                            </div>
+                            <div className={styles.usageProgressBar}>
+                              <div
+                                className={`${styles.usageProgressFill} ${pct > 80 ? styles.usageProgressFillWarn : ''}`}
+                                style={{ width: `${Math.min(100, pct)}%` }}
+                              />
+                            </div>
+                            <div className={styles.usageRowFooter}>
+                              <span>{monthly.used} of {monthly.total} used</span>
+                              {daysUntilReset !== null && (
+                                <span>Resets in {daysUntilReset} day{daysUntilReset !== 1 ? 's' : ''}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Pack credits */}
+                      {(() => {
+                        const packs = creditBalance.balance.packs || { total: 0, used: 0, remaining: 0 };
+                        const packPct = packs.total ? Math.round((packs.used / packs.total) * 100) : 0;
+                        return (
+                          <div className={styles.usageRow}>
+                            <div className={styles.usageRowHeader}>
+                              <span className={styles.usageRowLabel}>Purchased credits</span>
+                              <span className={styles.usageRowValue}>{packs.remaining} remaining</span>
+                            </div>
+                            <div className={styles.usageProgressBar}>
+                              <div
+                                className={`${styles.usageProgressFill} ${styles.usageProgressFillPack}`}
+                                style={{ width: `${packs.total ? Math.min(100, 100 - packPct) : 0}%` }}
+                              />
+                            </div>
+                            <div className={styles.usageRowFooter}>
+                              <span>{packs.used} of {packs.total} used</span>
+                              <span>Packs expire after 90 days</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
-                    {/* Usage progress bar */}
-                    <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel}>Monthly usage</label>
-                      <div className={styles.usageBarContainer}>
-                        <div className={styles.usageBar}>
-                          <div
-                            className={styles.usageBarFill}
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                creditBalance.balance?.monthlyTotal
-                                  ? ((creditBalance.balance.monthlyTotal -
-                                      creditBalance.balance.monthlyRemaining) /
-                                      creditBalance.balance.monthlyTotal) *
-                                      100
-                                  : 0
-                              )}%`,
-                            }}
-                          />
-                        </div>
-                        <div className={styles.usageBarLabels}>
-                          <span>
-                            {(creditBalance.balance?.monthlyTotal ?? 0) -
-                              (creditBalance.balance?.monthlyRemaining ?? 0)}{' '}
-                            used
-                          </span>
-                          <span>{creditBalance.balance?.monthlyTotal ?? 0} total</span>
-                        </div>
+                    {/* ── Total available ── */}
+                    <div className={styles.totalCreditsCard}>
+                      <div className={styles.totalCreditsLeft}>
+                        <span className={styles.totalCreditsValue}>{creditBalance.balance.combined ?? 0}</span>
+                        <span className={styles.totalCreditsLabel}>Total credits available</span>
                       </div>
-                      {creditBalance.balance?.cycleResetAt && (
-                        <span className={styles.fieldHint}>
-                          Resets{' '}
-                          {new Date(creditBalance.balance.cycleResetAt).toLocaleDateString(
-                            'en-US',
-                            {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            }
-                          )}
-                        </span>
-                      )}
+                      <span className={styles.totalCreditsSub}>
+                        {creditBalance.balance.monthly?.remaining ?? 0} monthly + {creditBalance.balance.packs?.remaining ?? 0} pack
+                      </span>
                     </div>
 
-                    {/* Plan tier */}
+                    {/* ── Credit costs ── */}
                     <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel}>Current plan</label>
-                      <div className={styles.planCard}>
-                        <div className={styles.planInfo}>
-                          <span className={styles.planName}>
-                            {(creditBalance.balance?.tier || 'free').charAt(0).toUpperCase() +
-                              (creditBalance.balance?.tier || 'free').slice(1)}{' '}
-                            plan
-                          </span>
-                          <span className={styles.planDesc}>
-                            {creditBalance.balance?.tier === 'free' && '5 image credits per month'}
-                            {creditBalance.balance?.tier === 'lite' && '50 image credits per month'}
-                            {creditBalance.balance?.tier === 'pro' &&
-                              '200 image credits per month'}
-                            {!creditBalance.balance?.tier && '5 image credits per month'}
-                          </span>
-                        </div>
-                        <button
-                          className={styles.planUpgradeBtn}
-                          onClick={() => dispatch(setActiveItem('pricing'))}
-                        >
-                          {creditBalance.balance?.tier === 'pro' ? 'Manage' : 'Upgrade'}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Image quality costs */}
-                    <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel}>Credit costs</label>
+                      <label className={styles.fieldLabel}>Image generation costs</label>
                       <div className={styles.costTable}>
                         <div className={styles.costRow}>
                           <span>Standard quality</span>
-                          <span className={styles.costValue}>1 credit</span>
+                          <span className={styles.costValue}>{creditBalance.costs?.standard ?? 1} credit</span>
                         </div>
                         <div className={styles.costRow}>
                           <span>HD quality</span>
-                          <span className={styles.costValue}>2 credits</span>
+                          <span className={styles.costValue}>{creditBalance.costs?.hd ?? 2} credits</span>
                         </div>
                         <div className={styles.costRow}>
                           <span>Ultra quality</span>
-                          <span className={styles.costValue}>4 credits</span>
+                          <span className={styles.costValue}>{creditBalance.costs?.ultra ?? 4} credits</span>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* ── Add more credits ── */}
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Add more credits</label>
+                      <p className={styles.fieldLabelDesc}>
+                        Purchase credit packs for additional image generations. Credits expire after 90 days.
+                      </p>
+                      <div className={styles.packCards}>
+                        {Object.entries(creditBalance.packs || {}).map(([key, pack]) => (
+                          <div key={key} className={styles.packCard}>
+                            <div className={styles.packCardBody}>
+                              <span className={styles.packCardCredits}>{pack.credits}</span>
+                              <span className={styles.packCardLabel}>{pack.label}</span>
+                            </div>
+                            <button
+                              className={styles.packCardBtn}
+                              onClick={async () => {
+                                try {
+                                  await buyPack(key);
+                                  loadCredits();
+                                } catch (err) {
+                                  console.error('Failed to buy pack:', err);
+                                }
+                              }}
+                            >
+                              Add credits
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
