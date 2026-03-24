@@ -139,7 +139,7 @@ function MinusIcon({ className }) {
   );
 }
 
-export default function TierCard({ tier, billingCycle, currentTier, isAuthenticated }) {
+export default function TierCard({ tier, billingCycle, currentTier, isAuthenticated, onCtaClick }) {
   const price = getDisplayPrice(tier, billingCycle);
   const isCurrent = isAuthenticated && currentTier === tier.id;
   const isDown = isAuthenticated && currentTier && isDowngrade(currentTier, tier.id);
@@ -243,6 +243,7 @@ export default function TierCard({ tier, billingCycle, currentTier, isAuthentica
           } ${isUp && !tier.highlighted ? styles.ctaButtonUpgrade : ''}`}
           disabled={isCurrent}
           aria-label={getCtaText()}
+          onClick={() => onCtaClick?.(tier)}
         >
           {getCtaText()}
         </button>

@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   selectCurrentTier,
   selectBillingCycle,
@@ -12,6 +12,7 @@ import { getAvailableTiers } from '../../config/subscription';
 import { getUserTier } from '../../data/models';
 import BillingToggle from './BillingToggle';
 import TierCard from './TierCard';
+import { AuthModal } from '../Auth';
 import styles from './PricingView.module.css';
 
 export default function PricingView() {
@@ -20,6 +21,15 @@ export default function PricingView() {
   const billingCycle = useSelector(selectBillingCycle);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const tiers = getAvailableTiers();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleCtaClick = (tier) => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      return;
+    }
+    // Future: handle subscription changes for authenticated users
+  };
 
   // Sync Redux tier with localStorage on mount and on tier-change events
   useEffect(() => {
@@ -77,6 +87,7 @@ export default function PricingView() {
               billingCycle={billingCycle}
               currentTier={currentTier}
               isAuthenticated={isAuthenticated}
+              onCtaClick={handleCtaClick}
             />
           ))}
         </div>
@@ -87,6 +98,12 @@ export default function PricingView() {
           <p>Prices shown in GBP. Cancel or change your plan anytime.</p>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialTab="signup"
+      />
     </div>
   );
 }
