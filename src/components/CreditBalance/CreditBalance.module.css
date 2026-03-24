@@ -14,13 +14,13 @@
 .available {
   font-size: 15px;
   font-weight: 700;
-  color: var(--accent-color, #7c5cfc);
+  color: var(--text-primary);
   letter-spacing: -0.01em;
 }
 
 .availableLabel {
   font-size: 11px;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -28,7 +28,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+  color: var(--text-muted);
   font-size: 11px;
 }
 
@@ -48,22 +48,21 @@
 
 .packs {
   white-space: nowrap;
-  color: var(--accent-color, #7c5cfc);
-  opacity: 0.85;
+  color: #d97706;
 }
 
 .resetInfo {
   white-space: nowrap;
   font-style: italic;
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .buyButton {
   padding: 3px 10px;
   border-radius: 6px;
-  border: 1px solid var(--accent-color, #7c5cfc);
+  border: 1px solid var(--border-input);
   background: transparent;
-  color: var(--accent-color, #7c5cfc);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -72,21 +71,17 @@
 }
 
 .buyButton:hover {
-  background: var(--accent-color, #7c5cfc);
-  color: #fff;
+  background: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  border-color: var(--bg-icon-button);
 }
 
 .buyButtonUrgent {
-  background: var(--accent-color, #7c5cfc);
-  color: #fff;
-  animation: gentlePulse 2s ease-in-out infinite;
+  background: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  border-color: var(--bg-icon-button);
 }
 
 .buyButtonUrgent:hover {
-  opacity: 0.9;
-}
-
-@keyframes gentlePulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.75; }
+  opacity: 0.85;
 }
