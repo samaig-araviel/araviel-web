@@ -700,12 +700,26 @@ export default function MainContent() {
     }
   }, [selectedModality, isAuthenticated, dispatch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync tone from saved settings on mount (read from localStorage cache for speed)
+  // Sync saved settings to chat Redux state on mount (read from localStorage cache for speed)
   useEffect(() => {
     try {
       const cached = JSON.parse(localStorage.getItem('araviel-settings') || '{}');
       if (cached.responseTone && cached.responseTone !== 'default') {
         dispatch(setTone(cached.responseTone));
+      }
+      // Web search preference
+      if (cached.webSearchDefault === 'always') dispatch(setWebSearchEnabled(true));
+      else if (cached.webSearchDefault === 'never') dispatch(setWebSearchEnabled(false));
+      // else null = auto (default)
+
+      // Image quality preference
+      if (cached.imageQualityDefault && cached.imageQualityDefault !== 'standard') {
+        dispatch(setImageQuality(cached.imageQualityDefault));
+      }
+
+      // Reasoning preference
+      if (cached.enableReasoning === true) {
+        dispatch(setExtendedThinking(true));
       }
     } catch {
       // ignore parse errors
@@ -1045,7 +1059,7 @@ export default function MainContent() {
           mood: mood || undefined,
           autoStrategy: autoStrategy || undefined,
           weather: userLocation?.weather || undefined,
-          requestFollowUps: true,
+          requestFollowUps: (() => { try { return JSON.parse(localStorage.getItem('araviel-settings') || '{}').enableFollowUps !== false; } catch { return true; } })(),
           extendedThinking: extendedThinking || undefined,
           deepResearch: deepResearch || undefined,
           googleThinking: googleThinking || undefined,

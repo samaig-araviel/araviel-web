@@ -195,6 +195,12 @@ const authSlice = createSlice({
     setAuthError(state, action) {
       state.error = action.payload;
     },
+    /** Update just the avatar URL on the current user (e.g. after upload). */
+    setUserAvatarUrl(state, action) {
+      if (state.user) {
+        state.user.avatarUrl = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     // initializeAuth
@@ -302,7 +308,7 @@ const authSlice = createSlice({
 // Exports
 // ---------------------------------------------------------------------------
 
-export const { setAuth, clearAuth, setAuthLoading, setAuthError } =
+export const { setAuth, clearAuth, setAuthLoading, setAuthError, setUserAvatarUrl } =
   authSlice.actions;
 
 // Selectors
