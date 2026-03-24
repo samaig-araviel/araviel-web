@@ -116,3 +116,43 @@
   font-size: 12px;
   text-align: center;
 }
+
+/* Success state */
+.successState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  gap: 12px;
+  animation: fadeScaleIn 0.3s ease-out;
+}
+
+.successIcon {
+  color: var(--accent-color, #7c5cfc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.successText {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.successSubtext {
+  font-size: 13px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.45));
+}
+
+@keyframes fadeScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

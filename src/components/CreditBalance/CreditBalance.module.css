@@ -5,24 +5,57 @@
   font-size: 12px;
 }
 
+.balanceMain {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.available {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent-color, #7c5cfc);
+  letter-spacing: -0.01em;
+}
+
+.availableLabel {
+  font-size: 11px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  white-space: nowrap;
+}
+
 .breakdown {
   display: flex;
   align-items: center;
   gap: 6px;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.5));
+  color: var(--text-secondary, rgba(255, 255, 255, 0.4));
+  font-size: 11px;
 }
 
 .monthly {
   white-space: nowrap;
 }
 
+.monthlyDepleted {
+  white-space: nowrap;
+  opacity: 0.5;
+}
+
 .separator {
-  opacity: 0.4;
+  opacity: 0.3;
+  font-size: 8px;
 }
 
 .packs {
   white-space: nowrap;
   color: var(--accent-color, #7c5cfc);
+  opacity: 0.85;
+}
+
+.resetInfo {
+  white-space: nowrap;
+  font-style: italic;
+  opacity: 0.6;
 }
 
 .buyButton {
@@ -32,12 +65,28 @@
   background: transparent;
   color: var(--accent-color, #7c5cfc);
   font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .buyButton:hover {
   background: var(--accent-color, #7c5cfc);
   color: #fff;
+}
+
+.buyButtonUrgent {
+  background: var(--accent-color, #7c5cfc);
+  color: #fff;
+  animation: gentlePulse 2s ease-in-out infinite;
+}
+
+.buyButtonUrgent:hover {
+  opacity: 0.9;
+}
+
+@keyframes gentlePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
 }

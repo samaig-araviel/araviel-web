@@ -158,6 +158,15 @@ export default function ImageGalleryView() {
     // Only attach listeners for authenticated users
     if (!isAuthenticated) return;
 
+    // Helper to refresh credit balance from API
+    const refreshCredits = () => {
+      fetchCreditBalance()
+        .then((data) => {
+          if (data?.balance) dispatch(setCreditBalance(data.balance));
+        })
+        .catch(() => {});
+    };
+
     // Refresh gallery when new images are saved (e.g. from chat)
     // Use a small debounce to handle rapid successive saves
     let debounceTimer = null;
@@ -167,12 +176,17 @@ export default function ImageGalleryView() {
       const cached = getGeneratedImages();
       if (cached.length > 0) setImages(cached);
       debounceTimer = setTimeout(() => loadImagesRef.current(), 500);
+      // Also refresh credit balance — credits were just charged
+      refreshCredits();
     };
     window.addEventListener('araviel-image-saved', handleImageSaved);
 
     // Also refresh when tab regains focus
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') loadImagesRef.current();
+      if (document.visibilityState === 'visible') {
+        loadImagesRef.current();
+        refreshCredits();
+      }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
@@ -181,7 +195,7 @@ export default function ImageGalleryView() {
       window.removeEventListener('araviel-image-saved', handleImageSaved);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [loadImages, isAuthenticated]);
+  }, [loadImages, isAuthenticated, dispatch]);
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -495,7 +509,13 @@ export default function ImageGalleryView() {
 
           {/* Credit balance */}
           <div className={styles.usagePill}>
-            <CreditBalance onBuyCredits={() => setShowBuyPacks(true)} />
+            <CreditBalance onBuyCredits={() => {
+              if (!isAuthenticated) {
+                setShowAuthModal(true);
+              } else {
+                setShowBuyPacks(true);
+              }
+            }} />
             <span className={styles.usagePillBadge}>
               {creditBalance?.tier === 'pro'
                 ? 'PRO'
