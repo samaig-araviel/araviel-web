@@ -1,17 +1,14 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { supabase } from '../lib/supabase';
-import {
-  initializeAuth,
-  setAuth,
-  clearAuth,
-} from '../store/slices/authSlice';
+import { initializeAuth, setAuth, clearAuth } from '../store/slices/authSlice';
 import { resetChatState, setCreditBalance } from '../store/slices/chatSlice';
 import { resetProjectsState } from '../store/slices/projectsSlice';
-import { resetSubscriptionState } from '../store/slices/subscriptionSlice';
+import { resetSubscriptionState, setSubscriptionData } from '../store/slices/subscriptionSlice';
 import { resetGuestPromptCount } from '../utils/guestSession';
 import { setUserTier } from '../data/models';
 import { fetchCreditBalance } from '../services/credits';
+import { fetchSubscription } from '../services/subscription';
 import { clearImageCache } from '../services/imageGeneration';
 
 // ---------------------------------------------------------------------------
@@ -26,9 +23,7 @@ function mapUser(supabaseUser) {
     isAnonymous: supabaseUser.is_anonymous || false,
     avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
     fullName:
-      supabaseUser.user_metadata?.full_name ||
-      supabaseUser.user_metadata?.display_name ||
-      null,
+      supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.display_name || null,
   };
 }
 
@@ -69,61 +64,68 @@ export default function useAuthListener() {
     dispatch(initializeAuth());
 
     // 2. Subscribe to ongoing auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        switch (event) {
-          case 'SIGNED_IN':
-          case 'TOKEN_REFRESHED':
-          case 'USER_UPDATED': {
-            const user = mapUser(session?.user);
-            dispatch(
-              setAuth({
-                user,
-                session: mapSession(session),
-              }),
-            );
-            // On real (non-anonymous) sign-in, sync tier/credits from backend
-            if (event === 'SIGNED_IN' && user && !user.isAnonymous) {
-              resetGuestPromptCount();
-              fetchCreditBalance()
-                .then((data) => {
-                  if (data.balance) {
-                    dispatch(setCreditBalance(data.balance));
-                    if (data.balance.tier) {
-                      setUserTier(data.balance.tier);
-                    }
-                  }
-                })
-                .catch(() => {});
-            }
-            break;
-          }
-          case 'SIGNED_OUT': {
-            // 1. Reset guest prompt counters and clear image cache
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      switch (event) {
+        case 'SIGNED_IN':
+        case 'TOKEN_REFRESHED':
+        case 'USER_UPDATED': {
+          const user = mapUser(session?.user);
+          dispatch(
+            setAuth({
+              user,
+              session: mapSession(session),
+            })
+          );
+          // On real (non-anonymous) sign-in, sync tier/credits from backend
+          if (event === 'SIGNED_IN' && user && !user.isAnonymous) {
             resetGuestPromptCount();
-            clearImageCache();
-
-            // 2. Clear user-specific localStorage
-            USER_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
-
-            // 3. Reset all Redux slices
-            dispatch(clearAuth());
-            dispatch(resetChatState());
-            dispatch(resetProjectsState());
-            dispatch(resetSubscriptionState());
-
-            // 4. Reset tier to free
-            setUserTier('free');
-
-            // 5. Re-create anonymous session so guest flow works
-            dispatch(initializeAuth());
-            break;
+            fetchCreditBalance()
+              .then((data) => {
+                if (data.balance) {
+                  dispatch(setCreditBalance(data.balance));
+                  if (data.balance.tier) {
+                    setUserTier(data.balance.tier);
+                  }
+                }
+              })
+              .catch(() => {});
+            // Hydrate subscription state from server
+            fetchSubscription()
+              .then((data) => {
+                dispatch(setSubscriptionData(data));
+                if (data.tier) setUserTier(data.tier);
+              })
+              .catch(() => {});
           }
-          default:
-            break;
+          break;
         }
-      },
-    );
+        case 'SIGNED_OUT': {
+          // 1. Reset guest prompt counters and clear image cache
+          resetGuestPromptCount();
+          clearImageCache();
+
+          // 2. Clear user-specific localStorage
+          USER_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
+
+          // 3. Reset all Redux slices
+          dispatch(clearAuth());
+          dispatch(resetChatState());
+          dispatch(resetProjectsState());
+          dispatch(resetSubscriptionState());
+
+          // 4. Reset tier to free
+          setUserTier('free');
+
+          // 5. Re-create anonymous session so guest flow works
+          dispatch(initializeAuth());
+          break;
+        }
+        default:
+          break;
+      }
+    });
 
     // 3. Cleanup on unmount
     return () => {

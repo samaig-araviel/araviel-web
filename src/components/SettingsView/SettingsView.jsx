@@ -2,7 +2,20 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
-import { selectIsAuthenticated, selectAuthUser, setUserAvatarUrl } from '../../store/slices/authSlice';
+import {
+  selectCurrentTier,
+  selectDailyCreditsUsed,
+  selectCreditsLimit,
+  selectPeriodEnd,
+  selectCancelAtPeriodEnd,
+  createPortalThunk,
+} from '../../store/slices/subscriptionSlice';
+import { getTierById } from '../../config/subscription';
+import {
+  selectIsAuthenticated,
+  selectAuthUser,
+  setUserAvatarUrl,
+} from '../../store/slices/authSlice';
 import {
   setTone,
   setWebSearchEnabled,
@@ -10,7 +23,12 @@ import {
   setImageQuality,
 } from '../../store/slices/chatSlice';
 import { fetchCreditBalance, buyPack } from '../../services/credits';
-import { fetchSettings, saveSettings, uploadAvatar, DEFAULT_SETTINGS } from '../../services/settings';
+import {
+  fetchSettings,
+  saveSettings,
+  uploadAvatar,
+  DEFAULT_SETTINGS,
+} from '../../services/settings';
 import { GuestGate } from '../GuestGate';
 import {
   ChevronLeftIcon,
@@ -88,6 +106,11 @@ export default function SettingsView() {
   const themeMode = useSelector(selectTheme);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const authUser = useSelector(selectAuthUser);
+  const currentTier = useSelector(selectCurrentTier);
+  const dailyCreditsUsed = useSelector(selectDailyCreditsUsed);
+  const creditsLimit = useSelector(selectCreditsLimit);
+  const periodEnd = useSelector(selectPeriodEnd);
+  const cancelAtPeriodEnd = useSelector(selectCancelAtPeriodEnd);
   const [activeSection, setActiveSection] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -268,7 +291,11 @@ export default function SettingsView() {
                       : authUser?.fullName || settings.displayName || 'User';
                   return (
                     <div className={styles.avatarRow}>
-                      <div className={`${styles.avatarLarge} ${avatarUploading ? styles.avatarUploading : ''}`}>
+                      <div
+                        className={`${styles.avatarLarge} ${
+                          avatarUploading ? styles.avatarUploading : ''
+                        }`}
+                      >
                         {resolvedAvatar ? (
                           <img
                             src={resolvedAvatar}
@@ -276,7 +303,10 @@ export default function SettingsView() {
                             referrerPolicy="no-referrer"
                             crossOrigin="anonymous"
                             className={styles.avatarImage}
-                            onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = ''; }}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextSibling.style.display = '';
+                            }}
                           />
                         ) : null}
                         <span style={{ display: resolvedAvatar ? 'none' : '' }}>
@@ -338,9 +368,7 @@ export default function SettingsView() {
                     value={authUser?.email || ''}
                     readOnly
                   />
-                  <span className={styles.fieldHint}>
-                    Managed by your authentication provider.
-                  </span>
+                  <span className={styles.fieldHint}>Managed by your authentication provider.</span>
                 </div>
 
                 <div className={styles.fieldGroup}>
@@ -672,7 +700,8 @@ export default function SettingsView() {
                         }`}
                         onClick={() => {
                           updateSetting('webSearchDefault', opt.id);
-                          const val = opt.id === 'always' ? true : opt.id === 'never' ? false : null;
+                          const val =
+                            opt.id === 'always' ? true : opt.id === 'never' ? false : null;
                           dispatch(setWebSearchEnabled(val));
                         }}
                       >
@@ -777,6 +806,91 @@ export default function SettingsView() {
                   </p>
                 </div>
 
+                {/* ── Subscription management ── */}
+                {(() => {
+                  const tierInfo = getTierById(currentTier);
+                  const tierName =
+                    tierInfo?.name ||
+                    currentTier?.charAt(0).toUpperCase() + currentTier?.slice(1) ||
+                    'Free';
+                  const tierId = currentTier || 'free';
+                  const used = dailyCreditsUsed || 0;
+                  const limit = creditsLimit || 0;
+                  const remaining = limit > 0 ? (limit - used) / limit : 1;
+                  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+                  const progressColor =
+                    remaining > 0.5
+                      ? styles.creditProgressGreen
+                      : remaining > 0.2
+                      ? styles.creditProgressYellow
+                      : styles.creditProgressRed;
+                  const badgeClass =
+                    tierId === 'pro'
+                      ? styles.planBadgePro
+                      : tierId === 'lite'
+                      ? styles.planBadgeLite
+                      : styles.planBadgeFree;
+
+                  return (
+                    <div className={styles.subscriptionSection}>
+                      <div className={styles.planRow}>
+                        <span className={`${styles.planBadge} ${badgeClass}`}>{tierName}</span>
+                      </div>
+
+                      <div className={styles.creditProgressSection}>
+                        <div className={styles.creditProgressLabel}>
+                          <span>
+                            {used} / {limit} daily credits used
+                          </span>
+                          <span>{pct}%</span>
+                        </div>
+                        <div className={styles.creditProgressBar}>
+                          <div
+                            className={`${styles.creditProgressFill} ${progressColor}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {periodEnd && (
+                        <div className={styles.billingInfo}>
+                          Next billing:{' '}
+                          {new Date(periodEnd).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          })}
+                        </div>
+                      )}
+
+                      {cancelAtPeriodEnd && (
+                        <div className={styles.cancelNotice}>
+                          Your plan will be cancelled at the end of the current period
+                        </div>
+                      )}
+
+                      <div className={styles.subscriptionActions}>
+                        {tierId !== 'free' && (
+                          <button
+                            className={styles.manageBtn}
+                            onClick={() => dispatch(createPortalThunk())}
+                          >
+                            Manage Subscription
+                          </button>
+                        )}
+                        {(tierId === 'free' || tierId === 'lite') && (
+                          <button
+                            className={styles.upgradeBtn}
+                            onClick={() => dispatch(setActiveItem('pricing'))}
+                          >
+                            Upgrade Plan
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {creditsLoading ? (
                   <div className={styles.usageLoading}>
                     <div className={styles.loadingSpinner} />
@@ -793,7 +907,11 @@ export default function SettingsView() {
                         <div className={styles.planCard}>
                           <div className={styles.planInfo}>
                             <span className={styles.planName}>
-                              <span className={`${styles.tierBadge} ${styles[`tierBadge${tierLabel}`] || ''}`}>
+                              <span
+                                className={`${styles.tierBadge} ${
+                                  styles[`tierBadge${tierLabel}`] || ''
+                                }`}
+                              >
                                 {tierLabel}
                               </span>
                               {tierLabel} plan
@@ -818,13 +936,22 @@ export default function SettingsView() {
 
                       {/* Monthly image credits */}
                       {(() => {
-                        const monthly = creditBalance.balance.monthly || { total: 0, used: 0, remaining: 0 };
-                        const pct = monthly.total ? Math.round((monthly.used / monthly.total) * 100) : 0;
+                        const monthly = creditBalance.balance.monthly || {
+                          total: 0,
+                          used: 0,
+                          remaining: 0,
+                        };
+                        const pct = monthly.total
+                          ? Math.round((monthly.used / monthly.total) * 100)
+                          : 0;
                         const resetDate = creditBalance.balance.cycleResetsAt
                           ? new Date(creditBalance.balance.cycleResetsAt)
                           : null;
                         const daysUntilReset = resetDate
-                          ? Math.max(0, Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+                          ? Math.max(
+                              0,
+                              Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                            )
                           : null;
                         return (
                           <div className={styles.usageRow}>
@@ -834,14 +961,20 @@ export default function SettingsView() {
                             </div>
                             <div className={styles.usageProgressBar}>
                               <div
-                                className={`${styles.usageProgressFill} ${pct > 80 ? styles.usageProgressFillWarn : ''}`}
+                                className={`${styles.usageProgressFill} ${
+                                  pct > 80 ? styles.usageProgressFillWarn : ''
+                                }`}
                                 style={{ width: `${Math.min(100, pct)}%` }}
                               />
                             </div>
                             <div className={styles.usageRowFooter}>
-                              <span>{monthly.used} of {monthly.total} used</span>
+                              <span>
+                                {monthly.used} of {monthly.total} used
+                              </span>
                               {daysUntilReset !== null && (
-                                <span>Resets in {daysUntilReset} day{daysUntilReset !== 1 ? 's' : ''}</span>
+                                <span>
+                                  Resets in {daysUntilReset} day{daysUntilReset !== 1 ? 's' : ''}
+                                </span>
                               )}
                             </div>
                           </div>
@@ -850,22 +983,34 @@ export default function SettingsView() {
 
                       {/* Pack credits */}
                       {(() => {
-                        const packs = creditBalance.balance.packs || { total: 0, used: 0, remaining: 0 };
-                        const packPct = packs.total ? Math.round((packs.used / packs.total) * 100) : 0;
+                        const packs = creditBalance.balance.packs || {
+                          total: 0,
+                          used: 0,
+                          remaining: 0,
+                        };
+                        const packPct = packs.total
+                          ? Math.round((packs.used / packs.total) * 100)
+                          : 0;
                         return (
                           <div className={styles.usageRow}>
                             <div className={styles.usageRowHeader}>
                               <span className={styles.usageRowLabel}>Purchased credits</span>
-                              <span className={styles.usageRowValue}>{packs.remaining} remaining</span>
+                              <span className={styles.usageRowValue}>
+                                {packs.remaining} remaining
+                              </span>
                             </div>
                             <div className={styles.usageProgressBar}>
                               <div
                                 className={`${styles.usageProgressFill} ${styles.usageProgressFillPack}`}
-                                style={{ width: `${packs.total ? Math.min(100, 100 - packPct) : 0}%` }}
+                                style={{
+                                  width: `${packs.total ? Math.min(100, 100 - packPct) : 0}%`,
+                                }}
                               />
                             </div>
                             <div className={styles.usageRowFooter}>
-                              <span>{packs.used} of {packs.total} used</span>
+                              <span>
+                                {packs.used} of {packs.total} used
+                              </span>
                               <span>Packs expire after 90 days</span>
                             </div>
                           </div>
@@ -876,11 +1021,14 @@ export default function SettingsView() {
                     {/* ── Total available ── */}
                     <div className={styles.totalCreditsCard}>
                       <div className={styles.totalCreditsLeft}>
-                        <span className={styles.totalCreditsValue}>{creditBalance.balance.combined ?? 0}</span>
+                        <span className={styles.totalCreditsValue}>
+                          {creditBalance.balance.combined ?? 0}
+                        </span>
                         <span className={styles.totalCreditsLabel}>Total credits available</span>
                       </div>
                       <span className={styles.totalCreditsSub}>
-                        {creditBalance.balance.monthly?.remaining ?? 0} monthly + {creditBalance.balance.packs?.remaining ?? 0} pack
+                        {creditBalance.balance.monthly?.remaining ?? 0} monthly +{' '}
+                        {creditBalance.balance.packs?.remaining ?? 0} pack
                       </span>
                     </div>
 
@@ -890,15 +1038,21 @@ export default function SettingsView() {
                       <div className={styles.costTable}>
                         <div className={styles.costRow}>
                           <span>Standard quality</span>
-                          <span className={styles.costValue}>{creditBalance.costs?.standard ?? 1} credit</span>
+                          <span className={styles.costValue}>
+                            {creditBalance.costs?.standard ?? 1} credit
+                          </span>
                         </div>
                         <div className={styles.costRow}>
                           <span>HD quality</span>
-                          <span className={styles.costValue}>{creditBalance.costs?.hd ?? 2} credits</span>
+                          <span className={styles.costValue}>
+                            {creditBalance.costs?.hd ?? 2} credits
+                          </span>
                         </div>
                         <div className={styles.costRow}>
                           <span>Ultra quality</span>
-                          <span className={styles.costValue}>{creditBalance.costs?.ultra ?? 4} credits</span>
+                          <span className={styles.costValue}>
+                            {creditBalance.costs?.ultra ?? 4} credits
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -907,7 +1061,8 @@ export default function SettingsView() {
                     <div className={styles.fieldGroup}>
                       <label className={styles.fieldLabel}>Add more credits</label>
                       <p className={styles.fieldLabelDesc}>
-                        Purchase credit packs for additional image generations. Credits expire after 90 days.
+                        Purchase credit packs for additional image generations. Credits expire after
+                        90 days.
                       </p>
                       <div className={styles.packCards}>
                         {Object.entries(creditBalance.packs || {}).map(([key, pack]) => (

@@ -1202,3 +1202,115 @@
     text-align: center;
   }
 }
+
+/* ─── Subscription Management ─────────────────────────────── */
+.subscriptionSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+.planRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.planBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.planBadgeFree {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+.planBadgeLite {
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  color: #4338ca;
+}
+.planBadgePro {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+}
+.creditProgressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.creditProgressLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.creditProgressBar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+.creditProgressFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.creditProgressGreen {
+  background: #22c55e;
+}
+.creditProgressYellow {
+  background: #eab308;
+}
+.creditProgressRed {
+  background: #ef4444;
+}
+.billingInfo {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.cancelNotice {
+  font-size: 13px;
+  color: #ef4444;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border-radius: 8px;
+}
+.subscriptionActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.manageBtn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.manageBtn:hover {
+  background: var(--bg-secondary);
+}
+.upgradeBtn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.upgradeBtn:hover {
+  opacity: 0.85;
+}

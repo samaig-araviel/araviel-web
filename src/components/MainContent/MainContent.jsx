@@ -109,6 +109,13 @@ import {
 import { useToast } from '../Toast/Toast';
 import { selectProjects, addProject } from '../../store/slices/projectsSlice';
 import { setActiveItem, selectActiveItem } from '../../store/slices/sidebarSlice';
+import {
+  showUpgradeModal,
+  setDailyCreditsUsed,
+  setCreditsRemaining,
+  selectCurrentTier,
+} from '../../store/slices/subscriptionSlice';
+import { getNextTier } from '../../config/subscription';
 import { getUserTier, PROVIDERS, isImageGenerationModel } from '../../data/models';
 import {
   canGenerateImage,
@@ -150,6 +157,7 @@ const MODE_CONFIG = [
     providerId: 'anthropic',
     Icon: BrainIcon,
     action: setExtendedThinking,
+    requiredTier: 'pro',
   },
   {
     key: 'deepResearch',
@@ -159,6 +167,7 @@ const MODE_CONFIG = [
     providerId: 'openai',
     Icon: BeakerIcon,
     action: setDeepResearch,
+    requiredTier: 'lite',
   },
   {
     key: 'googleThinking',
@@ -168,6 +177,7 @@ const MODE_CONFIG = [
     providerId: 'google',
     Icon: CpuIcon,
     action: setGoogleThinking,
+    requiredTier: 'pro',
   },
 ];
 
@@ -593,6 +603,7 @@ export default function MainContent() {
   const extendedThinking = useSelector(selectExtendedThinking);
   const deepResearch = useSelector(selectDeepResearch);
   const googleThinking = useSelector(selectGoogleThinking);
+  const currentTier = useSelector(selectCurrentTier);
   const tone = useSelector(selectTone);
   const mood = useSelector(selectMood);
   const autoStrategy = useSelector(selectAutoStrategy);
@@ -1059,7 +1070,16 @@ export default function MainContent() {
           mood: mood || undefined,
           autoStrategy: autoStrategy || undefined,
           weather: userLocation?.weather || undefined,
-          requestFollowUps: (() => { try { return JSON.parse(localStorage.getItem('araviel-settings') || '{}').enableFollowUps !== false; } catch { return true; } })(),
+          requestFollowUps: (() => {
+            try {
+              return (
+                JSON.parse(localStorage.getItem('araviel-settings') || '{}').enableFollowUps !==
+                false
+              );
+            } catch {
+              return true;
+            }
+          })(),
           extendedThinking: extendedThinking || undefined,
           deepResearch: deepResearch || undefined,
           googleThinking: googleThinking || undefined,
@@ -1263,6 +1283,11 @@ export default function MainContent() {
                   })
                   .catch(() => {});
               }
+              // Sync daily credits from SSE done event
+              if (data.dailyCredits) {
+                dispatch(setDailyCreditsUsed(data.dailyCredits.used));
+                dispatch(setCreditsRemaining(data.dailyCredits.limit - data.dailyCredits.used));
+              }
               // Refresh sidebar conversations after stream completes (title may now be set)
               window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
             } else if (type === 'error') {
@@ -1271,8 +1296,29 @@ export default function MainContent() {
                 if (assistantMsgAdded) {
                   dispatch(updateLastMessage({ providerRetry: true }));
                 }
+              } else if (data.code === 'CREDITS_EXHAUSTED') {
+                // Daily credit limit reached — show upgrade modal
+                dispatch(setIsProcessing(false));
+                dispatch(
+                  showUpgradeModal({
+                    reason: 'credit_limit',
+                    suggestedTier: getNextTier(data.tier || 'free'),
+                    message: data.message || "You've used all your daily credits.",
+                  })
+                );
+                if (assistantMsgAdded) {
+                  dispatch(
+                    updateLastMessage({
+                      content: '',
+                      error: {
+                        message: data.message || 'Daily credit limit reached',
+                        code: data.code,
+                      },
+                    })
+                  );
+                }
               } else if (data.code === 'INSUFFICIENT_CREDITS') {
-                // Credit limit reached — show buy packs modal
+                // Image credit limit reached — show buy packs modal
                 dispatch(setIsProcessing(false));
                 setShowBuyPacksModal(true);
                 if (assistantMsgAdded) {
@@ -1625,7 +1671,10 @@ export default function MainContent() {
     { id: 'research', label: 'Research', icon: BookIcon },
     {
       id: 'tone',
-      label: tone && tone !== 'default' ? `Tone: ${tone.charAt(0).toUpperCase() + tone.slice(1)}` : 'Tone',
+      label:
+        tone && tone !== 'default'
+          ? `Tone: ${tone.charAt(0).toUpperCase() + tone.slice(1)}`
+          : 'Tone',
       icon: MicIcon,
     },
     {
@@ -1786,6 +1835,24 @@ export default function MainContent() {
   };
 
   const handleModeToggle = (modeConf) => {
+    // Tier gating: check if user has access to this mode
+    if (modeConf.requiredTier) {
+      const tierOrder = ['free', 'lite', 'pro'];
+      const userLevel = tierOrder.indexOf(currentTier);
+      const requiredLevel = tierOrder.indexOf(modeConf.requiredTier);
+      if (userLevel < requiredLevel) {
+        dispatch(
+          showUpgradeModal({
+            reason: 'feature_gated',
+            suggestedTier: modeConf.requiredTier,
+            message: `${modeConf.label} requires the ${
+              modeConf.requiredTier.charAt(0).toUpperCase() + modeConf.requiredTier.slice(1)
+            } plan.`,
+          })
+        );
+        return;
+      }
+    }
     const currentValue = modeValues[modeConf.key];
     dispatch(modeConf.action(!currentValue));
   };
@@ -2331,9 +2398,7 @@ export default function MainContent() {
             )}
             {!isAuthenticated && hasReachedGuestLimit() && (
               <div className={`${styles.guestBanner} ${styles.guestBannerUrgent}`}>
-                <span className={styles.guestBannerText}>
-                  You&apos;ve used your free prompts
-                </span>
+                <span className={styles.guestBannerText}>You&apos;ve used your free prompts</span>
                 <span className={styles.guestBannerDot} />
                 <button
                   type="button"
@@ -2344,11 +2409,13 @@ export default function MainContent() {
                 </button>
               </div>
             )}
-            <div className={`${styles.inputWrapper} ${
-              !isAuthenticated && (getRemainingGuestPrompts() <= 1 || hasReachedGuestLimit())
-                ? styles.inputWrapperWithBanner
-                : ''
-            }`}>
+            <div
+              className={`${styles.inputWrapper} ${
+                !isAuthenticated && (getRemainingGuestPrompts() <= 1 || hasReachedGuestLimit())
+                  ? styles.inputWrapperWithBanner
+                  : ''
+              }`}
+            >
               {attachedFiles.length > 0 && (
                 <div className={styles.attachedFiles}>
                   <div className={styles.attachedFilesScroll}>
@@ -2437,6 +2504,11 @@ export default function MainContent() {
                           {MODE_CONFIG.map((modeConf) => {
                             const active = modeValues[modeConf.key];
                             const ModeIcon = modeConf.Icon;
+                            const tierOrder = ['free', 'lite', 'pro'];
+                            const isLocked =
+                              modeConf.requiredTier &&
+                              tierOrder.indexOf(currentTier) <
+                                tierOrder.indexOf(modeConf.requiredTier);
                             const providerData = PROVIDERS[modeConf.providerId];
                             const providerAccent = providerData?.accentColor;
                             const providerBg = isDark
@@ -2476,7 +2548,29 @@ export default function MainContent() {
                                   <ModeIcon />
                                 </span>
                                 <div className={styles.researchModeContent}>
-                                  <span className={styles.researchModeName}>{modeConf.label}</span>
+                                  <span className={styles.researchModeName}>
+                                    {modeConf.label}
+                                    {isLocked && (
+                                      <svg
+                                        width="12"
+                                        height="12"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        style={{
+                                          marginLeft: 4,
+                                          opacity: 0.5,
+                                          verticalAlign: 'middle',
+                                        }}
+                                      >
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                      </svg>
+                                    )}
+                                  </span>
                                   <span
                                     className={styles.researchModeProvider}
                                     style={{ color: active ? providerText : undefined }}

@@ -30,6 +30,7 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
+import { selectDailyCreditsUsed, selectCreditsLimit } from '../../store/slices/subscriptionSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import { getUserTier } from '../../data/models';
 import { AuthModal } from '../Auth';
@@ -180,6 +181,8 @@ export default function Sidebar() {
 
   const authUser = useSelector(selectAuthUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const dailyCreditsUsed = useSelector(selectDailyCreditsUsed);
+  const creditsLimit = useSelector(selectCreditsLimit);
 
   // userTier is now read once from getUserTier() — no longer changes via DevTierSwitcher
 
@@ -962,6 +965,41 @@ export default function Sidebar() {
         )}
 
         <div className={styles.footer}>
+          {showFullContent &&
+            isAuthenticated &&
+            (() => {
+              const remaining = creditsLimit - dailyCreditsUsed;
+              const pct = creditsLimit > 0 ? remaining / creditsLimit : 1;
+              const fillColor =
+                pct > 0.5
+                  ? styles.creditBarFillGreen
+                  : pct > 0.2
+                  ? styles.creditBarFillYellow
+                  : styles.creditBarFillRed;
+              const widthPct =
+                creditsLimit > 0 ? Math.max(0, Math.min(100, (remaining / creditsLimit) * 100)) : 0;
+              return (
+                <div
+                  className={styles.creditIndicator}
+                  onClick={() => dispatch(setActiveItem('pricing'))}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') dispatch(setActiveItem('pricing'));
+                  }}
+                >
+                  <div className={styles.creditBar}>
+                    <div
+                      className={`${styles.creditBarFill} ${fillColor}`}
+                      style={{ width: `${widthPct}%` }}
+                    />
+                  </div>
+                  <span className={styles.creditText}>
+                    {dailyCreditsUsed} / {creditsLimit}
+                  </span>
+                </div>
+              );
+            })()}
           <div className={styles.userMenuWrapper} ref={userMenuRef}>
             <button
               className={`${styles.userSection} ${userMenuOpen ? styles.userSectionOpen : ''}`}
@@ -974,7 +1012,10 @@ export default function Sidebar() {
                     alt=""
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
-                    onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = ''; }}
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = '';
+                    }}
                     style={{
                       width: '100%',
                       height: '100%',
