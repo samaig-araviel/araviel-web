@@ -30,9 +30,12 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
-import { selectDailyCreditsUsed, selectCreditsLimit } from '../../store/slices/subscriptionSlice';
+import {
+  selectDailyCreditsUsed,
+  selectCreditsLimit,
+  selectCurrentTier,
+} from '../../store/slices/subscriptionSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
-import { getUserTier } from '../../data/models';
 import { AuthModal } from '../Auth';
 import {
   PlusIcon,
@@ -173,7 +176,7 @@ export default function Sidebar() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userTier = getUserTier();
+  const userTier = useSelector(selectCurrentTier);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const userMenuRef = useRef(null);
@@ -184,7 +187,7 @@ export default function Sidebar() {
   const dailyCreditsUsed = useSelector(selectDailyCreditsUsed);
   const creditsLimit = useSelector(selectCreditsLimit);
 
-  // userTier is now read once from getUserTier() — no longer changes via DevTierSwitcher
+  // userTier is now read from Redux selectCurrentTier
 
   const { dropdownStyle, menuBtnRef, menuRef } = useDropdownPosition(menuOpenId);
 

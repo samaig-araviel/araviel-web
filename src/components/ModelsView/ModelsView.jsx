@@ -12,9 +12,9 @@ import {
   PROVIDER_ORDER,
   SPEED_TIERS,
   ACCESS_TIERS,
-  getUserTier,
   formatTokens,
 } from '../../data/models';
+import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import { CloseIcon, SearchIcon, CheckIcon, FilterIcon, ChevronDownIcon } from '../Icons';
 // updateUserTier removed — tier is now determined by subscription, not a manual toggle
 import styles from './ModelsView.module.css';
@@ -676,7 +676,7 @@ export default function ModelsView() {
   const [detailModel, setDetailModel] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef(null);
-  const userTier = getUserTier(); // Read-only — determined by user's subscription
+  const userTier = useSelector(selectCurrentTier); // Read-only — determined by user's subscription
 
   // Single unified action: set the model (Redux + localStorage)
   const handleSetModel = useCallback(
@@ -730,7 +730,7 @@ export default function ModelsView() {
     }
 
     return models;
-  }, [activeFilter, tierFilter, searchQuery]);
+  }, [activeFilter, tierFilter, searchQuery, userTier]);
 
   // Check if a model is accessible for the current tier
   const isAccessible = useCallback(

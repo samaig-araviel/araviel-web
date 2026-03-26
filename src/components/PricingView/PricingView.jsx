@@ -6,14 +6,12 @@ import {
   selectCheckoutLoading,
   selectSubscriptionError,
   setBillingCycle,
-  setCurrentTier,
   createCheckoutThunk,
   createPortalThunk,
 } from '../../store/slices/subscriptionSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { getAvailableTiers, SubscriptionTier } from '../../config/subscription';
-import { getUserTier } from '../../data/models';
 import BillingToggle from './BillingToggle';
 import TierCard from './TierCard';
 import { AuthModal } from '../Auth';
@@ -49,14 +47,6 @@ export default function PricingView() {
     // Free user subscribing → Stripe Checkout
     dispatch(createCheckoutThunk({ tier: tier.id, interval: billingCycle }));
   };
-
-  // Sync Redux tier with localStorage on mount and on tier-change events
-  useEffect(() => {
-    const syncTier = () => dispatch(setCurrentTier(getUserTier()));
-    syncTier();
-    window.addEventListener('araviel-tier-changed', syncTier);
-    return () => window.removeEventListener('araviel-tier-changed', syncTier);
-  }, [dispatch]);
 
   // Show error toast when checkout or portal fails
   useEffect(() => {

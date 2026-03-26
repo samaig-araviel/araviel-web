@@ -1,4 +1,3 @@
-import { getUserTier } from '../data/models';
 import { getAuthHeaders } from './authHeaders';
 
 // Araviel API service layer
@@ -57,7 +56,7 @@ export async function fetchConversationMessages(conversationId, limit = 50, offs
 export async function sendMessage(payload) {
   const body = {
     message: payload.message,
-    userTier: getUserTier(),
+    userTier: payload.userTier || 'free',
     modality: payload.modality || 'text',
   };
   if (payload.imageQuality) body.imageQuality = payload.imageQuality;

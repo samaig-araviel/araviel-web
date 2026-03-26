@@ -116,7 +116,7 @@ import {
   selectCurrentTier,
 } from '../../store/slices/subscriptionSlice';
 import { getNextTier } from '../../config/subscription';
-import { getUserTier, PROVIDERS, isImageGenerationModel } from '../../data/models';
+import { PROVIDERS, isImageGenerationModel } from '../../data/models';
 import {
   canGenerateImage,
   recordGeneration,
@@ -488,7 +488,7 @@ function LimitToast({ maxCount, onClose }) {
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const isPro = getUserTier() === 'pro';
+  const isPro = useSelector(selectCurrentTier) === 'pro';
 
   return (
     <div className={styles.limitToast}>
@@ -518,7 +518,8 @@ function LimitToast({ maxCount, onClose }) {
  * Pro users are prompted to purchase an image generation addon.
  */
 function ImageLimitPrompt({ onClose }) {
-  const limitInfo = getLimitInfo();
+  const currentTier = useSelector(selectCurrentTier);
+  const limitInfo = getLimitInfo(currentTier);
   const isFree = limitInfo.tier === 'free';
 
   const resetTime = limitInfo.resetAt
@@ -1086,6 +1087,7 @@ export default function MainContent() {
           conversationHasImages: options.conversationHasImages || undefined,
           importedConversationId: importedContext?.importedConversationId || undefined,
           projectId: activeProjectId || undefined,
+          userTier: currentTier,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -1408,6 +1410,7 @@ export default function MainContent() {
       googleThinking,
       importedContext,
       activeProjectId,
+      currentTier,
     ]
   );
 
@@ -1684,7 +1687,7 @@ export default function MainContent() {
     },
   ];
 
-  const maxAttachments = getUserTier() === 'pro' ? 15 : 5;
+  const maxAttachments = currentTier === 'pro' ? 15 : 5;
 
   const getFileExtension = (name) => {
     const parts = name.split('.');

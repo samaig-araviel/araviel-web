@@ -4,7 +4,6 @@ import { selectEffectiveTheme } from './store/slices/themeSlice';
 import { selectActiveItem, setActiveItem } from './store/slices/sidebarSlice';
 import { selectAuthLoading } from './store/slices/authSlice';
 import { fetchSubscriptionThunk } from './store/slices/subscriptionSlice';
-import { setUserTier } from './data/models';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import useAuthListener from './hooks/useAuthListener';
 import Sidebar from './components/Sidebar';
@@ -57,15 +56,8 @@ export default function App() {
       url.searchParams.delete('checkout');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
-      // Refresh subscription state from server
-      dispatch(fetchSubscriptionThunk()).then((action) => {
-        if (action.payload?.tier) {
-          setUserTier(action.payload.tier);
-        }
-      });
-
-      // Notify components (Toast listener in Sidebar/MainContent can pick this up)
-      window.dispatchEvent(new CustomEvent('araviel-subscription-activated'));
+      // Refresh subscription state in Redux from server
+      dispatch(fetchSubscriptionThunk());
     }
 
     // Portal/cancel return: /?view=settings or /?view=pricing
@@ -78,11 +70,7 @@ export default function App() {
 
       // Refresh subscription after portal return
       if (view === 'settings') {
-        dispatch(fetchSubscriptionThunk()).then((action) => {
-          if (action.payload?.tier) {
-            setUserTier(action.payload.tier);
-          }
-        });
+        dispatch(fetchSubscriptionThunk());
       }
     }
   }, [dispatch]);
