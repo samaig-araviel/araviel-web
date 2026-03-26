@@ -139,7 +139,14 @@ function MinusIcon({ className }) {
   );
 }
 
-export default function TierCard({ tier, billingCycle, currentTier, isAuthenticated, onCtaClick }) {
+export default function TierCard({
+  tier,
+  billingCycle,
+  currentTier,
+  isAuthenticated,
+  onCtaClick,
+  loading,
+}) {
   const price = getDisplayPrice(tier, billingCycle);
   const isCurrent = isAuthenticated && currentTier === tier.id;
   const isDown = isAuthenticated && currentTier && isDowngrade(currentTier, tier.id);
@@ -241,11 +248,11 @@ export default function TierCard({ tier, billingCycle, currentTier, isAuthentica
           className={`${styles.ctaButton} ${isCurrent ? styles.ctaButtonCurrent : ''} ${
             tier.highlighted && !isCurrent ? styles.ctaButtonHighlighted : ''
           } ${isUp && !tier.highlighted ? styles.ctaButtonUpgrade : ''}`}
-          disabled={isCurrent}
+          disabled={isCurrent || (loading && !isCurrent && tier.monthlyPrice > 0)}
           aria-label={getCtaText()}
           onClick={() => onCtaClick?.(tier)}
         >
-          {getCtaText()}
+          {loading && !isCurrent && tier.monthlyPrice > 0 ? 'Redirecting...' : getCtaText()}
         </button>
       </div>
 

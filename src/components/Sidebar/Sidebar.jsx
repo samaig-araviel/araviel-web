@@ -968,35 +968,56 @@ export default function Sidebar() {
           {showFullContent &&
             isAuthenticated &&
             (() => {
-              const remaining = creditsLimit - dailyCreditsUsed;
+              const remaining = Math.max(0, creditsLimit - dailyCreditsUsed);
               const pct = creditsLimit > 0 ? remaining / creditsLimit : 1;
-              const fillColor =
-                pct > 0.5
-                  ? styles.creditBarFillGreen
-                  : pct > 0.2
-                  ? styles.creditBarFillYellow
-                  : styles.creditBarFillRed;
+              const isCritical = pct <= 0.2;
+              const isLow = pct <= 0.5 && !isCritical;
+              const fillColor = isCritical
+                ? styles.creditBarFillCritical
+                : isLow
+                ? styles.creditBarFillLow
+                : styles.creditBarFillHealthy;
               const widthPct =
-                creditsLimit > 0 ? Math.max(0, Math.min(100, (remaining / creditsLimit) * 100)) : 0;
+                creditsLimit > 0 ? Math.min(100, (remaining / creditsLimit) * 100) : 0;
               return (
                 <div
-                  className={styles.creditIndicator}
+                  className={`${styles.creditIndicator} ${
+                    isCritical ? styles.creditIndicatorCritical : ''
+                  }`}
                   onClick={() => dispatch(setActiveItem('pricing'))}
                   role="button"
                   tabIndex={0}
+                  aria-label={`${remaining} credits remaining today. Click to view plans.`}
+                  title={`${remaining} of ${creditsLimit} credits remaining today`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') dispatch(setActiveItem('pricing'));
                   }}
                 >
-                  <div className={styles.creditBar}>
-                    <div
-                      className={`${styles.creditBarFill} ${fillColor}`}
-                      style={{ width: `${widthPct}%` }}
-                    />
+                  <svg
+                    className={styles.creditIcon}
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                  <div className={styles.creditContent}>
+                    <span className={styles.creditText}>
+                      {remaining} <span className={styles.creditLabel}>remaining</span>
+                    </span>
+                    <div className={styles.creditBar}>
+                      <div
+                        className={`${styles.creditBarFill} ${fillColor}`}
+                        style={{ width: `${widthPct}%` }}
+                      />
+                    </div>
                   </div>
-                  <span className={styles.creditText}>
-                    {dailyCreditsUsed} / {creditsLimit}
-                  </span>
+                  {isCritical && <span className={styles.creditUpgrade}>Upgrade</span>}
                 </div>
               );
             })()}
