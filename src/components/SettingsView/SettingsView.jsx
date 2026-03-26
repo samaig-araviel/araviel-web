@@ -4,8 +4,8 @@ import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import {
   selectCurrentTier,
-  selectDailyCreditsUsed,
-  selectCreditsLimit,
+  selectTextCredits,
+  selectImageCredits,
   selectPeriodEnd,
   selectCancelAtPeriodEnd,
   selectPortalLoading,
@@ -108,8 +108,8 @@ export default function SettingsView() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const authUser = useSelector(selectAuthUser);
   const currentTier = useSelector(selectCurrentTier);
-  const dailyCreditsUsed = useSelector(selectDailyCreditsUsed);
-  const creditsLimit = useSelector(selectCreditsLimit);
+  const textCredits = useSelector(selectTextCredits);
+  const imageCredits = useSelector(selectImageCredits);
   const periodEnd = useSelector(selectPeriodEnd);
   const cancelAtPeriodEnd = useSelector(selectCancelAtPeriodEnd);
   const portalLoading = useSelector(selectPortalLoading);
@@ -816,18 +816,6 @@ export default function SettingsView() {
                     currentTier?.charAt(0).toUpperCase() + currentTier?.slice(1) ||
                     'Free';
                   const tierId = currentTier || 'free';
-                  const used = dailyCreditsUsed || 0;
-                  const limit = creditsLimit || 0;
-                  const remainingCredits = Math.max(0, limit - used);
-                  const remainingPct = limit > 0 ? remainingCredits / limit : 1;
-                  const pct =
-                    limit > 0 ? Math.min(100, Math.round((remainingCredits / limit) * 100)) : 0;
-                  const progressColor =
-                    remainingPct > 0.5
-                      ? styles.creditProgressHealthy
-                      : remainingPct > 0.2
-                      ? styles.creditProgressLow
-                      : styles.creditProgressCritical;
                   const badgeClass =
                     tierId === 'pro'
                       ? styles.planBadgePro
@@ -835,24 +823,132 @@ export default function SettingsView() {
                       ? styles.planBadgeLite
                       : styles.planBadgeFree;
 
+                  // Text credits
+                  const monthlyLimit = textCredits?.monthlyLimit || 0;
+                  const monthlyUsed = textCredits?.monthlyUsed || 0;
+                  const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
+                  const monthlyPct =
+                    monthlyLimit > 0
+                      ? Math.min(100, Math.round((monthlyRemaining / monthlyLimit) * 100))
+                      : 0;
+                  const monthlyRatio = monthlyLimit > 0 ? monthlyRemaining / monthlyLimit : 1;
+                  const monthlyColor =
+                    monthlyRatio > 0.5
+                      ? styles.creditProgressHealthy
+                      : monthlyRatio > 0.2
+                      ? styles.creditProgressLow
+                      : styles.creditProgressCritical;
+
+                  // 3-hour window
+                  const windowLimit = textCredits?.windowLimit || 0;
+                  const windowUsed = textCredits?.windowUsed || 0;
+                  const windowRemaining = Math.max(0, windowLimit - windowUsed);
+                  const windowPct =
+                    windowLimit > 0
+                      ? Math.min(100, Math.round((windowRemaining / windowLimit) * 100))
+                      : 0;
+                  const windowRatio = windowLimit > 0 ? windowRemaining / windowLimit : 1;
+                  const windowColor =
+                    windowRatio > 0.5
+                      ? styles.creditProgressHealthy
+                      : windowRatio > 0.2
+                      ? styles.creditProgressLow
+                      : styles.creditProgressCritical;
+                  const windowResetAt = textCredits?.windowResetAt;
+
+                  // Image credits
+                  const imgRemaining = imageCredits?.remaining || 0;
+                  const imgLimit = imageCredits?.limit || 0;
+                  const imgPct =
+                    imgLimit > 0 ? Math.min(100, Math.round((imgRemaining / imgLimit) * 100)) : 0;
+                  const imgRatio = imgLimit > 0 ? imgRemaining / imgLimit : 1;
+                  const imgColor =
+                    imgRatio > 0.5
+                      ? styles.creditProgressHealthy
+                      : imgRatio > 0.2
+                      ? styles.creditProgressLow
+                      : styles.creditProgressCritical;
+                  const cycleResetsAt = imageCredits?.cycleResetsAt;
+
                   return (
                     <div className={styles.subscriptionSection}>
                       <div className={styles.planRow}>
                         <span className={`${styles.planBadge} ${badgeClass}`}>{tierName}</span>
                       </div>
 
+                      {/* Text credits */}
                       <div className={styles.creditProgressSection}>
                         <div className={styles.creditProgressLabel}>
-                          <span>
-                            {remainingCredits} of {limit} credits remaining today
-                          </span>
-                          <span>{pct}%</span>
+                          <span>Text credits</span>
+                          <span>{monthlyPct}%</span>
                         </div>
                         <div className={styles.creditProgressBar}>
                           <div
-                            className={`${styles.creditProgressFill} ${progressColor}`}
-                            style={{ width: `${pct}%` }}
+                            className={`${styles.creditProgressFill} ${monthlyColor}`}
+                            style={{ width: `${monthlyPct}%` }}
                           />
+                        </div>
+                        <div className={styles.creditProgressLabel}>
+                          <span>
+                            {monthlyRemaining} of {monthlyLimit} monthly credits remaining
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 3-hour window */}
+                      {windowResetAt && (
+                        <div className={styles.creditProgressSection}>
+                          <div className={styles.creditProgressLabel}>
+                            <span>3-hour window</span>
+                            <span>{windowPct}%</span>
+                          </div>
+                          <div className={styles.creditProgressBar}>
+                            <div
+                              className={`${styles.creditProgressFill} ${windowColor}`}
+                              style={{ width: `${windowPct}%` }}
+                            />
+                          </div>
+                          <div className={styles.creditProgressLabel}>
+                            <span>
+                              {windowRemaining} of {windowLimit} in current window
+                            </span>
+                            <span>
+                              Resets at{' '}
+                              {new Date(windowResetAt).toLocaleTimeString(undefined, {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Image credits */}
+                      <div className={styles.creditProgressSection}>
+                        <div className={styles.creditProgressLabel}>
+                          <span>Image credits</span>
+                          <span>{imgPct}%</span>
+                        </div>
+                        <div className={styles.creditProgressBar}>
+                          <div
+                            className={`${styles.creditProgressFill} ${imgColor}`}
+                            style={{ width: `${imgPct}%` }}
+                          />
+                        </div>
+                        <div className={styles.creditProgressLabel}>
+                          <span>
+                            {imgRemaining} of {imgLimit} image credits remaining
+                          </span>
+                          {cycleResetsAt && (
+                            <span>
+                              Resets{' '}
+                              {new Date(cycleResetsAt).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </span>
+                          )}
                         </div>
                       </div>
 
