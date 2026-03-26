@@ -181,8 +181,8 @@ export const SUBSCRIPTION_TIERS = [
     ctaText: 'Upgrade to Ultra',
     modelAccess: ModelAccessLevel.FlagshipPlus,
     features: [
-      { name: 'Monthly credits', value: '1,500', category: FeatureCategory.Credits },
-      { name: 'Per 3hr window', value: '~450', category: FeatureCategory.Credits },
+      { name: 'Monthly credits', value: '15,000', category: FeatureCategory.Credits },
+      { name: 'Per 3hr window', value: '600', category: FeatureCategory.Credits },
       { name: 'First month bonus', value: false, category: FeatureCategory.Credits },
       { name: 'Credit top-ups', value: '£0.008/credit', category: FeatureCategory.Credits },
       { name: 'Models', value: '52', category: FeatureCategory.Models },
@@ -223,8 +223,8 @@ export const SUBSCRIPTION_TIERS = [
     ctaText: 'Upgrade to Apex',
     modelAccess: ModelAccessLevel.FlagshipPlus,
     features: [
-      { name: 'Monthly credits', value: '4,000', category: FeatureCategory.Credits },
-      { name: 'Per 3hr window', value: '~1,200', category: FeatureCategory.Credits },
+      { name: 'Monthly credits', value: '40,000', category: FeatureCategory.Credits },
+      { name: 'Per 3hr window', value: '1,600', category: FeatureCategory.Credits },
       { name: 'First month bonus', value: false, category: FeatureCategory.Credits },
       { name: 'Credit top-ups', value: '£0.006/credit', category: FeatureCategory.Credits },
       { name: 'Models', value: '52 + API', category: FeatureCategory.Models },
