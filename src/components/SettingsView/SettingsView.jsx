@@ -883,18 +883,13 @@ export default function SettingsView({ initialSection }) {
                       <div className={styles.creditProgressSection}>
                         <div className={styles.creditProgressLabel}>
                           <span>Text credits</span>
-                          <span>{monthlyPct}%</span>
+                          <span>{monthlyPct}% used</span>
                         </div>
                         <div className={styles.creditProgressBar}>
                           <div
                             className={`${styles.creditProgressFill} ${monthlyColor}`}
                             style={{ width: `${monthlyPct}%` }}
                           />
-                        </div>
-                        <div className={styles.creditProgressLabel}>
-                          <span>
-                            {monthlyRemaining} of {monthlyLimit} monthly credits remaining
-                          </span>
                         </div>
                       </div>
 
@@ -927,7 +922,7 @@ export default function SettingsView({ initialSection }) {
                       <div className={styles.creditProgressSection}>
                         <div className={styles.creditProgressLabel}>
                           <span>Image credits</span>
-                          <span>{imgPct}%</span>
+                          <span>{imgPct}% used</span>
                         </div>
                         <div className={styles.creditProgressBar}>
                           <div
@@ -935,11 +930,8 @@ export default function SettingsView({ initialSection }) {
                             style={{ width: `${imgPct}%` }}
                           />
                         </div>
-                        <div className={styles.creditProgressLabel}>
-                          <span>
-                            {imgRemaining} of {imgLimit} image credits remaining
-                          </span>
-                          {cycleResetsAt && (
+                        {cycleResetsAt && (
+                          <div className={styles.creditProgressLabel}>
                             <span>
                               Resets{' '}
                               {new Date(cycleResetsAt).toLocaleDateString(undefined, {
@@ -948,8 +940,8 @@ export default function SettingsView({ initialSection }) {
                                 day: 'numeric',
                               })}
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
 
                       {periodEnd && (
