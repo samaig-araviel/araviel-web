@@ -102,7 +102,7 @@ const SHORTCUTS = [
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent);
 const modKey = isMac ? '⌘' : 'Ctrl';
 
-export default function SettingsView() {
+export default function SettingsView({ initialSection }) {
   const dispatch = useDispatch();
   const themeMode = useSelector(selectTheme);
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -113,7 +113,10 @@ export default function SettingsView() {
   const periodEnd = useSelector(selectPeriodEnd);
   const cancelAtPeriodEnd = useSelector(selectCancelAtPeriodEnd);
   const portalLoading = useSelector(selectPortalLoading);
-  const [activeSection, setActiveSection] = useState('profile');
+  const [activeSection, setActiveSection] = useState(initialSection || 'profile');
+  useEffect(() => {
+    if (initialSection) setActiveSection(initialSection);
+  }, [initialSection]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
