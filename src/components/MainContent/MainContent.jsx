@@ -1340,13 +1340,14 @@ export default function MainContent() {
                 }
               } else if (data.code === 'GUEST_LIMIT') {
                 dispatch(setIsProcessing(false));
-                // Guest limit - show sign up prompt (not upgrade modal)
+                // Guest limit reached — show sign-up auth modal
+                setShowGuestLimitModal(true);
                 if (assistantMsgAdded) {
                   dispatch(
                     updateLastMessage({
                       content: '',
                       error: {
-                        message: data.message || 'Sign up to continue chatting',
+                        message: data.message || 'Sign up free to keep chatting',
                         code: data.code,
                       },
                     })
