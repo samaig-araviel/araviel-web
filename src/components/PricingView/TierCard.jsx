@@ -237,7 +237,7 @@ export default function TierCard({
             >
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
-            First month: 2x credits ({tier.firstMonthBonusCredits}/day)
+            First month: {tier.firstMonthBonusCredits.toLocaleString()} credits
           </div>
         )}
       </div>
