@@ -4,11 +4,11 @@ import {
   selectCurrentTier,
   selectBillingCycle,
   selectCheckoutLoading,
+  selectSubscriptionError,
   setBillingCycle,
   setCurrentTier,
   createCheckoutThunk,
   createPortalThunk,
-  fetchSubscriptionThunk,
 } from '../../store/slices/subscriptionSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
@@ -22,10 +22,11 @@ import styles from './PricingView.module.css';
 
 export default function PricingView() {
   const dispatch = useDispatch();
-  const { showSuccess } = useToast();
+  const { showError } = useToast();
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
   const checkoutLoading = useSelector(selectCheckoutLoading);
+  const subscriptionError = useSelector(selectSubscriptionError);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const tiers = getAvailableTiers();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -57,20 +58,12 @@ export default function PricingView() {
     return () => window.removeEventListener('araviel-tier-changed', syncTier);
   }, [dispatch]);
 
-  // Handle post-checkout redirect: ?checkout=success
+  // Show error toast when checkout or portal fails
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('checkout') === 'success') {
-      // Clean up URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('checkout');
-      window.history.replaceState({}, '', url.pathname + url.search);
-
-      // Refresh subscription state from server
-      dispatch(fetchSubscriptionThunk());
-      showSuccess('Subscription activated! Welcome to your new plan.');
+    if (subscriptionError) {
+      showError(subscriptionError);
     }
-  }, [dispatch, showSuccess]);
+  }, [subscriptionError, showError]);
 
   return (
     <div className={styles.container}>

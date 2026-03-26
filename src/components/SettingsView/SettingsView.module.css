@@ -1233,12 +1233,12 @@
   color: var(--text-secondary);
 }
 .planBadgeLite {
-  background: linear-gradient(135deg, #dbeafe, #ede9fe);
-  color: #4338ca;
+  background: linear-gradient(135deg, #f7f0e6, #ebe2d0);
+  color: #6e6354;
 }
 .planBadgePro {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
+  background: linear-gradient(135deg, #3d3528, #6e6354);
+  color: #fdf9f3;
 }
 .creditProgressSection {
   display: flex;
@@ -1262,14 +1262,14 @@
   border-radius: 3px;
   transition: width 0.4s ease;
 }
-.creditProgressGreen {
-  background: #22c55e;
+.creditProgressHealthy {
+  background: var(--text-muted);
 }
-.creditProgressYellow {
-  background: #eab308;
+.creditProgressLow {
+  background: #c4956a;
 }
-.creditProgressRed {
-  background: #ef4444;
+.creditProgressCritical {
+  background: #c75c3a;
 }
 .billingInfo {
   font-size: 13px;
@@ -1277,9 +1277,9 @@
 }
 .cancelNotice {
   font-size: 13px;
-  color: #ef4444;
+  color: #c75c3a;
   padding: 8px 12px;
-  background: rgba(239, 68, 68, 0.08);
+  background: rgba(199, 92, 58, 0.08);
   border-radius: 8px;
 }
 .subscriptionActions {

@@ -63,6 +63,7 @@ const initialState = {
   upgradeLoading: null, // tier id when initiating upgrade
   checkoutLoading: false,
   portalLoading: false,
+  error: null,
 };
 
 const subscriptionSlice = createSlice({
@@ -142,21 +143,25 @@ const subscriptionSlice = createSlice({
       })
       .addCase(createCheckoutThunk.pending, (state) => {
         state.checkoutLoading = true;
+        state.error = null;
       })
       .addCase(createCheckoutThunk.fulfilled, (state) => {
         state.checkoutLoading = false;
       })
-      .addCase(createCheckoutThunk.rejected, (state) => {
+      .addCase(createCheckoutThunk.rejected, (state, action) => {
         state.checkoutLoading = false;
+        state.error = action.payload || 'Failed to start checkout. Please try again.';
       })
       .addCase(createPortalThunk.pending, (state) => {
         state.portalLoading = true;
+        state.error = null;
       })
       .addCase(createPortalThunk.fulfilled, (state) => {
         state.portalLoading = false;
       })
-      .addCase(createPortalThunk.rejected, (state) => {
+      .addCase(createPortalThunk.rejected, (state, action) => {
         state.portalLoading = false;
+        state.error = action.payload || 'Failed to open subscription portal. Please try again.';
       });
   },
 });
@@ -190,5 +195,6 @@ export const selectUpgradeContext = (state) => state.subscription.upgradeContext
 export const selectUpgradeLoading = (state) => state.subscription.upgradeLoading;
 export const selectCheckoutLoading = (state) => state.subscription.checkoutLoading;
 export const selectPortalLoading = (state) => state.subscription.portalLoading;
+export const selectSubscriptionError = (state) => state.subscription.error;
 
 export default subscriptionSlice.reducer;

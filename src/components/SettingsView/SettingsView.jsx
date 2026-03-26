@@ -8,6 +8,7 @@ import {
   selectCreditsLimit,
   selectPeriodEnd,
   selectCancelAtPeriodEnd,
+  selectPortalLoading,
   createPortalThunk,
 } from '../../store/slices/subscriptionSlice';
 import { getTierById } from '../../config/subscription';
@@ -111,6 +112,7 @@ export default function SettingsView() {
   const creditsLimit = useSelector(selectCreditsLimit);
   const periodEnd = useSelector(selectPeriodEnd);
   const cancelAtPeriodEnd = useSelector(selectCancelAtPeriodEnd);
+  const portalLoading = useSelector(selectPortalLoading);
   const [activeSection, setActiveSection] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -816,14 +818,16 @@ export default function SettingsView() {
                   const tierId = currentTier || 'free';
                   const used = dailyCreditsUsed || 0;
                   const limit = creditsLimit || 0;
-                  const remaining = limit > 0 ? (limit - used) / limit : 1;
-                  const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+                  const remainingCredits = Math.max(0, limit - used);
+                  const remainingPct = limit > 0 ? remainingCredits / limit : 1;
+                  const pct =
+                    limit > 0 ? Math.min(100, Math.round((remainingCredits / limit) * 100)) : 0;
                   const progressColor =
-                    remaining > 0.5
-                      ? styles.creditProgressGreen
-                      : remaining > 0.2
-                      ? styles.creditProgressYellow
-                      : styles.creditProgressRed;
+                    remainingPct > 0.5
+                      ? styles.creditProgressHealthy
+                      : remainingPct > 0.2
+                      ? styles.creditProgressLow
+                      : styles.creditProgressCritical;
                   const badgeClass =
                     tierId === 'pro'
                       ? styles.planBadgePro
@@ -840,7 +844,7 @@ export default function SettingsView() {
                       <div className={styles.creditProgressSection}>
                         <div className={styles.creditProgressLabel}>
                           <span>
-                            {used} / {limit} daily credits used
+                            {remainingCredits} of {limit} credits remaining today
                           </span>
                           <span>{pct}%</span>
                         </div>
@@ -874,8 +878,9 @@ export default function SettingsView() {
                           <button
                             className={styles.manageBtn}
                             onClick={() => dispatch(createPortalThunk())}
+                            disabled={portalLoading}
                           >
-                            Manage Subscription
+                            {portalLoading ? 'Opening...' : 'Manage Subscription'}
                           </button>
                         )}
                         {(tierId === 'free' || tierId === 'lite') && (

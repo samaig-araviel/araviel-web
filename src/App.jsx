@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from './store/slices/themeSlice';
-import { selectActiveItem } from './store/slices/sidebarSlice';
+import { selectActiveItem, setActiveItem } from './store/slices/sidebarSlice';
 import { selectAuthLoading } from './store/slices/authSlice';
+import { fetchSubscriptionThunk } from './store/slices/subscriptionSlice';
+import { setUserTier } from './data/models';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import useAuthListener from './hooks/useAuthListener';
 import Sidebar from './components/Sidebar';
@@ -18,6 +20,8 @@ import styles from './components/Auth/AuthModal.module.css';
 import './App.css';
 
 export default function App() {
+  const dispatch = useDispatch();
+
   // Initialize auth listener — subscribes to Supabase auth state changes
   useAuthListener();
 
@@ -42,6 +46,46 @@ export default function App() {
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
+
+  // Handle URL params from Stripe redirects (checkout success, portal return)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+
+    // Post-checkout: /?checkout=success
+    if (params.get('checkout') === 'success') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('checkout');
+      window.history.replaceState({}, '', url.pathname + (url.search || ''));
+
+      // Refresh subscription state from server
+      dispatch(fetchSubscriptionThunk()).then((action) => {
+        if (action.payload?.tier) {
+          setUserTier(action.payload.tier);
+        }
+      });
+
+      // Notify components (Toast listener in Sidebar/MainContent can pick this up)
+      window.dispatchEvent(new CustomEvent('araviel-subscription-activated'));
+    }
+
+    // Portal/cancel return: /?view=settings or /?view=pricing
+    const view = params.get('view');
+    if (view === 'settings' || view === 'pricing') {
+      dispatch(setActiveItem(view));
+      const url = new URL(window.location.href);
+      url.searchParams.delete('view');
+      window.history.replaceState({}, '', url.pathname + (url.search || ''));
+
+      // Refresh subscription after portal return
+      if (view === 'settings') {
+        dispatch(fetchSubscriptionThunk()).then((action) => {
+          if (action.payload?.tier) {
+            setUserTier(action.payload.tier);
+          }
+        });
+      }
+    }
+  }, [dispatch]);
 
   // Show loading screen while checking initial auth session
   if (authLoading) {
