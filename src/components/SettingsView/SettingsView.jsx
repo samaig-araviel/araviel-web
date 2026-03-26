@@ -898,12 +898,12 @@ export default function SettingsView({ initialSection }) {
                         </div>
                       </div>
 
-                      {/* 3-hour window */}
+                      {/* Current session (3-hour window) */}
                       {windowResetAt && (
                         <div className={styles.creditProgressSection}>
                           <div className={styles.creditProgressLabel}>
-                            <span>3-hour window</span>
-                            <span>{windowPct}%</span>
+                            <span>Current session</span>
+                            <span>{windowPct}% used</span>
                           </div>
                           <div className={styles.creditProgressBar}>
                             <div
@@ -912,9 +912,6 @@ export default function SettingsView({ initialSection }) {
                             />
                           </div>
                           <div className={styles.creditProgressLabel}>
-                            <span>
-                              {windowRemaining} of {windowLimit} in current window
-                            </span>
                             <span>
                               Resets at{' '}
                               {new Date(windowResetAt).toLocaleTimeString(undefined, {
@@ -972,25 +969,16 @@ export default function SettingsView({ initialSection }) {
                         </div>
                       )}
 
-                      <div className={styles.subscriptionActions}>
-                        {tierId !== 'free' && (
-                          <button
-                            className={styles.manageBtn}
-                            onClick={() => dispatch(createPortalThunk())}
-                            disabled={portalLoading}
-                          >
-                            {portalLoading ? 'Opening...' : 'Manage Subscription'}
-                          </button>
-                        )}
-                        {(tierId === 'free' || tierId === 'lite') && (
+                      {(tierId === 'free' || tierId === 'lite') && (
+                        <div className={styles.subscriptionActions}>
                           <button
                             className={styles.upgradeBtn}
                             onClick={() => dispatch(setActiveItem('pricing'))}
                           >
                             Upgrade Plan
                           </button>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -1026,9 +1014,18 @@ export default function SettingsView({ initialSection }) {
                           </div>
                           <button
                             className={styles.planUpgradeBtn}
-                            onClick={() => dispatch(setActiveItem('pricing'))}
+                            onClick={() =>
+                              tier === 'free'
+                                ? dispatch(setActiveItem('pricing'))
+                                : dispatch(createPortalThunk())
+                            }
+                            disabled={tier !== 'free' && portalLoading}
                           >
-                            {tier === 'pro' ? 'Manage plan' : 'Upgrade plan'}
+                            {tier === 'free'
+                              ? 'Upgrade plan'
+                              : portalLoading
+                              ? 'Opening...'
+                              : 'Manage plan'}
                           </button>
                         </div>
                       );
@@ -1174,6 +1171,9 @@ export default function SettingsView({ initialSection }) {
                             <div className={styles.packCardBody}>
                               <span className={styles.packCardCredits}>{pack.credits}</span>
                               <span className={styles.packCardLabel}>{pack.label}</span>
+                              {pack.price && (
+                                <span className={styles.packCardPrice}>{pack.price}</span>
+                              )}
                             </div>
                             <button
                               className={styles.packCardBtn}

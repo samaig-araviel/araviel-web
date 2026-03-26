@@ -29,9 +29,9 @@ export const IMAGE_QUALITY_OPTIONS = [
 ];
 
 export const IMAGE_PACKS = {
-  starter: { credits: 20, label: 'Starter Pack' },
-  creator: { credits: 50, label: 'Creator Pack' },
-  studio: { credits: 100, label: 'Studio Pack' },
+  starter: { credits: 20, label: 'Starter Pack', price: '£3.99' },
+  creator: { credits: 50, label: 'Creator Pack', price: '£7.99' },
+  studio: { credits: 100, label: 'Studio Pack', price: '£14.99' },
 };
 
 export const PACK_EXPIRY_DAYS = 90;
