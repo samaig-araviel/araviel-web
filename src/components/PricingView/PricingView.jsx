@@ -3,22 +3,29 @@ import { useEffect, useState } from 'react';
 import {
   selectCurrentTier,
   selectBillingCycle,
+  selectCheckoutLoading,
   setBillingCycle,
   setCurrentTier,
+  createCheckoutThunk,
+  createPortalThunk,
+  fetchSubscriptionThunk,
 } from '../../store/slices/subscriptionSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
-import { getAvailableTiers } from '../../config/subscription';
+import { getAvailableTiers, SubscriptionTier } from '../../config/subscription';
 import { getUserTier } from '../../data/models';
 import BillingToggle from './BillingToggle';
 import TierCard from './TierCard';
 import { AuthModal } from '../Auth';
+import { useToast } from '../Toast/Toast';
 import styles from './PricingView.module.css';
 
 export default function PricingView() {
   const dispatch = useDispatch();
+  const { showSuccess } = useToast();
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
+  const checkoutLoading = useSelector(selectCheckoutLoading);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const tiers = getAvailableTiers();
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -28,7 +35,18 @@ export default function PricingView() {
       setShowAuthModal(true);
       return;
     }
-    // Future: handle subscription changes for authenticated users
+
+    // Free tier or already on this plan — no action
+    if (tier.monthlyPrice === 0 || currentTier === tier.id) return;
+
+    // Existing paid subscriber changing plan → Stripe Billing Portal
+    if (currentTier !== SubscriptionTier.Free) {
+      dispatch(createPortalThunk());
+      return;
+    }
+
+    // Free user subscribing → Stripe Checkout
+    dispatch(createCheckoutThunk({ tier: tier.id, interval: billingCycle }));
   };
 
   // Sync Redux tier with localStorage on mount and on tier-change events
@@ -38,6 +56,21 @@ export default function PricingView() {
     window.addEventListener('araviel-tier-changed', syncTier);
     return () => window.removeEventListener('araviel-tier-changed', syncTier);
   }, [dispatch]);
+
+  // Handle post-checkout redirect: ?checkout=success
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success') {
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('checkout');
+      window.history.replaceState({}, '', url.pathname + url.search);
+
+      // Refresh subscription state from server
+      dispatch(fetchSubscriptionThunk());
+      showSuccess('Subscription activated! Welcome to your new plan.');
+    }
+  }, [dispatch, showSuccess]);
 
   return (
     <div className={styles.container}>
@@ -88,6 +121,7 @@ export default function PricingView() {
               currentTier={currentTier}
               isAuthenticated={isAuthenticated}
               onCtaClick={handleCtaClick}
+              loading={checkoutLoading}
             />
           ))}
         </div>

@@ -3,12 +3,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   selectShowUpgradeModal,
   selectUpgradeContext,
-  selectUpgradeLoading,
   selectCurrentTier,
   selectBillingCycle,
+  selectCheckoutLoading,
   hideUpgradeModal,
-  initiateUpgrade,
-  clearUpgradeLoading,
+  createCheckoutThunk,
 } from '../../store/slices/subscriptionSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
@@ -51,7 +50,7 @@ export default function UpgradeModal() {
   const context = useSelector(selectUpgradeContext);
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
-  const upgradeLoading = useSelector(selectUpgradeLoading);
+  const checkoutLoading = useSelector(selectCheckoutLoading);
   const isAuthenticated = useSelector(selectIsAuthenticated);
 
   useEffect(() => {
@@ -72,17 +71,10 @@ export default function UpgradeModal() {
   const price = getDisplayPrice(suggestedTier, billingCycle);
   const contextMessage =
     context?.message || CONTEXT_MESSAGES[context?.reason] || 'Upgrade your plan for more access.';
-  const isLoading = upgradeLoading === suggestedTierId;
 
   const handleUpgrade = () => {
-    dispatch(initiateUpgrade(suggestedTierId));
-    // Stripe integration placeholder
-    console.log(
-      `[Araveil] Upgrade initiated: ${currentTier} to ${suggestedTierId} (${billingCycle})`
-    );
-    setTimeout(() => {
-      dispatch(clearUpgradeLoading());
-    }, 1500);
+    dispatch(hideUpgradeModal());
+    dispatch(createCheckoutThunk({ tier: suggestedTierId, interval: billingCycle }));
   };
 
   const handleViewPlans = () => {
@@ -163,9 +155,9 @@ export default function UpgradeModal() {
 
         {/* Actions */}
         <div className={styles.actions}>
-          <button className={styles.upgradeBtn} onClick={handleUpgrade} disabled={isLoading}>
-            {isLoading
-              ? 'Processing...'
+          <button className={styles.upgradeBtn} onClick={handleUpgrade} disabled={checkoutLoading}>
+            {checkoutLoading
+              ? 'Redirecting...'
               : isAuthenticated
               ? `Upgrade to ${suggestedTier.name}`
               : `Start with ${suggestedTier.name}`}

@@ -1298,3 +1298,46 @@
     padding: 0 0 0 12px;
   }
 }
+
+/* ─── Credit Indicator ─────────────────────────────────────── */
+.creditIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  margin: 0 8px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  background: var(--bg-secondary);
+}
+.creditIndicator:hover {
+  background: var(--bg-hover, var(--border-color));
+}
+.creditBar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+.creditBarFill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+.creditBarFillGreen {
+  background: #22c55e;
+}
+.creditBarFillYellow {
+  background: #eab308;
+}
+.creditBarFillRed {
+  background: #ef4444;
+}
+.creditText {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

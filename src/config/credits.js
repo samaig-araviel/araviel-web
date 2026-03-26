@@ -1,9 +1,23 @@
 // Credit system configuration — mirrors backend constants
 
+// Monthly image credits (existing system)
 export const TIER_CREDITS = {
   free: 5,
   lite: 50,
   pro: 200,
+};
+
+// Daily chat credits (new subscription system, coexists with image credits)
+export const TIER_DAILY_CREDITS = {
+  free: 30,
+  lite: 150,
+  pro: 400,
+};
+
+export const FIRST_MONTH_DAILY_CREDITS = {
+  free: 30,
+  lite: 300,
+  pro: 800,
 };
 
 export const IMAGE_QUALITY_COSTS = {
