@@ -6,7 +6,6 @@ import { resetChatState, setCreditBalance } from '../store/slices/chatSlice';
 import { resetProjectsState } from '../store/slices/projectsSlice';
 import { resetSubscriptionState, setSubscriptionData } from '../store/slices/subscriptionSlice';
 import { resetGuestPromptCount } from '../utils/guestSession';
-import { setUserTier } from '../data/models';
 import { fetchCreditBalance } from '../services/credits';
 import { fetchSubscription } from '../services/subscription';
 import { clearImageCache } from '../services/imageGeneration';
@@ -41,7 +40,6 @@ function mapSession(session) {
 // ---------------------------------------------------------------------------
 
 const USER_STORAGE_KEYS = [
-  'araviel-user-tier',
   'araviel-image-gen-limits',
   'araviel-settings',
   'araviel-user-id',
@@ -85,9 +83,6 @@ export default function useAuthListener() {
               .then((data) => {
                 if (data.balance) {
                   dispatch(setCreditBalance(data.balance));
-                  if (data.balance.tier) {
-                    setUserTier(data.balance.tier);
-                  }
                 }
               })
               .catch(() => {});
@@ -95,7 +90,6 @@ export default function useAuthListener() {
             fetchSubscription()
               .then((data) => {
                 dispatch(setSubscriptionData(data));
-                if (data.tier) setUserTier(data.tier);
               })
               .catch(() => {});
           }
@@ -115,10 +109,7 @@ export default function useAuthListener() {
           dispatch(resetProjectsState());
           dispatch(resetSubscriptionState());
 
-          // 4. Reset tier to free
-          setUserTier('free');
-
-          // 5. Re-create anonymous session so guest flow works
+          // 4. Re-create anonymous session so guest flow works
           dispatch(initializeAuth());
           break;
         }

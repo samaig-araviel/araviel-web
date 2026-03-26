@@ -6,12 +6,12 @@ import {
   selectAutoStrategy,
   setAutoStrategy,
 } from '../../store/slices/chatSlice';
+import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import {
   MODELS,
   PROVIDERS,
   PROVIDER_ORDER,
   ACCESS_TIERS,
-  getUserTier,
   getModelsForTier,
   getModelsByProvider,
 } from '../../data/models';
@@ -43,7 +43,7 @@ export default function ModelSelector({ imageOnly = false }) {
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
 
-  const userTier = getUserTier();
+  const userTier = useSelector(selectCurrentTier);
   const tierModels = useMemo(() => {
     const models = getModelsForTier(userTier);
     return imageOnly ? models.filter((m) => m.capabilities?.imageGeneration) : models;

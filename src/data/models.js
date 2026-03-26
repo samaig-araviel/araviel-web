@@ -1359,16 +1359,6 @@ export const SPEED_TIERS = {
 
 // ===== Tier-based access helpers =====
 
-// Get the current user's tier from localStorage (defaults to 'free')
-export function getUserTier() {
-  return localStorage.getItem('araviel-user-tier') || ACCESS_TIERS.free;
-}
-
-// Set the current user's tier in localStorage (synced from backend on sign-in)
-export function setUserTier(tier) {
-  localStorage.setItem('araviel-user-tier', tier);
-}
-
 // Get models available for a specific access tier
 export function getModelsForTier(tier) {
   if (tier === ACCESS_TIERS.pro) return MODELS;

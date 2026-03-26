@@ -29,7 +29,8 @@ import {
   deleteGeneratedImage,
   getLimitInfo,
 } from '../../services/imageGeneration';
-import { getUserTier, PROVIDERS } from '../../data/models';
+import { PROVIDERS } from '../../data/models';
+import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import {
   CloseIcon,
   FileDownIcon,
@@ -327,8 +328,8 @@ export default function ImageGalleryView() {
     }
   };
 
-  const limitInfo = getLimitInfo();
-  const tier = getUserTier();
+  const tier = useSelector(selectCurrentTier);
+  const limitInfo = getLimitInfo(tier);
   const uniqueModels = [...new Set(images.map((img) => img.model).filter(Boolean))];
   const filteredImages =
     filterModel === 'all' ? images : images.filter((img) => img.model === filterModel);
@@ -509,13 +510,15 @@ export default function ImageGalleryView() {
 
           {/* Credit balance */}
           <div className={styles.usagePill}>
-            <CreditBalance onBuyCredits={() => {
-              if (!isAuthenticated) {
-                setShowAuthModal(true);
-              } else {
-                setShowBuyPacks(true);
-              }
-            }} />
+            <CreditBalance
+              onBuyCredits={() => {
+                if (!isAuthenticated) {
+                  setShowAuthModal(true);
+                } else {
+                  setShowBuyPacks(true);
+                }
+              }}
+            />
             <span className={styles.usagePillBadge}>
               {creditBalance?.tier === 'pro'
                 ? 'PRO'

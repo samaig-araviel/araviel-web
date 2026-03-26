@@ -1,5 +1,4 @@
 // Image generation service — manages limits, storage, and tracking
-import { getUserTier } from '../data/models';
 import { getAuthHeaders } from './authHeaders';
 
 const API_BASE =
@@ -32,8 +31,7 @@ const TIER_LIMITS = {
 /**
  * Get the current image generation limit for the user's tier.
  */
-export function getImageLimit() {
-  const tier = getUserTier();
+export function getImageLimit(tier = 'free') {
   return TIER_LIMITS[tier] || TIER_LIMITS.free;
 }
 
@@ -57,17 +55,17 @@ function getUsageRecord() {
 /**
  * Get remaining image generation count for this 24-hour window.
  */
-export function getRemainingGenerations() {
+export function getRemainingGenerations(tier = 'free') {
   const usage = getUsageRecord();
-  const limit = getImageLimit();
+  const limit = getImageLimit(tier);
   return Math.max(0, limit - usage.count);
 }
 
 /**
  * Check whether the user can generate an image.
  */
-export function canGenerateImage() {
-  return getRemainingGenerations() > 0;
+export function canGenerateImage(tier = 'free') {
+  return getRemainingGenerations(tier) > 0;
 }
 
 /**
@@ -86,9 +84,8 @@ export function recordGeneration() {
 /**
  * Get info about the limit status (for UI display).
  */
-export function getLimitInfo() {
-  const tier = getUserTier();
-  const limit = getImageLimit();
+export function getLimitInfo(tier = 'free') {
+  const limit = getImageLimit(tier);
   const usage = getUsageRecord();
   const remaining = Math.max(0, limit - usage.count);
   const resetAt = usage.resetAt || 0;
@@ -124,7 +121,8 @@ export function saveGeneratedImage(image) {
   // Add to in-memory cache for instant gallery update
   if (_cachedImages) {
     const isDuplicate = _cachedImages.some(
-      (existing) => existing.id === entry.id || (existing.url === entry.url && existing.prompt === entry.prompt)
+      (existing) =>
+        existing.id === entry.id || (existing.url === entry.url && existing.prompt === entry.prompt)
     );
     if (!isDuplicate) {
       _cachedImages.unshift(entry);

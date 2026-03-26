@@ -14,7 +14,7 @@ import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { showUpgradeModal } from '../../store/slices/subscriptionSlice';
 import { GuestGate } from '../GuestGate';
 import { getProjectLimit, getNextTier } from '../../config/subscription';
-import { getUserTier } from '../../data/models';
+import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import {
   createNewChat,
   setInputValue,
@@ -782,6 +782,7 @@ export default function ProjectsView() {
   const projects = useSelector(selectProjects);
   const loading = useSelector(selectProjectsLoading);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const currentTier = useSelector(selectCurrentTier);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -892,7 +893,6 @@ export default function ProjectsView() {
 
   // Handlers
   const handleCreate = async (data) => {
-    const currentTier = getUserTier();
     const limit = getProjectLimit(currentTier);
     const activeProjects = projects.filter((p) => !p.is_archived).length;
 

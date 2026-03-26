@@ -7,7 +7,8 @@ import {
   setMonthlyBudget,
   setBudgetAlertThreshold,
 } from '../../store/slices/analyticsSlice';
-import { getUserTier, ACCESS_TIERS } from '../../data/models';
+import { ACCESS_TIERS } from '../../data/models';
+import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import AravielChart from '../AravielChart/AravielChart';
 import {
   computeOverviewFromLifetime,
@@ -529,7 +530,7 @@ export default function AnalyticsDashboard() {
   const stats = useSelector(selectLifetimeStats);
   const monthlyBudget = useSelector(selectMonthlyBudget);
   const alertThreshold = useSelector(selectBudgetAlertThreshold);
-  const userTier = getUserTier();
+  const userTier = useSelector(selectCurrentTier);
   const isPro = userTier === ACCESS_TIERS.pro;
 
   const [activeTab, setActiveTab] = useState('overview');
