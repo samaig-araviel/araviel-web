@@ -655,6 +655,7 @@ export default function MainContent() {
   const [showLimitToast, setShowLimitToast] = useState(false);
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
   const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
+  const [guestPromptsLeft, setGuestPromptsLeft] = useState(getRemainingGuestPrompts());
   const isAuthenticated = useSelector(selectIsAuthenticated);
   // conversationProject is now derived from Redux — see below
   const [conversationTitle, setConversationTitle] = useState('');
@@ -1516,6 +1517,7 @@ export default function MainContent() {
         incrementGuestImageCount();
       } else {
         incrementGuestPromptCount();
+        setGuestPromptsLeft(getRemainingGuestPrompts());
       }
     }
 
@@ -2417,11 +2419,11 @@ export default function MainContent() {
 
         <div className={styles.inputSection}>
           <form className={styles.inputContainer} onSubmit={handleSubmit}>
-            {/* Guest prompt limit banner — sits flush on top of input box */}
-            {!isAuthenticated && !hasReachedGuestLimit() && getRemainingGuestPrompts() <= 1 && (
+            {/* Guest prompt counter — always visible for anonymous users */}
+            {!isAuthenticated && guestPromptsLeft > 0 && (
               <div className={styles.guestBanner}>
                 <span className={styles.guestBannerText}>
-                  {getRemainingGuestPrompts()} free prompt remaining
+                  {guestPromptsLeft} free {guestPromptsLeft === 1 ? 'prompt' : 'prompts'} remaining
                 </span>
                 <span className={styles.guestBannerDot} />
                 <button
@@ -2433,7 +2435,7 @@ export default function MainContent() {
                 </button>
               </div>
             )}
-            {!isAuthenticated && hasReachedGuestLimit() && (
+            {!isAuthenticated && guestPromptsLeft <= 0 && (
               <div className={`${styles.guestBanner} ${styles.guestBannerUrgent}`}>
                 <span className={styles.guestBannerText}>You&apos;ve used your free prompts</span>
                 <span className={styles.guestBannerDot} />
@@ -2448,9 +2450,7 @@ export default function MainContent() {
             )}
             <div
               className={`${styles.inputWrapper} ${
-                !isAuthenticated && (getRemainingGuestPrompts() <= 1 || hasReachedGuestLimit())
-                  ? styles.inputWrapperWithBanner
-                  : ''
+                !isAuthenticated ? styles.inputWrapperWithBanner : ''
               }`}
             >
               {attachedFiles.length > 0 && (

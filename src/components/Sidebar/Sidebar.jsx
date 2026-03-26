@@ -30,7 +30,7 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
-import { selectTextCredits, selectCurrentTier } from '../../store/slices/subscriptionSlice';
+import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import { AuthModal } from '../Auth';
 import {
@@ -56,6 +56,7 @@ import {
   TrashIcon,
   LinkIcon,
   SettingsIcon,
+  ZapIcon,
   HelpCircleIcon,
   LogOutIcon,
   UpgradePlanIcon,
@@ -180,7 +181,6 @@ export default function Sidebar() {
 
   const authUser = useSelector(selectAuthUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const textCredits = useSelector(selectTextCredits);
 
   // userTier is now read from Redux selectCurrentTier
 
@@ -963,64 +963,6 @@ export default function Sidebar() {
         )}
 
         <div className={styles.footer}>
-          {showFullContent &&
-            isAuthenticated &&
-            (() => {
-              const remaining = Math.max(0, textCredits.monthlyLimit - textCredits.monthlyUsed);
-              const pct = textCredits.monthlyLimit > 0 ? remaining / textCredits.monthlyLimit : 1;
-              const isCritical = pct <= 0.2;
-              const isLow = pct <= 0.5 && !isCritical;
-              const fillColor = isCritical
-                ? styles.creditBarFillCritical
-                : isLow
-                ? styles.creditBarFillLow
-                : styles.creditBarFillHealthy;
-              const widthPct =
-                textCredits.monthlyLimit > 0
-                  ? Math.min(100, (remaining / textCredits.monthlyLimit) * 100)
-                  : 0;
-              return (
-                <div
-                  className={`${styles.creditIndicator} ${
-                    isCritical ? styles.creditIndicatorCritical : ''
-                  }`}
-                  onClick={() => dispatch(setActiveItem('pricing'))}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${remaining} credits remaining this month. Click to view plans.`}
-                  title={`${remaining} of ${textCredits.monthlyLimit} credits remaining monthly`}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') dispatch(setActiveItem('pricing'));
-                  }}
-                >
-                  <svg
-                    className={styles.creditIcon}
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                  </svg>
-                  <div className={styles.creditContent}>
-                    <span className={styles.creditText}>
-                      {remaining} <span className={styles.creditLabel}>remaining</span>
-                    </span>
-                    <div className={styles.creditBar}>
-                      <div
-                        className={`${styles.creditBarFill} ${fillColor}`}
-                        style={{ width: `${widthPct}%` }}
-                      />
-                    </div>
-                  </div>
-                  {isCritical && <span className={styles.creditUpgrade}>Upgrade</span>}
-                </div>
-              );
-            })()}
           <div className={styles.userMenuWrapper} ref={userMenuRef}>
             <button
               className={`${styles.userSection} ${userMenuOpen ? styles.userSectionOpen : ''}`}
@@ -1103,6 +1045,26 @@ export default function Sidebar() {
                 >
                   <UpgradePlanIcon />
                   <span>Upgrade Plan</span>
+                </button>
+                <button
+                  className={styles.userDropdownItem}
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    dispatch(setActiveItem('settings'));
+                  }}
+                >
+                  <ZapIcon />
+                  <span>Usage & Credits</span>
+                </button>
+                <button
+                  className={styles.userDropdownItem}
+                  onClick={() => {
+                    setUserMenuOpen(false);
+                    dispatch(setActiveItem('settings'));
+                  }}
+                >
+                  <EditIcon />
+                  <span>Personalisation</span>
                 </button>
                 <button className={styles.userDropdownItem} onClick={() => setUserMenuOpen(false)}>
                   <HelpCircleIcon />
