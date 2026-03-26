@@ -1050,7 +1050,7 @@ export default function Sidebar() {
                   className={styles.userDropdownItem}
                   onClick={() => {
                     setUserMenuOpen(false);
-                    dispatch(setActiveItem('settings'));
+                    dispatch(setActiveItem('usage'));
                   }}
                 >
                   <ZapIcon />
@@ -1060,7 +1060,7 @@ export default function Sidebar() {
                   className={styles.userDropdownItem}
                   onClick={() => {
                     setUserMenuOpen(false);
-                    dispatch(setActiveItem('settings'));
+                    dispatch(setActiveItem('personalisation'));
                   }}
                 >
                   <EditIcon />

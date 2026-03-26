@@ -53,6 +53,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const clearState = useCallback(() => {
     setEmail('');
@@ -111,9 +112,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     }
 
     if (activeTab === 'signin') {
-      const result = await dispatch(
-        signInWithEmail({ email: email.trim(), password })
-      );
+      const result = await dispatch(signInWithEmail({ email: email.trim(), password }));
       if (result.meta.requestStatus === 'fulfilled') {
         handleClose();
       }
@@ -248,16 +247,55 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
               <label className={styles.label} htmlFor="auth-password">
                 Password
               </label>
-              <input
-                id="auth-password"
-                className={styles.input}
-                type="password"
-                placeholder={activeTab === 'signup' ? 'Min. 6 characters' : 'Your password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete={activeTab === 'signup' ? 'new-password' : 'current-password'}
-                required
-              />
+              <div className={styles.passwordWrapper}>
+                <input
+                  id="auth-password"
+                  className={styles.input}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={activeTab === 'signup' ? 'Min. 6 characters' : 'Your password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={activeTab === 'signup' ? 'new-password' : 'current-password'}
+                  required
+                />
+                <button
+                  type="button"
+                  className={styles.passwordToggle}
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
               {activeTab === 'signin' && (
                 <div className={styles.forgotLink}>
                   <button type="button" onClick={handleForgotPassword}>

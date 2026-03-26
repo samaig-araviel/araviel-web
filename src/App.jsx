@@ -96,6 +96,10 @@ export default function App() {
         <ModelsView />
       ) : activeItem === 'gallery' ? (
         <ImageGalleryView />
+      ) : activeItem === 'usage' ? (
+        <SettingsView initialSection="usage" />
+      ) : activeItem === 'personalisation' ? (
+        <SettingsView initialSection="personalization" />
       ) : activeItem === 'settings' ? (
         <SettingsView />
       ) : activeItem === 'pricing' ? (

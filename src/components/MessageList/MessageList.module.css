@@ -518,16 +518,16 @@
   gap: 12px;
   margin: 12px 0;
   padding: 14px 18px;
-  border-left: 3px solid #c9a87c;
-  background: linear-gradient(135deg, rgba(201, 168, 124, 0.04), rgba(201, 168, 124, 0.02));
-  border-radius: 4px 12px 12px 4px;
+  border-left: none;
+  background: var(--bg-secondary);
+  border-radius: 8px;
   color: var(--text-secondary);
   font-size: 13.5px;
   line-height: 1.55;
 }
 
 .blockquoteIcon {
-  display: flex;
+  display: none;
   align-items: flex-start;
   flex-shrink: 0;
   padding-top: 1px;
@@ -550,11 +550,11 @@
 
 /* Note/Warning/Disclaimer variant — premium amber callout */
 .blockquoteNote {
-  border-left-color: #d97706;
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.06), rgba(217, 119, 6, 0.02));
-  border-radius: 4px 12px 12px 4px;
+  border-left: none;
+  background: var(--bg-secondary);
+  border-radius: 8px;
   padding: 14px 18px;
-  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.04);
+  box-shadow: none;
 }
 
 .blockquoteNote .blockquoteIcon {
@@ -564,22 +564,22 @@
 
 /* Dark mode */
 :global([data-theme='dark']) .blockquote {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
-  border-left-color: rgba(201, 168, 124, 0.5);
+  background: var(--bg-secondary);
+  border-left: none;
 }
 
 :global([data-theme='dark']) .blockquoteIcon {
-  color: #a08060;
+  display: none;
 }
 
 :global([data-theme='dark']) .blockquoteNote {
-  border-left-color: rgba(217, 119, 6, 0.6);
-  background: linear-gradient(135deg, rgba(180, 83, 9, 0.1), rgba(180, 83, 9, 0.04));
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  border-left: none;
+  background: var(--bg-secondary);
+  box-shadow: none;
 }
 
 :global([data-theme='dark']) .blockquoteNote .blockquoteIcon {
-  color: #f59e0b;
+  display: none;
 }
 
 .list,

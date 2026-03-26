@@ -116,9 +116,6 @@ export default function ModalityBar({ compact = false }) {
         aria-expanded={isOpen}
       >
         <span className={styles.triggerLabel}>{triggerLabel}</span>
-        {isImage && creditBalance && (
-          <span className={styles.creditPill}>{creditBalance.combined}</span>
-        )}
         <span className={`${styles.triggerChevron} ${isOpen ? styles.triggerChevronOpen : ''}`}>
           <ChevronDownIcon />
         </span>
