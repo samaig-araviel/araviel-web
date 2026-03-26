@@ -138,7 +138,7 @@ export default function UpgradeModal() {
           <ul className={styles.tierPreviewFeatures}>
             <li>
               <CheckIcon />
-              {suggestedTier.dailyCredits} credits per day
+              {suggestedTier.monthlyTextCredits} credits per month
             </li>
             <li>
               <CheckIcon />
@@ -147,7 +147,7 @@ export default function UpgradeModal() {
             {suggestedTier.firstMonthBonusCredits > 0 && (
               <li>
                 <CheckIcon />
-                First month: {suggestedTier.firstMonthBonusCredits} credits/day
+                First month: {suggestedTier.firstMonthBonusCredits} credits/month
               </li>
             )}
           </ul>

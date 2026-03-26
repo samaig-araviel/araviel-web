@@ -1,23 +1,19 @@
 // Credit system configuration — mirrors backend constants
 
-// Monthly image credits (existing system)
-export const TIER_CREDITS = {
+// ─── Text Credits (monthly + 3-hour window) ─────────────────────────────────
+
+export const TIER_TEXT_CREDITS = {
+  free: { monthly: 100, window: 8, firstMonthBonus: 0 },
+  lite: { monthly: 1500, window: 60, firstMonthBonus: 750 },
+  pro: { monthly: 4000, window: 160, firstMonthBonus: 2000 },
+};
+
+// ─── Image Credits (monthly, separate system) ───────────────────────────────
+
+export const TIER_IMAGE_CREDITS = {
   free: 5,
   lite: 50,
-  pro: 200,
-};
-
-// Daily chat credits (new subscription system, coexists with image credits)
-export const TIER_DAILY_CREDITS = {
-  free: 30,
-  lite: 150,
-  pro: 400,
-};
-
-export const FIRST_MONTH_DAILY_CREDITS = {
-  free: 30,
-  lite: 300,
-  pro: 800,
+  pro: 150,
 };
 
 export const IMAGE_QUALITY_COSTS = {
@@ -39,3 +35,8 @@ export const IMAGE_PACKS = {
 };
 
 export const PACK_EXPIRY_DAYS = 90;
+
+// ─── Guest Limits ───────────────────────────────────────────────────────────
+
+export const GUEST_TEXT_LIMIT = 3; // lifetime total, not per window/month
+export const GUEST_IMAGE_LIMIT = 0; // no image generation for guests

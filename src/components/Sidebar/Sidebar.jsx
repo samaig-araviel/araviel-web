@@ -30,11 +30,7 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
-import {
-  selectDailyCreditsUsed,
-  selectCreditsLimit,
-  selectCurrentTier,
-} from '../../store/slices/subscriptionSlice';
+import { selectTextCredits, selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import { getGeneratedImages } from '../../services/imageGeneration';
 import { AuthModal } from '../Auth';
 import {
@@ -184,8 +180,7 @@ export default function Sidebar() {
 
   const authUser = useSelector(selectAuthUser);
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const dailyCreditsUsed = useSelector(selectDailyCreditsUsed);
-  const creditsLimit = useSelector(selectCreditsLimit);
+  const textCredits = useSelector(selectTextCredits);
 
   // userTier is now read from Redux selectCurrentTier
 
@@ -971,8 +966,8 @@ export default function Sidebar() {
           {showFullContent &&
             isAuthenticated &&
             (() => {
-              const remaining = Math.max(0, creditsLimit - dailyCreditsUsed);
-              const pct = creditsLimit > 0 ? remaining / creditsLimit : 1;
+              const remaining = Math.max(0, textCredits.monthlyLimit - textCredits.monthlyUsed);
+              const pct = textCredits.monthlyLimit > 0 ? remaining / textCredits.monthlyLimit : 1;
               const isCritical = pct <= 0.2;
               const isLow = pct <= 0.5 && !isCritical;
               const fillColor = isCritical
@@ -981,7 +976,9 @@ export default function Sidebar() {
                 ? styles.creditBarFillLow
                 : styles.creditBarFillHealthy;
               const widthPct =
-                creditsLimit > 0 ? Math.min(100, (remaining / creditsLimit) * 100) : 0;
+                textCredits.monthlyLimit > 0
+                  ? Math.min(100, (remaining / textCredits.monthlyLimit) * 100)
+                  : 0;
               return (
                 <div
                   className={`${styles.creditIndicator} ${
@@ -990,8 +987,8 @@ export default function Sidebar() {
                   onClick={() => dispatch(setActiveItem('pricing'))}
                   role="button"
                   tabIndex={0}
-                  aria-label={`${remaining} credits remaining today. Click to view plans.`}
-                  title={`${remaining} of ${creditsLimit} credits remaining today`}
+                  aria-label={`${remaining} credits remaining this month. Click to view plans.`}
+                  title={`${remaining} of ${textCredits.monthlyLimit} credits remaining monthly`}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') dispatch(setActiveItem('pricing'));
                   }}

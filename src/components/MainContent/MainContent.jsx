@@ -111,8 +111,7 @@ import { selectProjects, addProject } from '../../store/slices/projectsSlice';
 import { setActiveItem, selectActiveItem } from '../../store/slices/sidebarSlice';
 import {
   showUpgradeModal,
-  setDailyCreditsUsed,
-  setCreditsRemaining,
+  setTextCredits,
   selectCurrentTier,
 } from '../../store/slices/subscriptionSlice';
 import { getNextTier } from '../../config/subscription';
@@ -1285,10 +1284,17 @@ export default function MainContent() {
                   })
                   .catch(() => {});
               }
-              // Sync daily credits from SSE done event
-              if (data.dailyCredits) {
-                dispatch(setDailyCreditsUsed(data.dailyCredits.used));
-                dispatch(setCreditsRemaining(data.dailyCredits.limit - data.dailyCredits.used));
+              // Sync text credits from SSE done event
+              if (data.textCredits) {
+                dispatch(
+                  setTextCredits({
+                    monthlyUsed: data.textCredits.monthlyUsed,
+                    monthlyLimit: data.textCredits.monthlyLimit,
+                    windowUsed: data.textCredits.windowUsed,
+                    windowLimit: data.textCredits.windowLimit,
+                    windowResetAt: data.textCredits.windowResetAt,
+                  })
+                );
               }
               // Refresh sidebar conversations after stream completes (title may now be set)
               window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
@@ -1298,14 +1304,13 @@ export default function MainContent() {
                 if (assistantMsgAdded) {
                   dispatch(updateLastMessage({ providerRetry: true }));
                 }
-              } else if (data.code === 'CREDITS_EXHAUSTED') {
-                // Daily credit limit reached — show upgrade modal
+              } else if (data.code === 'MONTHLY_CREDITS_EXHAUSTED') {
                 dispatch(setIsProcessing(false));
                 dispatch(
                   showUpgradeModal({
                     reason: 'credit_limit',
                     suggestedTier: getNextTier(data.tier || 'free'),
-                    message: data.message || "You've used all your daily credits.",
+                    message: data.message || "You've used all your monthly credits.",
                   })
                 );
                 if (assistantMsgAdded) {
@@ -1313,7 +1318,35 @@ export default function MainContent() {
                     updateLastMessage({
                       content: '',
                       error: {
-                        message: data.message || 'Daily credit limit reached',
+                        message: data.message || 'Monthly credit limit reached',
+                        code: data.code,
+                      },
+                    })
+                  );
+                }
+              } else if (data.code === 'WINDOW_CREDITS_EXHAUSTED') {
+                dispatch(setIsProcessing(false));
+                // Softer message for window limit - no upgrade modal
+                if (assistantMsgAdded) {
+                  dispatch(
+                    updateLastMessage({
+                      content: '',
+                      error: {
+                        message: data.message || '3-hour window limit reached',
+                        code: data.code,
+                      },
+                    })
+                  );
+                }
+              } else if (data.code === 'GUEST_LIMIT') {
+                dispatch(setIsProcessing(false));
+                // Guest limit - show sign up prompt (not upgrade modal)
+                if (assistantMsgAdded) {
+                  dispatch(
+                    updateLastMessage({
+                      content: '',
+                      error: {
+                        message: data.message || 'Sign up to continue chatting',
                         code: data.code,
                       },
                     })

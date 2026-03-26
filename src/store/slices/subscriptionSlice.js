@@ -50,17 +50,29 @@ export const createPortalThunk = createAsyncThunk(
 const initialState = {
   currentTier: SubscriptionTier.Free,
   billingCycle: 'monthly', // 'monthly' | 'annual'
-  creditsRemaining: 0,
-  dailyCreditsUsed: 0,
-  creditsLimit: 30,
   isFirstMonth: false,
   periodEnd: null,
   cancelAtPeriodEnd: false,
   subscriptionStatus: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  // Text credits (monthly + 3-hour window)
+  textCredits: {
+    monthlyUsed: 0,
+    monthlyLimit: 100,
+    windowUsed: 0,
+    windowLimit: 8,
+    windowResetAt: null,
+  },
+  // Image credits (monthly, separate)
+  imageCredits: {
+    used: 0,
+    limit: 5,
+    remaining: 5,
+    packRemaining: 0,
+    cycleResetsAt: null,
+  },
   showUpgradeModal: false,
   upgradeContext: null,
-  // upgradeContext shape: { reason: 'credit_limit' | 'model_gated' | 'feature_gated', suggestedTier, message, modelName? }
-  upgradeLoading: null, // tier id when initiating upgrade
+  upgradeLoading: null,
   checkoutLoading: false,
   portalLoading: false,
   error: null,
@@ -76,31 +88,41 @@ const subscriptionSlice = createSlice({
     setBillingCycle: (state, action) => {
       state.billingCycle = action.payload;
     },
-    setCreditsRemaining: (state, action) => {
-      state.creditsRemaining = action.payload;
-    },
-    setDailyCreditsUsed: (state, action) => {
-      state.dailyCreditsUsed = action.payload;
-    },
-    setCreditsLimit: (state, action) => {
-      state.creditsLimit = action.payload;
-    },
     setIsFirstMonth: (state, action) => {
       state.isFirstMonth = action.payload;
+    },
+    setTextCredits: (state, action) => {
+      state.textCredits = { ...state.textCredits, ...action.payload };
+    },
+    setImageCredits: (state, action) => {
+      state.imageCredits = { ...state.imageCredits, ...action.payload };
     },
     /** Bulk setter from API response — avoids multiple dispatches */
     setSubscriptionData: (state, action) => {
       const data = action.payload;
       if (data.tier) state.currentTier = data.tier;
       if (data.billingInterval) state.billingCycle = data.billingInterval;
-      if (data.credits) {
-        state.dailyCreditsUsed = data.credits.used ?? 0;
-        state.creditsLimit = data.credits.limit ?? 30;
-        state.creditsRemaining = (data.credits.limit ?? 30) - (data.credits.used ?? 0);
-      }
       if (data.periodEnd !== undefined) state.periodEnd = data.periodEnd;
       if (data.cancelAtPeriodEnd !== undefined) state.cancelAtPeriodEnd = data.cancelAtPeriodEnd;
       if (data.firstMonth !== undefined) state.isFirstMonth = data.firstMonth;
+      if (data.textCredits) {
+        state.textCredits = {
+          monthlyUsed: data.textCredits.monthlyUsed ?? 0,
+          monthlyLimit: data.textCredits.monthlyLimit ?? 100,
+          windowUsed: data.textCredits.windowUsed ?? 0,
+          windowLimit: data.textCredits.windowLimit ?? 8,
+          windowResetAt: data.textCredits.windowResetAt ?? null,
+        };
+      }
+      if (data.imageCredits) {
+        state.imageCredits = {
+          used: data.imageCredits.used ?? 0,
+          limit: data.imageCredits.limit ?? 5,
+          remaining: data.imageCredits.remaining ?? 5,
+          packRemaining: data.imageCredits.packRemaining ?? 0,
+          cycleResetsAt: data.imageCredits.cycleResetsAt ?? null,
+        };
+      }
       state.subscriptionStatus = 'succeeded';
     },
     showUpgradeModal: (state, action) => {
@@ -128,10 +150,23 @@ const subscriptionSlice = createSlice({
         const data = action.payload;
         state.currentTier = data.tier || SubscriptionTier.Free;
         if (data.billingInterval) state.billingCycle = data.billingInterval;
-        if (data.credits) {
-          state.dailyCreditsUsed = data.credits.used ?? 0;
-          state.creditsLimit = data.credits.limit ?? 30;
-          state.creditsRemaining = (data.credits.limit ?? 30) - (data.credits.used ?? 0);
+        if (data.textCredits) {
+          state.textCredits = {
+            monthlyUsed: data.textCredits.monthlyUsed ?? 0,
+            monthlyLimit: data.textCredits.monthlyLimit ?? 100,
+            windowUsed: data.textCredits.windowUsed ?? 0,
+            windowLimit: data.textCredits.windowLimit ?? 8,
+            windowResetAt: data.textCredits.windowResetAt ?? null,
+          };
+        }
+        if (data.imageCredits) {
+          state.imageCredits = {
+            used: data.imageCredits.used ?? 0,
+            limit: data.imageCredits.limit ?? 5,
+            remaining: data.imageCredits.remaining ?? 5,
+            packRemaining: data.imageCredits.packRemaining ?? 0,
+            cycleResetsAt: data.imageCredits.cycleResetsAt ?? null,
+          };
         }
         state.periodEnd = data.periodEnd ?? null;
         state.cancelAtPeriodEnd = data.cancelAtPeriodEnd ?? false;
@@ -169,10 +204,9 @@ const subscriptionSlice = createSlice({
 export const {
   setCurrentTier,
   setBillingCycle,
-  setCreditsRemaining,
-  setDailyCreditsUsed,
-  setCreditsLimit,
   setIsFirstMonth,
+  setTextCredits,
+  setImageCredits,
   setSubscriptionData,
   showUpgradeModal,
   hideUpgradeModal,
@@ -183,13 +217,12 @@ export const {
 
 export const selectCurrentTier = (state) => state.subscription.currentTier;
 export const selectBillingCycle = (state) => state.subscription.billingCycle;
-export const selectCreditsRemaining = (state) => state.subscription.creditsRemaining;
-export const selectDailyCreditsUsed = (state) => state.subscription.dailyCreditsUsed;
-export const selectCreditsLimit = (state) => state.subscription.creditsLimit;
 export const selectIsFirstMonth = (state) => state.subscription.isFirstMonth;
 export const selectPeriodEnd = (state) => state.subscription.periodEnd;
 export const selectCancelAtPeriodEnd = (state) => state.subscription.cancelAtPeriodEnd;
 export const selectSubscriptionStatus = (state) => state.subscription.subscriptionStatus;
+export const selectTextCredits = (state) => state.subscription.textCredits;
+export const selectImageCredits = (state) => state.subscription.imageCredits;
 export const selectShowUpgradeModal = (state) => state.subscription.showUpgradeModal;
 export const selectUpgradeContext = (state) => state.subscription.upgradeContext;
 export const selectUpgradeLoading = (state) => state.subscription.upgradeLoading;
