@@ -266,7 +266,8 @@ export default function SettingsView({ initialSection }) {
   }
 
   return (
-    <div className={styles.container}>
+    <>
+      <div className={styles.container}>
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>
@@ -1427,16 +1428,17 @@ export default function SettingsView({ initialSection }) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
 
-    {selectedPack && (
-      <ConfirmPackModal
-        packType={selectedPack}
-        onCancel={() => setSelectedPack(null)}
-        onContinue={handlePackContinue}
-        isLoading={packLoading}
-      />
-    )}
+      {selectedPack && (
+        <ConfirmPackModal
+          packType={selectedPack}
+          onCancel={() => setSelectedPack(null)}
+          onContinue={handlePackContinue}
+          isLoading={packLoading}
+        />
+      )}
+    </>
   );
 }
 
