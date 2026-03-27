@@ -24,6 +24,7 @@ import {
   setImageQuality,
 } from '../../store/slices/chatSlice';
 import { fetchCreditBalance, buyPack } from '../../services/credits';
+import { IMAGE_PACKS } from '../../config/credits';
 import {
   fetchSettings,
   saveSettings,
@@ -1158,30 +1159,31 @@ export default function SettingsView({ initialSection }) {
                         90 days.
                       </p>
                       <div className={styles.packCards}>
-                        {Object.entries(creditBalance.packs || {}).map(([key, pack]) => (
-                          <div key={key} className={styles.packCard}>
-                            <div className={styles.packCardBody}>
-                              <span className={styles.packCardCredits}>{pack.credits}</span>
-                              <span className={styles.packCardLabel}>{pack.label}</span>
-                              {pack.price && (
-                                <span className={styles.packCardPrice}>{pack.price}</span>
-                              )}
+                        {Object.entries(creditBalance.packs || {}).map(([key, pack]) => {
+                          const price = IMAGE_PACKS[key]?.price || pack.price;
+                          return (
+                            <div key={key} className={styles.packCard}>
+                              <div className={styles.packCardBody}>
+                                <span className={styles.packCardCredits}>{pack.credits}</span>
+                                <span className={styles.packCardLabel}>{pack.label}</span>
+                                {price && <span className={styles.packCardPrice}>{price}</span>}
+                              </div>
+                              <button
+                                className={styles.packCardBtn}
+                                onClick={async () => {
+                                  try {
+                                    await buyPack(key);
+                                    loadCredits();
+                                  } catch (err) {
+                                    console.error('Failed to buy pack:', err);
+                                  }
+                                }}
+                              >
+                                Add credits
+                              </button>
                             </div>
-                            <button
-                              className={styles.packCardBtn}
-                              onClick={async () => {
-                                try {
-                                  await buyPack(key);
-                                  loadCredits();
-                                } catch (err) {
-                                  console.error('Failed to buy pack:', err);
-                                }
-                              }}
-                            >
-                              Add credits
-                            </button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 
