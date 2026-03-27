@@ -50,7 +50,7 @@ export default function ConfirmPackModal({ packType, onCancel, onContinue, isLoa
             Cancel
           </button>
           <button className={styles.continueButton} onClick={onContinue} disabled={isLoading}>
-            {isLoading ? 'Processing...' : 'Continue to Payment'}
+            {isLoading ? 'Processing...' : 'Continue'}
           </button>
         </div>
       </div>
