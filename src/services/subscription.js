@@ -36,6 +36,25 @@ export async function createCheckoutSession(tier, interval) {
 }
 
 /**
+ * Create a Stripe Checkout session for a credit pack.
+ * @param {string} packType - 'starter', 'creator', or 'studio'
+ * @returns {Promise<{ url: string }>}
+ */
+export async function createPackCheckoutSession(packType) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/stripe/checkout-pack`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ packType }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Pack checkout failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+/**
  * Create a Stripe Billing Portal session.
  * @returns {Promise<{ url: string }>}
  */
