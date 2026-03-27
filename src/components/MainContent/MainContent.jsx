@@ -1287,7 +1287,6 @@ export default function MainContent() {
               }
               // Sync text credits from SSE done event
               if (data.textCredits) {
-                console.log('[SSE] Received textCredits from server:', data.textCredits);
                 dispatch(
                   setTextCredits({
                     monthlyUsed: data.textCredits.monthlyUsed,
@@ -1297,8 +1296,6 @@ export default function MainContent() {
                     windowResetAt: data.textCredits.windowResetAt,
                   })
                 );
-              } else {
-                console.log('[SSE] No textCredits in done event, data:', data);
               }
               // Refresh sidebar conversations after stream completes (title may now be set)
               window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));

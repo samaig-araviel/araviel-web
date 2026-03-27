@@ -878,14 +878,6 @@ export default function SettingsView({ initialSection }) {
                     // Text credits
                     const monthlyLimit = textCredits?.monthlyLimit || 0;
                     const monthlyUsed = textCredits?.monthlyUsed || 0;
-                    // Debug log
-                    if (monthlyLimit > 0) {
-                      console.log('[SettingsView] Text credits from Redux:', {
-                        monthlyUsed,
-                        monthlyLimit,
-                        percentage: Math.round((monthlyUsed / monthlyLimit) * 100),
-                      });
-                    }
                     const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
                     const monthlyPct =
                       monthlyLimit > 0
@@ -941,7 +933,9 @@ export default function SettingsView({ initialSection }) {
                         <div className={styles.creditProgressSection}>
                           <div className={styles.creditProgressLabel}>
                             <span>Text credits</span>
-                            <span>{monthlyPct}% used</span>
+                            <span>
+                              {monthlyUsed} of {monthlyLimit} used
+                            </span>
                           </div>
                           <div className={styles.creditProgressBar}>
                             <div
@@ -956,7 +950,9 @@ export default function SettingsView({ initialSection }) {
                           <div className={styles.creditProgressSection}>
                             <div className={styles.creditProgressLabel}>
                               <span>Current session</span>
-                              <span>{windowPct}% used</span>
+                              <span>
+                                {windowUsed} of {windowLimit} used
+                              </span>
                             </div>
                             <div className={styles.creditProgressBar}>
                               <div
