@@ -60,6 +60,7 @@ import {
   HelpCircleIcon,
   LogOutIcon,
   UpgradePlanIcon,
+  CreditCardIcon,
   SearchIcon,
 } from '../Icons';
 import ProjectPickerModal from '../ProjectPickerModal';
@@ -1046,6 +1047,18 @@ export default function Sidebar() {
                   <UpgradePlanIcon />
                   <span>Upgrade Plan</span>
                 </button>
+                {isAuthenticated && (
+                  <button
+                    className={styles.userDropdownItem}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      dispatch(setActiveItem('subscription'));
+                    }}
+                  >
+                    <CreditCardIcon />
+                    <span>My Subscription</span>
+                  </button>
+                )}
                 <button
                   className={styles.userDropdownItem}
                   onClick={() => {

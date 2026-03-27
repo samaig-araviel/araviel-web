@@ -14,6 +14,7 @@ import ConversationsView from './components/ConversationsView';
 import ProjectsView from './components/ProjectsView';
 import SettingsView from './components/SettingsView';
 import PricingView from './components/PricingView/PricingView';
+import SubscriptionView from './components/SubscriptionView/SubscriptionView';
 import UpgradeModal from './components/UpgradeModal/UpgradeModal';
 import styles from './components/Auth/AuthModal.module.css';
 import './App.css';
@@ -104,6 +105,8 @@ export default function App() {
         <SettingsView />
       ) : activeItem === 'pricing' ? (
         <PricingView />
+      ) : activeItem === 'subscription' ? (
+        <SubscriptionView />
       ) : (
         <MainContent />
       )}

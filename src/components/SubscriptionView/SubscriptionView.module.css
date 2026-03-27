@@ -1,0 +1,431 @@
+/* ── Container ── */
+
+.container {
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  display: flex;
+  justify-content: center;
+}
+
+.inner {
+  width: 100%;
+  max-width: 720px;
+  padding: 32px 40px 80px;
+}
+
+/* ── Header ── */
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px 7px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.backBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+/* ── Hero ── */
+
+.hero {
+  margin-bottom: 36px;
+}
+
+.heroTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+  line-height: 1.2;
+}
+
+.heroSubtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ── Loading state ── */
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 48px 0;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.loadingSpinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--text-muted);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Plan card ── */
+
+.planCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.planCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.planCardLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tierBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tierBadgeFree {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.tierBadgeLite {
+  background: linear-gradient(135deg, #f7f0e6, #ebe2d0);
+  color: #6e6354;
+}
+
+.tierBadgePro {
+  background: linear-gradient(135deg, #3d3528, #6e6354);
+  color: #fdf9f3;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusActive {
+  background: rgba(76, 140, 74, 0.1);
+  color: #4c8c4a;
+}
+
+.statusPastDue {
+  background: rgba(196, 149, 106, 0.12);
+  color: #a07040;
+}
+
+.statusCancelled {
+  background: rgba(199, 92, 58, 0.08);
+  color: #c75c3a;
+}
+
+.statusTrialing {
+  background: rgba(106, 130, 196, 0.1);
+  color: #5a6fa0;
+}
+
+.statusPaused {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+
+/* ── Plan details grid ── */
+
+.planDetails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.planDetailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.planDetailLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.planDetailValue {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.firstMonthTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(76, 140, 74, 0.1);
+  color: #4c8c4a;
+}
+
+/* ── Cancel notice ── */
+
+.cancelNotice {
+  font-size: 13px;
+  color: #c75c3a;
+  padding: 10px 14px;
+  background: rgba(199, 92, 58, 0.08);
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+/* ── Section titles ── */
+
+.sectionTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+}
+
+/* ── Credit usage card ── */
+
+.creditsCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 20px;
+  animation: fadeIn 0.2s ease 0.05s both;
+}
+
+.creditSections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.creditSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.creditHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.creditLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.creditCount {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.creditBar {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+
+.creditFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.creditHealthy {
+  background: var(--text-muted);
+}
+
+.creditLow {
+  background: #c4956a;
+}
+
+.creditCritical {
+  background: #c75c3a;
+}
+
+.creditMeta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.creditDivider {
+  height: 1px;
+  background: var(--border-color);
+}
+
+/* ── Pack credits ── */
+
+.packCredits {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-hover);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.packCreditsValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ── Actions card ── */
+
+.actionsCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 24px;
+  animation: fadeIn 0.2s ease 0.1s both;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.primaryBtn {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.primaryBtn:hover {
+  opacity: 0.85;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.secondaryBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .inner {
+    padding: 24px 20px 60px;
+  }
+
+  .heroTitle {
+    font-size: 24px;
+  }
+
+  .planDetails {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .planCardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .primaryBtn,
+  .secondaryBtn {
+    width: 100%;
+    text-align: center;
+  }
+}
