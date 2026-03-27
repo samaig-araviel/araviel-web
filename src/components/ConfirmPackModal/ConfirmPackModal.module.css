@@ -13,10 +13,10 @@
 
 .modal {
   background: var(--bg-primary);
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
-  padding: 32px 28px;
-  width: 380px;
+  padding: 28px 24px;
+  width: 340px;
   max-width: 90vw;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.3s ease-out;
@@ -37,15 +37,15 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .title {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.2px;
 }
 
 .closeButton {
@@ -69,7 +69,7 @@
 }
 
 .content {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .packDisplay {
@@ -77,35 +77,35 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 28px;
-  gap: 8px;
+  margin-bottom: 24px;
+  gap: 6px;
 }
 
 .creditAmount {
-  font-size: 56px;
+  font-size: 48px;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
-  letter-spacing: -1px;
+  letter-spacing: -0.5px;
 }
 
 .creditLabel {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--text-muted);
   font-weight: 500;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
 }
 
 .details {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .packName {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -120,15 +120,15 @@
 .features {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .feature {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 8px;
+  font-size: 12px;
   color: var(--text-secondary);
 }
 
@@ -148,16 +148,16 @@
 
 .actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 .cancelButton,
 .continueButton {
   flex: 1;
-  padding: 10px 16px;
+  padding: 10px 14px;
   border-radius: 8px;
   border: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
