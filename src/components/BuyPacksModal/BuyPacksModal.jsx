@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { IMAGE_PACKS, PACK_EXPIRY_DAYS } from '../../config/credits';
 import { createPackCheckoutSession } from '../../services/subscription';
+import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
 import styles from './BuyPacksModal.module.css';
 
 const PACK_OPTIONS = Object.entries(IMAGE_PACKS).map(([key, val]) => ({
@@ -9,14 +10,21 @@ const PACK_OPTIONS = Object.entries(IMAGE_PACKS).map(([key, val]) => ({
 }));
 
 export default function BuyPacksModal({ onClose }) {
-  const [loading, setLoading] = useState(null);
+  const [selectedPack, setSelectedPack] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const handleBuy = async (packId) => {
-    setLoading(packId);
+  const handlePackSelect = (packId) => {
+    setSelectedPack(packId);
+    setError(null);
+  };
+
+  const handleContinue = async () => {
+    if (!selectedPack) return;
+    setLoading(true);
     setError(null);
     try {
-      const { url } = await createPackCheckoutSession(packId);
+      const { url } = await createPackCheckoutSession(selectedPack);
       if (url) {
         window.location.href = url;
       } else {
@@ -24,9 +32,21 @@ export default function BuyPacksModal({ onClose }) {
       }
     } catch (err) {
       setError(err.message || 'Failed to create checkout');
-      setLoading(null);
+      setLoading(false);
     }
   };
+
+  // Show confirmation modal if a pack is selected
+  if (selectedPack) {
+    return (
+      <ConfirmPackModal
+        packType={selectedPack}
+        onCancel={() => setSelectedPack(null)}
+        onContinue={handleContinue}
+        isLoading={loading}
+      />
+    );
+  }
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -48,10 +68,10 @@ export default function BuyPacksModal({ onClose }) {
               </div>
               <button
                 className={styles.buyButton}
-                onClick={() => handleBuy(pack.id)}
-                disabled={loading !== null}
+                onClick={() => handlePackSelect(pack.id)}
+                disabled={loading}
               >
-                {loading === pack.id ? 'Processing...' : 'Add credits'}
+                Add credits
               </button>
             </div>
           ))}

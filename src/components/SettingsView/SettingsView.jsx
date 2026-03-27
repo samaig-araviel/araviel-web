@@ -32,6 +32,7 @@ import {
   DEFAULT_SETTINGS,
 } from '../../services/settings';
 import { createPackCheckoutSession } from '../../services/subscription';
+import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
 import { GuestGate } from '../GuestGate';
 import {
   ChevronLeftIcon,
@@ -134,6 +135,10 @@ export default function SettingsView({ initialSection }) {
   const [creditBalance, setCreditBalance] = useState(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
+  // Pack selection state
+  const [selectedPack, setSelectedPack] = useState(null);
+  const [packLoading, setPackLoading] = useState(false);
+
   // Load settings from backend on mount (authenticated users only)
   // Pre-populate empty fields from auth provider (e.g. Google OAuth)
   useEffect(() => {
@@ -201,6 +206,26 @@ export default function SettingsView({ initialSection }) {
     } finally {
       setAvatarUploading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  };
+
+  const handlePackSelect = (packType) => {
+    setSelectedPack(packType);
+  };
+
+  const handlePackContinue = async () => {
+    if (!selectedPack) return;
+    setPackLoading(true);
+    try {
+      const { url } = await createPackCheckoutSession(selectedPack);
+      if (url) {
+        window.location.href = url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (err) {
+      console.error('Failed to create checkout:', err);
+      setPackLoading(false);
     }
   };
 
@@ -1171,16 +1196,8 @@ export default function SettingsView({ initialSection }) {
                               </div>
                               <button
                                 className={styles.packCardBtn}
-                                onClick={async () => {
-                                  try {
-                                    const { url } = await createPackCheckoutSession(key);
-                                    if (url) {
-                                      window.location.href = url;
-                                    }
-                                  } catch (err) {
-                                    console.error('Failed to create checkout:', err);
-                                  }
-                                }}
+                                onClick={() => handlePackSelect(key)}
+                                disabled={packLoading}
                               >
                                 Add credits
                               </button>
@@ -1411,6 +1428,15 @@ export default function SettingsView({ initialSection }) {
         </div>
       </div>
     </div>
+
+    {selectedPack && (
+      <ConfirmPackModal
+        packType={selectedPack}
+        onCancel={() => setSelectedPack(null)}
+        onContinue={handlePackContinue}
+        isLoading={packLoading}
+      />
+    )}
   );
 }
 
