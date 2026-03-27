@@ -71,19 +71,51 @@ export default function ModalityBar({ compact = false }) {
     }
   }, [isOpen, showQuality]);
 
+  // Clamp dropdown to viewport after it renders
+  useEffect(() => {
+    if (isOpen && dropdownRef.current) {
+      const el = dropdownRef.current;
+      // Reset any previous adjustment
+      el.style.marginLeft = '';
+
+      // Wait for the CSS animation to finish
+      const timer = setTimeout(() => {
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const margin = 8;
+
+        if (rect.left < margin) {
+          el.style.marginLeft = `${margin - rect.left}px`;
+        } else if (rect.right > window.innerWidth - margin) {
+          el.style.marginLeft = `${window.innerWidth - margin - rect.right}px`;
+        }
+      }, 160);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, dropdownAlign, showQuality]);
+
   const handleTriggerClick = () => {
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceToRight = window.innerWidth - rect.right;
 
       // Determine vertical direction (up/down)
       setDropdownDir(spaceBelow < 260 ? 'up' : 'down');
 
-      // Determine horizontal alignment (left/right)
-      // Dropdown width is 260px, add 16px padding for safety
-      const dropdownWidth = 260 + 16;
-      setDropdownAlign(spaceToRight < dropdownWidth ? 'left' : 'right');
+      // Determine horizontal alignment
+      // dropdownLeft (left: 0) extends rightward from trigger's left edge
+      // dropdownRight (right: 0) extends leftward from trigger's right edge
+      const dropdownWidth = 180 + 16;
+      const spaceExtendingRight = window.innerWidth - rect.left;
+      const spaceExtendingLeft = rect.right;
+
+      if (spaceExtendingRight >= dropdownWidth) {
+        setDropdownAlign('left');   // extend rightward — preferred default
+      } else if (spaceExtendingLeft >= dropdownWidth) {
+        setDropdownAlign('right');  // extend leftward — fallback
+      } else {
+        setDropdownAlign('left');   // default, CSS max-width constrains
+      }
     }
     setIsOpen(!isOpen);
     setShowQuality(false);
