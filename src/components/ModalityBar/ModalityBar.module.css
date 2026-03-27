@@ -86,7 +86,8 @@
   border: 1px solid var(--border-color);
   border-radius: 14px;
   box-shadow: var(--shadow-lg);
-  width: 260px;
+  width: 180px;
+  max-width: calc(100vw - 16px);
   overflow: hidden;
   animation: dropdownAppear 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   padding: 4px 0;
@@ -263,18 +264,8 @@
    ─────────────────────────────── */
 @media (max-width: 768px) {
   .dropdown {
-    width: 260px;
+    width: 180px;
     max-width: calc(100vw - 24px);
-  }
-
-  .dropdownLeft {
-    left: 12px;
-    right: auto;
-  }
-
-  .dropdownRight {
-    right: 12px;
-    left: auto;
   }
 }
 
@@ -284,17 +275,7 @@
   }
 
   .dropdown {
-    width: 260px;
+    width: 180px;
     max-width: calc(100vw - 24px);
-  }
-
-  .dropdownLeft {
-    left: 12px;
-    right: auto;
-  }
-
-  .dropdownRight {
-    right: 12px;
-    left: auto;
   }
 }
