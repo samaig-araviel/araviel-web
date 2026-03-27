@@ -12,7 +12,7 @@
 .inner {
   width: 100%;
   max-width: 720px;
-  padding: 32px 40px 80px;
+  padding: 32px 40px 120px;
 }
 
 /* ── Header ── */
@@ -100,7 +100,7 @@
   border-radius: 14px;
   padding: 24px;
   margin-bottom: 20px;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.2s ease both;
 }
 
 @keyframes fadeIn {
@@ -125,7 +125,7 @@
 .planCardLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .tierBadge {
@@ -164,8 +164,8 @@
 }
 
 .statusActive {
-  background: rgba(76, 140, 74, 0.1);
-  color: #4c8c4a;
+  background: rgba(212, 165, 116, 0.12);
+  color: #c99a6b;
 }
 
 .statusPastDue {
@@ -179,8 +179,8 @@
 }
 
 .statusTrialing {
-  background: rgba(106, 130, 196, 0.1);
-  color: #5a6fa0;
+  background: rgba(212, 165, 116, 0.12);
+  color: #c99a6b;
 }
 
 .statusPaused {
@@ -193,7 +193,7 @@
 .planDetails {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 24px;
+  gap: 14px 24px;
   padding-top: 16px;
   border-top: 1px solid var(--border-color);
 }
@@ -205,8 +205,8 @@
 }
 
 .planDetailLabel {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -226,8 +226,8 @@
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(76, 140, 74, 0.1);
-  color: #4c8c4a;
+  background: rgba(212, 165, 116, 0.12);
+  color: #c99a6b;
 }
 
 /* ── Cancel notice ── */
@@ -251,6 +251,61 @@
   margin-bottom: 14px;
 }
 
+/* ── Actions card ── */
+
+.actionsCard {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 28px;
+  animation: fadeIn 0.2s ease 0.05s both;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.primaryBtn {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.primaryBtn:hover {
+  opacity: 0.85;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  padding: 9px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.secondaryBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
 /* ── Credit usage card ── */
 
 .creditsCard {
@@ -258,8 +313,7 @@
   border: 1px solid var(--border-color);
   border-radius: 14px;
   padding: 24px;
-  margin-bottom: 20px;
-  animation: fadeIn 0.2s ease 0.05s both;
+  animation: fadeIn 0.2s ease 0.1s both;
 }
 
 .creditSections {
@@ -344,65 +398,11 @@
   color: var(--text-primary);
 }
 
-/* ── Actions card ── */
-
-.actionsCard {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 24px;
-  animation: fadeIn 0.2s ease 0.1s both;
-}
-
-.actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.primaryBtn {
-  padding: 9px 20px;
-  border-radius: 10px;
-  border: none;
-  background: var(--text-primary);
-  color: var(--bg-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.primaryBtn:hover {
-  opacity: 0.85;
-}
-
-.primaryBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.secondaryBtn {
-  padding: 9px 20px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.secondaryBtn:hover {
-  background: var(--bg-hover);
-  border-color: var(--text-muted);
-}
-
 /* ── Responsive ── */
 
 @media (max-width: 768px) {
   .inner {
-    padding: 24px 20px 60px;
+    padding: 24px 20px 100px;
   }
 
   .heroTitle {
