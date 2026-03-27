@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { setCreditBalance } from '../../store/slices/chatSlice';
 import { IMAGE_PACKS, PACK_EXPIRY_DAYS } from '../../config/credits';
 import { createPackCheckoutSession } from '../../services/subscription';
 import styles from './BuyPacksModal.module.css';
