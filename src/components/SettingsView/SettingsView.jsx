@@ -866,7 +866,7 @@ export default function SettingsView({ initialSection }) {
                     const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
                     const monthlyPct =
                       monthlyLimit > 0
-                        ? Math.min(100, Math.round((monthlyRemaining / monthlyLimit) * 100))
+                        ? Math.min(100, Math.round((monthlyUsed / monthlyLimit) * 100))
                         : 0;
                     const monthlyRatio = monthlyLimit > 0 ? monthlyRemaining / monthlyLimit : 1;
                     const monthlyColor =
@@ -882,7 +882,7 @@ export default function SettingsView({ initialSection }) {
                     const windowRemaining = Math.max(0, windowLimit - windowUsed);
                     const windowPct =
                       windowLimit > 0
-                        ? Math.min(100, Math.round((windowRemaining / windowLimit) * 100))
+                        ? Math.min(100, Math.round((windowUsed / windowLimit) * 100))
                         : 0;
                     const windowRatio = windowLimit > 0 ? windowRemaining / windowLimit : 1;
                     const windowColor =
@@ -896,8 +896,9 @@ export default function SettingsView({ initialSection }) {
                     // Image credits
                     const imgRemaining = imageCredits?.remaining || 0;
                     const imgLimit = imageCredits?.limit || 0;
+                    const imgUsed = Math.max(0, imgLimit - imgRemaining);
                     const imgPct =
-                      imgLimit > 0 ? Math.min(100, Math.round((imgRemaining / imgLimit) * 100)) : 0;
+                      imgLimit > 0 ? Math.min(100, Math.round((imgUsed / imgLimit) * 100)) : 0;
                     const imgRatio = imgLimit > 0 ? imgRemaining / imgLimit : 1;
                     const imgColor =
                       imgRatio > 0.5
@@ -1132,7 +1133,7 @@ export default function SettingsView({ initialSection }) {
                                 <div
                                   className={`${styles.usageProgressFill} ${styles.usageProgressFillPack}`}
                                   style={{
-                                    width: `${packs.total ? Math.min(100, 100 - packPct) : 0}%`,
+                                    width: `${packs.total ? Math.min(100, packPct) : 0}%`,
                                   }}
                                 />
                               </div>
