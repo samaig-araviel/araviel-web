@@ -22,7 +22,7 @@ import styles from './SubscriptionView.module.css';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getStatusLabel(tier, cancelAtPeriodEnd) {
-  if (tier === SubscriptionTier.Free) return { label: 'Free', className: styles.statusActive };
+  if (tier === SubscriptionTier.Free) return { label: 'Free tier', className: styles.statusActive };
   if (cancelAtPeriodEnd) return { label: 'Cancelling', className: styles.statusCancelled };
   return { label: 'Active', className: styles.statusActive };
 }
@@ -196,12 +196,20 @@ export default function SubscriptionView() {
                     </span>
                   </div>
                 )}
-                {periodEnd && (
+                {isPaid && periodEnd && (
                   <div className={styles.planDetailItem}>
                     <span className={styles.planDetailLabel}>
                       {cancelAtPeriodEnd ? 'Expires' : 'Next billing'}
                     </span>
                     <span className={styles.planDetailValue}>{formatDate(periodEnd)}</span>
+                  </div>
+                )}
+                {isPaid && !cancelAtPeriodEnd && price > 0 && (
+                  <div className={styles.planDetailItem}>
+                    <span className={styles.planDetailLabel}>Next amount</span>
+                    <span className={styles.planDetailValue}>
+                      £{billingCycle === 'annual' ? tierInfo?.annualPricePerMonth * 12 : price}
+                    </span>
                   </div>
                 )}
               </div>
@@ -212,6 +220,35 @@ export default function SubscriptionView() {
                   reactivate anytime before then.
                 </div>
               )}
+            </div>
+
+            {/* ── Quick Actions ── */}
+            <div className={styles.actionsCard}>
+              <div className={styles.actions}>
+                {isPaid && (
+                  <button
+                    className={styles.primaryBtn}
+                    onClick={() => dispatch(createPortalThunk())}
+                    disabled={portalLoading}
+                  >
+                    {portalLoading ? 'Opening...' : 'Manage Subscription'}
+                  </button>
+                )}
+                {(isFree || currentTier === SubscriptionTier.Lite) && (
+                  <button
+                    className={isFree ? styles.primaryBtn : styles.secondaryBtn}
+                    onClick={() => dispatch(setActiveItem('pricing'))}
+                  >
+                    Upgrade Plan
+                  </button>
+                )}
+                <button
+                  className={styles.secondaryBtn}
+                  onClick={() => dispatch(setActiveItem('usage'))}
+                >
+                  View Detailed Usage
+                </button>
+              </div>
             </div>
 
             {/* ── Credit usage ── */}
@@ -287,36 +324,6 @@ export default function SubscriptionView() {
                     <span className={styles.packCreditsValue}>{packRemaining} credits</span>
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* ── Actions ── */}
-            <h2 className={styles.sectionTitle}>Quick Actions</h2>
-            <div className={styles.actionsCard}>
-              <div className={styles.actions}>
-                {isPaid && (
-                  <button
-                    className={styles.primaryBtn}
-                    onClick={() => dispatch(createPortalThunk())}
-                    disabled={portalLoading}
-                  >
-                    {portalLoading ? 'Opening...' : 'Manage Subscription'}
-                  </button>
-                )}
-                {(isFree || currentTier === SubscriptionTier.Lite) && (
-                  <button
-                    className={isFree ? styles.primaryBtn : styles.secondaryBtn}
-                    onClick={() => dispatch(setActiveItem('pricing'))}
-                  >
-                    Upgrade Plan
-                  </button>
-                )}
-                <button
-                  className={styles.secondaryBtn}
-                  onClick={() => dispatch(setActiveItem('usage'))}
-                >
-                  View Detailed Usage
-                </button>
               </div>
             </div>
           </>
