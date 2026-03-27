@@ -878,6 +878,14 @@ export default function SettingsView({ initialSection }) {
                     // Text credits
                     const monthlyLimit = textCredits?.monthlyLimit || 0;
                     const monthlyUsed = textCredits?.monthlyUsed || 0;
+                    // Debug log
+                    if (monthlyLimit > 0) {
+                      console.log('[SettingsView] Text credits from Redux:', {
+                        monthlyUsed,
+                        monthlyLimit,
+                        percentage: Math.round((monthlyUsed / monthlyLimit) * 100),
+                      });
+                    }
                     const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
                     const monthlyPct =
                       monthlyLimit > 0
@@ -1038,7 +1046,7 @@ export default function SettingsView({ initialSection }) {
                         const tier = currentTier || 'free';
                         const tierLabel =
                           tierInfo?.name || tier.charAt(0).toUpperCase() + tier.slice(1);
-                        const tierCredits = tierInfo?.imageCreditsPerMonth ?? 5;
+                        const tierCredits = tierInfo?.monthlyImageCredits ?? 5;
                         return (
                           <div className={styles.planCard}>
                             <div className={styles.planInfo}>
