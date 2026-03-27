@@ -51,19 +51,26 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
-    // Post-checkout: /?checkout=success
+    // Post-checkout: /?checkout=success (for subscriptions and packs)
     if (params.get('checkout') === 'success') {
+      const checkoutType = params.get('type');
       const url = new URL(window.location.href);
       url.searchParams.delete('checkout');
+      url.searchParams.delete('type');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
       // Refresh subscription state in Redux from server
       dispatch(fetchSubscriptionThunk());
+
+      // For pack purchases, navigate to usage view to show updated credits
+      if (checkoutType === 'pack') {
+        dispatch(setActiveItem('usage'));
+      }
     }
 
-    // Portal/cancel return: /?view=settings or /?view=pricing
+    // Portal/cancel return: /?view=settings, /?view=pricing, or /?view=usage
     const view = params.get('view');
-    if (view === 'settings' || view === 'pricing') {
+    if (view === 'settings' || view === 'pricing' || view === 'usage') {
       dispatch(setActiveItem(view));
       const url = new URL(window.location.href);
       url.searchParams.delete('view');
