@@ -23,7 +23,7 @@ import {
   setExtendedThinking,
   setImageQuality,
 } from '../../store/slices/chatSlice';
-import { fetchCreditBalance, buyPack } from '../../services/credits';
+import { fetchCreditBalance } from '../../services/credits';
 import { IMAGE_PACKS } from '../../config/credits';
 import {
   fetchSettings,
@@ -31,6 +31,7 @@ import {
   uploadAvatar,
   DEFAULT_SETTINGS,
 } from '../../services/settings';
+import { createPackCheckoutSession } from '../../services/subscription';
 import { GuestGate } from '../GuestGate';
 import {
   ChevronLeftIcon,
@@ -1172,10 +1173,12 @@ export default function SettingsView({ initialSection }) {
                                 className={styles.packCardBtn}
                                 onClick={async () => {
                                   try {
-                                    await buyPack(key);
-                                    loadCredits();
+                                    const { url } = await createPackCheckoutSession(key);
+                                    if (url) {
+                                      window.location.href = url;
+                                    }
                                   } catch (err) {
-                                    console.error('Failed to buy pack:', err);
+                                    console.error('Failed to create checkout:', err);
                                   }
                                 }}
                               >
