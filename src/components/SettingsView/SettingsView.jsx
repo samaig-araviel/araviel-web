@@ -134,6 +134,7 @@ export default function SettingsView({ initialSection }) {
   // Credit balance state
   const [creditBalance, setCreditBalance] = useState(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
+  const [creditsError, setCreditsError] = useState(null);
 
   // Pack selection state
   const [selectedPack, setSelectedPack] = useState(null);
@@ -167,15 +168,29 @@ export default function SettingsView({ initialSection }) {
   // Load credit balance when usage tab is shown
   const loadCredits = useCallback(() => {
     setCreditsLoading(true);
+    setCreditsError(null);
     fetchCreditBalance()
-      .then((data) => setCreditBalance(data))
-      .catch(() => {})
+      .then((data) => {
+        setCreditBalance(data);
+        setCreditsError(null);
+      })
+      .catch((err) => {
+        console.error('Failed to load credit balance:', err);
+        setCreditsError('Failed to load credit balance. Please try again.');
+      })
       .finally(() => setCreditsLoading(false));
   }, []);
 
   useEffect(() => {
     if (activeSection === 'usage') loadCredits();
   }, [activeSection, loadCredits]);
+
+  // Refresh credits when Redux textCredits change (from chat usage)
+  useEffect(() => {
+    if (activeSection === 'usage' && textCredits) {
+      loadCredits();
+    }
+  }, [textCredits, activeSection, loadCredits]);
 
   const updateSetting = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -1019,9 +1034,11 @@ export default function SettingsView({ initialSection }) {
                     <>
                       {/* ── Current plan card ── */}
                       {(() => {
-                        const tier = creditBalance.balance.tier || 'free';
-                        const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1);
-                        const tierCredits = creditBalance.tiers?.[tier] ?? 5;
+                        const tierInfo = getTierById(currentTier);
+                        const tier = currentTier || 'free';
+                        const tierLabel =
+                          tierInfo?.name || tier.charAt(0).toUpperCase() + tier.slice(1);
+                        const tierCredits = tierInfo?.imageCreditsPerMonth ?? 5;
                         return (
                           <div className={styles.planCard}>
                             <div className={styles.planInfo}>
@@ -1223,7 +1240,10 @@ export default function SettingsView({ initialSection }) {
                     </>
                   ) : (
                     <div className={styles.usageEmpty}>
-                      <p>Unable to load usage data. Check your connection and try again.</p>
+                      <p>
+                        {creditsError ||
+                          'Unable to load usage data. Check your connection and try again.'}
+                      </p>
                       <button className={styles.refreshBtn} onClick={loadCredits}>
                         Retry
                       </button>
