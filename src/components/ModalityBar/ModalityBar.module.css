@@ -81,7 +81,6 @@
    ─────────────────────────────── */
 .dropdown {
   position: absolute;
-  right: 0;
   z-index: 200;
   background-color: var(--bg-input);
   border: 1px solid var(--border-color);
@@ -93,14 +92,36 @@
   padding: 4px 0;
 }
 
+.dropdownRight {
+  right: 0;
+}
+
+.dropdownLeft {
+  left: 0;
+}
+
 .dropdownDown {
   top: calc(100% + 6px);
-  transform-origin: top right;
 }
 
 .dropdownUp {
   bottom: calc(100% + 6px);
+}
+
+.dropdownDown.dropdownRight {
+  transform-origin: top right;
+}
+
+.dropdownUp.dropdownRight {
   transform-origin: bottom right;
+}
+
+.dropdownDown.dropdownLeft {
+  transform-origin: top left;
+}
+
+.dropdownUp.dropdownLeft {
+  transform-origin: bottom left;
 }
 
 @keyframes dropdownAppear {
@@ -242,9 +263,18 @@
    ─────────────────────────────── */
 @media (max-width: 768px) {
   .dropdown {
-    width: auto;
-    min-width: 160px;
-    max-width: calc(100vw - 32px);
+    width: 260px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .dropdownLeft {
+    left: 12px;
+    right: auto;
+  }
+
+  .dropdownRight {
+    right: 12px;
+    left: auto;
   }
 }
 
@@ -252,8 +282,19 @@
   .triggerLabel {
     max-width: 80px;
   }
+
   .dropdown {
-    left: 0;
+    width: 260px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .dropdownLeft {
+    left: 12px;
     right: auto;
+  }
+
+  .dropdownRight {
+    right: 12px;
+    left: auto;
   }
 }

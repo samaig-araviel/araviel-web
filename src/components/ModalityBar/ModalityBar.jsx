@@ -26,7 +26,8 @@ export default function ModalityBar({ compact = false }) {
 
   const [isOpen, setIsOpen] = useState(false);
   const [showQuality, setShowQuality] = useState(false);
-  const [dropdownDir, setDropdownDir] = useState('up');
+  const [dropdownDir, setDropdownDir] = useState('down');
+  const [dropdownAlign, setDropdownAlign] = useState('right');
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
 
@@ -74,7 +75,15 @@ export default function ModalityBar({ compact = false }) {
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceToRight = window.innerWidth - rect.right;
+
+      // Determine vertical direction (up/down)
       setDropdownDir(spaceBelow < 260 ? 'up' : 'down');
+
+      // Determine horizontal alignment (left/right)
+      // Dropdown width is 260px, add 16px padding for safety
+      const dropdownWidth = 260 + 16;
+      setDropdownAlign(spaceToRight < dropdownWidth ? 'left' : 'right');
     }
     setIsOpen(!isOpen);
     setShowQuality(false);
@@ -126,7 +135,7 @@ export default function ModalityBar({ compact = false }) {
           ref={dropdownRef}
           className={`${styles.dropdown} ${
             dropdownDir === 'up' ? styles.dropdownUp : styles.dropdownDown
-          }`}
+          } ${dropdownAlign === 'left' ? styles.dropdownLeft : styles.dropdownRight}`}
         >
           {showQuality ? (
             /* Quality sub-view */
