@@ -165,12 +165,38 @@ export default function SettingsView({ initialSection }) {
   }, [isAuthenticated, authUser, dispatch]);
 
   // Load credit balance when usage tab is shown
+  // Includes polling with exponential backoff if pack credits are 0 (race condition after purchase)
   const loadCredits = useCallback(() => {
     setCreditsLoading(true);
-    fetchCreditBalance()
-      .then((data) => setCreditBalance(data))
-      .catch(() => {})
-      .finally(() => setCreditsLoading(false));
+    let pollAttempt = 0;
+    const maxAttempts = 4; // Initial + 3 retries
+
+    const fetchWithRetry = async () => {
+      try {
+        const data = await fetchCreditBalance();
+        setCreditBalance(data);
+
+        // If pack balance is 0 and we just returned from a pack purchase, retry with backoff
+        // This handles the race condition where webhook hasn't completed yet
+        const hasPackCredits = data?.balance?.packs?.remaining > 0;
+        if (!hasPackCredits && pollAttempt < maxAttempts - 1) {
+          // Check if we're coming from a recent pack purchase (within ~10 seconds)
+          // by looking at the URL or timing (the delay in App.jsx is 1.5s, so if called right after, we're likely in the race)
+          const timeoutMs = pollAttempt === 0 ? 500 : Math.min(500 * Math.pow(2, pollAttempt), 2000);
+          pollAttempt++;
+          setTimeout(fetchWithRetry, timeoutMs);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to fetch credit balance:', err);
+      } finally {
+        if (pollAttempt >= maxAttempts - 1) {
+          setCreditsLoading(false);
+        }
+      }
+    };
+
+    fetchWithRetry();
   }, []);
 
   useEffect(() => {

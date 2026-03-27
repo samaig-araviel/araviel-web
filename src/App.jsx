@@ -59,12 +59,18 @@ export default function App() {
       url.searchParams.delete('type');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
-      // Refresh subscription state in Redux from server
-      dispatch(fetchSubscriptionThunk());
-
-      // For pack purchases, navigate to usage view to show updated credits
+      // For pack purchases: wait for webhook to process, then navigate to usage view
+      // This prevents a race condition where the frontend fetches balance before
+      // the Stripe webhook has finished adding credits to the database
       if (checkoutType === 'pack') {
-        dispatch(setActiveItem('usage'));
+        // Wait 1.5 seconds for webhook processing (typical: 100-500ms, worst case: ~1s)
+        setTimeout(() => {
+          dispatch(fetchSubscriptionThunk());
+          dispatch(setActiveItem('usage'));
+        }, 1500);
+      } else {
+        // For subscriptions, refresh immediately
+        dispatch(fetchSubscriptionThunk());
       }
     }
 
