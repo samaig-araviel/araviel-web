@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from './store/slices/themeSlice';
 import { selectActiveItem, setActiveItem } from './store/slices/sidebarSlice';
-import { selectAuthLoading } from './store/slices/authSlice';
+import { selectAuthLoading, selectAuthUser } from './store/slices/authSlice';
 import { fetchSubscriptionThunk } from './store/slices/subscriptionSlice';
+import { subscribeToCreditPackChanges } from './services/credits';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import useAuthListener from './hooks/useAuthListener';
 import Sidebar from './components/Sidebar';
@@ -28,6 +29,8 @@ export default function App() {
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const activeItem = useSelector(selectActiveItem);
   const authLoading = useSelector(selectAuthLoading);
+  const user = useSelector(selectAuthUser);
+  const unsubPackRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', effectiveTheme);
@@ -59,15 +62,22 @@ export default function App() {
       url.searchParams.delete('type');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
-      // For pack purchases: wait for webhook to process, then navigate to usage view
-      // This prevents a race condition where the frontend fetches balance before
-      // the Stripe webhook has finished adding credits to the database
-      if (checkoutType === 'pack') {
-        // Wait 1.5 seconds for webhook processing (typical: 100-500ms, worst case: ~1s)
+      // For pack purchases: subscribe to Realtime changes on credit_packs table
+      // so balance updates as soon as the Stripe webhook inserts the new pack
+      if (checkoutType === 'pack' && user?.id) {
+        dispatch(setActiveItem('usage'));
+        unsubPackRef.current?.();
+        unsubPackRef.current = subscribeToCreditPackChanges(user.id, () => {
+          dispatch(fetchSubscriptionThunk());
+          unsubPackRef.current?.();
+          unsubPackRef.current = null;
+        });
+      } else if (checkoutType === 'pack') {
+        // No user id available — fall back to a delayed fetch
         setTimeout(() => {
           dispatch(fetchSubscriptionThunk());
           dispatch(setActiveItem('usage'));
-        }, 1500);
+        }, 3000);
       } else {
         // For subscriptions, refresh immediately
         dispatch(fetchSubscriptionThunk());
@@ -87,7 +97,11 @@ export default function App() {
         dispatch(fetchSubscriptionThunk());
       }
     }
-  }, [dispatch]);
+    return () => {
+      unsubPackRef.current?.();
+      unsubPackRef.current = null;
+    };
+  }, [dispatch, user?.id]);
 
   // Show loading screen while checking initial auth session
   if (authLoading) {
