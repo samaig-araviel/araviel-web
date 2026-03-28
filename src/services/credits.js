@@ -1,6 +1,7 @@
 // Credit service — communicates with /api/credits backend
 import { IMAGE_QUALITY_COSTS } from '../config/credits';
 import { getAuthHeaders } from './authHeaders';
+import { supabase } from '../lib/supabase';
 
 const API_BASE =
   import.meta.env.VITE_ARAVIEL_API_BASE ||
@@ -85,4 +86,41 @@ export async function updateUserTier(tier) {
  */
 export function getCreditCost(quality = 'standard') {
   return IMAGE_QUALITY_COSTS[quality] ?? IMAGE_QUALITY_COSTS.standard;
+}
+
+/**
+ * Subscribe to credit pack changes via Supabase Realtime.
+ * Calls `onPackAdded` when a new pack is inserted for the given user.
+ * Falls back to calling `onPackAdded` after 5s if no Realtime event arrives.
+ * Returns an unsubscribe function.
+ */
+export function subscribeToCreditPackChanges(userId, onPackAdded) {
+  let fired = false;
+  const fire = () => {
+    if (fired) return;
+    fired = true;
+    clearTimeout(fallbackTimer);
+    onPackAdded();
+  };
+
+  const channel = supabase
+    .channel(`credit-packs-${userId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'credit_packs',
+        filter: `user_id=eq.${userId}`,
+      },
+      fire
+    )
+    .subscribe();
+
+  const fallbackTimer = setTimeout(fire, 5000);
+
+  return () => {
+    clearTimeout(fallbackTimer);
+    supabase.removeChannel(channel);
+  };
 }
