@@ -62,6 +62,7 @@ import {
   UpgradePlanIcon,
   CreditCardIcon,
   SearchIcon,
+  StatusIcon,
 } from '../Icons';
 import ProjectPickerModal from '../ProjectPickerModal';
 import SearchModal from '../SearchModal/SearchModal';
@@ -401,6 +402,13 @@ export default function Sidebar() {
 
   const handleGalleryClick = () => {
     dispatch(setActiveItem(activeItem === 'gallery' ? 'home' : 'gallery'));
+    if (isMobile) {
+      dispatch(setCollapsed(true));
+    }
+  };
+
+  const handleStatusClick = () => {
+    dispatch(setActiveItem(activeItem === 'status' ? 'home' : 'status'));
     if (isMobile) {
       dispatch(setCollapsed(true));
     }
@@ -765,6 +773,15 @@ export default function Sidebar() {
           >
             <ModelsIcon />
             {showFullContent && <span>Models</span>}
+          </button>
+          <button
+            className={`${styles.navItem} ${activeItem === 'status' ? styles.active : ''}`}
+            onClick={handleStatusClick}
+            title="Status"
+            aria-label="Status"
+          >
+            <StatusIcon />
+            {showFullContent && <span>Status</span>}
           </button>
         </nav>
 

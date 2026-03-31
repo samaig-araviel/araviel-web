@@ -1,0 +1,659 @@
+/* ===================== */
+/* Dashboard Layout      */
+/* ===================== */
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  background-color: var(--bg-primary);
+  transition: background-color 0.2s ease;
+  scroll-behavior: smooth;
+}
+
+/* ===================== */
+/* Sticky Header Bar     */
+/* ===================== */
+
+.headerBar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 48px;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 0;
+}
+
+.headerTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pageTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.liveIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ===================== */
+/* Tab Navigation        */
+/* ===================== */
+
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 20px;
+}
+
+.tabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+  color: var(--text-primary);
+}
+
+.tabBtnActive {
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom-color: var(--text-primary);
+}
+
+.tabBtn svg {
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+}
+
+.tabBtnActive svg {
+  opacity: 1;
+}
+
+/* ===================== */
+/* Content Area          */
+/* ===================== */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 48px 48px;
+}
+
+/* ===================== */
+/* Overall Banner        */
+/* ===================== */
+
+.overallBanner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.overallBanner:hover {
+  border-color: var(--border-input);
+}
+
+.bannerIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.bannerIconOperational { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+.bannerIconDegraded { background-color: rgba(217, 119, 6, 0.1); color: #d97706; }
+.bannerIconOutage { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.bannerIconUnknown { background-color: var(--bg-secondary); color: var(--text-muted); }
+
+.bannerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bannerTitle {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.bannerSubtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ===================== */
+/* Provider Grid         */
+/* ===================== */
+
+.providerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+/* ===================== */
+/* Provider Card         */
+/* ===================== */
+
+.providerCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.2s ease;
+  cursor: default;
+}
+
+.providerCard:hover {
+  border-color: var(--border-input);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+.providerCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.providerIdentity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.providerLogo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.providerName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* ===================== */
+/* Status Badge          */
+/* ===================== */
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.statusOperational {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.statusDegraded {
+  background-color: rgba(217, 119, 6, 0.1);
+  color: #d97706;
+}
+
+.statusPartialOutage {
+  background-color: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
+.statusMajorOutage {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.statusUnknown {
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+/* ===================== */
+/* Provider Metrics Row  */
+/* ===================== */
+
+.providerMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.providerMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.providerMetricLabel {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.providerMetricValue {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.providerMetricMuted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ===================== */
+/* Uptime Bar            */
+/* ===================== */
+
+.uptimeBarWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.uptimeBarLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.uptimeBar {
+  display: flex;
+  gap: 1.5px;
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.uptimeSegment {
+  flex: 1;
+  min-width: 2px;
+  border-radius: 1.5px;
+  transition: opacity 0.15s ease;
+}
+
+.uptimeSegment:hover {
+  opacity: 0.7;
+}
+
+.uptimeOperational { background-color: #10b981; }
+.uptimeDegraded { background-color: #d97706; }
+.uptimePartialOutage { background-color: #f97316; }
+.uptimeMajorOutage { background-color: #ef4444; }
+.uptimeUnknown { background-color: var(--border-color); }
+
+/* ===================== */
+/* Platform Cards        */
+/* ===================== */
+
+.platformGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.platformCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.platformCard:hover {
+  border-color: var(--border-input);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+}
+
+.platformInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.platformName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.platformLatency {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ===================== */
+/* Section Card          */
+/* ===================== */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.section:hover {
+  border-color: var(--border-input);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 22px 0;
+}
+
+.sectionTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.sectionSubtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.sectionBody {
+  position: relative;
+  padding: 14px 22px 22px;
+}
+
+/* ===================== */
+/* Incident Timeline     */
+/* ===================== */
+
+.incidentList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.incidentItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.incidentItem:last-child {
+  border-bottom: none;
+}
+
+.incidentIndicator {
+  width: 3px;
+  height: 100%;
+  min-height: 32px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.incidentContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.incidentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.incidentTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.incidentTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.incidentProvider {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ===================== */
+/* Empty State           */
+/* ===================== */
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.emptyIcon {
+  opacity: 0.4;
+}
+
+.emptyText {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* ===================== */
+/* Loading Skeleton      */
+/* ===================== */
+
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-hover) 50%, var(--bg-secondary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeletonCard {
+  height: 140px;
+  border-radius: 14px;
+}
+
+.skeletonBanner {
+  height: 80px;
+  border-radius: 14px;
+}
+
+/* ===================== */
+/* Period Selector       */
+/* ===================== */
+
+.periodSelector {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.periodBtn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.periodBtn:hover {
+  color: var(--text-primary);
+}
+
+.periodBtnActive {
+  color: var(--text-primary);
+  background-color: var(--bg-button);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  font-weight: 600;
+}
+
+/* ===================== */
+/* Split Row             */
+/* ===================== */
+
+.splitRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ===================== */
+/* Responsive            */
+/* ===================== */
+
+@media (max-width: 768px) {
+  .headerBar { padding: 0 20px; }
+  .content { padding: 16px 20px 32px; }
+  .providerGrid { grid-template-columns: 1fr; }
+  .platformGrid { grid-template-columns: 1fr; }
+  .splitRow { grid-template-columns: 1fr; }
+  .pageTitle { font-size: 20px; }
+}
+
+@media (max-width: 480px) {
+  .headerBar { padding: 0 16px; }
+  .content { padding: 12px 16px 24px; }
+  .providerMetrics { grid-template-columns: 1fr 1fr; }
+}

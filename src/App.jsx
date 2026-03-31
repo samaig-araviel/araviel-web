@@ -16,6 +16,7 @@ import ProjectsView from './components/ProjectsView';
 import SettingsView from './components/SettingsView';
 import PricingView from './components/PricingView/PricingView';
 import SubscriptionView from './components/SubscriptionView/SubscriptionView';
+import StatusDashboard from './components/StatusDashboard';
 import UpgradeModal from './components/UpgradeModal/UpgradeModal';
 import styles from './components/Auth/AuthModal.module.css';
 import './App.css';
@@ -134,6 +135,8 @@ export default function App() {
         <PricingView />
       ) : activeItem === 'subscription' ? (
         <SubscriptionView />
+      ) : activeItem === 'status' ? (
+        <StatusDashboard />
       ) : (
         <MainContent />
       )}
