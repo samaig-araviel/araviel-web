@@ -655,6 +655,7 @@ export default function MainContent() {
   const [showLimitToast, setShowLimitToast] = useState(false);
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
   const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
+  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
   const [guestPromptsLeft, setGuestPromptsLeft] = useState(getRemainingGuestPrompts());
   const isAuthenticated = useSelector(selectIsAuthenticated);
   // conversationProject is now derived from Redux — see below
@@ -1391,11 +1392,16 @@ export default function MainContent() {
       } catch (err) {
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
         // Network or fetch error
+        const errorCode = err.code || 'INTERNAL_ERROR';
+        const errorPayload = {
+          message: err.message || 'Connection failed',
+          code: errorCode,
+        };
         if (assistantMsgAdded) {
           dispatch(
             updateLastMessage({
               content: accumulatedContent || '',
-              error: { message: err.message || 'Connection failed', code: 'INTERNAL_ERROR' },
+              error: errorPayload,
             })
           );
         } else {
@@ -1406,7 +1412,7 @@ export default function MainContent() {
               role: 'assistant',
               content: '',
               timestamp: Date.now(),
-              error: { message: err.message || 'Connection failed', code: 'INTERNAL_ERROR' },
+              error: errorPayload,
             })
           );
         }
@@ -2369,6 +2375,13 @@ export default function MainContent() {
         initialTab="signup"
       />
 
+      {/* Session expired modal */}
+      <AuthModal
+        isOpen={showSessionExpiredModal}
+        onClose={() => setShowSessionExpiredModal(false)}
+        initialTab="signin"
+      />
+
       {/* Gallery preview */}
       {showGallery && galleryFiles.length > 0 && (
         <GalleryPreview
@@ -2398,6 +2411,7 @@ export default function MainContent() {
           isStreaming={isStreaming}
           streamedText={streamedText}
           onRetry={handleRetry}
+          onSessionExpired={() => setShowSessionExpiredModal(true)}
           onAlternateModelRequest={handleAlternateModelRequest}
           onSubConvPanelToggle={setIsSubConvPanelOpen}
           onCodePanelToggle={setIsCodePanelOpen}
