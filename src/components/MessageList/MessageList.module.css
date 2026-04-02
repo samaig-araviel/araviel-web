@@ -73,19 +73,26 @@
 }
 
 .userPromptActions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 2px;
+  margin-top: 6px;
   opacity: 0;
   transition: opacity 0.15s ease;
-  z-index: 1;
 }
 
 .userPromptCard:hover .userPromptActions {
   opacity: 1;
+}
+
+.userPromptTime {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 450;
+  margin-right: 4px;
+  user-select: none;
+  letter-spacing: 0.01em;
 }
 
 .userPromptActionBtn {
@@ -1339,11 +1346,13 @@
 /* ===== Response Actions Bar ===== */
 .responseActions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   margin-top: 14px;
   padding-top: 10px;
   animation: actionsFadeIn 0.3s ease;
+  position: relative;
 }
 
 @keyframes actionsFadeIn {
@@ -1680,15 +1689,11 @@
 }
 
 /* ===== Inline Sources Dropdown ===== */
-.inlineSourcesWrapper {
-  position: relative;
-  display: inline-flex;
-}
-
+/* Sources pill with favicon logos */
 .inlineSourcesPill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 11.5px;
@@ -1713,115 +1718,205 @@
   border-color: var(--text-muted);
 }
 
-.inlineSourcesPill svg {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-}
-
-.inlineSourcesChevron {
-  display: flex;
+.sourcesPillFavicons {
+  display: inline-flex;
   align-items: center;
-  transition: transform 0.2s ease;
 }
 
-.inlineSourcesChevron svg {
-  width: 10px;
-  height: 10px;
+.sourcesPillFavicon {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1.5px solid var(--bg-primary);
+  margin-right: -4px;
 }
 
-.inlineSourcesChevronOpen {
-  transform: rotate(180deg);
+.sourcesPillFavicon:last-child {
+  margin-right: 0;
 }
 
-.inlineSourcesDropdown {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  min-width: 300px;
-  max-width: 380px;
-  max-height: 320px;
-  overflow-y: auto;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  z-index: 100;
-  animation: inlineSourcesIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+/* Sources side panel */
+.sourcesPanelOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.2);
+  animation: sourcesPanelOverlayIn 0.2s ease;
 }
 
-@keyframes inlineSourcesIn {
+[data-theme='dark'] .sourcesPanelOverlay {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+@keyframes sourcesPanelOverlayIn {
   from {
     opacity: 0;
-    transform: translateY(4px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
-.inlineSourceItem {
+.sourcesPanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 90vw;
+  background: var(--bg-primary);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  animation: sourcesPanelSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] .sourcesPanel {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes sourcesPanelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sourcesPanelHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 8px;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.sourcesPanelTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sourcesPanelClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sourcesPanelClose:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sourcesPanelList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sourcesPanelItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 10px;
   text-decoration: none;
   color: var(--text-primary);
   transition: background-color 0.15s ease;
 }
 
-.inlineSourceItem:hover {
+.sourcesPanelItem:hover {
   background-color: var(--bg-hover);
 }
 
-.inlineSourceNumber {
+.sourcesPanelItemIcon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
+  margin-top: 2px;
+}
+
+.sourcesPanelFavicon {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+}
+
+.sourcesPanelItemNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
   border-radius: 6px;
   background-color: var(--bg-hover);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--text-muted);
-  flex-shrink: 0;
 }
 
-.inlineSourceFavicon {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-
-.inlineSourceInfo {
+.sourcesPanelItemContent {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 3px;
   min-width: 0;
+  flex: 1;
 }
 
-.inlineSourceTitle {
-  font-size: 12.5px;
+.sourcesPanelItemSource {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.sourcesPanelItemTitle {
+  font-size: 13.5px;
   font-weight: 550;
   color: var(--text-primary);
-  white-space: nowrap;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.3;
 }
 
-.inlineSourceDomain {
-  font-size: 11px;
-  color: var(--text-muted);
-  line-height: 1.2;
+.sourcesPanelItemSnippet {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 1px;
+}
+
+@media (max-width: 600px) {
+  .sourcesPanel {
+    width: 100vw;
+    max-width: 100vw;
+  }
 }
 
 /* ===== Share Dropdown ===== */
@@ -7237,6 +7332,7 @@
 .citationRefWrapper {
   display: inline;
   position: relative;
+  vertical-align: baseline;
 }
 
 .citationRef {
@@ -7248,15 +7344,19 @@
   color: var(--text-muted);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  width: 18px;
-  height: 18px;
-  border-radius: 5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 4px;
   text-decoration: none;
   vertical-align: super;
   margin: 0 1px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   line-height: 1;
+  position: relative;
+  top: -1px;
+  box-sizing: border-box;
 }
 
 .citationRef:hover {
@@ -7275,10 +7375,21 @@
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
-  animation: linkTooltipIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: citationTooltipIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
   max-width: 320px;
   min-width: 180px;
+}
+
+@keyframes citationTooltipIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% + 4px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
 }
 
 [data-theme='dark'] .citationRefTooltip {
@@ -7335,12 +7446,15 @@
 
 /* ===== Feedback Panel (inline below action bar) ===== */
 .feedbackPanel {
+  flex-basis: 100%;
+  width: 100%;
   margin-top: 10px;
   padding: 12px 14px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   animation: feedbackPanelIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
 }
 
 @keyframes feedbackPanelIn {
