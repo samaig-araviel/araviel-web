@@ -151,11 +151,16 @@ function extractVideoInfo(url) {
   return null;
 }
 
+// Module-level citation context for renderInline to access during markdown rendering.
+// Set before renderMarkdown call, cleared after.
+let _activeCitations = null;
+
 /**
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  */
-function renderMarkdown(text, isStreaming = false) {
+function renderMarkdown(text, isStreaming = false, citations = null) {
+  _activeCitations = citations;
   if (!text) return null;
 
   const lines = text.split('\n');
@@ -1711,6 +1716,87 @@ function InlineLink({ href, children, variant = 'pill' }) {
 }
 
 /**
+ * Inline citation reference — superscript number that links to the source.
+ * Shows a rich tooltip on hover with favicon, title, domain, and snippet.
+ */
+function CitationRefInline({ num, citation }) {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const refEl = useRef(null);
+  const timerRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    timerRef.current = setTimeout(() => {
+      if (refEl.current) {
+        const rect = refEl.current.getBoundingClientRect();
+        setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
+      }
+      setShowTooltip(true);
+    }, 300);
+  };
+
+  const handleMouseLeave = () => {
+    clearTimeout(timerRef.current);
+    setShowTooltip(false);
+  };
+
+  let hostname = '';
+  let favicon = '';
+  try {
+    const url = new URL(citation.url);
+    hostname = url.hostname.replace(/^www\./, '');
+    favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+  } catch {
+    // skip
+  }
+
+  return (
+    <span className={styles.citationRefWrapper} ref={refEl}>
+      <a
+        href={citation.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={styles.citationRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {num}
+      </a>
+      {showTooltip &&
+        createPortal(
+          <span
+            className={styles.citationRefTooltip}
+            style={{
+              position: 'fixed',
+              left: tooltipPos.x,
+              top: tooltipPos.y - 8,
+              transform: 'translate(-50%, -100%)',
+            }}
+          >
+            <span className={styles.citationRefTooltipRow}>
+              {favicon && <img src={favicon} alt="" className={styles.citationRefFavicon} />}
+              <span className={styles.citationRefTooltipInfo}>
+                <span className={styles.citationRefTooltipTitle}>
+                  {citation.title || hostname || citation.url}
+                </span>
+                {hostname && <span className={styles.citationRefTooltipDomain}>{hostname}</span>}
+              </span>
+            </span>
+            {citation.snippet && (
+              <span className={styles.citationRefTooltipSnippet}>
+                {citation.snippet.length > 120
+                  ? citation.snippet.slice(0, 120) + '...'
+                  : citation.snippet}
+              </span>
+            )}
+          </span>,
+          document.body
+        )}
+    </span>
+  );
+}
+
+/**
  * Render inline markdown: bold, italic, inline code, links.
  */
 function renderInline(text) {
@@ -1817,6 +1903,20 @@ function renderInline(text) {
       );
       remaining = remaining.slice(match[0].length);
       continue;
+    }
+
+    // Citation reference [N] — convert to superscript link when citations exist
+    if (_activeCitations && _activeCitations.length > 0) {
+      match = remaining.match(/^\[(\d+)\]/);
+      if (match) {
+        const refNum = parseInt(match[1], 10);
+        const citation = _activeCitations[refNum - 1];
+        if (citation) {
+          parts.push(<CitationRefInline key={key++} num={refNum} citation={citation} />);
+          remaining = remaining.slice(match[0].length);
+          continue;
+        }
+      }
     }
 
     // Plain text up to next special char or URL start
@@ -2406,7 +2506,8 @@ function ErrorCard({ error, onRetry, onSessionExpired, userPrompt }) {
           Log in
         </button>
       ) : (
-        onRetry && userPrompt && (
+        onRetry &&
+        userPrompt && (
           <button className={styles.errorRetryBtn} onClick={() => onRetry(userPrompt)}>
             Try again
           </button>
@@ -3965,32 +4066,134 @@ function ResponseActions({
     }
   }, [onRetry, userPrompt]);
 
-  const handleLike = async () => {
-    const wasLiked = liked;
-    const newFeedback = wasLiked ? null : 'like';
-    setLiked(!wasLiked);
-    setDisliked(false);
+  const [feedbackPanel, setFeedbackPanel] = useState(null); // 'like' | 'dislike' | null
+  const [feedbackDetails, setFeedbackDetails] = useState([]);
+  const [feedbackComment, setFeedbackComment] = useState('');
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const feedbackPanelRef = useRef(null);
+
+  const LIKE_OPTIONS = [
+    'Clear and accurate',
+    'Well structured',
+    'Thorough research',
+    'Good sources',
+    'Easy to understand',
+  ];
+
+  const DISLIKE_OPTIONS = [
+    'Inaccurate info',
+    'Too vague',
+    'Missing sources',
+    'Poorly structured',
+    'Not relevant',
+  ];
+
+  useEffect(() => {
+    if (!feedbackPanel) return;
+    const handleClickOutside = (e) => {
+      if (feedbackPanelRef.current && !feedbackPanelRef.current.contains(e.target)) {
+        setFeedbackPanel(null);
+        setFeedbackDetails([]);
+        setFeedbackComment('');
+        setShowCommentInput(false);
+        setFeedbackSubmitted(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [feedbackPanel]);
+
+  const submitFeedbackWithDetails = async (type, details = [], comment = '') => {
     if (conversationId && message.id) {
       try {
-        await submitMessageFeedback(conversationId, message.id, newFeedback);
+        await submitMessageFeedback(
+          conversationId,
+          message.id,
+          type,
+          details.length > 0 ? details : undefined,
+          comment || undefined
+        );
       } catch {
-        setLiked(wasLiked);
+        // revert on failure
+        if (type === 'like') setLiked(false);
+        if (type === 'dislike') setDisliked(false);
       }
     }
   };
 
-  const handleDislike = async () => {
-    const wasDisliked = disliked;
-    const newFeedback = wasDisliked ? null : 'dislike';
-    setDisliked(!wasDisliked);
-    setLiked(false);
-    if (conversationId && message.id) {
-      try {
-        await submitMessageFeedback(conversationId, message.id, newFeedback);
-      } catch {
-        setDisliked(wasDisliked);
+  const handleLike = async () => {
+    if (liked) {
+      // Toggle off
+      setLiked(false);
+      setFeedbackPanel(null);
+      if (conversationId && message.id) {
+        try {
+          await submitMessageFeedback(conversationId, message.id, null);
+        } catch {
+          setLiked(true);
+        }
       }
+      return;
     }
+    setLiked(true);
+    setDisliked(false);
+    setFeedbackPanel('like');
+    setFeedbackDetails([]);
+    setFeedbackComment('');
+    setShowCommentInput(false);
+    setFeedbackSubmitted(false);
+    await submitFeedbackWithDetails('like');
+  };
+
+  const handleDislike = async () => {
+    if (disliked) {
+      setDisliked(false);
+      setFeedbackPanel(null);
+      if (conversationId && message.id) {
+        try {
+          await submitMessageFeedback(conversationId, message.id, null);
+        } catch {
+          setDisliked(true);
+        }
+      }
+      return;
+    }
+    setDisliked(true);
+    setLiked(false);
+    setFeedbackPanel('dislike');
+    setFeedbackDetails([]);
+    setFeedbackComment('');
+    setShowCommentInput(false);
+    setFeedbackSubmitted(false);
+    await submitFeedbackWithDetails('dislike');
+  };
+
+  const handleFeedbackDetailToggle = (detail) => {
+    setFeedbackDetails((prev) =>
+      prev.includes(detail) ? prev.filter((d) => d !== detail) : [...prev, detail]
+    );
+  };
+
+  const handleFeedbackDetailSubmit = async () => {
+    const type = feedbackPanel;
+    await submitFeedbackWithDetails(type, feedbackDetails, feedbackComment);
+    setFeedbackSubmitted(true);
+    setTimeout(() => {
+      setFeedbackPanel(null);
+      setFeedbackDetails([]);
+      setFeedbackComment('');
+      setShowCommentInput(false);
+      setFeedbackSubmitted(false);
+    }, 1200);
+  };
+
+  const handleFeedbackDismiss = () => {
+    setFeedbackPanel(null);
+    setFeedbackDetails([]);
+    setFeedbackComment('');
+    setShowCommentInput(false);
+    setFeedbackSubmitted(false);
   };
 
   const displayName = getProviderDisplayName();
@@ -4087,6 +4290,80 @@ function ResponseActions({
           )}
         </div>
       </div>
+
+      {feedbackPanel && (
+        <div className={styles.feedbackPanel} ref={feedbackPanelRef}>
+          {feedbackSubmitted ? (
+            <div className={styles.feedbackSubmittedMsg}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M11.5 4L5.5 10L2.5 7"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>Thanks for your feedback</span>
+            </div>
+          ) : (
+            <>
+              <div className={styles.feedbackPanelHeader}>
+                <span className={styles.feedbackPanelTitle}>
+                  {feedbackPanel === 'like' ? 'What did you like?' : 'What could be improved?'}
+                  <span className={styles.feedbackOptional}>(optional)</span>
+                </span>
+                <button className={styles.feedbackPanelClose} onClick={handleFeedbackDismiss}>
+                  <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className={styles.feedbackOptions}>
+                {(feedbackPanel === 'like' ? LIKE_OPTIONS : DISLIKE_OPTIONS).map((opt) => (
+                  <button
+                    key={opt}
+                    className={`${styles.feedbackOption} ${
+                      feedbackDetails.includes(opt) ? styles.feedbackOptionSelected : ''
+                    }`}
+                    onClick={() => handleFeedbackDetailToggle(opt)}
+                  >
+                    {opt}
+                  </button>
+                ))}
+                <button
+                  className={`${styles.feedbackOption} ${
+                    showCommentInput ? styles.feedbackOptionSelected : ''
+                  }`}
+                  onClick={() => setShowCommentInput(!showCommentInput)}
+                >
+                  Other...
+                </button>
+              </div>
+              {showCommentInput && (
+                <textarea
+                  className={styles.feedbackCommentInput}
+                  placeholder="Add specific details"
+                  value={feedbackComment}
+                  onChange={(e) => setFeedbackComment(e.target.value)}
+                  rows={2}
+                  autoFocus
+                />
+              )}
+              {(feedbackDetails.length > 0 || feedbackComment.trim()) && (
+                <button className={styles.feedbackSubmitBtn} onClick={handleFeedbackDetailSubmit}>
+                  Submit
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -4100,19 +4377,59 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
   const [customText, setCustomText] = useState('');
   const [isCustomActive, setIsCustomActive] = useState(false);
   const customInputRef = useRef(null);
-  const total = questions.length;
+  const autoAdvanceTimer = useRef(null);
+  const total = Math.min(questions.length, 5);
   const current = questions[currentIdx];
+
+  // Auto-advance: when an option is selected, move to next step after a short delay
+  const scheduleAutoAdvance = useCallback(
+    (idx) => {
+      clearTimeout(autoAdvanceTimer.current);
+      if (idx < total - 1) {
+        autoAdvanceTimer.current = setTimeout(() => {
+          setCurrentIdx((i) => i + 1);
+          setCustomText('');
+          setIsCustomActive(false);
+        }, 400);
+      }
+    },
+    [total]
+  );
+
+  useEffect(() => {
+    return () => clearTimeout(autoAdvanceTimer.current);
+  }, []);
 
   const handleSelectOption = useCallback(
     (option) => {
+      clearTimeout(autoAdvanceTimer.current);
       setIsCustomActive(false);
       setCustomText('');
-      setAnswers((prev) => ({ ...prev, [currentIdx]: option }));
+      setAnswers((prev) => {
+        const existing = prev[currentIdx];
+        // Multi-select: toggle option in the set
+        if (Array.isArray(existing)) {
+          const updated = existing.includes(option)
+            ? existing.filter((o) => o !== option)
+            : [...existing, option];
+          return { ...prev, [currentIdx]: updated.length > 0 ? updated : undefined };
+        }
+        return { ...prev, [currentIdx]: [option] };
+      });
+      // Auto-advance only on first selection for this question
+      setAnswers((prev) => {
+        const val = prev[currentIdx];
+        if (Array.isArray(val) && val.length === 1) {
+          scheduleAutoAdvance(currentIdx);
+        }
+        return prev;
+      });
     },
-    [currentIdx]
+    [currentIdx, scheduleAutoAdvance]
   );
 
   const handleCustomFocus = useCallback(() => {
+    clearTimeout(autoAdvanceTimer.current);
     setIsCustomActive(true);
     setAnswers((prev) => {
       const next = { ...prev };
@@ -4138,7 +4455,13 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
     [currentIdx]
   );
 
+  const formatAnswer = (answer) => {
+    if (Array.isArray(answer)) return answer.join(', ');
+    return answer;
+  };
+
   const handleNext = useCallback(() => {
+    clearTimeout(autoAdvanceTimer.current);
     if (currentIdx < total - 1) {
       setCurrentIdx((i) => i + 1);
       setCustomText('');
@@ -4146,7 +4469,8 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
     } else {
       // Last question — bundle and send
       const pairs = questions
-        .map((q, i) => (answers[i] ? `Q: ${q.question}\nA: ${answers[i]}` : null))
+        .slice(0, 5)
+        .map((q, i) => (answers[i] ? `Q: ${q.question}\nA: ${formatAnswer(answers[i])}` : null))
         .filter(Boolean);
       if (pairs.length > 0) {
         onComplete(pairs.join('\n\n'));
@@ -4155,6 +4479,7 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
   }, [currentIdx, total, questions, answers, onComplete]);
 
   const handlePrev = useCallback(() => {
+    clearTimeout(autoAdvanceTimer.current);
     if (currentIdx > 0) {
       setCurrentIdx((i) => i - 1);
       setCustomText('');
@@ -4163,6 +4488,7 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
   }, [currentIdx]);
 
   const handleSkip = useCallback(() => {
+    clearTimeout(autoAdvanceTimer.current);
     if (currentIdx < total - 1) {
       setCurrentIdx((i) => i + 1);
       setCustomText('');
@@ -4170,7 +4496,8 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
     } else {
       // Skip last question — submit whatever we have
       const pairs = questions
-        .map((q, i) => (answers[i] ? `Q: ${q.question}\nA: ${answers[i]}` : null))
+        .slice(0, 5)
+        .map((q, i) => (answers[i] ? `Q: ${q.question}\nA: ${formatAnswer(answers[i])}` : null))
         .filter(Boolean);
       if (pairs.length > 0) {
         onComplete(pairs.join('\n\n'));
@@ -4195,7 +4522,9 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
 
   const selectedAnswer = answers[currentIdx];
   const isLastQuestion = currentIdx === total - 1;
-  const hasAnswer = !!selectedAnswer;
+  const hasAnswer = Array.isArray(selectedAnswer) ? selectedAnswer.length > 0 : !!selectedAnswer;
+  const isOptionSelected = (option) =>
+    !isCustomActive && Array.isArray(selectedAnswer) && selectedAnswer.includes(option);
 
   if (!current) return null;
 
@@ -4227,13 +4556,13 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
           <button
             key={idx}
             className={`${styles.questionOption} ${
-              selectedAnswer === option && !isCustomActive ? styles.questionOptionSelected : ''
+              isOptionSelected(option) ? styles.questionOptionSelected : ''
             }`}
             onClick={() => handleSelectOption(option)}
           >
             <span className={styles.questionOptionNumber}>{idx + 1}</span>
             <span className={styles.questionOptionLabel}>{option}</span>
-            {selectedAnswer === option && !isCustomActive && (
+            {isOptionSelected(option) && (
               <svg
                 className={styles.questionOptionCheck}
                 width="14"
@@ -4442,7 +4771,16 @@ function ThinkingBlock({
             isExpanded ? styles.thinkingToggleIconOpen : ''
           }`}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </span>
@@ -4451,7 +4789,6 @@ function ThinkingBlock({
 
       {/* Expandable timeline — CSS-controlled for smooth transitions */}
       <div className={`${styles.thinkingDetails} ${isExpanded ? styles.thinkingDetailsOpen : ''}`}>
-
         {/* Stage: Routed to optimal model */}
         <div className={styles.thinkingStage}>
           <div className={styles.thinkingDotLine}>
@@ -4489,7 +4826,16 @@ function ThinkingBlock({
                     showWebSources ? styles.thinkingStageChevronOpen : ''
                   }`}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </span>
@@ -4578,7 +4924,16 @@ function ThinkingBlock({
                     showThinkingContent ? styles.thinkingStageChevronOpen : ''
                   }`}
                 >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </span>
@@ -4592,10 +4947,7 @@ function ThinkingBlock({
                   showThinkingContent ? styles.thinkingContentWrapOpen : ''
                 }`}
               >
-                <div
-                  ref={thinkingContentRef}
-                  className={styles.thinkingContentText}
-                >
+                <div ref={thinkingContentRef} className={styles.thinkingContentText}>
                   {thinkingContent}
                 </div>
                 {isThinkingLong && (
@@ -5146,7 +5498,7 @@ function Message({
   // Follow-ups and questions are AI-generated and provided by the backend.
   const followUps = useMemo(() => {
     if (!isUser && isLastAssistant && !isStreaming && message.followUps?.length > 0) {
-      return message.followUps.slice(0, 3);
+      return message.followUps.slice(0, 5);
     }
     return [];
   }, [isUser, isLastAssistant, isStreaming, message.followUps]);
@@ -5245,7 +5597,8 @@ function Message({
               message.generatedImages && message.generatedImages.length > 0
                 ? displayText.replace(/^!\[Generated image[^\]]*\]\([^)]+\)\s*$/gm, '').trim()
                 : displayText,
-              isStreaming
+              isStreaming,
+              message.citations || message.sources
             )}
             {isStreaming && <span className={styles.cursor} />}
           </div>
@@ -5283,7 +5636,12 @@ function Message({
 
       {/* Error card */}
       {!isUser && message.error && (
-        <ErrorCard error={message.error} onRetry={onRetry} onSessionExpired={onSessionExpired} userPrompt={userPrompt} />
+        <ErrorCard
+          error={message.error}
+          onRetry={onRetry}
+          onSessionExpired={onSessionExpired}
+          userPrompt={userPrompt}
+        />
       )}
 
       {/* Stream timeout notice */}
