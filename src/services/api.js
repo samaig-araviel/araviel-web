@@ -87,6 +87,11 @@ export async function sendMessage(payload) {
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
+    if (res.status === 401) {
+      const err = new Error('Your session has expired. Please log in to continue.');
+      err.code = 'AUTH_EXPIRED';
+      throw err;
+    }
     throw new Error(`Chat request failed (${res.status}): ${text}`);
   }
 

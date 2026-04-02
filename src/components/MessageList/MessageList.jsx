@@ -2364,10 +2364,11 @@ function WebSearchBadgeWithSources({ isAutoDetected, citations }) {
 /**
  * Error card displayed inline below messages.
  */
-function ErrorCard({ error, onRetry, userPrompt }) {
+function ErrorCard({ error, onRetry, onSessionExpired, userPrompt }) {
   if (!error) return null;
 
   const isFatal = error.code !== 'PROVIDER_RETRY';
+  const isAuthExpired = error.code === 'AUTH_EXPIRED';
 
   if (!isFatal) {
     return (
@@ -2380,7 +2381,11 @@ function ErrorCard({ error, onRetry, userPrompt }) {
   return (
     <div className={styles.errorCard}>
       <div className={styles.errorCardContent}>
-        <span className={styles.errorCardMessage}>{error.message || 'Something went wrong'}</span>
+        <span className={styles.errorCardMessage}>
+          {isAuthExpired
+            ? 'Your session has expired. Please log in to continue.'
+            : error.message || 'Something went wrong'}
+        </span>
         {error.suggestedPlatforms && error.suggestedPlatforms.length > 0 && (
           <div className={styles.errorSuggestedPlatforms}>
             {error.suggestedPlatforms.map((platform, idx) => (
@@ -2391,10 +2396,16 @@ function ErrorCard({ error, onRetry, userPrompt }) {
           </div>
         )}
       </div>
-      {onRetry && userPrompt && (
-        <button className={styles.errorRetryBtn} onClick={() => onRetry(userPrompt)}>
-          Try again
+      {isAuthExpired && onSessionExpired ? (
+        <button className={styles.errorRetryBtn} onClick={onSessionExpired}>
+          Log in
         </button>
+      ) : (
+        onRetry && userPrompt && (
+          <button className={styles.errorRetryBtn} onClick={() => onRetry(userPrompt)}>
+            Try again
+          </button>
+        )
       )}
     </div>
   );
@@ -4705,6 +4716,7 @@ function Message({
   onFollowUpSelect,
   onQuestionsSend,
   onRetry,
+  onSessionExpired,
   onAlternateModelRequest,
   userPrompt,
   onSubConvPanelToggle,
@@ -5263,7 +5275,7 @@ function Message({
 
       {/* Error card */}
       {!isUser && message.error && (
-        <ErrorCard error={message.error} onRetry={onRetry} userPrompt={userPrompt} />
+        <ErrorCard error={message.error} onRetry={onRetry} onSessionExpired={onSessionExpired} userPrompt={userPrompt} />
       )}
 
       {/* Stream timeout notice */}
@@ -5358,6 +5370,7 @@ export default function MessageList({
   isStreaming,
   streamedText,
   onRetry,
+  onSessionExpired,
   onAlternateModelRequest,
   onSubConvPanelToggle,
   onCodePanelToggle,
@@ -5587,6 +5600,7 @@ export default function MessageList({
                 onFollowUpSelect={handleFollowUpSelect}
                 onQuestionsSend={handleQuestionsSend}
                 onRetry={onRetry}
+                onSessionExpired={onSessionExpired}
                 onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}
                 onSubConvPanelToggle={onSubConvPanelToggle}
