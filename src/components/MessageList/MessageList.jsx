@@ -2373,7 +2373,12 @@ function ErrorCard({ error, onRetry, onSessionExpired, userPrompt }) {
   if (!isFatal) {
     return (
       <div className={styles.providerRetryNotice}>
-        <span>Switching to backup model...</span>
+        <span className={styles.providerRetryLabel}>
+          {error.fromModel || 'Unknown'} → {error.toModel || 'Unknown'}
+        </span>
+        <span className={styles.providerRetryReason}>
+          {error.reason || 'Retrying with a different model'}
+        </span>
       </div>
     );
   }
@@ -5213,7 +5218,10 @@ function Message({
       {/* Provider retry notice */}
       {!isUser && message.providerRetry && isStreaming && (
         <div className={styles.providerRetryNotice}>
-          <span>Switching to backup model...</span>
+          <span className={styles.providerRetryLabel}>
+            {message.providerRetry.fromModel} → {message.providerRetry.toModel}
+          </span>
+          <span className={styles.providerRetryReason}>{message.providerRetry.reason}</span>
         </div>
       )}
 
