@@ -4386,9 +4386,9 @@ function ThinkingBlock({
   webSearchUsed,
   webSearchSources,
 }) {
-  const [isExpanded, setIsExpanded] = useState(!!thinkingContent);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [showWebSources, setShowWebSources] = useState(false);
-  const [showFullThinking, setShowFullThinking] = useState(false);
+  const [showThinkingContent, setShowThinkingContent] = useState(false);
   const [isThinkingLong, setIsThinkingLong] = useState(false);
   const thinkingContentRef = useRef(null);
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -4400,7 +4400,7 @@ function ThinkingBlock({
     if (thinkingContentRef.current) {
       setIsThinkingLong(thinkingContentRef.current.scrollHeight > THINKING_COLLAPSE_HEIGHT);
     }
-  }, [thinkingContent]);
+  }, [thinkingContent, showThinkingContent]);
 
   if (!thinkingData && !thinkingContent) return null;
 
@@ -4415,6 +4415,7 @@ function ThinkingBlock({
 
   return (
     <div className={styles.thinkingBlock}>
+      {/* Top-level toggle — "Thought for Xs" */}
       <button
         className={styles.thinkingToggle}
         onClick={() => setIsExpanded(!isExpanded)}
@@ -4425,25 +4426,17 @@ function ThinkingBlock({
             isExpanded ? styles.thinkingToggleIconOpen : ''
           }`}
         >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="9 18 15 12 9 6" />
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
           </svg>
         </span>
         <span className={styles.thinkingToggleLabel}>{summaryLabel}</span>
       </button>
 
-      {/* Always in DOM, CSS-controlled expand/collapse for smooth transitions */}
+      {/* Expandable timeline — CSS-controlled for smooth transitions */}
       <div className={`${styles.thinkingDetails} ${isExpanded ? styles.thinkingDetailsOpen : ''}`}>
-        {/* Stage 1: Routing */}
+
+        {/* Stage: Routed to optimal model */}
         <div className={styles.thinkingStage}>
           <div className={styles.thinkingDotLine}>
             <span className={styles.thinkingStageDotComplete} />
@@ -4455,14 +4448,14 @@ function ThinkingBlock({
           </div>
         </div>
 
-        {/* Stage 2: Web search (if used) */}
+        {/* Stage: Searched the web (conditional, expandable) */}
         {webSearchUsed && (
           <div className={styles.thinkingStage}>
             <div className={styles.thinkingDotLine}>
               <span className={styles.thinkingStageDotComplete} />
               <span className={styles.thinkingVerticalLine} />
             </div>
-            <div className={styles.thinkingStageContent}>
+            <div className={styles.thinkingStageContentCol}>
               <button
                 className={styles.thinkingStageWebSearch}
                 onClick={(e) => {
@@ -4480,65 +4473,56 @@ function ThinkingBlock({
                     showWebSources ? styles.thinkingStageChevronOpen : ''
                   }`}
                 >
-                  <svg
-                    width="11"
-                    height="11"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="9 18 15 12 9 6" />
                   </svg>
                 </span>
               </button>
+
+              {/* Web sources — collapsible under the stage */}
+              <div
+                className={`${styles.thinkingWebSources} ${
+                  showWebSources ? styles.thinkingWebSourcesOpen : ''
+                }`}
+              >
+                {webSearchSources &&
+                  webSearchSources.length > 0 &&
+                  webSearchSources.map((source, idx) => {
+                    let hostname = '';
+                    let favicon = '';
+                    try {
+                      const url = new URL(source.url);
+                      hostname = url.hostname.replace(/^www\./, '');
+                      favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
+                    } catch {
+                      /* ignore */
+                    }
+                    return (
+                      <a
+                        key={idx}
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={styles.thinkingWebSourceItem}
+                      >
+                        {favicon && (
+                          <img src={favicon} alt="" className={styles.thinkingWebSourceFavicon} />
+                        )}
+                        <span className={styles.thinkingWebSourceTitle}>
+                          {source.title || hostname}
+                        </span>
+                        {hostname && (
+                          <span className={styles.thinkingWebSourceDomain}>{hostname}</span>
+                        )}
+                      </a>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Web search sources — scrollable when >6 items */}
-        {webSearchUsed && (
-          <div
-            className={`${styles.thinkingWebSources} ${
-              showWebSources ? styles.thinkingWebSourcesOpen : ''
-            }`}
-          >
-            {webSearchSources &&
-              webSearchSources.length > 0 &&
-              webSearchSources.map((source, idx) => {
-                let hostname = '';
-                let favicon = '';
-                try {
-                  const url = new URL(source.url);
-                  hostname = url.hostname.replace(/^www\./, '');
-                  favicon = `https://www.google.com/s2/favicons?domain=${hostname}&sz=16`;
-                } catch {
-                  /* ignore */
-                }
-                return (
-                  <a
-                    key={idx}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.thinkingWebSourceItem}
-                  >
-                    {favicon && (
-                      <img src={favicon} alt="" className={styles.thinkingWebSourceFavicon} />
-                    )}
-                    <span className={styles.thinkingWebSourceTitle}>
-                      {source.title || hostname}
-                    </span>
-                    {hostname && <span className={styles.thinkingWebSourceDomain}>{hostname}</span>}
-                  </a>
-                );
-              })}
-          </div>
-        )}
-
-        {/* Stage 3: Thinking — clock icon */}
+        {/* Stage: Thought with [Model] (expandable thinking content) */}
         <div className={styles.thinkingStage}>
           <div className={styles.thinkingDotLine}>
             <span className={styles.thinkingStageIcon}>
@@ -4546,58 +4530,72 @@ function ThinkingBlock({
             </span>
             <span className={styles.thinkingVerticalLine} />
           </div>
-          <div className={styles.thinkingStageContent}>
-            <span className={styles.thinkingStageLabel}>
-              Thought with{' '}
-              {providerData && LogoComponent ? (
+          <div className={styles.thinkingStageContentCol}>
+            <button
+              className={styles.thinkingStageExpandBtn}
+              onClick={() => thinkingContent && setShowThinkingContent(!showThinkingContent)}
+              style={thinkingContent ? {} : { cursor: 'default' }}
+            >
+              <span className={styles.thinkingStageLabel}>
+                Thought with{' '}
+                {providerData && LogoComponent ? (
+                  <span
+                    className={styles.thinkingModelBadge}
+                    style={{
+                      backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
+                      color: isDark
+                        ? providerData.accentTextDark || providerData.accentColor
+                        : providerData.accentText,
+                    }}
+                  >
+                    <LogoComponent size={11} />
+                    {modelName}
+                  </span>
+                ) : (
+                  modelName
+                )}
+              </span>
+              <span className={styles.thinkingStageDuration}>{thinkingDuration}s</span>
+              {thinkingContent && (
                 <span
-                  className={styles.thinkingModelBadge}
-                  style={{
-                    backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
-                    color: isDark
-                      ? providerData.accentTextDark || providerData.accentColor
-                      : providerData.accentText,
-                  }}
+                  className={`${styles.thinkingStageChevron} ${
+                    showThinkingContent ? styles.thinkingStageChevronOpen : ''
+                  }`}
                 >
-                  <LogoComponent size={11} />
-                  {modelName}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
                 </span>
-              ) : (
-                modelName
               )}
-            </span>
-            <span className={styles.thinkingStageDuration}>{thinkingDuration}s</span>
+            </button>
+
+            {/* Thinking content — collapsible under the stage */}
+            {thinkingContent && (
+              <div
+                className={`${styles.thinkingContentWrap} ${
+                  showThinkingContent ? styles.thinkingContentWrapOpen : ''
+                }`}
+              >
+                <div
+                  ref={thinkingContentRef}
+                  className={styles.thinkingContentText}
+                >
+                  {thinkingContent}
+                </div>
+                {isThinkingLong && (
+                  <button
+                    className={styles.thinkingShowMoreBtn}
+                    onClick={() => setShowThinkingContent(false)}
+                  >
+                    Show less
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Thinking content — flowing text with show more/less */}
-        {thinkingContent && (
-          <div className={styles.thinkingContentBlock}>
-            <div
-              ref={thinkingContentRef}
-              className={`${styles.thinkingContentText} ${
-                !showFullThinking && isThinkingLong ? styles.thinkingContentCollapsed : ''
-              }`}
-              style={
-                !showFullThinking && isThinkingLong
-                  ? { maxHeight: `${THINKING_COLLAPSE_HEIGHT}px` }
-                  : {}
-              }
-            >
-              {thinkingContent}
-            </div>
-            {isThinkingLong && (
-              <button
-                className={styles.thinkingShowMoreBtn}
-                onClick={() => setShowFullThinking(!showFullThinking)}
-              >
-                {showFullThinking ? 'Show less' : 'Show more'}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Stage 4: Done — checkmark icon */}
+        {/* Stage: Done */}
         <div className={`${styles.thinkingStage} ${styles.thinkingStageLast}`}>
           <div className={styles.thinkingDotLine}>
             <span className={styles.thinkingStageIcon}>
