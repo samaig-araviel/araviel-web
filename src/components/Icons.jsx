@@ -808,10 +808,10 @@ export const StarIcon = ({ filled }) => (
   </svg>
 );
 
-export const CheckCircleIcon = () => (
+export const CheckCircleIcon = ({ size = 14 }) => (
   <svg
-    width="14"
-    height="14"
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
