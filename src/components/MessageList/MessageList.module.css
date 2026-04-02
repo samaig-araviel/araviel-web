@@ -6323,18 +6323,39 @@
 .providerRetryNotice {
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 6px 12px;
   margin-bottom: 8px;
-  border-radius: 8px;
-  background-color: #fef3cd;
+  border-radius: 6px;
+  border-left: 3px solid var(--accent-color, #d97706);
+  background-color: var(--bg-secondary, #f7f0e6);
   font-size: 12px;
-  color: #856404;
+  color: var(--text-secondary, #6e6354);
   animation: messageFadeIn 0.3s ease;
 }
 
 [data-theme='dark'] .providerRetryNotice {
-  background-color: rgba(255, 193, 7, 0.12);
-  color: #ffc107;
+  background-color: rgba(217, 119, 6, 0.06);
+  border-left-color: var(--accent-color, #d97706);
+  color: var(--text-secondary, #a8a4a0);
+}
+
+.providerRetryLabel {
+  font-weight: 600;
+  color: var(--text-primary, #3d3528);
+  white-space: nowrap;
+}
+
+[data-theme='dark'] .providerRetryLabel {
+  color: var(--text-primary, #e8e4dd);
+}
+
+.providerRetryReason {
+  color: var(--text-secondary, #6e6354);
+}
+
+[data-theme='dark'] .providerRetryReason {
+  color: var(--text-secondary, #a8a4a0);
 }
 
 /* ===== Error Card ===== */

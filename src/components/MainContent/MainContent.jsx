@@ -1372,7 +1372,13 @@ export default function MainContent() {
               if (data.code === 'PROVIDER_RETRY') {
                 // Non-fatal — show a brief notification but keep listening
                 if (assistantMsgAdded) {
-                  dispatch(updateLastMessage({ providerRetry: true }));
+                  dispatch(updateLastMessage({
+                    providerRetry: {
+                      fromModel: data.fromModel || 'Unknown',
+                      toModel: data.toModel || 'Unknown',
+                      reason: data.reason || 'Retrying with a different model',
+                    },
+                  }));
                 }
               } else if (data.code === 'MONTHLY_CREDITS_EXHAUSTED') {
                 dispatch(setIsProcessing(false));
