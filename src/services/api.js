@@ -270,20 +270,25 @@ export async function reportConversation(conversationId, reason, details) {
 }
 
 /**
- * Submit feedback (like/dislike) for a message.
+ * Submit feedback (like/dislike) for a message with optional details.
  * @param {string} conversationId
  * @param {string} messageId
  * @param {"like" | "dislike" | null} feedback - null to remove feedback
+ * @param {string[]} [details] - optional selected feedback tags
+ * @param {string} [comment] - optional free-text comment
  * @returns {Promise<{ success: boolean, feedback: string | null }>}
  */
-export async function submitMessageFeedback(conversationId, messageId, feedback) {
+export async function submitMessageFeedback(conversationId, messageId, feedback, details, comment) {
   const headers = await getAuthHeaders();
+  const body = { feedback };
+  if (details) body.details = details;
+  if (comment) body.comment = comment;
   const res = await fetch(
     `${API_BASE}/api/conversations/${conversationId}/messages/${messageId}/feedback`,
     {
       method: 'POST',
       headers,
-      body: JSON.stringify({ feedback }),
+      body: JSON.stringify(body),
     }
   );
   if (!res.ok) throw new Error(`Failed to submit feedback: ${res.status}`);
