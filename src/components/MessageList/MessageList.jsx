@@ -36,6 +36,8 @@ import {
   CloseIcon,
   ZapIcon,
   GlobeIcon,
+  ClockIcon,
+  CheckCircleIcon,
   InfoIcon,
   MaximizeIcon,
   CodeIcon,
@@ -4386,8 +4388,19 @@ function ThinkingBlock({
 }) {
   const [isExpanded, setIsExpanded] = useState(!!thinkingContent);
   const [showWebSources, setShowWebSources] = useState(false);
+  const [showFullThinking, setShowFullThinking] = useState(false);
+  const [isThinkingLong, setIsThinkingLong] = useState(false);
+  const thinkingContentRef = useRef(null);
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const isDark = effectiveTheme === 'dark';
+
+  const THINKING_COLLAPSE_HEIGHT = 200;
+
+  useEffect(() => {
+    if (thinkingContentRef.current) {
+      setIsThinkingLong(thinkingContentRef.current.scrollHeight > THINKING_COLLAPSE_HEIGHT);
+    }
+  }, [thinkingContent]);
 
   if (!thinkingData && !thinkingContent) return null;
 
@@ -4525,10 +4538,12 @@ function ThinkingBlock({
           </div>
         )}
 
-        {/* Stage 3: Thinking */}
+        {/* Stage 3: Thinking — clock icon */}
         <div className={styles.thinkingStage}>
           <div className={styles.thinkingDotLine}>
-            <span className={styles.thinkingStageDotComplete} />
+            <span className={styles.thinkingStageIcon}>
+              <ClockIcon size={14} />
+            </span>
             <span className={styles.thinkingVerticalLine} />
           </div>
           <div className={styles.thinkingStageContent}>
@@ -4555,17 +4570,39 @@ function ThinkingBlock({
           </div>
         </div>
 
-        {/* Real thinking content from the AI */}
+        {/* Thinking content — flowing text with show more/less */}
         {thinkingContent && (
           <div className={styles.thinkingContentBlock}>
-            <div className={styles.thinkingContentText}>{thinkingContent}</div>
+            <div
+              ref={thinkingContentRef}
+              className={`${styles.thinkingContentText} ${
+                !showFullThinking && isThinkingLong ? styles.thinkingContentCollapsed : ''
+              }`}
+              style={
+                !showFullThinking && isThinkingLong
+                  ? { maxHeight: `${THINKING_COLLAPSE_HEIGHT}px` }
+                  : {}
+              }
+            >
+              {thinkingContent}
+            </div>
+            {isThinkingLong && (
+              <button
+                className={styles.thinkingShowMoreBtn}
+                onClick={() => setShowFullThinking(!showFullThinking)}
+              >
+                {showFullThinking ? 'Show less' : 'Show more'}
+              </button>
+            )}
           </div>
         )}
 
-        {/* Stage 4: Done */}
+        {/* Stage 4: Done — checkmark icon */}
         <div className={`${styles.thinkingStage} ${styles.thinkingStageLast}`}>
           <div className={styles.thinkingDotLine}>
-            <span className={styles.thinkingStageDotComplete} />
+            <span className={styles.thinkingStageIcon}>
+              <CheckCircleIcon />
+            </span>
           </div>
           <div className={styles.thinkingStageContent}>
             <span className={styles.thinkingStageLabel}>Done</span>
