@@ -808,10 +808,10 @@ export const StarIcon = ({ filled }) => (
   </svg>
 );
 
-export const CheckCircleIcon = () => (
+export const CheckCircleIcon = ({ size = 14 }) => (
   <svg
-    width="14"
-    height="14"
+    width={size}
+    height={size}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -1453,5 +1453,21 @@ export const UpgradePlanIcon = () => (
     <circle cx="12" cy="12" r="10" />
     <polyline points="16 12 12 8 8 12" />
     <line x1="12" y1="16" x2="12" y2="8" />
+  </svg>
+);
+
+export const ClockIcon = ({ size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
   </svg>
 );

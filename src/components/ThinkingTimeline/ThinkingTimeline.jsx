@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { getProviderLogo } from '../getProviderLogo';
+import { ClockIcon, CheckCircleIcon } from '../Icons';
 import { PROVIDERS } from '../../data/models';
 import styles from './ThinkingTimeline.module.css';
 
@@ -25,7 +26,6 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
   const [totalElapsed, setTotalElapsed] = useState('0.0');
   const startTimeRef = useRef(Date.now());
   const timerRef = useRef(null);
-  const thinkingContentRef = useRef(null);
 
   // Live elapsed timer
   useEffect(() => {
@@ -58,14 +58,6 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
       return () => clearTimeout(timeout);
     }
   }, [fading]);
-
-  // Auto-scroll thinking content to bottom
-  useEffect(() => {
-    if (thinkingContentRef.current && thinkingContent) {
-      const el = thinkingContentRef.current;
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [thinkingContent]);
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -113,10 +105,16 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
 
             return (
               <div key={index} className={styles.stage}>
-                {/* Dot + dashed line column */}
+                {/* Icon/dot + dashed line column */}
                 <div className={styles.dotLineCol}>
                   {isComplete ? (
-                    <span className={styles.dotComplete} />
+                    <span className={styles.stageIcon}>
+                      <CheckCircleIcon size={12} />
+                    </span>
+                  ) : isActive && isThinkingStage ? (
+                    <span className={`${styles.stageIcon} ${styles.stageIconActive}`}>
+                      <ClockIcon size={12} />
+                    </span>
                   ) : isActive ? (
                     <span className={styles.dotActive} />
                   ) : (
@@ -164,7 +162,7 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
                   {/* Stream thinking content under the thinking stage */}
                   {isThinkingStage && (isActive || isComplete) && thinkingContent && (
                     <div className={styles.thinkingContentBlock}>
-                      <div className={styles.thinkingContentText} ref={thinkingContentRef}>
+                      <div className={styles.thinkingContentText}>
                         {thinkingContent}
                       </div>
                     </div>
