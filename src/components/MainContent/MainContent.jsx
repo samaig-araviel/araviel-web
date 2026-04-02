@@ -315,7 +315,41 @@ const CLOUD_PROVIDERS = [
 // promptsData and quickPromptKeys imported from ../../utils/quickPromptsData
 
 // Timeline stage factory
-function createStages(status, modelName, isManualSelection) {
+function createStages(status, modelName, isManualSelection, researchProgress) {
+  // Deep research uses a different stage set with live search activity
+  if (researchProgress) {
+    const rp = researchProgress;
+    const stages = [
+      {
+        label: isManualSelection ? 'Using selected model...' : 'Routing to optimal model...',
+        status: 'complete',
+        showModel: false,
+      },
+      {
+        label: rp.statusLabel || 'Researching...',
+        status: 'pending',
+        showModel: true,
+        isResearch: true,
+      },
+      { label: 'Finishing up...', status: 'pending', showModel: false },
+    ];
+
+    if (status === 'researching') {
+      stages[1].status = 'active';
+    } else if (status === 'thinking') {
+      stages[1].status = 'complete';
+      stages[2].status = 'active';
+    } else if (status === 'writing') {
+      stages[1].status = 'complete';
+      stages[2].status = 'active';
+    } else if (status === 'complete') {
+      stages[1].status = 'complete';
+      stages[2].status = 'complete';
+    }
+
+    return stages;
+  }
+
   const stages = [
     {
       label: isManualSelection ? 'Using selected model...' : 'Routing to optimal model...',
@@ -899,7 +933,8 @@ export default function MainContent() {
   }, [showProjectPicker, showProjectCreate]);
 
   // Streaming / timeline state
-  const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | thinking | writing | complete
+  const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | researching | thinking | writing | complete
+  const [researchProgress, setResearchProgress] = useState(null); // { status, sources, actions, statusLabel }
   const [routeResult, setRouteResult] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedText, setStreamedText] = useState('');
@@ -1176,7 +1211,40 @@ export default function MainContent() {
               };
               dispatch(addMessage(assistantMsg));
               assistantMsgAdded = true;
+            } else if (type === 'research_status') {
+              // Deep research progress — update the researching pipeline phase
+              const statusMap = {
+                queued: 'Starting research...',
+                planning: 'Planning research...',
+                researching: data.sources > 0
+                  ? `Searching the web (${data.sources} source${data.sources !== 1 ? 's' : ''})...`
+                  : 'Searching the web...',
+                synthesizing: 'Synthesizing findings...',
+              };
+              const statusLabel = statusMap[data.status] || 'Researching...';
+              setResearchProgress({
+                status: data.status,
+                sources: data.sources || 0,
+                actions: data.actions || [],
+                statusLabel,
+              });
+              setPipelineStatus('researching');
+              // Feed search actions into thinking content so they show in the timeline
+              if (data.actions && data.actions.length > 0) {
+                const latestAction = data.actions[data.actions.length - 1];
+                if (latestAction.query) {
+                  accumulatedThinking = (data.actions || [])
+                    .filter((a) => a.query)
+                    .map((a) => `Searching: ${a.query}`)
+                    .join('\n');
+                  if (assistantMsgAdded) {
+                    dispatch(updateLastMessage({ thinkingContent: accumulatedThinking }));
+                  }
+                }
+              }
             } else if (type === 'thinking') {
+              // Transition to thinking phase (handles both normal and post-research flows)
+              setPipelineStatus('thinking');
               accumulatedThinking += data.content || '';
               if (assistantMsgAdded) {
                 dispatch(updateLastMessage({ thinkingContent: accumulatedThinking }));
@@ -1437,6 +1505,7 @@ export default function MainContent() {
         setPipelineStatus('idle');
         setRouteResult(null);
         setStreamedText('');
+        setResearchProgress(null);
       }, 600);
     },
     [
@@ -1972,7 +2041,7 @@ export default function MainContent() {
   // Build timeline stages
   const timelineStages =
     pipelineStatus !== 'idle'
-      ? createStages(pipelineStatus, routeResult ? routeResult.modelName : null, isManualRequest)
+      ? createStages(pipelineStatus, routeResult ? routeResult.modelName : null, isManualRequest, researchProgress)
       : null;
 
   return (

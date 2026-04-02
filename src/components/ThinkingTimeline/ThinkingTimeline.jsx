@@ -68,9 +68,10 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
 
   // Determine summary label
   const allComplete = stages.every((s) => s.status === 'complete');
+  const hasResearchStage = stages.some((s) => s.isResearch);
   const summaryLabel = allComplete
-    ? `Thought for ${totalElapsed}s`
-    : `Thinking for ${totalElapsed}s`;
+    ? hasResearchStage ? `Researched for ${totalElapsed}s` : `Thought for ${totalElapsed}s`
+    : hasResearchStage ? `Researching for ${totalElapsed}s` : `Thinking for ${totalElapsed}s`;
 
   return (
     <div className={`${styles.timeline} ${fading ? styles.fading : ''}`}>
@@ -101,7 +102,7 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
             const isComplete = stage.status === 'complete';
             const isPending = stage.status === 'pending';
             const isLast = index === stages.length - 1;
-            const isThinkingStage = stage.showModel;
+            const isThinkingStage = stage.showModel || stage.isResearch;
 
             return (
               <div key={index} className={styles.stage}>
@@ -159,8 +160,8 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
                     )}
                   </div>
 
-                  {/* Stream thinking content under the thinking stage */}
-                  {isThinkingStage && (isActive || isComplete) && thinkingContent && (
+                  {/* Stream thinking/research content under the relevant stage */}
+                  {(isThinkingStage || stage.isResearch) && (isActive || isComplete) && thinkingContent && (
                     <div className={styles.thinkingContentBlock}>
                       <div className={styles.thinkingContentText}>
                         {thinkingContent}
