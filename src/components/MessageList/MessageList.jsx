@@ -1725,20 +1725,26 @@ function CitationRefInline({ num, citation }) {
   const refEl = useRef(null);
   const timerRef = useRef(null);
 
-  const handleMouseEnter = () => {
+  const updatePosition = useCallback(() => {
+    if (refEl.current) {
+      const rect = refEl.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
+    }
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    // Pre-calculate position immediately to avoid jump
+    updatePosition();
     timerRef.current = setTimeout(() => {
-      if (refEl.current) {
-        const rect = refEl.current.getBoundingClientRect();
-        setTooltipPos({ x: rect.left + rect.width / 2, y: rect.top });
-      }
+      updatePosition();
       setShowTooltip(true);
     }, 300);
-  };
+  }, [updatePosition]);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     clearTimeout(timerRef.current);
     setShowTooltip(false);
-  };
+  }, []);
 
   let hostname = '';
   let favicon = '';
@@ -3713,83 +3719,129 @@ function SubConversationPills({ subConversations, onOpen, onDelete, activeSubCon
 }
 
 /**
- * Inline sources dropdown — pill in the actions bar that expands to show citations.
+ * Inline sources pill — shows up to 3 source favicons in a pill.
+ * Clicking opens a right-side panel listing all sources.
  */
 function InlineSourcesDropdown({ citations }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const wrapperRef = useRef(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   useEffect(() => {
-    if (!isExpanded) return;
-    const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setIsExpanded(false);
-      }
-    };
+    if (!isPanelOpen) return;
     const handleEsc = (e) => {
-      if (e.key === 'Escape') setIsExpanded(false);
+      if (e.key === 'Escape') setIsPanelOpen(false);
     };
-    document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEsc);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, [isExpanded]);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isPanelOpen]);
 
   if (!citations || citations.length === 0) return null;
 
+  // Get favicons for the pill (max 3)
+  const pillFavicons = citations
+    .slice(0, 3)
+    .map((c) => {
+      try {
+        const url = new URL(c.url);
+        return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
+      } catch {
+        return '';
+      }
+    })
+    .filter(Boolean);
+
   return (
-    <div className={styles.inlineSourcesWrapper} ref={wrapperRef}>
+    <>
       <button
-        className={`${styles.inlineSourcesPill} ${isExpanded ? styles.inlineSourcesPillOpen : ''}`}
-        onClick={() => setIsExpanded(!isExpanded)}
-        aria-expanded={isExpanded}
+        className={`${styles.inlineSourcesPill} ${isPanelOpen ? styles.inlineSourcesPillOpen : ''}`}
+        onClick={() => setIsPanelOpen(!isPanelOpen)}
+        aria-expanded={isPanelOpen}
       >
-        <SourcesIcon />
+        <span className={styles.sourcesPillFavicons}>
+          {pillFavicons.map((src, i) => (
+            <img key={i} src={src} alt="" className={styles.sourcesPillFavicon} />
+          ))}
+        </span>
         <span>
           {citations.length} source{citations.length !== 1 ? 's' : ''}
         </span>
-        <span
-          className={`${styles.inlineSourcesChevron} ${
-            isExpanded ? styles.inlineSourcesChevronOpen : ''
-          }`}
-        >
-          <ChevronDownIcon />
-        </span>
       </button>
-      {isExpanded && (
-        <div className={styles.inlineSourcesDropdown}>
-          {citations.map((citation, idx) => {
-            let favicon = '';
-            let hostname = '';
-            try {
-              const url = new URL(citation.url);
-              hostname = url.hostname.replace(/^www\./, '');
-              favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
-            } catch {
-              // skip favicon
-            }
-            return (
-              <a
-                key={idx}
-                href={citation.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.inlineSourceItem}
-              >
-                <span className={styles.inlineSourceNumber}>{idx + 1}</span>
-                {favicon && <img src={favicon} alt="" className={styles.inlineSourceFavicon} />}
-                <div className={styles.inlineSourceInfo}>
-                  <span className={styles.inlineSourceTitle}>{citation.title || citation.url}</span>
-                  {hostname && <span className={styles.inlineSourceDomain}>{hostname}</span>}
-                </div>
-              </a>
-            );
-          })}
-        </div>
-      )}
-    </div>
+      {isPanelOpen &&
+        createPortal(
+          <div className={styles.sourcesPanelOverlay} onClick={() => setIsPanelOpen(false)}>
+            <div className={styles.sourcesPanel} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.sourcesPanelHeader}>
+                <span className={styles.sourcesPanelTitle}>
+                  {citations.length} source{citations.length !== 1 ? 's' : ''}
+                </span>
+                <button
+                  className={styles.sourcesPanelClose}
+                  onClick={() => setIsPanelOpen(false)}
+                  aria-label="Close sources"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div className={styles.sourcesPanelList}>
+                {citations.map((citation, idx) => {
+                  let favicon = '';
+                  let hostname = '';
+                  let sourceName = '';
+                  try {
+                    const url = new URL(citation.url);
+                    hostname = url.hostname.replace(/^www\./, '');
+                    favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
+                    // Extract a short source name from hostname (e.g. "reuters" from "reuters.com")
+                    sourceName = hostname.split('.')[0];
+                    sourceName = sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
+                  } catch {
+                    // skip
+                  }
+                  return (
+                    <a
+                      key={idx}
+                      href={citation.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={styles.sourcesPanelItem}
+                    >
+                      <div className={styles.sourcesPanelItemIcon}>
+                        {favicon ? (
+                          <img src={favicon} alt="" className={styles.sourcesPanelFavicon} />
+                        ) : (
+                          <span className={styles.sourcesPanelItemNumber}>{idx + 1}</span>
+                        )}
+                      </div>
+                      <div className={styles.sourcesPanelItemContent}>
+                        <span className={styles.sourcesPanelItemSource}>
+                          {sourceName || hostname}
+                        </span>
+                        <span className={styles.sourcesPanelItemTitle}>
+                          {citation.title || citation.url}
+                        </span>
+                        {citation.snippet && (
+                          <span className={styles.sourcesPanelItemSnippet}>
+                            {citation.snippet.length > 150
+                              ? citation.snippet.slice(0, 150) + '...'
+                              : citation.snippet}
+                          </span>
+                        )}
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
   );
 }
 
@@ -4400,32 +4452,34 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
     return () => clearTimeout(autoAdvanceTimer.current);
   }, []);
 
+  const isMultiSelect = !!current?.multiSelect;
+
   const handleSelectOption = useCallback(
     (option) => {
       clearTimeout(autoAdvanceTimer.current);
+      const questionIsMultiSelect = questions[currentIdx]?.multiSelect;
       setIsCustomActive(false);
       setCustomText('');
-      setAnswers((prev) => {
-        const existing = prev[currentIdx];
-        // Multi-select: toggle option in the set
-        if (Array.isArray(existing)) {
-          const updated = existing.includes(option)
-            ? existing.filter((o) => o !== option)
-            : [...existing, option];
-          return { ...prev, [currentIdx]: updated.length > 0 ? updated : undefined };
-        }
-        return { ...prev, [currentIdx]: [option] };
-      });
-      // Auto-advance only on first selection for this question
-      setAnswers((prev) => {
-        const val = prev[currentIdx];
-        if (Array.isArray(val) && val.length === 1) {
-          scheduleAutoAdvance(currentIdx);
-        }
-        return prev;
-      });
+
+      if (questionIsMultiSelect) {
+        // Multi-select: toggle option, never auto-advance
+        setAnswers((prev) => {
+          const existing = prev[currentIdx];
+          if (Array.isArray(existing)) {
+            const updated = existing.includes(option)
+              ? existing.filter((o) => o !== option)
+              : [...existing, option];
+            return { ...prev, [currentIdx]: updated.length > 0 ? updated : undefined };
+          }
+          return { ...prev, [currentIdx]: [option] };
+        });
+      } else {
+        // Single-select: set the answer and auto-advance
+        setAnswers((prev) => ({ ...prev, [currentIdx]: [option] }));
+        scheduleAutoAdvance(currentIdx);
+      }
     },
-    [currentIdx, scheduleAutoAdvance]
+    [currentIdx, questions, scheduleAutoAdvance]
   );
 
   const handleCustomFocus = useCallback(() => {
@@ -4983,7 +5037,7 @@ function ThinkingBlock({
  * User prompt component with distinctive styling and collapse/expand for long messages.
  * Includes hover actions: copy and edit (sends content back to input).
  */
-function UserPrompt({ content, onEdit }) {
+function UserPrompt({ content, onEdit, createdAt, onRetry }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const contentRef = useRef(null);
@@ -5006,31 +5060,27 @@ function UserPrompt({ content, onEdit }) {
     if (onEdit) onEdit(content);
   }, [content, onEdit]);
 
+  const handleRetry = useCallback(() => {
+    if (onRetry) onRetry(content);
+  }, [content, onRetry]);
+
+  // Format time as HH:MM
+  const timeStr = useMemo(() => {
+    if (!createdAt) return null;
+    try {
+      const d = new Date(createdAt);
+      if (isNaN(d.getTime())) return null;
+      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return null;
+    }
+  }, [createdAt]);
+
   // Calculate collapsed height based on line count
   const collapsedStyle = !isExpanded && isLong ? { maxHeight: `${LINE_LIMIT * 1.65}em` } : {};
 
   return (
     <div className={styles.userPromptCard}>
-      <div className={styles.userPromptActions}>
-        <button
-          className={`${styles.userPromptActionBtn} ${
-            copied ? styles.userPromptActionBtnActive : ''
-          }`}
-          onClick={handleCopy}
-          title={copied ? 'Copied!' : 'Copy'}
-          aria-label="Copy prompt"
-        >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-        </button>
-        <button
-          className={styles.userPromptActionBtn}
-          onClick={handleEdit}
-          title="Edit prompt"
-          aria-label="Edit prompt"
-        >
-          <EditIcon />
-        </button>
-      </div>
       <div
         ref={contentRef}
         className={`${styles.userPromptText} ${
@@ -5056,6 +5106,35 @@ function UserPrompt({ content, onEdit }) {
           </span>
         </button>
       )}
+      <div className={styles.userPromptActions}>
+        {timeStr && <span className={styles.userPromptTime}>{timeStr}</span>}
+        <button
+          className={styles.userPromptActionBtn}
+          onClick={handleEdit}
+          title="Edit prompt"
+          aria-label="Edit prompt"
+        >
+          <EditIcon />
+        </button>
+        <button
+          className={`${styles.userPromptActionBtn} ${
+            copied ? styles.userPromptActionBtnActive : ''
+          }`}
+          onClick={handleCopy}
+          title={copied ? 'Copied!' : 'Copy'}
+          aria-label="Copy prompt"
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+        </button>
+        <button
+          className={styles.userPromptActionBtn}
+          onClick={handleRetry}
+          title="Retry"
+          aria-label="Retry prompt"
+        >
+          <RefreshIcon />
+        </button>
+      </div>
     </div>
   );
 }
@@ -5579,7 +5658,12 @@ function Message({
 
       <div className={styles.messageContent} onMouseUp={handleMouseUp}>
         {isUser ? (
-          <UserPrompt content={message.content} onEdit={onEditPrompt} />
+          <UserPrompt
+            content={message.content}
+            onEdit={onEditPrompt}
+            createdAt={message.createdAt}
+            onRetry={onRetry}
+          />
         ) : weatherData ? (
           <div className={styles.markdownContent} ref={markdownContentRef}>
             <WeatherCard
