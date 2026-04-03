@@ -26,7 +26,6 @@ const FEATURED_MODEL_IDS_FREE = ['claude-haiku-4-5-20251001', 'gpt-5-mini', 'gem
 // Routing strategies shown as top-level options
 const ROUTING_OPTIONS = [
   { id: 'default', label: 'Auto', tagline: 'Best model for each task' },
-  { id: 'costEfficient', label: 'Speed', tagline: 'Fast and cost-efficient' },
   { id: 'taskBased', label: 'Balanced', tagline: 'Optimized for the task' },
   { id: 'humanFactors', label: 'Quality', tagline: 'Uses context, tone and mood' },
 ];

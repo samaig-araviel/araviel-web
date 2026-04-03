@@ -6409,14 +6409,14 @@
   padding: 12px 16px;
   margin-top: 8px;
   border-radius: 10px;
-  background-color: #fff5f5;
-  border: 1px solid #fecaca;
+  background-color: #fdf5f1;
+  border: 1px solid #e6d3ca;
   animation: messageFadeIn 0.3s ease;
 }
 
 [data-theme='dark'] .errorCard {
-  background-color: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.2);
+  background-color: rgba(180, 110, 90, 0.07);
+  border-color: rgba(180, 110, 90, 0.18);
 }
 
 .errorCardContent {
@@ -6429,12 +6429,12 @@
 
 .errorCardMessage {
   font-size: 13px;
-  color: #b91c1c;
+  color: #8b5c4e;
   line-height: 1.5;
 }
 
 [data-theme='dark'] .errorCardMessage {
-  color: #fca5a5;
+  color: #c9a097;
 }
 
 .errorSuggestedPlatforms {
