@@ -1916,6 +1916,14 @@ function renderInline(text) {
       continue;
     }
 
+    // HTML line break <br>, <br/>, <br /> — render as actual line break
+    match = remaining.match(/^<br\s*\/?>/i);
+    if (match) {
+      parts.push(<br key={key++} />);
+      remaining = remaining.slice(match[0].length);
+      continue;
+    }
+
     // Citation reference [N] — convert to superscript link when citations exist
     if (_activeCitations && _activeCitations.length > 0) {
       match = remaining.match(/^\[(\d+)\]/);
@@ -1930,8 +1938,8 @@ function renderInline(text) {
       }
     }
 
-    // Plain text up to next special char or URL start
-    match = remaining.match(/^[^`*~\[(h]+/);
+    // Plain text up to next special char, URL start, or HTML tag
+    match = remaining.match(/^[^`*~\[(h<]+/);
     if (match) {
       parts.push(match[0]);
       remaining = remaining.slice(match[0].length);
@@ -1957,6 +1965,13 @@ function renderInline(text) {
 
     // Check for '~' that isn't strikethrough
     if (remaining[0] === '~' && !remaining.match(/^~~.+?~~/)) {
+      parts.push(remaining[0]);
+      remaining = remaining.slice(1);
+      continue;
+    }
+
+    // Check for '<' that isn't a recognized HTML tag
+    if (remaining[0] === '<' && !remaining.match(/^<br\s*\/?>/i)) {
       parts.push(remaining[0]);
       remaining = remaining.slice(1);
       continue;
