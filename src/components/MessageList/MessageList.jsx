@@ -2065,9 +2065,6 @@ function UsageFooterInline({ message, isDark }) {
       });
     }
   }
-  if (message.costUsd != null) {
-    rows.push({ label: 'Cost', value: `$${message.costUsd.toFixed(4)}` });
-  }
   if (message.latencyMs != null) {
     const seconds = message.latencyMs / 1000;
     rows.push({
@@ -3720,30 +3717,9 @@ function SubConversationPills({ subConversations, onOpen, onDelete, activeSubCon
 
 /**
  * Inline sources pill — overlapping circular favicons + label.
- * Clicking opens a right-side floating panel matching the sub-conversation panel style.
+ * Clicking triggers the parent to open the sources panel.
  */
-function InlineSourcesDropdown({ citations }) {
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const panelRef = useRef(null);
-
-  useEffect(() => {
-    if (!isPanelOpen) return;
-    const handleClickOutside = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        setIsPanelOpen(false);
-      }
-    };
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') setIsPanelOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEsc);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
-    };
-  }, [isPanelOpen]);
-
+function InlineSourcesDropdown({ citations, onOpen, isActive }) {
   if (!citations || citations.length === 0) return null;
 
   // Get unique favicons for the pill (max 3, deduplicated by domain)
@@ -3764,99 +3740,24 @@ function InlineSourcesDropdown({ citations }) {
   }
 
   return (
-    <>
-      <button
-        className={`${styles.sourcesPill} ${isPanelOpen ? styles.sourcesPillActive : ''}`}
-        onClick={() => setIsPanelOpen(!isPanelOpen)}
-        aria-expanded={isPanelOpen}
-      >
-        <span className={styles.sourcesPillFavicons}>
-          {pillFavicons.map((src, i) => (
-            <img
-              key={i}
-              src={src}
-              alt=""
-              className={styles.sourcesPillFavicon}
-              style={{ zIndex: pillFavicons.length - i }}
-            />
-          ))}
-        </span>
-        <span className={styles.sourcesPillLabel}>Sources</span>
-      </button>
-      {isPanelOpen &&
-        createPortal(
-          <div className={styles.sourcesPanel} ref={panelRef}>
-            <div className={styles.sourcesPanelHeader}>
-              <span className={styles.sourcesPanelTitle}>
-                {citations.length} source{citations.length !== 1 ? 's' : ''}
-              </span>
-              <button
-                className={styles.sourcesPanelClose}
-                onClick={() => setIsPanelOpen(false)}
-                aria-label="Close sources"
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path
-                    d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-            </div>
-            <div className={styles.sourcesPanelList}>
-              {citations.map((citation, idx) => {
-                let favicon = '';
-                let hostname = '';
-                let sourceName = '';
-                try {
-                  const url = new URL(citation.url);
-                  hostname = url.hostname.replace(/^www\./, '');
-                  favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
-                  sourceName = hostname.split('.')[0];
-                  sourceName = sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
-                } catch {
-                  // skip
-                }
-                return (
-                  <a
-                    key={idx}
-                    href={citation.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={styles.sourcesPanelItem}
-                  >
-                    <div className={styles.sourcesPanelItemIcon}>
-                      {favicon ? (
-                        <img src={favicon} alt="" className={styles.sourcesPanelFavicon} />
-                      ) : (
-                        <span className={styles.sourcesPanelItemNumber}>{idx + 1}</span>
-                      )}
-                    </div>
-                    <div className={styles.sourcesPanelItemContent}>
-                      <span className={styles.sourcesPanelItemSource}>
-                        {sourceName || hostname}
-                      </span>
-                      <span className={styles.sourcesPanelItemTitle}>
-                        {citation.title || citation.url}
-                      </span>
-                      {citation.snippet && (
-                        <span className={styles.sourcesPanelItemSnippet}>
-                          {citation.snippet.length > 150
-                            ? citation.snippet.slice(0, 150) + '...'
-                            : citation.snippet}
-                        </span>
-                      )}
-                    </div>
-                  </a>
-                );
-              })}
-            </div>
-          </div>,
-          document.body
-        )}
-    </>
+    <button
+      className={`${styles.sourcesPill} ${isActive ? styles.sourcesPillActive : ''}`}
+      onClick={() => onOpen(citations)}
+      aria-expanded={isActive}
+    >
+      <span className={styles.sourcesPillFavicons}>
+        {pillFavicons.map((src, i) => (
+          <img
+            key={i}
+            src={src}
+            alt=""
+            className={styles.sourcesPillFavicon}
+            style={{ zIndex: pillFavicons.length - i }}
+          />
+        ))}
+      </span>
+      <span className={styles.sourcesPillLabel}>Sources</span>
+    </button>
   );
 }
 
@@ -4093,6 +3994,8 @@ function ResponseActions({
   onSelectAlternate,
   assistantIndex,
   conversationId,
+  onOpenSourcesPanel,
+  isSourcesPanelOpen,
 }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(message.feedback === 'like');
@@ -4307,7 +4210,11 @@ function ResponseActions({
             )}
           </div>
         )}
-        <InlineSourcesDropdown citations={citations} />
+        <InlineSourcesDropdown
+          citations={citations}
+          onOpen={onOpenSourcesPanel}
+          isActive={isSourcesPanelOpen}
+        />
       </div>
 
       <div className={styles.responseActionsRight}>
@@ -5173,6 +5080,8 @@ function Message({
   onEditPrompt,
   onOpenCodePanel,
   webSearchEnabled,
+  onOpenSourcesPanel,
+  isSourcesPanelOpen,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -5765,6 +5674,8 @@ function Message({
           onSelectAlternate={(alt) => setPendingAlternate(alt)}
           assistantIndex={assistantIndex}
           conversationId={currentChatId}
+          onOpenSourcesPanel={onOpenSourcesPanel}
+          isSourcesPanelOpen={isSourcesPanelOpen}
         />
       )}
 
@@ -5818,6 +5729,87 @@ function Message({
 }
 
 /**
+ * Sources side panel — fixed right panel matching sub-conversation panel style.
+ * Renders as a third column alongside sidebar and conversation area.
+ */
+function SourcesSidePanel({ citations, onClose, panelRef }) {
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  return (
+    <div className={styles.sourcesPanel} ref={panelRef}>
+      <div className={styles.sourcesPanelHeader}>
+        <span className={styles.sourcesPanelTitle}>Sources</span>
+        <button className={styles.sourcesPanelClose} onClick={onClose} aria-label="Close sources">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      </div>
+      <div className={styles.sourcesPanelSubheader}>
+        {citations.length} source{citations.length !== 1 ? 's' : ''} found
+      </div>
+      <div className={styles.sourcesPanelList}>
+        {citations.map((citation, idx) => {
+          let favicon = '';
+          let hostname = '';
+          let sourceName = '';
+          try {
+            const url = new URL(citation.url);
+            hostname = url.hostname.replace(/^www\./, '');
+            favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
+            sourceName = hostname.split('.')[0];
+            sourceName = sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
+          } catch {
+            // skip
+          }
+          return (
+            <a
+              key={idx}
+              href={citation.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.sourcesPanelItem}
+            >
+              <div className={styles.sourcesPanelItemIcon}>
+                {favicon ? (
+                  <img src={favicon} alt="" className={styles.sourcesPanelFavicon} />
+                ) : (
+                  <span className={styles.sourcesPanelItemNumber}>{idx + 1}</span>
+                )}
+              </div>
+              <div className={styles.sourcesPanelItemContent}>
+                <span className={styles.sourcesPanelItemSource}>{sourceName || hostname}</span>
+                <span className={styles.sourcesPanelItemTitle}>
+                  {citation.title || citation.url}
+                </span>
+                {citation.snippet && (
+                  <span className={styles.sourcesPanelItemSnippet}>
+                    {citation.snippet.length > 150
+                      ? citation.snippet.slice(0, 150) + '...'
+                      : citation.snippet}
+                  </span>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
  * MessageList renders the full conversation including thinking timeline.
  */
 export default function MessageList({
@@ -5834,6 +5826,7 @@ export default function MessageList({
   onAlternateModelRequest,
   onSubConvPanelToggle,
   onCodePanelToggle,
+  onSourcesPanelToggle,
   focusInput,
   currentChatId,
   webSearchEnabled,
@@ -5852,6 +5845,9 @@ export default function MessageList({
 
   // Code side panel state (lifted up so it persists across messages)
   const [codePanelBlocks, setCodePanelBlocks] = useState(null);
+  // Sources panel state (lifted up so it renders as a third column)
+  const [sourcesPanelCitations, setSourcesPanelCitations] = useState(null);
+  const sourcesPanelRef = useRef(null);
   const prevChatIdRef = useRef(currentChatId);
 
   // Close code panel and sub-conversation panel when switching chats
@@ -5859,8 +5855,10 @@ export default function MessageList({
     if (prevChatIdRef.current !== currentChatId) {
       setCodePanelBlocks(null);
       setSubConvPanelOwnerId(null);
+      setSourcesPanelCitations(null);
       if (onCodePanelToggle) onCodePanelToggle(false);
       if (onSubConvPanelToggle) onSubConvPanelToggle(false);
+      if (onSourcesPanelToggle) onSourcesPanelToggle(false);
       document.documentElement.style.removeProperty('--code-panel-width');
       prevChatIdRef.current = currentChatId;
     }
@@ -5884,6 +5882,23 @@ export default function MessageList({
   const handleCodePanelWidthChange = useCallback((width) => {
     document.documentElement.style.setProperty('--code-panel-width', `${width}px`);
   }, []);
+
+  const handleOpenSourcesPanel = useCallback(
+    (citations) => {
+      // Toggle: if already open with same citations, close it
+      setSourcesPanelCitations((prev) => {
+        const shouldOpen = !prev;
+        if (onSourcesPanelToggle) onSourcesPanelToggle(shouldOpen);
+        return shouldOpen ? citations : null;
+      });
+    },
+    [onSourcesPanelToggle]
+  );
+
+  const handleCloseSourcesPanel = useCallback(() => {
+    setSourcesPanelCitations(null);
+    if (onSourcesPanelToggle) onSourcesPanelToggle(false);
+  }, [onSourcesPanelToggle]);
 
   // Track scroll position → show/hide scroll-to-bottom button.
   // Detect user-initiated scrolling during streaming via wheel/touch events only
@@ -6071,6 +6086,8 @@ export default function MessageList({
                 onEditPrompt={handleEditPrompt}
                 onOpenCodePanel={handleOpenCodePanel}
                 webSearchEnabled={webSearchEnabled}
+                onOpenSourcesPanel={handleOpenSourcesPanel}
+                isSourcesPanelOpen={!!sourcesPanelCitations}
               />
             </div>
           );
@@ -6111,6 +6128,15 @@ export default function MessageList({
           codeBlocks={codePanelBlocks}
           onClose={handleCloseCodePanel}
           onWidthChange={handleCodePanelWidthChange}
+        />
+      )}
+
+      {/* Sources side panel — third column */}
+      {sourcesPanelCitations && sourcesPanelCitations.length > 0 && (
+        <SourcesSidePanel
+          citations={sourcesPanelCitations}
+          onClose={handleCloseSourcesPanel}
+          panelRef={sourcesPanelRef}
         />
       )}
     </div>
