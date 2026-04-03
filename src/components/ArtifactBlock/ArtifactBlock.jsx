@@ -55,8 +55,6 @@ const FORBID_TAGS = [
 function scopeCSS(html, scopeClass) {
   return html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (match, cssContent) => {
     const scoped = cssContent.replace(
-      // Match CSS rules: selector { ... }
-      // Handles combinators, pseudo-classes, media queries
       /([^{}@/][^{]*)\{/g,
       (ruleMatch, selector) => {
         const scopedSelectors = selector
@@ -64,7 +62,6 @@ function scopeCSS(html, scopeClass) {
           .map((s) => {
             const trimmed = s.trim();
             if (!trimmed) return s;
-            // Don't scope @-rules, :root, *, or body/html (remap to scope)
             if (trimmed.startsWith('@')) return s;
             if (trimmed === ':root' || trimmed === 'html' || trimmed === 'body') {
               return ` .${scopeClass}`;
@@ -81,10 +78,7 @@ function scopeCSS(html, scopeClass) {
 }
 
 function sanitizeHTML(html, scopeClass) {
-  // First scope the CSS
   const scoped = scopeCSS(html, scopeClass);
-
-  // Then sanitize
   return DOMPurify.sanitize(scoped, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
@@ -97,7 +91,6 @@ function sanitizeHTML(html, scopeClass) {
       'onfocus', 'onblur', 'onsubmit', 'onchange', 'onkeydown',
       'onkeyup', 'onkeypress', 'oncontextmenu',
     ],
-    // Allow href but force safe links
     ADD_URI_SAFE_ATTR: ['href'],
   });
 }
@@ -115,11 +108,7 @@ export default function ArtifactBlock({ spec, isStreaming = false }) {
   if (!sanitized) {
     if (isStreaming) {
       return (
-        <div className={styles.wrapper}>
-          <div className={styles.header}>
-            <span className={styles.headerLabel}>Visual</span>
-            <span className={styles.headerCount}>Loading...</span>
-          </div>
+        <div className={styles.root}>
           <div className={styles.placeholder}>
             <div className={styles.placeholderPulse} />
             <span className={styles.placeholderText}>Building visual...</span>
@@ -135,19 +124,7 @@ export default function ArtifactBlock({ spec, isStreaming = false }) {
   }
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.header}>
-        <span className={styles.headerLabel}>Visual</span>
-        <button
-          className={styles.sourceToggle}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowSource(!showSource);
-          }}
-        >
-          {showSource ? 'Preview' : 'View source'}
-        </button>
-      </div>
+    <div className={styles.root}>
       {showSource ? (
         <div className={styles.sourceView}>
           <pre className={styles.sourceCode}>{spec}</pre>
@@ -158,6 +135,17 @@ export default function ArtifactBlock({ spec, isStreaming = false }) {
           dangerouslySetInnerHTML={{ __html: sanitized }}
         />
       )}
+      <div className={styles.footer}>
+        <button
+          className={styles.sourceToggle}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowSource(!showSource);
+          }}
+        >
+          {showSource ? 'Show visual' : 'View source'}
+        </button>
+      </div>
     </div>
   );
 }

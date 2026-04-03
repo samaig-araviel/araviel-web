@@ -1,62 +1,20 @@
-.wrapper {
-  margin: 14px 0;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--bg-primary);
-}
+/* ===== Root — no border, flows naturally in chat ===== */
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 14px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-}
-
-.headerLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.01em;
-}
-
-.headerCount {
-  font-size: 11px;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.sourceToggle {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: none;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  padding: 2px 8px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.sourceToggle:hover {
-  color: var(--text-secondary);
-  border-color: var(--text-muted);
+.root {
+  margin: 18px 0 12px;
+  position: relative;
 }
 
 .error {
   margin: 12px 0;
-  padding: 12px 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  padding: 10px 14px;
   color: var(--text-muted);
   font-size: 12.5px;
 }
 
 /* Streaming placeholder */
 .placeholder {
-  padding: 40px 20px;
+  padding: 32px 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -64,8 +22,9 @@
 }
 
 .placeholderPulse {
-  width: 80%;
-  height: 120px;
+  width: 70%;
+  max-width: 400px;
+  height: 100px;
   border-radius: 8px;
   background: linear-gradient(
     90deg,
@@ -89,23 +48,44 @@
 
 /* Rendered artifact content */
 .artifactContent {
-  padding: 16px;
   overflow-x: auto;
-  /* Provide CSS variables for model-authored CSS to use */
-  --bg-primary: var(--bg-primary);
-  --bg-secondary: var(--bg-secondary);
-  --text-primary: var(--text-primary);
-  --text-secondary: var(--text-secondary);
-  --text-muted: var(--text-muted);
-  --border-color: var(--border-color);
-  --accent-color: var(--accent-color, #d97706);
+}
+
+/* Footer with source toggle */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.root:hover .footer {
+  opacity: 1;
+}
+
+.sourceToggle {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+
+.sourceToggle:hover {
+  color: var(--text-secondary);
 }
 
 /* Source code view */
 .sourceView {
-  padding: 12px;
   max-height: 400px;
   overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
 }
 
 .sourceCode {

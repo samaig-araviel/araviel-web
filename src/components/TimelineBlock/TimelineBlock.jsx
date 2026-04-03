@@ -1,4 +1,4 @@
-import { useState, useMemo, useId } from 'react';
+import { useMemo } from 'react';
 import styles from './TimelineBlock.module.css';
 
 /**
@@ -6,21 +6,26 @@ import styles from './TimelineBlock.module.css';
  *
  * Supports two formats:
  *
- * 1. Legacy flat array:
+ * 1. Flat array:
  *    [{ "date": "2024", "title": "Event", "description": "Details" }, ...]
  *
  * 2. Era-grouped object:
  *    {
  *      "title": "History of X",
- *      "layout": "alternating",   // optional, default "left"
+ *      "style": "editorial" | "cards" | "compact",
  *      "eras": [
  *        {
  *          "name": "Era Name",
  *          "color": "#8B5CF6",
- *          "events": [{ "date": "...", "title": "...", "description": "..." }]
+ *          "events": [{ "date": "...", "title": "...", "description": "...", "sublabel": "..." }]
  *        }
  *      ]
  *    }
+ *
+ * Styles:
+ *   editorial — Clean left-aligned flowing text with colored dots and era pills. Default.
+ *   cards     — Center-line alternating cards on desktop with subtle backgrounds.
+ *   compact   — Dense single-column with tight spacing and sublabel metadata.
  */
 
 const DEFAULT_ERA_COLORS = [
@@ -36,10 +41,9 @@ function hexToRgb(hex) {
   return `${r}, ${g}, ${b}`;
 }
 
-export default function TimelineBlock({ spec, isStreaming = false }) {
-  const [expanded, setExpanded] = useState(null);
-  const scopeId = useId();
+const VALID_STYLES = ['editorial', 'cards', 'compact'];
 
+export default function TimelineBlock({ spec, isStreaming = false }) {
   const parsed = useMemo(() => {
     try {
       const data = typeof spec === 'string' ? JSON.parse(spec) : spec;
@@ -58,16 +62,12 @@ export default function TimelineBlock({ spec, isStreaming = false }) {
         if (eras.length === 0) return null;
 
         const totalEvents = eras.reduce((sum, era) => sum + era.events.length, 0);
-        return {
-          type: 'eras',
-          title: data.title || null,
-          layout: data.layout === 'alternating' ? 'alternating' : 'left',
-          eras,
-          totalEvents,
-        };
+        const style = VALID_STYLES.includes(data.style) ? data.style : 'editorial';
+
+        return { type: 'eras', title: data.title || null, style, eras, totalEvents };
       }
 
-      // Legacy flat array format
+      // Flat array format
       if (Array.isArray(data)) {
         const items = data.filter((item) => item && (item.date || item.label) && item.title);
         if (items.length === 0) return null;
@@ -83,22 +83,10 @@ export default function TimelineBlock({ spec, isStreaming = false }) {
   if (!parsed) {
     if (isStreaming) {
       return (
-        <div className={styles.wrapper}>
-          <div className={styles.header}>
-            <span className={styles.headerLabel}>Timeline</span>
-            <span className={styles.headerCount}>Loading...</span>
-          </div>
-          <div className={styles.timeline} style={{ padding: '20px', opacity: 0.5 }}>
-            <div className={styles.item}>
-              <div className={styles.marker}>
-                <div className={styles.dot} />
-                <div className={styles.line} />
-              </div>
-              <div className={styles.content}>
-                <span className={styles.date}>...</span>
-                <span className={styles.title}>Building timeline...</span>
-              </div>
-            </div>
+        <div className={styles.root}>
+          <div className={styles.streamingPlaceholder}>
+            <div className={styles.placeholderDot} />
+            <span className={styles.placeholderText}>Building timeline...</span>
           </div>
         </div>
       );
@@ -110,34 +98,25 @@ export default function TimelineBlock({ spec, isStreaming = false }) {
     );
   }
 
-  // Legacy flat format
+  // Flat format — clean minimal layout
   if (parsed.type === 'flat') {
     return (
-      <div className={styles.wrapper}>
-        <div className={styles.header}>
-          <span className={styles.headerLabel}>Timeline</span>
-          <span className={styles.headerCount}>{parsed.items.length} events</span>
-        </div>
-        <div className={styles.timeline}>
+      <div className={styles.root}>
+        <div className={styles.flatTimeline}>
           {parsed.items.map((item, idx) => (
-            <div
-              key={idx}
-              className={`${styles.item} ${expanded === idx ? styles.itemExpanded : ''}`}
-              onClick={() => setExpanded(expanded === idx ? null : idx)}
-            >
-              <div className={styles.marker}>
-                <div className={styles.dot} />
-                {idx < parsed.items.length - 1 && <div className={styles.line} />}
+            <div key={idx} className={styles.flatItem}>
+              <div className={styles.flatMarker}>
+                <div className={styles.flatDot} />
+                {idx < parsed.items.length - 1 && <div className={styles.flatLine} />}
               </div>
-              <div className={styles.content}>
-                <span className={styles.date}>{item.date || item.label}</span>
-                <span className={styles.title}>{item.title}</span>
+              <div className={styles.flatContent}>
+                <span className={styles.flatDate}>{item.date || item.label}</span>
+                <span className={styles.flatTitle}>{item.title}</span>
                 {item.description && (
-                  <span
-                    className={`${styles.description} ${expanded === idx ? styles.descriptionVisible : ''}`}
-                  >
-                    {item.description}
-                  </span>
+                  <span className={styles.flatDescription}>{item.description}</span>
+                )}
+                {item.sublabel && (
+                  <span className={styles.sublabel}>{item.sublabel}</span>
                 )}
               </div>
             </div>
@@ -147,86 +126,186 @@ export default function TimelineBlock({ spec, isStreaming = false }) {
     );
   }
 
-  // Era-grouped format
-  const isAlternating = parsed.layout === 'alternating';
+  // Era-grouped — route to style-specific renderer
+  const { style } = parsed;
+
+  if (style === 'cards') return renderCardsStyle(parsed);
+  if (style === 'compact') return renderCompactStyle(parsed);
+  return renderEditorialStyle(parsed);
+}
+
+/* ── Editorial style ─────────────────────────────────────────────── */
+
+function renderEditorialStyle(parsed) {
+  return (
+    <div className={styles.root}>
+      {parsed.title && <div className={styles.timelineTitle}>{parsed.title}</div>}
+      <div className={styles.editorialTimeline}>
+        {parsed.eras.map((era, eraIdx) => {
+          const eraRgb = hexToRgb(era.color);
+          const isLastEra = eraIdx === parsed.eras.length - 1;
+          return (
+            <div key={eraIdx} className={styles.editorialEra}>
+              <div className={styles.editorialEraHeader}>
+                <span className={styles.editorialEraPill} style={{ color: era.color }}>
+                  {era.name}
+                </span>
+              </div>
+              {era.events.map((event, eventIdx) => {
+                const isLastEvent = isLastEra && eventIdx === era.events.length - 1;
+                return (
+                  <div key={eventIdx} className={styles.editorialItem}>
+                    <div className={styles.editorialMarker}>
+                      <div
+                        className={styles.editorialDot}
+                        style={{ background: era.color }}
+                      />
+                      {!isLastEvent && (
+                        <div
+                          className={styles.editorialLine}
+                          style={{ background: `rgba(${eraRgb}, 0.2)` }}
+                        />
+                      )}
+                    </div>
+                    <div className={styles.editorialContent}>
+                      <span className={styles.editorialDate} style={{ color: era.color }}>
+                        {event.date || event.label}
+                      </span>
+                      <span className={styles.editorialEventTitle}>{event.title}</span>
+                      {event.description && (
+                        <span className={styles.editorialDescription}>{event.description}</span>
+                      )}
+                      {event.sublabel && (
+                        <span className={styles.sublabel}>{event.sublabel}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Cards style ─────────────────────────────────────────────────── */
+
+function renderCardsStyle(parsed) {
   let globalIdx = 0;
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.header}>
-        {parsed.title ? (
-          <>
-            <span className={styles.headerLabel}>{parsed.title}</span>
-            <span className={styles.headerCount}>{parsed.totalEvents} events</span>
-          </>
-        ) : (
-          <>
-            <span className={styles.headerLabel}>Timeline</span>
-            <span className={styles.headerCount}>{parsed.totalEvents} events</span>
-          </>
-        )}
-      </div>
-      <div className={`${styles.eraTimeline} ${isAlternating ? styles.alternatingLayout : ''}`}>
-        {isAlternating && <div className={styles.centerLine} />}
+    <div className={styles.root}>
+      {parsed.title && <div className={styles.timelineTitle}>{parsed.title}</div>}
+      <div className={styles.cardsTimeline}>
+        <div className={styles.cardsCenterLine} />
         {parsed.eras.map((era, eraIdx) => {
           const eraRgb = hexToRgb(era.color);
+          const isLastEra = eraIdx === parsed.eras.length - 1;
           return (
-            <div key={eraIdx} className={styles.eraGroup}>
-              <div
-                className={styles.eraLabel}
-                style={{
-                  '--era-color': era.color,
-                  '--era-rgb': eraRgb,
-                }}
-              >
-                <span className={styles.eraName}>{era.name}</span>
+            <div key={eraIdx} className={styles.cardsEra}>
+              <div className={styles.cardsEraLabel}>
+                <span className={styles.cardsEraPill} style={{ color: era.color }}>
+                  {era.name}
+                </span>
               </div>
-              <div className={styles.eraEvents}>
+              <div className={styles.cardsEvents}>
                 {era.events.map((event, eventIdx) => {
                   const idx = globalIdx++;
-                  const isRight = isAlternating && idx % 2 === 1;
-                  const isLast = eraIdx === parsed.eras.length - 1 && eventIdx === era.events.length - 1;
-                  const expandKey = `${eraIdx}-${eventIdx}`;
+                  const isRight = idx % 2 === 1;
+                  const isLastEvent = isLastEra && eventIdx === era.events.length - 1;
 
                   return (
                     <div
                       key={eventIdx}
-                      className={`${styles.eraItem} ${isRight ? styles.eraItemRight : ''} ${expanded === expandKey ? styles.itemExpanded : ''}`}
-                      onClick={() => setExpanded(expanded === expandKey ? null : expandKey)}
-                      style={{
-                        '--era-color': era.color,
-                        '--era-rgb': eraRgb,
-                      }}
+                      className={`${styles.cardsItem} ${isRight ? styles.cardsItemRight : ''}`}
+                      style={{ '--era-color': era.color, '--era-rgb': eraRgb }}
                     >
-                      <div className={styles.eraMarker}>
+                      <div className={styles.cardsMarker}>
                         <div
-                          className={styles.eraDot}
-                          style={{ borderColor: era.color }}
+                          className={styles.cardsDot}
+                          style={{ background: era.color }}
                         />
-                        {!isLast && (
+                        {!isLastEvent && (
                           <div
-                            className={styles.eraLine}
-                            style={{ background: era.color, opacity: 0.3 }}
+                            className={styles.cardsLine}
+                            style={{ background: `rgba(${eraRgb}, 0.2)` }}
                           />
                         )}
                       </div>
-                      <div className={styles.eraCard}>
-                        <span className={styles.eraDate} style={{ color: era.color }}>
+                      <div className={styles.cardsCard} style={{ '--era-rgb': eraRgb }}>
+                        <span className={styles.cardsDate} style={{ color: era.color }}>
                           {event.date || event.label}
                         </span>
-                        <span className={styles.eraTitle}>{event.title}</span>
+                        <span className={styles.cardsCardTitle}>{event.title}</span>
                         {event.description && (
-                          <span
-                            className={`${styles.eraDescription} ${expanded === expandKey ? styles.descriptionVisible : ''}`}
-                          >
-                            {event.description}
-                          </span>
+                          <span className={styles.cardsDescription}>{event.description}</span>
+                        )}
+                        {event.sublabel && (
+                          <span className={styles.sublabel}>{event.sublabel}</span>
                         )}
                       </div>
                     </div>
                   );
                 })}
               </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Compact style ───────────────────────────────────────────────── */
+
+function renderCompactStyle(parsed) {
+  return (
+    <div className={styles.root}>
+      {parsed.title && <div className={styles.timelineTitle}>{parsed.title}</div>}
+      <div className={styles.compactTimeline}>
+        {parsed.eras.map((era, eraIdx) => {
+          const eraRgb = hexToRgb(era.color);
+          const isLastEra = eraIdx === parsed.eras.length - 1;
+          return (
+            <div key={eraIdx} className={styles.compactEra}>
+              <div className={styles.compactEraHeader}>
+                <span className={styles.compactEraPill} style={{ color: era.color }}>
+                  {era.name}
+                </span>
+              </div>
+              {era.events.map((event, eventIdx) => {
+                const isLastEvent = isLastEra && eventIdx === era.events.length - 1;
+                return (
+                  <div key={eventIdx} className={styles.compactItem}>
+                    <div className={styles.compactMarker}>
+                      <div
+                        className={styles.compactDot}
+                        style={{ background: era.color }}
+                      />
+                      {!isLastEvent && (
+                        <div
+                          className={styles.compactLine}
+                          style={{ background: `rgba(${eraRgb}, 0.15)` }}
+                        />
+                      )}
+                    </div>
+                    <div className={styles.compactContent}>
+                      {event.sublabel && (
+                        <span className={styles.compactSublabel}>{event.sublabel}</span>
+                      )}
+                      <span className={styles.compactTitle}>{event.title}</span>
+                      {event.description && (
+                        <span className={styles.compactDescription}>{event.description}</span>
+                      )}
+                      <span className={styles.compactDate} style={{ color: era.color }}>
+                        {event.date || event.label}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           );
         })}
