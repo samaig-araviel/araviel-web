@@ -30,6 +30,11 @@
   transition: margin-right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* When sources panel is open, make room on the right (panel width + spacing) */
+.main.sourcesPanelOpen {
+  margin-right: 400px;
+}
+
 /* Top nav bar */
 .topNav {
   position: absolute;
@@ -2320,6 +2325,10 @@
   }
 
   .main.codePanelOpen {
+    margin-right: 0;
+  }
+
+  .main.sourcesPanelOpen {
     margin-right: 0;
   }
 

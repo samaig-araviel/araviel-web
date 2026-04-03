@@ -680,6 +680,7 @@ export default function MainContent() {
   const [isReporting, setIsReporting] = useState(false);
   const [isSubConvPanelOpen, setIsSubConvPanelOpen] = useState(false);
   const [isCodePanelOpen, setIsCodePanelOpen] = useState(false);
+  const [isSourcesPanelOpen, setIsSourcesPanelOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [mobileFileSubmenu, setMobileFileSubmenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -1216,9 +1217,12 @@ export default function MainContent() {
               const statusMap = {
                 queued: 'Starting research...',
                 planning: 'Planning research...',
-                researching: data.sources > 0
-                  ? `Searching the web (${data.sources} source${data.sources !== 1 ? 's' : ''})...`
-                  : 'Searching the web...',
+                researching:
+                  data.sources > 0
+                    ? `Searching the web (${data.sources} source${
+                        data.sources !== 1 ? 's' : ''
+                      })...`
+                    : 'Searching the web...',
                 synthesizing: 'Synthesizing findings...',
               };
               const statusLabel = statusMap[data.status] || 'Researching...';
@@ -1372,13 +1376,15 @@ export default function MainContent() {
               if (data.code === 'PROVIDER_RETRY') {
                 // Non-fatal — show a brief notification but keep listening
                 if (assistantMsgAdded) {
-                  dispatch(updateLastMessage({
-                    providerRetry: {
-                      fromModel: data.fromModel || 'Unknown',
-                      toModel: data.toModel || 'Unknown',
-                      reason: data.reason || 'Retrying with a different model',
-                    },
-                  }));
+                  dispatch(
+                    updateLastMessage({
+                      providerRetry: {
+                        fromModel: data.fromModel || 'Unknown',
+                        toModel: data.toModel || 'Unknown',
+                        reason: data.reason || 'Retrying with a different model',
+                      },
+                    })
+                  );
                 }
               } else if (data.code === 'MONTHLY_CREDITS_EXHAUSTED') {
                 dispatch(setIsProcessing(false));
@@ -2047,14 +2053,21 @@ export default function MainContent() {
   // Build timeline stages
   const timelineStages =
     pipelineStatus !== 'idle'
-      ? createStages(pipelineStatus, routeResult ? routeResult.modelName : null, isManualRequest, researchProgress)
+      ? createStages(
+          pipelineStatus,
+          routeResult ? routeResult.modelName : null,
+          isManualRequest,
+          researchProgress
+        )
       : null;
 
   return (
     <main
       className={`${styles.main} ${hasMessages ? styles.hasMessages : ''} ${
         isSubConvPanelOpen ? styles.subConvPanelOpen : ''
-      } ${isCodePanelOpen ? styles.codePanelOpen : ''}`}
+      } ${isCodePanelOpen ? styles.codePanelOpen : ''} ${
+        isSourcesPanelOpen ? styles.sourcesPanelOpen : ''
+      }`}
     >
       {/* Top nav bar */}
       <div className={styles.topNav}>
@@ -2490,6 +2503,7 @@ export default function MainContent() {
           onAlternateModelRequest={handleAlternateModelRequest}
           onSubConvPanelToggle={setIsSubConvPanelOpen}
           onCodePanelToggle={setIsCodePanelOpen}
+          onSourcesPanelToggle={setIsSourcesPanelOpen}
           focusInput={focusInput}
           currentChatId={currentChatId}
           webSearchEnabled={webSearchEnabled}
