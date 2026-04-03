@@ -25,7 +25,7 @@ const initialState = {
   webSearchEnabled: null, // null = Auto/let ADE decide, true = user toggled on, false = user toggled off
   tone: 'default', // 'default' | 'professional' | 'friendly' | 'candid' | 'quirky' | 'efficient' | 'cynical'
   mood: null, // null = not set, or: happy, neutral, stressed, frustrated, excited, tired, anxious, calm
-  autoStrategy: 'default', // 'default' | 'humanFactors' | 'costEfficient' | 'taskBased'
+  autoStrategy: 'default', // 'default' | 'taskBased' | 'humanFactors'
   currentChatId: null, // current conversationId from backend
   isProcessing: false,
   pendingAutoSubmit: false, // when true, MainContent auto-fires the inputValue on mount
@@ -96,7 +96,7 @@ const chatSlice = createSlice({
       state.mood = action.payload; // null | string
     },
     setAutoStrategy: (state, action) => {
-      state.autoStrategy = action.payload; // 'default' | 'humanFactors' | 'costEfficient' | 'taskBased'
+      state.autoStrategy = action.payload; // 'default' | 'taskBased' | 'humanFactors'
     },
     addMessage: (state, action) => {
       state.messages.push(action.payload);
