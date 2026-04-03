@@ -3719,124 +3719,139 @@ function SubConversationPills({ subConversations, onOpen, onDelete, activeSubCon
 }
 
 /**
- * Inline sources pill — shows up to 3 source favicons in a pill.
- * Clicking opens a right-side panel listing all sources.
+ * Inline sources pill — overlapping circular favicons + label.
+ * Clicking opens a right-side floating panel matching the sub-conversation panel style.
  */
 function InlineSourcesDropdown({ citations }) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     if (!isPanelOpen) return;
+    const handleClickOutside = (e) => {
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        setIsPanelOpen(false);
+      }
+    };
     const handleEsc = (e) => {
       if (e.key === 'Escape') setIsPanelOpen(false);
     };
+    document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
   }, [isPanelOpen]);
 
   if (!citations || citations.length === 0) return null;
 
-  // Get favicons for the pill (max 3)
-  const pillFavicons = citations
-    .slice(0, 3)
-    .map((c) => {
-      try {
-        const url = new URL(c.url);
-        return `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=16`;
-      } catch {
-        return '';
+  // Get unique favicons for the pill (max 3, deduplicated by domain)
+  const seenDomains = new Set();
+  const pillFavicons = [];
+  for (const c of citations) {
+    if (pillFavicons.length >= 3) break;
+    try {
+      const url = new URL(c.url);
+      const domain = url.hostname;
+      if (!seenDomains.has(domain)) {
+        seenDomains.add(domain);
+        pillFavicons.push(`https://www.google.com/s2/favicons?domain=${domain}&sz=32`);
       }
-    })
-    .filter(Boolean);
+    } catch {
+      // skip
+    }
+  }
 
   return (
     <>
       <button
-        className={`${styles.inlineSourcesPill} ${isPanelOpen ? styles.inlineSourcesPillOpen : ''}`}
+        className={`${styles.sourcesPill} ${isPanelOpen ? styles.sourcesPillActive : ''}`}
         onClick={() => setIsPanelOpen(!isPanelOpen)}
         aria-expanded={isPanelOpen}
       >
         <span className={styles.sourcesPillFavicons}>
           {pillFavicons.map((src, i) => (
-            <img key={i} src={src} alt="" className={styles.sourcesPillFavicon} />
+            <img
+              key={i}
+              src={src}
+              alt=""
+              className={styles.sourcesPillFavicon}
+              style={{ zIndex: pillFavicons.length - i }}
+            />
           ))}
         </span>
-        <span>
-          {citations.length} source{citations.length !== 1 ? 's' : ''}
-        </span>
+        <span className={styles.sourcesPillLabel}>Sources</span>
       </button>
       {isPanelOpen &&
         createPortal(
-          <div className={styles.sourcesPanelOverlay} onClick={() => setIsPanelOpen(false)}>
-            <div className={styles.sourcesPanel} onClick={(e) => e.stopPropagation()}>
-              <div className={styles.sourcesPanelHeader}>
-                <span className={styles.sourcesPanelTitle}>
-                  {citations.length} source{citations.length !== 1 ? 's' : ''}
-                </span>
-                <button
-                  className={styles.sourcesPanelClose}
-                  onClick={() => setIsPanelOpen(false)}
-                  aria-label="Close sources"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path
-                      d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className={styles.sourcesPanelList}>
-                {citations.map((citation, idx) => {
-                  let favicon = '';
-                  let hostname = '';
-                  let sourceName = '';
-                  try {
-                    const url = new URL(citation.url);
-                    hostname = url.hostname.replace(/^www\./, '');
-                    favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
-                    // Extract a short source name from hostname (e.g. "reuters" from "reuters.com")
-                    sourceName = hostname.split('.')[0];
-                    sourceName = sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
-                  } catch {
-                    // skip
-                  }
-                  return (
-                    <a
-                      key={idx}
-                      href={citation.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.sourcesPanelItem}
-                    >
-                      <div className={styles.sourcesPanelItemIcon}>
-                        {favicon ? (
-                          <img src={favicon} alt="" className={styles.sourcesPanelFavicon} />
-                        ) : (
-                          <span className={styles.sourcesPanelItemNumber}>{idx + 1}</span>
-                        )}
-                      </div>
-                      <div className={styles.sourcesPanelItemContent}>
-                        <span className={styles.sourcesPanelItemSource}>
-                          {sourceName || hostname}
+          <div className={styles.sourcesPanel} ref={panelRef}>
+            <div className={styles.sourcesPanelHeader}>
+              <span className={styles.sourcesPanelTitle}>
+                {citations.length} source{citations.length !== 1 ? 's' : ''}
+              </span>
+              <button
+                className={styles.sourcesPanelClose}
+                onClick={() => setIsPanelOpen(false)}
+                aria-label="Close sources"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path
+                    d="M10.5 3.5L3.5 10.5M3.5 3.5l7 7"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className={styles.sourcesPanelList}>
+              {citations.map((citation, idx) => {
+                let favicon = '';
+                let hostname = '';
+                let sourceName = '';
+                try {
+                  const url = new URL(citation.url);
+                  hostname = url.hostname.replace(/^www\./, '');
+                  favicon = `https://www.google.com/s2/favicons?domain=${url.hostname}&sz=32`;
+                  sourceName = hostname.split('.')[0];
+                  sourceName = sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
+                } catch {
+                  // skip
+                }
+                return (
+                  <a
+                    key={idx}
+                    href={citation.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.sourcesPanelItem}
+                  >
+                    <div className={styles.sourcesPanelItemIcon}>
+                      {favicon ? (
+                        <img src={favicon} alt="" className={styles.sourcesPanelFavicon} />
+                      ) : (
+                        <span className={styles.sourcesPanelItemNumber}>{idx + 1}</span>
+                      )}
+                    </div>
+                    <div className={styles.sourcesPanelItemContent}>
+                      <span className={styles.sourcesPanelItemSource}>
+                        {sourceName || hostname}
+                      </span>
+                      <span className={styles.sourcesPanelItemTitle}>
+                        {citation.title || citation.url}
+                      </span>
+                      {citation.snippet && (
+                        <span className={styles.sourcesPanelItemSnippet}>
+                          {citation.snippet.length > 150
+                            ? citation.snippet.slice(0, 150) + '...'
+                            : citation.snippet}
                         </span>
-                        <span className={styles.sourcesPanelItemTitle}>
-                          {citation.title || citation.url}
-                        </span>
-                        {citation.snippet && (
-                          <span className={styles.sourcesPanelItemSnippet}>
-                            {citation.snippet.length > 150
-                              ? citation.snippet.slice(0, 150) + '...'
-                              : citation.snippet}
-                          </span>
-                        )}
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           </div>,
           document.body
@@ -5080,32 +5095,27 @@ function UserPrompt({ content, onEdit, createdAt, onRetry }) {
   const collapsedStyle = !isExpanded && isLong ? { maxHeight: `${LINE_LIMIT * 1.65}em` } : {};
 
   return (
-    <div className={styles.userPromptCard}>
-      <div
-        ref={contentRef}
-        className={`${styles.userPromptText} ${
-          !isExpanded && isLong ? styles.userPromptCollapsed : ''
-        }`}
-        style={collapsedStyle}
-      >
-        {content}
-      </div>
-      {isLong && (
-        <button
-          className={styles.userPromptToggle}
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-expanded={isExpanded}
+    <div className={styles.userPromptWrapper}>
+      <div className={styles.userPromptCard}>
+        <div
+          ref={contentRef}
+          className={`${styles.userPromptText} ${
+            !isExpanded && isLong ? styles.userPromptCollapsed : ''
+          }`}
+          style={collapsedStyle}
         >
-          <span>{isExpanded ? 'See less' : 'See more'}</span>
-          <span
-            className={`${styles.userPromptToggleIcon} ${
-              isExpanded ? styles.userPromptToggleIconFlipped : ''
-            }`}
+          {content}
+        </div>
+        {isLong && (
+          <button
+            className={styles.userPromptToggle}
+            onClick={() => setIsExpanded(!isExpanded)}
+            aria-expanded={isExpanded}
           >
-            <ChevronDownIcon />
-          </span>
-        </button>
-      )}
+            <span>{isExpanded ? 'Show less' : 'Show more'}</span>
+          </button>
+        )}
+      </div>
       <div className={styles.userPromptActions}>
         {timeStr && <span className={styles.userPromptTime}>{timeStr}</span>}
         <button
