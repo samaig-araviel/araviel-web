@@ -66,6 +66,7 @@ import TimelineBlock from '../TimelineBlock/TimelineBlock';
 import ComparisonBlock from '../ComparisonBlock/ComparisonBlock';
 import StepsBlock from '../StepsBlock/StepsBlock';
 import FileBlock from '../FileBlock/FileBlock';
+import ArtifactBlock from '../ArtifactBlock/ArtifactBlock';
 import WeatherCard from '../WeatherCard';
 import { detectWeatherResponse, extractWeatherData } from '../WeatherCard/weatherParser';
 import { generateAndDownload } from '../../services/fileGenerator';
@@ -195,6 +196,8 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
         elements.push(<StepsBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'file') {
         elements.push(<FileBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
+      } else if (lang === 'artifact' || lang === 'html-artifact') {
+        elements.push(<ArtifactBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'json' || lang === '') {
         // Auto-detect chart specs in json/untagged code blocks
         let isChartSpec = false;
@@ -739,7 +742,9 @@ function extractCodeBlocksWithNames(text) {
       lang === 'timeline' ||
       lang === 'comparison' ||
       lang === 'steps' ||
-      lang === 'file'
+      lang === 'file' ||
+      lang === 'artifact' ||
+      lang === 'html-artifact'
     )
       continue;
     if (lang === 'json' || lang === '') {
