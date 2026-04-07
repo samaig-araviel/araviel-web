@@ -4,7 +4,11 @@ import { supabase } from '../lib/supabase';
 import { initializeAuth, setAuth, clearAuth } from '../store/slices/authSlice';
 import { resetChatState, setCreditBalance } from '../store/slices/chatSlice';
 import { resetProjectsState } from '../store/slices/projectsSlice';
-import { resetSubscriptionState, setSubscriptionData } from '../store/slices/subscriptionSlice';
+import {
+  resetSubscriptionState,
+  setSubscriptionData,
+  setImageCredits,
+} from '../store/slices/subscriptionSlice';
 import { resetGuestPromptCount } from '../utils/guestSession';
 import { fetchCreditBalance } from '../services/credits';
 import { fetchSubscription } from '../services/subscription';
@@ -83,6 +87,13 @@ export default function useAuthListener() {
               .then((data) => {
                 if (data.balance) {
                   dispatch(setCreditBalance(data.balance));
+                  dispatch(setImageCredits({
+                    used: data.balance.monthly?.used ?? 0,
+                    limit: data.balance.monthly?.total ?? 5,
+                    remaining: data.balance.monthly?.remaining ?? 0,
+                    packRemaining: data.balance.packs?.remaining ?? 0,
+                    cycleResetsAt: data.balance.cycleResetsAt ?? null,
+                  }));
                 }
               })
               .catch(() => {});

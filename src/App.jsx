@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from './store/slices/themeSlice';
 import { selectActiveItem, setActiveItem } from './store/slices/sidebarSlice';
 import { selectAuthLoading, selectAuthUser } from './store/slices/authSlice';
-import { fetchSubscriptionThunk } from './store/slices/subscriptionSlice';
+import { fetchSubscriptionThunk, setImageCredits } from './store/slices/subscriptionSlice';
 import { setCreditBalance } from './store/slices/chatSlice';
 import { subscribeToCreditPackChanges, fetchCreditBalance } from './services/credits';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -63,12 +63,21 @@ export default function App() {
       url.searchParams.delete('type');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
-      // Refresh both subscription slice and image credit balance
+      // Refresh both subscription slice and image credit balance after pack purchase
       const refreshAllCredits = () => {
         dispatch(fetchSubscriptionThunk());
         fetchCreditBalance()
           .then((data) => {
-            if (data.balance) dispatch(setCreditBalance(data.balance));
+            if (data.balance) {
+              dispatch(setCreditBalance(data.balance));
+              dispatch(setImageCredits({
+                used: data.balance.monthly?.used ?? 0,
+                limit: data.balance.monthly?.total ?? 5,
+                remaining: data.balance.monthly?.remaining ?? 0,
+                packRemaining: data.balance.packs?.remaining ?? 0,
+                cycleResetsAt: data.balance.cycleResetsAt ?? null,
+              }));
+            }
           })
           .catch(() => {});
       };

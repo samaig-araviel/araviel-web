@@ -739,13 +739,22 @@ export default function MainContent() {
     };
   }, [currentChatId]);
 
-  // Fetch credit balance on mount and when modality changes to image (authenticated users only)
+  // Fetch credit balance on mount and when modality switches to image (authenticated users only)
   useEffect(() => {
     if (!isAuthenticated) return;
     if (selectedModality === 'image' || !creditBalance) {
       fetchCreditBalance()
         .then((data) => {
-          if (data.balance) dispatch(setCreditBalance(data.balance));
+          if (data.balance) {
+            dispatch(setCreditBalance(data.balance));
+            dispatch(setImageCredits({
+              used: data.balance.monthly?.used ?? 0,
+              limit: data.balance.monthly?.total ?? 5,
+              remaining: data.balance.monthly?.remaining ?? 0,
+              packRemaining: data.balance.packs?.remaining ?? 0,
+              cycleResetsAt: data.balance.cycleResetsAt ?? null,
+            }));
+          }
         })
         .catch(() => {});
     }
@@ -1346,30 +1355,19 @@ export default function MainContent() {
                   })
                 );
               }
-              // Update credit balance if image credits were charged
-              if (data.credits) {
-                // Re-fetch full balance so UI reflects updated image credits in both slices
-                fetchCreditBalance()
-                  .then((res) => {
-                    if (res.balance) {
-                      dispatch(setCreditBalance(res.balance));
-                      // Sync subscriptionSlice.imageCredits so Settings > Usage also updates
-                      dispatch(
-                        setImageCredits({
-                          used: res.balance.monthly?.used ?? 0,
-                          limit: res.balance.monthly?.total ?? 5,
-                          remaining: res.balance.monthly?.remaining ?? 0,
-                          packRemaining: res.balance.pack?.remaining ?? 0,
-                        })
-                      );
-                    }
-                    // Signal ImageGalleryView (and any other listeners) that the charge is complete
-                    window.dispatchEvent(new CustomEvent('araviel-generation-done'));
-                  })
-                  .catch(() => {
-                    // Even on error, fire event so gallery can attempt its own refresh
-                    window.dispatchEvent(new CustomEvent('araviel-generation-done'));
-                  });
+              // Update both Redux slices from the authoritative post-charge balance embedded
+              // in the done event. No extra round-trip to /api/credits needed.
+              if (data.imageBalance) {
+                dispatch(setCreditBalance(data.imageBalance));
+                dispatch(setImageCredits({
+                  used: data.imageBalance.monthly?.used ?? 0,
+                  limit: data.imageBalance.monthly?.total ?? 5,
+                  remaining: data.imageBalance.monthly?.remaining ?? 0,
+                  packRemaining: data.imageBalance.packs?.remaining ?? 0,
+                  cycleResetsAt: data.imageBalance.cycleResetsAt ?? null,
+                }));
+                // Signal SettingsView (and any component with local credit state) to re-fetch
+                window.dispatchEvent(new CustomEvent('araviel-credits-updated'));
               }
               // Sync text credits from SSE done event
               if (data.textCredits) {
@@ -1582,8 +1580,32 @@ export default function MainContent() {
         setShowBuyPacksModal(true);
         return;
       }
-      // No client-side fallback needed — if balance hasn't loaded,
-      // the server will respond with INSUFFICIENT_CREDITS which shows BuyPacksModal.
+      // Optimistic deduction: reflect the cost immediately so the UI responds
+      // before the server confirms. The done event corrects with the real balance.
+      if (creditBalance) {
+        const cost = getCreditCost(imageQuality);
+        const monthlyDelta = Math.min(cost, creditBalance.monthly?.remaining ?? 0);
+        const packDelta = cost - monthlyDelta;
+        dispatch(setCreditBalance({
+          ...creditBalance,
+          monthly: {
+            ...creditBalance.monthly,
+            remaining: Math.max(0, (creditBalance.monthly?.remaining ?? 0) - monthlyDelta),
+            used: (creditBalance.monthly?.used ?? 0) + monthlyDelta,
+          },
+          packs: {
+            ...creditBalance.packs,
+            remaining: Math.max(0, (creditBalance.packs?.remaining ?? 0) - packDelta),
+            used: (creditBalance.packs?.used ?? 0) + packDelta,
+          },
+          combined: Math.max(0, (creditBalance.combined ?? 0) - cost),
+        }));
+        dispatch(setImageCredits({
+          remaining: Math.max(0, (creditBalance.monthly?.remaining ?? 0) - monthlyDelta),
+          used: (creditBalance.monthly?.used ?? 0) + monthlyDelta,
+          packRemaining: Math.max(0, (creditBalance.packs?.remaining ?? 0) - packDelta),
+        }));
+      }
     }
 
     dispatch(setInputValue(''));
