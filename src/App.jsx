@@ -4,7 +4,8 @@ import { selectEffectiveTheme } from './store/slices/themeSlice';
 import { selectActiveItem, setActiveItem } from './store/slices/sidebarSlice';
 import { selectAuthLoading, selectAuthUser } from './store/slices/authSlice';
 import { fetchSubscriptionThunk } from './store/slices/subscriptionSlice';
-import { subscribeToCreditPackChanges } from './services/credits';
+import { setCreditBalance } from './store/slices/chatSlice';
+import { subscribeToCreditPackChanges, fetchCreditBalance } from './services/credits';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import useAuthListener from './hooks/useAuthListener';
 import Sidebar from './components/Sidebar';
@@ -62,25 +63,35 @@ export default function App() {
       url.searchParams.delete('type');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
+      // Refresh both subscription slice and image credit balance
+      const refreshAllCredits = () => {
+        dispatch(fetchSubscriptionThunk());
+        fetchCreditBalance()
+          .then((data) => {
+            if (data.balance) dispatch(setCreditBalance(data.balance));
+          })
+          .catch(() => {});
+      };
+
       // For pack purchases: subscribe to Realtime changes on credit_packs table
       // so balance updates as soon as the Stripe webhook inserts the new pack
       if (checkoutType === 'pack' && user?.id) {
         dispatch(setActiveItem('usage'));
         unsubPackRef.current?.();
         unsubPackRef.current = subscribeToCreditPackChanges(user.id, () => {
-          dispatch(fetchSubscriptionThunk());
+          refreshAllCredits();
           unsubPackRef.current?.();
           unsubPackRef.current = null;
         });
       } else if (checkoutType === 'pack') {
         // No user id available — fall back to a delayed fetch
         setTimeout(() => {
-          dispatch(fetchSubscriptionThunk());
+          refreshAllCredits();
           dispatch(setActiveItem('usage'));
         }, 3000);
       } else {
         // For subscriptions, refresh immediately
-        dispatch(fetchSubscriptionThunk());
+        refreshAllCredits();
       }
     }
 
