@@ -30,7 +30,10 @@ import {
   getLimitInfo,
 } from '../../services/imageGeneration';
 import { PROVIDERS } from '../../data/models';
-import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
+import {
+  selectCurrentTier,
+  setImageCredits,
+} from '../../store/slices/subscriptionSlice';
 import {
   CloseIcon,
   FileDownIcon,
@@ -138,12 +141,22 @@ export default function ImageGalleryView() {
   }, []);
   loadImagesRef.current = loadImages;
 
-  // Fetch credit balance on mount (authenticated users only)
+  // Fetch credit balance on mount (authenticated users only) — update both slices
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchCreditBalance()
       .then((data) => {
-        if (data.balance) dispatch(setCreditBalance(data.balance));
+        if (data.balance) {
+          dispatch(setCreditBalance(data.balance));
+          dispatch(
+            setImageCredits({
+              used: data.balance.monthly?.used ?? 0,
+              limit: data.balance.monthly?.total ?? 5,
+              remaining: data.balance.monthly?.remaining ?? 0,
+              packRemaining: data.balance.pack?.remaining ?? 0,
+            })
+          );
+        }
       })
       .catch(() => {});
   }, [dispatch, isAuthenticated]);
@@ -159,11 +172,21 @@ export default function ImageGalleryView() {
     // Only attach listeners for authenticated users
     if (!isAuthenticated) return;
 
-    // Helper to refresh credit balance from API
-    const refreshCredits = () => {
+    // Refresh both chatSlice.creditBalance AND subscriptionSlice.imageCredits
+    const refreshAllCredits = () => {
       fetchCreditBalance()
         .then((data) => {
-          if (data?.balance) dispatch(setCreditBalance(data.balance));
+          if (data?.balance) {
+            dispatch(setCreditBalance(data.balance));
+            dispatch(
+              setImageCredits({
+                used: data.balance.monthly?.used ?? 0,
+                limit: data.balance.monthly?.total ?? 5,
+                remaining: data.balance.monthly?.remaining ?? 0,
+                packRemaining: data.balance.pack?.remaining ?? 0,
+              })
+            );
+          }
         })
         .catch(() => {});
     };
@@ -177,16 +200,25 @@ export default function ImageGalleryView() {
       const cached = getGeneratedImages();
       if (cached.length > 0) setImages(cached);
       debounceTimer = setTimeout(() => loadImagesRef.current(), 500);
-      // Also refresh credit balance — credits were just charged
-      refreshCredits();
+      // Delay credit refresh: chargeCredits() on the server runs AFTER this event fires,
+      // so an immediate fetch would return the pre-charge balance.
+      // araviel-generation-done fires after the charge completes; use that as primary trigger.
+      // This 3-second fallback covers the case where the user navigated away before done arrived.
+      setTimeout(refreshAllCredits, 3000);
     };
     window.addEventListener('araviel-image-saved', handleImageSaved);
+
+    // Primary credit refresh: fired by MainContent AFTER chargeCredits() resolves
+    const handleGenerationDone = () => {
+      refreshAllCredits();
+    };
+    window.addEventListener('araviel-generation-done', handleGenerationDone);
 
     // Also refresh when tab regains focus
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         loadImagesRef.current();
-        refreshCredits();
+        refreshAllCredits();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -194,6 +226,7 @@ export default function ImageGalleryView() {
     return () => {
       clearTimeout(debounceTimer);
       window.removeEventListener('araviel-image-saved', handleImageSaved);
+      window.removeEventListener('araviel-generation-done', handleGenerationDone);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [loadImages, isAuthenticated, dispatch]);

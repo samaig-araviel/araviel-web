@@ -113,6 +113,7 @@ import {
   showUpgradeModal,
   setTextCredits,
   selectCurrentTier,
+  setImageCredits,
 } from '../../store/slices/subscriptionSlice';
 import { getNextTier } from '../../config/subscription';
 import { PROVIDERS, isImageGenerationModel } from '../../data/models';
@@ -1347,12 +1348,28 @@ export default function MainContent() {
               }
               // Update credit balance if image credits were charged
               if (data.credits) {
-                // Re-fetch full balance so UI reflects updated image credits
+                // Re-fetch full balance so UI reflects updated image credits in both slices
                 fetchCreditBalance()
                   .then((res) => {
-                    if (res.balance) dispatch(setCreditBalance(res.balance));
+                    if (res.balance) {
+                      dispatch(setCreditBalance(res.balance));
+                      // Sync subscriptionSlice.imageCredits so Settings > Usage also updates
+                      dispatch(
+                        setImageCredits({
+                          used: res.balance.monthly?.used ?? 0,
+                          limit: res.balance.monthly?.total ?? 5,
+                          remaining: res.balance.monthly?.remaining ?? 0,
+                          packRemaining: res.balance.pack?.remaining ?? 0,
+                        })
+                      );
+                    }
+                    // Signal ImageGalleryView (and any other listeners) that the charge is complete
+                    window.dispatchEvent(new CustomEvent('araviel-generation-done'));
                   })
-                  .catch(() => {});
+                  .catch(() => {
+                    // Even on error, fire event so gallery can attempt its own refresh
+                    window.dispatchEvent(new CustomEvent('araviel-generation-done'));
+                  });
               }
               // Sync text credits from SSE done event
               if (data.textCredits) {
