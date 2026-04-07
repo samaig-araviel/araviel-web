@@ -141,21 +141,22 @@ export default function ImageGalleryView() {
   }, []);
   loadImagesRef.current = loadImages;
 
-  // Fetch credit balance on mount (authenticated users only) — update both slices
+  // Fetch credit balance on mount and update both Redux slices.
+  // This is the fallback for the navigate-away scenario: if the user left the chat
+  // view before the done event arrived, this fetch runs after the charge is committed.
   useEffect(() => {
     if (!isAuthenticated) return;
     fetchCreditBalance()
       .then((data) => {
         if (data.balance) {
           dispatch(setCreditBalance(data.balance));
-          dispatch(
-            setImageCredits({
-              used: data.balance.monthly?.used ?? 0,
-              limit: data.balance.monthly?.total ?? 5,
-              remaining: data.balance.monthly?.remaining ?? 0,
-              packRemaining: data.balance.pack?.remaining ?? 0,
-            })
-          );
+          dispatch(setImageCredits({
+            used: data.balance.monthly?.used ?? 0,
+            limit: data.balance.monthly?.total ?? 5,
+            remaining: data.balance.monthly?.remaining ?? 0,
+            packRemaining: data.balance.packs?.remaining ?? 0,
+            cycleResetsAt: data.balance.cycleResetsAt ?? null,
+          }));
         }
       })
       .catch(() => {});
@@ -169,56 +170,45 @@ export default function ImageGalleryView() {
       setImages([]);
     }
 
-    // Only attach listeners for authenticated users
     if (!isAuthenticated) return;
 
-    // Refresh both chatSlice.creditBalance AND subscriptionSlice.imageCredits
-    const refreshAllCredits = () => {
+    // Refresh gallery when new images are saved from the chat view.
+    // Credit numbers are NOT refreshed here — the done SSE event handles that
+    // with the authoritative post-charge balance embedded by the server.
+    let debounceTimer = null;
+    const handleImageSaved = () => {
+      clearTimeout(debounceTimer);
+      const cached = getGeneratedImages();
+      if (cached.length > 0) setImages(cached);
+      debounceTimer = setTimeout(() => loadImagesRef.current(), 500);
+    };
+    window.addEventListener('araviel-image-saved', handleImageSaved);
+
+    // Refresh both slices when the authoritative post-charge balance arrives.
+    // Fired by MainContent after the done SSE event is processed.
+    const handleCreditsUpdated = () => {
       fetchCreditBalance()
         .then((data) => {
           if (data?.balance) {
             dispatch(setCreditBalance(data.balance));
-            dispatch(
-              setImageCredits({
-                used: data.balance.monthly?.used ?? 0,
-                limit: data.balance.monthly?.total ?? 5,
-                remaining: data.balance.monthly?.remaining ?? 0,
-                packRemaining: data.balance.pack?.remaining ?? 0,
-              })
-            );
+            dispatch(setImageCredits({
+              used: data.balance.monthly?.used ?? 0,
+              limit: data.balance.monthly?.total ?? 5,
+              remaining: data.balance.monthly?.remaining ?? 0,
+              packRemaining: data.balance.packs?.remaining ?? 0,
+              cycleResetsAt: data.balance.cycleResetsAt ?? null,
+            }));
           }
         })
         .catch(() => {});
     };
+    window.addEventListener('araviel-credits-updated', handleCreditsUpdated);
 
-    // Refresh gallery when new images are saved (e.g. from chat)
-    // Use a small debounce to handle rapid successive saves
-    let debounceTimer = null;
-    const handleImageSaved = () => {
-      clearTimeout(debounceTimer);
-      // Show the new image immediately from cache, then refresh from API
-      const cached = getGeneratedImages();
-      if (cached.length > 0) setImages(cached);
-      debounceTimer = setTimeout(() => loadImagesRef.current(), 500);
-      // Delay credit refresh: chargeCredits() on the server runs AFTER this event fires,
-      // so an immediate fetch would return the pre-charge balance.
-      // araviel-generation-done fires after the charge completes; use that as primary trigger.
-      // This 3-second fallback covers the case where the user navigated away before done arrived.
-      setTimeout(refreshAllCredits, 3000);
-    };
-    window.addEventListener('araviel-image-saved', handleImageSaved);
-
-    // Primary credit refresh: fired by MainContent AFTER chargeCredits() resolves
-    const handleGenerationDone = () => {
-      refreshAllCredits();
-    };
-    window.addEventListener('araviel-generation-done', handleGenerationDone);
-
-    // Also refresh when tab regains focus
+    // Refresh gallery and credits when tab regains focus (handles long-away scenarios)
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         loadImagesRef.current();
-        refreshAllCredits();
+        handleCreditsUpdated();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
@@ -226,7 +216,7 @@ export default function ImageGalleryView() {
     return () => {
       clearTimeout(debounceTimer);
       window.removeEventListener('araviel-image-saved', handleImageSaved);
-      window.removeEventListener('araviel-generation-done', handleGenerationDone);
+      window.removeEventListener('araviel-credits-updated', handleCreditsUpdated);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [loadImages, isAuthenticated, dispatch]);

@@ -185,12 +185,22 @@ export default function SettingsView({ initialSection }) {
     if (activeSection === 'usage') loadCredits();
   }, [activeSection, loadCredits]);
 
-  // Refresh credits when Redux textCredits change (from chat usage)
+  // Refresh credits when text credits change (from chat usage)
   useEffect(() => {
     if (activeSection === 'usage' && textCredits) {
       loadCredits();
     }
   }, [textCredits, activeSection, loadCredits]);
+
+  // Refresh credits when image generation completes — fired by MainContent after
+  // the done SSE event updates both Redux slices with the post-charge balance.
+  useEffect(() => {
+    const handleCreditsUpdated = () => {
+      if (activeSection === 'usage') loadCredits();
+    };
+    window.addEventListener('araviel-credits-updated', handleCreditsUpdated);
+    return () => window.removeEventListener('araviel-credits-updated', handleCreditsUpdated);
+  }, [activeSection, loadCredits]);
 
   const updateSetting = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
