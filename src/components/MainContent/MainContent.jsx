@@ -550,13 +550,17 @@ function LimitToast({ maxCount, onClose }) {
  * Free users are prompted to upgrade to Pro.
  * Pro users are prompted to purchase an image generation addon.
  */
-function ImageLimitPrompt({ onClose }) {
+function ImageLimitPrompt({ onClose, onBuyCredits, onUpgrade }) {
+  const creditBalance = useSelector(selectCreditBalance);
   const currentTier = useSelector(selectCurrentTier);
-  const limitInfo = getLimitInfo(currentTier);
-  const isFree = limitInfo.tier === 'free';
+  const isFree = !currentTier || currentTier === 'free';
 
-  const resetTime = limitInfo.resetAt
-    ? new Date(limitInfo.resetAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  // Use real credit data from server when available, fall back to tier defaults
+  const monthlyLimit = creditBalance?.monthly?.total
+    ?? (currentTier === 'pro' ? 150 : currentTier === 'lite' ? 50 : 5);
+  const cycleResetsAt = creditBalance?.cycleResetsAt;
+  const resetTime = cycleResetsAt
+    ? new Date(cycleResetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : null;
 
   return (
@@ -583,33 +587,31 @@ function ImageLimitPrompt({ onClose }) {
           </svg>
         </div>
 
-        <h3 className={styles.imageLimitTitle}>
-          {isFree ? 'Image generation limit reached' : 'Daily image limit reached'}
-        </h3>
+        <h3 className={styles.imageLimitTitle}>Monthly image limit reached</h3>
 
         <p className={styles.imageLimitDesc}>
           {isFree
-            ? `You\u2019ve used all ${limitInfo.limit} free image generations for today.`
-            : `You\u2019ve used all ${limitInfo.limit} image generations included with your Pro plan today.`}
-          {resetTime && <> Your limit resets at {resetTime}.</>}
+            ? `You’ve used all ${monthlyLimit} free image generation${monthlyLimit !== 1 ? 's' : ''} for this month.`
+            : `You’ve used all ${monthlyLimit} image generation${monthlyLimit !== 1 ? 's' : ''} included with your ${currentTier === 'lite' ? 'Lite' : 'Pro'} plan this month.`}
+          {resetTime && <> Your monthly credits reset at {resetTime}.</>}
         </p>
 
         {isFree ? (
           <div className={styles.imageLimitUpgrade}>
             <p className={styles.imageLimitUpgradeText}>
-              Upgrade to Pro for {10} image generations per day, plus access to premium AI models.
+              Upgrade to Pro for 150 image credits per month, plus access to premium AI models.
             </p>
-            <button className={styles.imageLimitUpgradeBtn} onClick={onClose}>
+            <button className={styles.imageLimitUpgradeBtn} onClick={onUpgrade ?? onClose}>
               Upgrade to Pro
             </button>
           </div>
         ) : (
           <div className={styles.imageLimitUpgrade}>
             <p className={styles.imageLimitUpgradeText}>
-              Need more? Purchase the Image Generation add-on for additional usage beyond your daily
-              Pro limit.
+              Need more? Purchase an Image Generation add-on for additional credits beyond your
+              monthly plan allowance.
             </p>
-            <button className={styles.imageLimitUpgradeBtn} onClick={onClose}>
+            <button className={styles.imageLimitUpgradeBtn} onClick={onBuyCredits ?? onClose}>
               Get Image Generation Add-on
             </button>
           </div>
@@ -617,8 +619,8 @@ function ImageLimitPrompt({ onClose }) {
 
         <p className={styles.imageLimitFooter}>
           {isFree
-            ? `Free plan: ${limitInfo.limit} images / 24 hours`
-            : `Pro plan: ${limitInfo.limit} images / 24 hours`}
+            ? `Free plan: ${monthlyLimit} image credit${monthlyLimit !== 1 ? 's' : ''} / month`
+            : `${currentTier === 'lite' ? 'Lite' : 'Pro'} plan: ${monthlyLimit} image credit${monthlyLimit !== 1 ? 's' : ''} / month`}
         </p>
       </div>
     </div>
@@ -1345,13 +1347,7 @@ export default function MainContent() {
               }
               // Update credit balance if image credits were charged
               if (data.credits) {
-                dispatch(
-                  setCreditBalance((prev) => ({
-                    ...prev,
-                    combined: data.credits.remaining ?? prev?.combined,
-                  }))
-                );
-                // Re-fetch full balance for accuracy
+                // Re-fetch full balance so UI reflects updated image credits
                 fetchCreditBalance()
                   .then((res) => {
                     if (res.balance) dispatch(setCreditBalance(res.balance));
@@ -1569,11 +1565,8 @@ export default function MainContent() {
         setShowBuyPacksModal(true);
         return;
       }
-      // Fallback to legacy localStorage limit check
-      if (!canGenerateImage()) {
-        setShowImageLimitPrompt(true);
-        return;
-      }
+      // No client-side fallback needed — if balance hasn't loaded,
+      // the server will respond with INSUFFICIENT_CREDITS which shows BuyPacksModal.
     }
 
     dispatch(setInputValue(''));
@@ -1646,11 +1639,11 @@ export default function MainContent() {
       return;
     }
 
-    // Authenticated user image rate limit
-    if (isAuthenticated && willGenImage && !canGenerateImage()) {
+    // Authenticated user image rate limit: if balance has loaded and is zero, show modal
+    if (isAuthenticated && willGenImage && creditBalance && creditBalance.combined < getCreditCost(imageQuality)) {
       dispatch(setPendingAutoSubmit(false));
       dispatch(setPendingModality(null));
-      setShowImageLimitPrompt(true);
+      setShowBuyPacksModal(true);
       return;
     }
 
@@ -2485,7 +2478,19 @@ export default function MainContent() {
       )}
 
       {/* Image generation limit prompt */}
-      {showImageLimitPrompt && <ImageLimitPrompt onClose={() => setShowImageLimitPrompt(false)} />}
+      {showImageLimitPrompt && (
+        <ImageLimitPrompt
+          onClose={() => setShowImageLimitPrompt(false)}
+          onBuyCredits={() => {
+            setShowImageLimitPrompt(false);
+            setShowBuyPacksModal(true);
+          }}
+          onUpgrade={() => {
+            setShowImageLimitPrompt(false);
+            dispatch(setActiveItem('pricing'));
+          }}
+        />
+      )}
 
       {/* Messages area — only shown when there are messages */}
       {hasMessages && (
