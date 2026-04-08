@@ -16,6 +16,7 @@ export default function CreditBalance({ onBuyCredits }) {
 
   const hasPackCredits = balance.packs.remaining > 0;
   const monthlyDepleted = balance.monthly.remaining === 0;
+  const resetLabel = balance.cycleResetsAt ? formatResetTime(balance.cycleResetsAt) : null;
 
   return (
     <div className={styles.container}>
@@ -27,21 +28,23 @@ export default function CreditBalance({ onBuyCredits }) {
       </div>
       <div className={styles.breakdown}>
         <span className={monthlyDepleted ? styles.monthlyDepleted : styles.monthly}>
-          {balance.monthly.used}/{balance.monthly.total} monthly used
+          {monthlyDepleted
+            ? `0 of ${balance.monthly.total} monthly left`
+            : `${balance.monthly.remaining} of ${balance.monthly.total} monthly left`}
         </span>
+        {resetLabel && (
+          <>
+            <span className={styles.separator}>&bull;</span>
+            <span className={monthlyDepleted ? styles.resetInfoUrgent : styles.resetInfo}>
+              resets {resetLabel}
+            </span>
+          </>
+        )}
         {hasPackCredits && (
           <>
             <span className={styles.separator}>&bull;</span>
             <span className={styles.packs}>
-              {balance.packs.remaining} pack credit{balance.packs.remaining !== 1 ? 's' : ''}
-            </span>
-          </>
-        )}
-        {monthlyDepleted && balance.cycleResetsAt && (
-          <>
-            <span className={styles.separator}>&bull;</span>
-            <span className={styles.resetInfo}>
-              Resets {formatResetTime(balance.cycleResetsAt)}
+              {balance.packs.remaining} bonus
             </span>
           </>
         )}
