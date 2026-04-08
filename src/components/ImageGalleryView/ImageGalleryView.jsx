@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { setActiveItem } from '../../store/slices/sidebarSlice';
@@ -51,7 +51,6 @@ import {
   PlusIcon,
   PhotoIcon,
   TrashIcon,
-  CopyIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import styles from './ImageGalleryView.module.css';
@@ -804,17 +803,11 @@ export default function ImageGalleryView() {
  * Fullscreen image detail view with thumbnail sidebar and large preview.
  * Thumbnails on the left, selected image large in the center.
  */
-const PROMPT_COLLAPSED_HEIGHT = 168; // ~8 lines at 13px / 1.6 line-height
-
 function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) {
   const [activeIndex, setActiveIndex] = useState(startIndex);
   const [showDeleteWarning, setShowDeleteWarning] = useState(false);
-  const [promptExpanded, setPromptExpanded] = useState(false);
-  const [promptTruncated, setPromptTruncated] = useState(false);
-  const [copied, setCopied] = useState(false);
   const thumbListRef = useRef(null);
   const activeThumbRef = useRef(null);
-  const promptBodyRef = useRef(null);
 
   const img = images[activeIndex];
   const providerData = img?.provider ? PROVIDERS[img.provider] : null;
@@ -841,34 +834,12 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose, images.length, showDeleteWarning]);
 
-  // Reset prompt state when navigating images
-  useEffect(() => {
-    setPromptExpanded(false);
-    setPromptTruncated(false);
-    setCopied(false);
-  }, [activeIndex]);
-
   // Scroll active thumbnail into view
   useEffect(() => {
     if (activeThumbRef.current) {
       activeThumbRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [activeIndex]);
-
-  // Detect if prompt overflows the collapsed height
-  useLayoutEffect(() => {
-    if (promptBodyRef.current) {
-      setPromptTruncated(promptBodyRef.current.scrollHeight > PROMPT_COLLAPSED_HEIGHT);
-    }
-  }, [activeIndex, img?.prompt]);
-
-  const handleCopy = useCallback(() => {
-    if (!img?.prompt) return;
-    navigator.clipboard.writeText(img.prompt).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }, [img?.prompt]);
 
   if (!img) return null;
 
@@ -916,7 +887,7 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
           </div>
         </div>
 
-        {/* Main area: sidebar + image + prompt panel */}
+        {/* Main area: sidebar + image */}
         <div className={styles.detailMain}>
           {/* Thumbnail sidebar — only shown when multiple images */}
           {images.length > 1 && (
@@ -956,78 +927,28 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
               }}
             />
           </div>
+        </div>
 
-          {/* Right prompt panel */}
-          <div className={styles.detailPromptPanel}>
-            <div className={styles.detailPromptPanelHeader}>
-              <span className={styles.detailPromptPanelLabel}>Prompt</span>
-              <button
-                className={`${styles.detailPromptCopyBtn} ${copied ? styles.detailPromptCopyBtnDone : ''}`}
-                onClick={handleCopy}
-                title={copied ? 'Copied!' : 'Copy prompt'}
-                aria-label="Copy prompt"
-              >
-                {copied ? <CheckIcon /> : <CopyIcon />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
-              </button>
-            </div>
-
-            <div className={styles.detailPromptPanelDivider} />
-
-            {img.prompt ? (
-              <>
-                <div
-                  ref={promptBodyRef}
-                  className={`${styles.detailPromptPanelBody} ${
-                    promptExpanded ? styles.detailPromptPanelBodyExpanded : ''
-                  }`}
-                >
-                  <p className={styles.detailPromptPanelText}>{img.prompt}</p>
-                  {!promptExpanded && promptTruncated && (
-                    <div className={styles.detailPromptPanelFade} />
-                  )}
-                </div>
-
-                {promptTruncated && (
-                  <button
-                    className={styles.detailPromptToggle}
-                    onClick={() => setPromptExpanded((prev) => !prev)}
-                  >
-                    {promptExpanded ? 'Show less' : 'Show more'}
-                    <span
-                      className={`${styles.detailPromptToggleChevron} ${
-                        promptExpanded ? styles.detailPromptToggleChevronUp : ''
-                      }`}
-                    >
-                      <ChevronDownIcon />
-                    </span>
-                  </button>
-                )}
-              </>
-            ) : (
-              <p className={styles.detailPromptPanelEmpty}>No prompt available</p>
+        {/* Footer: prompt + meta */}
+        <div className={styles.detailFooter}>
+          {img.prompt && <p className={styles.detailPromptText}>{img.prompt}</p>}
+          <div className={styles.detailMetaRow}>
+            {img.provider && (
+              <span className={styles.detailMetaChip}>{providerData?.name || img.provider}</span>
             )}
-
-            <div className={`${styles.detailPromptPanelDivider} ${styles.detailPromptPanelDividerTop}`} />
-
-            <div className={styles.detailMetaRow}>
-              {img.provider && (
-                <span className={styles.detailMetaChip}>{providerData?.name || img.provider}</span>
-              )}
-              {img.size && <span className={styles.detailMetaChip}>{img.size}</span>}
-              {images.length > 1 && (
-                <span className={styles.detailMetaChip}>
-                  {activeIndex + 1} of {images.length}
-                </span>
-              )}
+            {img.size && <span className={styles.detailMetaChip}>{img.size}</span>}
+            {images.length > 1 && (
               <span className={styles.detailMetaChip}>
-                {new Date(img.createdAt).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                {activeIndex + 1} of {images.length}
               </span>
-            </div>
+            )}
+            <span className={styles.detailMetaChip}>
+              {new Date(img.createdAt).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </span>
           </div>
         </div>
 
