@@ -57,6 +57,12 @@
   opacity: 0.7;
 }
 
+.resetInfoUrgent {
+  white-space: nowrap;
+  font-style: italic;
+  color: #d97706;
+}
+
 .buyButton {
   padding: 3px 10px;
   border-radius: 6px;
