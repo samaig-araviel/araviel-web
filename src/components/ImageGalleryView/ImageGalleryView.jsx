@@ -300,7 +300,10 @@ export default function ImageGalleryView() {
     if (!isAuthenticated) {
       incrementGuestImageCount();
     }
+    // Capture quality before createNewChat resets it to 'standard'
+    const qualityToUse = imageQuality;
     dispatch(createNewChat());
+    dispatch(setImageQuality(qualityToUse));
     dispatch(setInputValue(prompt));
     dispatch(setPendingModality('image'));
     dispatch(setPendingAutoSubmit(true));
