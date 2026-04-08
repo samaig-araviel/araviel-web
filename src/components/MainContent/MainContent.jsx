@@ -1797,9 +1797,10 @@ export default function MainContent() {
         conversationId: currentChatId || undefined,
         addUserMessage: false,
         webSearch: webSearchEnabled,
+        imageQuality: imageQuality || undefined,
       });
     },
-    [dispatch, isProcessing, selectedModelId, currentChatId, runSSEPipeline, webSearchEnabled]
+    [dispatch, isProcessing, selectedModelId, currentChatId, runSSEPipeline, webSearchEnabled, imageQuality]
   );
 
   /**
@@ -1815,9 +1816,10 @@ export default function MainContent() {
         selectedModelId: alternateModel.modelId,
         conversationId: currentChatId || undefined,
         addUserMessage: false,
+        imageQuality: imageQuality || undefined,
       });
     },
-    [isProcessing, currentChatId, runSSEPipeline]
+    [isProcessing, currentChatId, runSSEPipeline, imageQuality]
   );
 
   // Dynamic attach options (label changes based on device)
