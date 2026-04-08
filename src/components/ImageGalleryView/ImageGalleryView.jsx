@@ -887,7 +887,7 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
           </div>
         </div>
 
-        {/* Main area: sidebar + image */}
+        {/* Main area: sidebar + image + footer (footer is inside the image column so it centres against the image, not the full container) */}
         <div className={styles.detailMain}>
           {/* Thumbnail sidebar — only shown when multiple images */}
           {images.length > 1 && (
@@ -915,40 +915,46 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
             </div>
           )}
 
-          {/* Main image */}
-          <div className={styles.detailBody}>
-            <img
-              key={activeIndex}
-              src={img.url}
-              alt={img.prompt || 'Generated image'}
-              className={styles.detailImage}
-              onError={(e) => {
-                e.target.style.opacity = '0.2';
-              }}
-            />
-          </div>
-        </div>
+          {/* Image column: image + footer stacked so footer aligns under the image */}
+          <div className={styles.detailContent}>
+            <div className={styles.detailBody}>
+              <img
+                key={activeIndex}
+                src={img.url}
+                alt={img.prompt || 'Generated image'}
+                className={styles.detailImage}
+                onError={(e) => {
+                  e.target.style.opacity = '0.2';
+                }}
+              />
+            </div>
 
-        {/* Footer: prompt + meta */}
-        <div className={styles.detailFooter}>
-          {img.prompt && <p className={styles.detailPromptText}>{img.prompt}</p>}
-          <div className={styles.detailMetaRow}>
-            {img.provider && (
-              <span className={styles.detailMetaChip}>{providerData?.name || img.provider}</span>
-            )}
-            {img.size && <span className={styles.detailMetaChip}>{img.size}</span>}
-            {images.length > 1 && (
-              <span className={styles.detailMetaChip}>
-                {activeIndex + 1} of {images.length}
-              </span>
-            )}
-            <span className={styles.detailMetaChip}>
-              {new Date(img.createdAt).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </span>
+            {/* Footer: prompt (scrollable) + meta */}
+            <div className={styles.detailFooter}>
+              {img.prompt && (
+                <div className={styles.detailPromptScroll}>
+                  <p className={styles.detailPromptText}>{img.prompt}</p>
+                </div>
+              )}
+              <div className={styles.detailMetaRow}>
+                {img.provider && (
+                  <span className={styles.detailMetaChip}>{providerData?.name || img.provider}</span>
+                )}
+                {img.size && <span className={styles.detailMetaChip}>{img.size}</span>}
+                {images.length > 1 && (
+                  <span className={styles.detailMetaChip}>
+                    {activeIndex + 1} of {images.length}
+                  </span>
+                )}
+                <span className={styles.detailMetaChip}>
+                  {new Date(img.createdAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 

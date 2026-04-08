@@ -953,7 +953,15 @@
 }
 
 :global([data-theme='light']) .detailPromptText {
-  color: rgba(0, 0, 0, 0.45);
+  color: rgba(0, 0, 0, 0.5);
+}
+
+:global([data-theme='light']) .detailPromptScroll {
+  scrollbar-color: rgba(0, 0, 0, 0.14) transparent;
+}
+
+:global([data-theme='light']) .detailPromptScroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.14);
 }
 
 :global([data-theme='light']) .detailMetaChip {
@@ -1174,6 +1182,15 @@
   transform: scale(1);
 }
 
+/* Image column: image + footer stacked */
+.detailContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
 /* Main image body */
 .detailBody {
   flex: 1;
@@ -1187,7 +1204,7 @@
 
 .detailImage {
   max-width: 80vw;
-  max-height: calc(100vh - 220px);
+  max-height: calc(100vh - 260px);
   border-radius: 14px;
   object-fit: contain;
   box-shadow: 0 16px 56px rgba(0, 0, 0, 0.5);
@@ -1206,21 +1223,43 @@
   }
 }
 
-/* Footer */
+/* Footer: sits below the image within the same column */
 .detailFooter {
   flex-shrink: 0;
-  padding: 16px 24px 24px;
+  padding: 20px 24px 28px;
   text-align: center;
-  max-width: 640px;
+  max-width: 600px;
   margin: 0 auto;
   width: 100%;
+}
+
+/* Scrollable prompt container — shows ~4 lines, scrolls beyond that */
+.detailPromptScroll {
+  max-height: 84px; /* 4 lines × 13px × 1.6 line-height */
+  overflow-y: auto;
+  margin-bottom: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+.detailPromptScroll::-webkit-scrollbar {
+  width: 3px;
+}
+
+.detailPromptScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detailPromptScroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 2px;
 }
 
 .detailPromptText {
   font-size: 13px;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.55);
-  margin: 0 0 8px;
+  margin: 0;
 }
 
 .detailMetaRow {
@@ -1319,7 +1358,7 @@
 
   .detailImage {
     max-width: 95vw;
-    max-height: calc(100vh - 180px);
+    max-height: calc(100vh - 240px);
   }
 
   .detailTopBar {
