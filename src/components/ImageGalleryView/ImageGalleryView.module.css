@@ -952,13 +952,71 @@
   box-shadow: 0 16px 56px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
 }
 
-:global([data-theme='light']) .detailPromptText {
+:global([data-theme='light']) .detailPromptPanelLabel {
+  color: rgba(0, 0, 0, 0.35);
+}
+
+:global([data-theme='light']) .detailPromptCopyBtn {
   color: rgba(0, 0, 0, 0.45);
+  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:global([data-theme='light']) .detailPromptCopyBtn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.7);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+:global([data-theme='light']) .detailPromptCopyBtnDone {
+  color: rgba(22, 163, 74, 0.9);
+  border-color: rgba(22, 163, 74, 0.2);
+  background: rgba(22, 163, 74, 0.06);
+}
+
+:global([data-theme='light']) .detailPromptCopyBtnDone:hover {
+  color: rgba(22, 163, 74, 0.9);
+  border-color: rgba(22, 163, 74, 0.25);
+  background: rgba(22, 163, 74, 0.1);
+}
+
+:global([data-theme='light']) .detailPromptPanelDivider {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+:global([data-theme='light']) .detailPromptPanelText {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:global([data-theme='light']) .detailPromptPanelFade {
+  background: linear-gradient(to bottom, transparent, rgba(245, 245, 247, 0.98));
+}
+
+:global([data-theme='light']) .detailPromptToggle {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+:global([data-theme='light']) .detailPromptToggle:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+:global([data-theme='light']) .detailPromptPanelEmpty {
+  color: rgba(0, 0, 0, 0.3);
 }
 
 :global([data-theme='light']) .detailMetaChip {
   color: rgba(0, 0, 0, 0.4);
   background: rgba(0, 0, 0, 0.05);
+}
+
+:global([data-theme='light']) .detailPromptPanel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+  :global([data-theme='light']) .detailPromptPanel {
+    border-top-color: rgba(0, 0, 0, 0.07);
+  }
 }
 
 :global([data-theme='light']) .detailThumb {
@@ -1182,12 +1240,12 @@
   justify-content: center;
   min-height: 0;
   min-width: 0;
-  padding: 0 40px;
+  padding: 0 32px;
 }
 
 .detailImage {
-  max-width: 80vw;
-  max-height: calc(100vh - 220px);
+  max-width: 100%;
+  max-height: calc(100vh - 180px);
   border-radius: 14px;
   object-fit: contain;
   box-shadow: 0 16px 56px rgba(0, 0, 0, 0.5);
@@ -1206,37 +1264,181 @@
   }
 }
 
-/* Footer */
-.detailFooter {
+/* Right-side prompt panel */
+.detailPromptPanel {
+  width: 280px;
   flex-shrink: 0;
-  padding: 16px 24px 24px;
-  text-align: center;
-  max-width: 640px;
-  margin: 0 auto;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 20px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
-.detailPromptText {
+.detailPromptPanel::-webkit-scrollbar {
+  width: 4px;
+}
+
+.detailPromptPanel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+.detailPromptPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.detailPromptPanelLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.detailPromptCopyBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.detailPromptCopyBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.detailPromptCopyBtn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.detailPromptCopyBtnDone {
+  color: rgba(134, 239, 172, 0.9);
+  border-color: rgba(134, 239, 172, 0.2);
+  background: rgba(134, 239, 172, 0.06);
+}
+
+.detailPromptCopyBtnDone:hover {
+  color: rgba(134, 239, 172, 0.9);
+  border-color: rgba(134, 239, 172, 0.25);
+  background: rgba(134, 239, 172, 0.1);
+}
+
+.detailPromptPanelDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.07);
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.detailPromptPanelDividerTop {
+  margin-top: 14px;
+}
+
+.detailPromptPanelBody {
+  max-height: 168px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.detailPromptPanelBodyExpanded {
+  max-height: none;
+}
+
+.detailPromptPanelText {
   font-size: 13px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.55);
-  margin: 0 0 8px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.detailPromptPanelFade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 52px;
+  background: linear-gradient(to bottom, transparent, rgba(18, 18, 20, 0.95));
+  pointer-events: none;
+}
+
+.detailPromptToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.detailPromptToggle:hover {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.detailPromptToggleChevron {
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.detailPromptToggleChevron svg {
+  width: 13px;
+  height: 13px;
+}
+
+.detailPromptToggleChevronUp {
+  transform: rotate(180deg);
+}
+
+.detailPromptPanelEmpty {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.25);
+  margin: 0;
+  font-style: italic;
 }
 
 .detailMetaRow {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 6px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 .detailMetaChip {
   font-size: 11px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.35);
-  padding: 3px 10px;
-  border-radius: 6px;
+  padding: 3px 8px;
+  border-radius: 5px;
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -1313,13 +1515,31 @@
     display: none;
   }
 
+  .detailMain {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
   .detailBody {
-    padding: 0 16px;
+    padding: 16px 16px 0;
+    flex: none;
   }
 
   .detailImage {
-    max-width: 95vw;
-    max-height: calc(100vh - 180px);
+    max-width: 100%;
+    max-height: 55vh;
+  }
+
+  .detailPromptPanel {
+    width: 100%;
+    flex-shrink: 0;
+    padding: 16px 16px 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    overflow-y: visible;
+  }
+
+  .detailMetaRow {
+    margin-top: 12px;
   }
 
   .detailTopBar {
