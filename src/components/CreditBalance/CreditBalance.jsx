@@ -27,7 +27,7 @@ export default function CreditBalance({ onBuyCredits }) {
       </div>
       <div className={styles.breakdown}>
         <span className={monthlyDepleted ? styles.monthlyDepleted : styles.monthly}>
-          {balance.monthly.remaining}/{balance.monthly.total} monthly
+          {balance.monthly.used}/{balance.monthly.total} monthly used
         </span>
         {hasPackCredits && (
           <>
