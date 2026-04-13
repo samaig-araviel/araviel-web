@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { selectEffectiveTheme } from './store/slices/themeSlice';
-import { selectActiveItem, setActiveItem } from './store/slices/sidebarSlice';
 import { selectAuthLoading, selectAuthUser } from './store/slices/authSlice';
 import { fetchSubscriptionThunk, setImageCredits } from './store/slices/subscriptionSlice';
 import { setCreditBalance } from './store/slices/chatSlice';
@@ -9,26 +9,18 @@ import { subscribeToCreditPackChanges, fetchCreditBalance } from './services/cre
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import useAuthListener from './hooks/useAuthListener';
 import Sidebar from './components/Sidebar';
-import MainContent from './components/MainContent';
-import ModelsView from './components/ModelsView';
-import ImageGalleryView from './components/ImageGalleryView';
-import ConversationsView from './components/ConversationsView';
-import ProjectsView from './components/ProjectsView';
-import SettingsView from './components/SettingsView';
-import PricingView from './components/PricingView/PricingView';
-import SubscriptionView from './components/SubscriptionView/SubscriptionView';
 import UpgradeModal from './components/UpgradeModal/UpgradeModal';
 import styles from './components/Auth/AuthModal.module.css';
 import './App.css';
 
 export default function App() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // Initialize auth listener — subscribes to Supabase auth state changes
   useAuthListener();
 
   const effectiveTheme = useSelector(selectEffectiveTheme);
-  const activeItem = useSelector(selectActiveItem);
   const authLoading = useSelector(selectAuthLoading);
   const user = useSelector(selectAuthUser);
   const unsubPackRef = useRef(null);
@@ -58,10 +50,6 @@ export default function App() {
     // Post-checkout: /?checkout=success (for subscriptions and packs)
     if (params.get('checkout') === 'success') {
       const checkoutType = params.get('type');
-      const url = new URL(window.location.href);
-      url.searchParams.delete('checkout');
-      url.searchParams.delete('type');
-      window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
       // Refresh both subscription slice and image credit balance after pack purchase
       const refreshAllCredits = () => {
@@ -85,7 +73,7 @@ export default function App() {
       // For pack purchases: subscribe to Realtime changes on credit_packs table
       // so balance updates as soon as the Stripe webhook inserts the new pack
       if (checkoutType === 'pack' && user?.id) {
-        dispatch(setActiveItem('usage'));
+        navigate('/settings/usage', { replace: true });
         unsubPackRef.current?.();
         unsubPackRef.current = subscribeToCreditPackChanges(user.id, () => {
           refreshAllCredits();
@@ -96,32 +84,30 @@ export default function App() {
         // No user id available — fall back to a delayed fetch
         setTimeout(() => {
           refreshAllCredits();
-          dispatch(setActiveItem('usage'));
+          navigate('/settings/usage', { replace: true });
         }, 3000);
       } else {
         // For subscriptions, refresh immediately
         refreshAllCredits();
+        navigate('/', { replace: true });
       }
     }
 
     // Portal/cancel return: /?view=settings, /?view=pricing, or /?view=usage
     const view = params.get('view');
-    if (view === 'settings' || view === 'pricing' || view === 'usage') {
-      dispatch(setActiveItem(view));
-      const url = new URL(window.location.href);
-      url.searchParams.delete('view');
-      window.history.replaceState({}, '', url.pathname + (url.search || ''));
-
-      // Refresh subscription after portal return
-      if (view === 'settings') {
-        dispatch(fetchSubscriptionThunk());
-      }
+    if (view === 'settings') {
+      navigate('/settings', { replace: true });
+      dispatch(fetchSubscriptionThunk());
+    } else if (view === 'pricing') {
+      navigate('/plans', { replace: true });
+    } else if (view === 'usage') {
+      navigate('/settings/usage', { replace: true });
     }
     return () => {
       unsubPackRef.current?.();
       unsubPackRef.current = null;
     };
-  }, [dispatch, user?.id]);
+  }, [dispatch, navigate, user?.id]);
 
   // Show loading screen while checking initial auth session
   if (authLoading) {
@@ -136,27 +122,7 @@ export default function App() {
   return (
     <div className="app">
       <Sidebar />
-      {activeItem === 'conversations' ? (
-        <ConversationsView />
-      ) : activeItem === 'projects' ? (
-        <ProjectsView />
-      ) : activeItem === 'models' ? (
-        <ModelsView />
-      ) : activeItem === 'gallery' ? (
-        <ImageGalleryView />
-      ) : activeItem === 'usage' ? (
-        <SettingsView initialSection="usage" />
-      ) : activeItem === 'personalisation' ? (
-        <SettingsView initialSection="personalization" />
-      ) : activeItem === 'settings' ? (
-        <SettingsView />
-      ) : activeItem === 'pricing' ? (
-        <PricingView />
-      ) : activeItem === 'subscription' ? (
-        <SubscriptionView />
-      ) : (
-        <MainContent />
-      )}
+      <Outlet />
       <UpgradeModal />
       <SpeedInsights />
     </div>

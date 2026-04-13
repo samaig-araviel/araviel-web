@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   selectConversations,
   selectConversationsTotal,
   setCurrentChat,
   setMessages,
 } from '../../store/slices/chatSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectProjects } from '../../store/slices/projectsSlice';
 import { searchConversations, searchProjects, searchImages } from '../../services/api';
 import { getGeneratedImages } from '../../services/imageGeneration';
@@ -76,6 +76,7 @@ function formatRelativeDate(dateStr) {
 
 export default function SearchModal({ onClose }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const conversations = useSelector(selectConversations);
   const conversationsTotal = useSelector(selectConversationsTotal);
   const projects = useSelector(selectProjects);
@@ -256,15 +257,15 @@ export default function SearchModal({ onClose }) {
       if (item.type === 'conversation') {
         dispatch(setCurrentChat(item.data.id));
         dispatch(setMessages([]));
-        dispatch(setActiveItem('home'));
+        navigate(`/conversations/${item.data.id}`);
       } else if (item.type === 'project') {
-        dispatch(setActiveItem('projects'));
+        navigate('/projects');
       } else if (item.type === 'image') {
-        dispatch(setActiveItem('gallery'));
+        navigate('/images');
       }
       onClose();
     },
-    [dispatch, onClose]
+    [dispatch, navigate, onClose]
   );
 
   // Keyboard navigation

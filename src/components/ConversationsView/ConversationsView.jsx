@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   selectConversations,
   selectConversationsTotal,
@@ -13,7 +14,6 @@ import {
   setImportedContext,
   createNewChat,
 } from '../../store/slices/chatSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { GuestGate } from '../GuestGate';
 import {
@@ -296,6 +296,7 @@ function getImportedProviders(conversations) {
 
 export default function ConversationsView() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { showError, showSuccess } = useToast();
   const conversations = useSelector(selectConversations);
   const conversationsTotal = useSelector(selectConversationsTotal);
@@ -635,7 +636,7 @@ export default function ConversationsView() {
     }
     dispatch(setCurrentChat(chatId));
     dispatch(setImportedContext(null));
-    dispatch(setActiveItem('home'));
+    navigate(`/conversations/${chatId}`);
     try {
       const data = await fetchConversationMessages(chatId);
       const storedImages = getGeneratedImages();
@@ -842,7 +843,7 @@ export default function ConversationsView() {
     }
     // Clear the native conversation ID so the backend creates a new one on first send
     dispatch(setCurrentChat(null));
-    dispatch(setActiveItem('home'));
+    navigate('/');
     dispatch(setMessages([]));
     try {
       const data = await fetchImportedConversationMessages(chat.id);
@@ -1178,7 +1179,7 @@ export default function ConversationsView() {
               className={styles.newChatBtn}
               onClick={() => {
                 dispatch(createNewChat());
-                dispatch(setActiveItem('home'));
+                navigate('/');
               }}
             >
               <PlusIcon />
@@ -1415,7 +1416,7 @@ export default function ConversationsView() {
                       className={styles.emptyAction}
                       onClick={() => {
                         dispatch(createNewChat());
-                        dispatch(setActiveItem('home'));
+                        navigate('/');
                       }}
                     >
                       <PlusIcon />

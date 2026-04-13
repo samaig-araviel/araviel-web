@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   selectCurrentTier,
   selectBillingCycle,
@@ -9,7 +10,6 @@ import {
   createCheckoutThunk,
   createPortalThunk,
 } from '../../store/slices/subscriptionSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { getAvailableTiers, SubscriptionTier } from '../../config/subscription';
 import BillingToggle from './BillingToggle';
@@ -20,6 +20,7 @@ import styles from './PricingView.module.css';
 
 export default function PricingView() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { showError } = useToast();
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
@@ -62,7 +63,7 @@ export default function PricingView() {
         <div className={styles.header}>
           <button
             className={styles.backBtn}
-            onClick={() => dispatch(setActiveItem('home'))}
+            onClick={() => navigate('/')}
             aria-label="Back to chat"
           >
             <svg

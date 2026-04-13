@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
+import { useNavigate, useParams } from 'react-router-dom';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import {
   setInputValue,
@@ -99,6 +99,8 @@ const QUICK_PROMPTS = [
  */
 export default function ImageGalleryView() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { id: routeImageId } = useParams();
   const creditBalance = useSelector(selectCreditBalance);
   const imageQuality = useSelector(selectImageQuality);
   const [images, setImages] = useState([]);
@@ -221,6 +223,16 @@ export default function ImageGalleryView() {
     };
   }, [loadImages, isAuthenticated, dispatch]);
 
+  // Handle deep link to specific image via route param
+  useEffect(() => {
+    if (routeImageId && images.length > 0) {
+      const idx = images.findIndex((img) => img.id === routeImageId);
+      if (idx !== -1) {
+        setLightboxIdx(idx);
+      }
+    }
+  }, [routeImageId, images]);
+
   useEffect(() => {
     const handleClick = (e) => {
       if (filterRef.current && !filterRef.current.contains(e.target)) {
@@ -307,7 +319,7 @@ export default function ImageGalleryView() {
     dispatch(setInputValue(prompt));
     dispatch(setPendingModality('image'));
     dispatch(setPendingAutoSubmit(true));
-    dispatch(setActiveItem('home'));
+    navigate('/');
   };
 
   const handlePromptInputChange = (e) => {

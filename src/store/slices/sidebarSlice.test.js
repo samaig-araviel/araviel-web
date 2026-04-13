@@ -2,9 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import sidebarReducer, {
   toggleSidebar,
   setCollapsed,
-  setActiveItem,
   selectSidebarCollapsed,
-  selectActiveItem,
 } from './sidebarSlice';
 
 describe('sidebarSlice', () => {
@@ -17,57 +15,34 @@ describe('sidebarSlice', () => {
       const state = sidebarReducer(undefined, { type: 'unknown' });
       expect(state.collapsed).toBe(true);
     });
-
-    it('defaults activeItem to home', () => {
-      const state = sidebarReducer(undefined, { type: 'unknown' });
-      expect(state.activeItem).toBe('home');
-    });
   });
 
   describe('toggleSidebar', () => {
     it('toggles collapsed from true to false', () => {
-      const state = sidebarReducer({ collapsed: true, activeItem: 'home' }, toggleSidebar());
+      const state = sidebarReducer({ collapsed: true }, toggleSidebar());
       expect(state.collapsed).toBe(false);
     });
 
     it('toggles collapsed from false to true', () => {
-      const state = sidebarReducer({ collapsed: false, activeItem: 'home' }, toggleSidebar());
+      const state = sidebarReducer({ collapsed: false }, toggleSidebar());
       expect(state.collapsed).toBe(true);
     });
 
     it('persists to localStorage', () => {
-      sidebarReducer({ collapsed: true, activeItem: 'home' }, toggleSidebar());
+      sidebarReducer({ collapsed: true }, toggleSidebar());
       expect(localStorage.setItem).toHaveBeenCalledWith('araviel-sidebar-collapsed', false);
     });
   });
 
   describe('setCollapsed', () => {
     it('sets collapsed to the given value', () => {
-      const state = sidebarReducer({ collapsed: true, activeItem: 'home' }, setCollapsed(false));
+      const state = sidebarReducer({ collapsed: true }, setCollapsed(false));
       expect(state.collapsed).toBe(false);
     });
 
     it('persists to localStorage', () => {
-      sidebarReducer({ collapsed: true, activeItem: 'home' }, setCollapsed(false));
+      sidebarReducer({ collapsed: true }, setCollapsed(false));
       expect(localStorage.setItem).toHaveBeenCalledWith('araviel-sidebar-collapsed', false);
-    });
-  });
-
-  describe('setActiveItem', () => {
-    it('sets the active item', () => {
-      const state = sidebarReducer(
-        { collapsed: true, activeItem: 'home' },
-        setActiveItem('settings')
-      );
-      expect(state.activeItem).toBe('settings');
-    });
-
-    it('can set to any string', () => {
-      const state = sidebarReducer(
-        { collapsed: true, activeItem: 'home' },
-        setActiveItem('conversations')
-      );
-      expect(state.activeItem).toBe('conversations');
     });
   });
 
@@ -75,10 +50,6 @@ describe('sidebarSlice', () => {
     it('selectSidebarCollapsed returns collapsed state', () => {
       expect(selectSidebarCollapsed({ sidebar: { collapsed: true } })).toBe(true);
       expect(selectSidebarCollapsed({ sidebar: { collapsed: false } })).toBe(false);
-    });
-
-    it('selectActiveItem returns active item', () => {
-      expect(selectActiveItem({ sidebar: { activeItem: 'models' } })).toBe('models');
     });
   });
 });

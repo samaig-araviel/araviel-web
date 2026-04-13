@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   selectProjects,
   selectProjectsLoading,
@@ -9,7 +10,6 @@ import {
   removeProject,
   setProjectsLoading,
 } from '../../store/slices/projectsSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { showUpgradeModal } from '../../store/slices/subscriptionSlice';
 import { GuestGate } from '../GuestGate';
@@ -294,7 +294,7 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
     dispatch(setActiveProjectId(project.id));
     dispatch(setInputValue(text));
     dispatch(setPendingAutoSubmit(true));
-    dispatch(setActiveItem('home'));
+    navigate('/');
   };
 
   const handleKeyDown = (e) => {
@@ -306,7 +306,7 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
 
   const handleConvClick = async (conv) => {
     dispatch(setCurrentChat(conv.id));
-    dispatch(setActiveItem('home'));
+    navigate(`/conversations/${conv.id}`);
     try {
       const data = await fetchConversationMessages(conv.id);
       const storedImages = getGeneratedImages();
@@ -779,6 +779,8 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
 
 export default function ProjectsView() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { id: routeProjectId } = useParams();
   const projects = useSelector(selectProjects);
   const loading = useSelector(selectProjectsLoading);
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -817,17 +819,15 @@ export default function ProjectsView() {
     }
   }, [loadProjects, isAuthenticated]);
 
-  // Handle navigation from MainContent project header
+  // Handle deep link to specific project via route param
   useEffect(() => {
-    if (window.__aravielNavigateToProject) {
-      const targetId = window.__aravielNavigateToProject;
-      delete window.__aravielNavigateToProject;
-      const proj = projects.find((p) => p.id === targetId);
+    if (routeProjectId) {
+      const proj = projects.find((p) => p.id === routeProjectId);
       if (proj) {
         setSelectedProject(proj);
       }
     }
-  }, [projects]);
+  }, [projects, routeProjectId]);
 
   // Close dropdowns on outside click
   useEffect(() => {
