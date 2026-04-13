@@ -78,6 +78,7 @@ export async function sendMessage(payload) {
   if (payload.conversationHasImages) body.conversationHasImages = true;
   if (payload.importedConversationId) body.importedConversationId = payload.importedConversationId;
   if (payload.projectId) body.projectId = payload.projectId;
+  if (payload.images && payload.images.length > 0) body.images = payload.images;
 
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
