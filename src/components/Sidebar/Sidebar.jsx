@@ -364,6 +364,9 @@ export default function Sidebar() {
             ...(generatedImages.length > 0 && { generatedImages }),
           });
         }
+        if (msg.role === 'user' && Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+          base.attachments = msg.attachments;
+        }
         return base;
       });
       dispatch(setMessages(mappedMessages));
