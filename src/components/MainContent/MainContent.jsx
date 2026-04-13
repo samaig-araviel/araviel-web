@@ -117,6 +117,7 @@ import {
 } from '../../store/slices/subscriptionSlice';
 import { getNextTier } from '../../config/subscription';
 import { PROVIDERS, isImageGenerationModel } from '../../data/models';
+import { compressImage, isAcceptedImageType } from '../../utils/imageCompression';
 import {
   canGenerateImage,
   recordGeneration,
@@ -557,8 +558,9 @@ function ImageLimitPrompt({ onClose, onBuyCredits, onUpgrade }) {
   const isFree = !currentTier || currentTier === 'free';
 
   // Use real credit data from server when available, fall back to tier defaults
-  const monthlyLimit = creditBalance?.monthly?.total
-    ?? (currentTier === 'pro' ? 150 : currentTier === 'lite' ? 50 : 5);
+  const monthlyLimit =
+    creditBalance?.monthly?.total ??
+    (currentTier === 'pro' ? 150 : currentTier === 'lite' ? 50 : 5);
   const cycleResetsAt = creditBalance?.cycleResetsAt;
   const resetTime = cycleResetsAt
     ? new Date(cycleResetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -592,8 +594,12 @@ function ImageLimitPrompt({ onClose, onBuyCredits, onUpgrade }) {
 
         <p className={styles.imageLimitDesc}>
           {isFree
-            ? `You’ve used all ${monthlyLimit} free image generation${monthlyLimit !== 1 ? 's' : ''} for this month.`
-            : `You’ve used all ${monthlyLimit} image generation${monthlyLimit !== 1 ? 's' : ''} included with your ${currentTier === 'lite' ? 'Lite' : 'Pro'} plan this month.`}
+            ? `You’ve used all ${monthlyLimit} free image generation${
+                monthlyLimit !== 1 ? 's' : ''
+              } for this month.`
+            : `You’ve used all ${monthlyLimit} image generation${
+                monthlyLimit !== 1 ? 's' : ''
+              } included with your ${currentTier === 'lite' ? 'Lite' : 'Pro'} plan this month.`}
           {resetTime && <> Your monthly credits reset at {resetTime}.</>}
         </p>
 
@@ -621,7 +627,9 @@ function ImageLimitPrompt({ onClose, onBuyCredits, onUpgrade }) {
         <p className={styles.imageLimitFooter}>
           {isFree
             ? `Free plan: ${monthlyLimit} image credit${monthlyLimit !== 1 ? 's' : ''} / month`
-            : `${currentTier === 'lite' ? 'Lite' : 'Pro'} plan: ${monthlyLimit} image credit${monthlyLimit !== 1 ? 's' : ''} / month`}
+            : `${currentTier === 'lite' ? 'Lite' : 'Pro'} plan: ${monthlyLimit} image credit${
+                monthlyLimit !== 1 ? 's' : ''
+              } / month`}
         </p>
       </div>
     </div>
@@ -747,13 +755,15 @@ export default function MainContent() {
         .then((data) => {
           if (data.balance) {
             dispatch(setCreditBalance(data.balance));
-            dispatch(setImageCredits({
-              used: data.balance.monthly?.used ?? 0,
-              limit: data.balance.monthly?.total ?? 5,
-              remaining: data.balance.monthly?.remaining ?? 0,
-              packRemaining: data.balance.packs?.remaining ?? 0,
-              cycleResetsAt: data.balance.cycleResetsAt ?? null,
-            }));
+            dispatch(
+              setImageCredits({
+                used: data.balance.monthly?.used ?? 0,
+                limit: data.balance.monthly?.total ?? 5,
+                remaining: data.balance.monthly?.remaining ?? 0,
+                packRemaining: data.balance.packs?.remaining ?? 0,
+                cycleResetsAt: data.balance.cycleResetsAt ?? null,
+              })
+            );
           }
         })
         .catch(() => {});
@@ -1078,6 +1088,7 @@ export default function MainContent() {
           role: 'user',
           content: prompt,
           timestamp: Date.now(),
+          ...(options.images ? { images: options.images } : {}),
         };
         dispatch(addMessage(userMsg));
       }
@@ -1137,6 +1148,7 @@ export default function MainContent() {
           importedConversationId: importedContext?.importedConversationId || undefined,
           projectId: activeProjectId || undefined,
           userTier: currentTier,
+          images: options.images || undefined,
         });
 
         if (abortController.signal.aborted || requestIdRef.current !== myRequestId) return;
@@ -1359,13 +1371,15 @@ export default function MainContent() {
               // in the done event. No extra round-trip to /api/credits needed.
               if (data.imageBalance) {
                 dispatch(setCreditBalance(data.imageBalance));
-                dispatch(setImageCredits({
-                  used: data.imageBalance.monthly?.used ?? 0,
-                  limit: data.imageBalance.monthly?.total ?? 5,
-                  remaining: data.imageBalance.monthly?.remaining ?? 0,
-                  packRemaining: data.imageBalance.packs?.remaining ?? 0,
-                  cycleResetsAt: data.imageBalance.cycleResetsAt ?? null,
-                }));
+                dispatch(
+                  setImageCredits({
+                    used: data.imageBalance.monthly?.used ?? 0,
+                    limit: data.imageBalance.monthly?.total ?? 5,
+                    remaining: data.imageBalance.monthly?.remaining ?? 0,
+                    packRemaining: data.imageBalance.packs?.remaining ?? 0,
+                    cycleResetsAt: data.imageBalance.cycleResetsAt ?? null,
+                  })
+                );
                 // Signal SettingsView (and any component with local credit state) to re-fetch
                 window.dispatchEvent(new CustomEvent('araviel-credits-updated'));
               }
@@ -1586,27 +1600,34 @@ export default function MainContent() {
         const cost = getCreditCost(imageQuality);
         const monthlyDelta = Math.min(cost, creditBalance.monthly?.remaining ?? 0);
         const packDelta = cost - monthlyDelta;
-        dispatch(setCreditBalance({
-          ...creditBalance,
-          monthly: {
-            ...creditBalance.monthly,
+        dispatch(
+          setCreditBalance({
+            ...creditBalance,
+            monthly: {
+              ...creditBalance.monthly,
+              remaining: Math.max(0, (creditBalance.monthly?.remaining ?? 0) - monthlyDelta),
+              used: (creditBalance.monthly?.used ?? 0) + monthlyDelta,
+            },
+            packs: {
+              ...creditBalance.packs,
+              remaining: Math.max(0, (creditBalance.packs?.remaining ?? 0) - packDelta),
+              used: (creditBalance.packs?.used ?? 0) + packDelta,
+            },
+            combined: Math.max(0, (creditBalance.combined ?? 0) - cost),
+          })
+        );
+        dispatch(
+          setImageCredits({
             remaining: Math.max(0, (creditBalance.monthly?.remaining ?? 0) - monthlyDelta),
             used: (creditBalance.monthly?.used ?? 0) + monthlyDelta,
-          },
-          packs: {
-            ...creditBalance.packs,
-            remaining: Math.max(0, (creditBalance.packs?.remaining ?? 0) - packDelta),
-            used: (creditBalance.packs?.used ?? 0) + packDelta,
-          },
-          combined: Math.max(0, (creditBalance.combined ?? 0) - cost),
-        }));
-        dispatch(setImageCredits({
-          remaining: Math.max(0, (creditBalance.monthly?.remaining ?? 0) - monthlyDelta),
-          used: (creditBalance.monthly?.used ?? 0) + monthlyDelta,
-          packRemaining: Math.max(0, (creditBalance.packs?.remaining ?? 0) - packDelta),
-        }));
+            packRemaining: Math.max(0, (creditBalance.packs?.remaining ?? 0) - packDelta),
+          })
+        );
       }
     }
+
+    // Capture image files before clearing state
+    const imageFiles = attachedFiles.filter((f) => f.file && isAcceptedImageType(f.file));
 
     dispatch(setInputValue(''));
     if (textareaRef.current) {
@@ -1616,10 +1637,25 @@ export default function MainContent() {
     setShowAttachDropdown(false);
     clearAttachedFiles();
 
+    // Compress images in parallel
+    let compressedImages = [];
+    if (imageFiles.length > 0) {
+      try {
+        compressedImages = await Promise.all(imageFiles.map((f) => compressImage(f.file)));
+      } catch (err) {
+        console.error('[handleSubmit] Image compression failed:', err);
+        // Continue without images — don't block the message
+        compressedImages = [];
+      }
+    }
+
     // Let the backend router know if this conversation already has generated
-    // images so it can factor that into model selection (without forcing modality)
+    // or uploaded images so it can factor that into model selection
     const conversationHasImages = messages.some(
-      (m) => m.generatedImages && m.generatedImages.length > 0
+      (m) =>
+        (m.generatedImages && m.generatedImages.length > 0) ||
+        (m.images && m.images.length > 0) ||
+        (m.attachments && m.attachments.length > 0)
     );
 
     // Set modality to 'image' when an image generation model is explicitly selected or ModalityBar
@@ -1644,9 +1680,10 @@ export default function MainContent() {
       selectedModelId: selectedModelId || undefined,
       addUserMessage: true,
       webSearch: webSearchEnabled,
-      conversationHasImages: conversationHasImages || undefined,
+      conversationHasImages: conversationHasImages || compressedImages.length > 0 || undefined,
       modality,
       imageQuality: willGenerateImage ? imageQuality : undefined,
+      images: compressedImages.length > 0 ? compressedImages : undefined,
     });
   };
 
@@ -1679,7 +1716,12 @@ export default function MainContent() {
     }
 
     // Authenticated user image rate limit: if balance has loaded and is zero, show modal
-    if (isAuthenticated && willGenImage && creditBalance && creditBalance.combined < getCreditCost(imageQuality)) {
+    if (
+      isAuthenticated &&
+      willGenImage &&
+      creditBalance &&
+      creditBalance.combined < getCreditCost(imageQuality)
+    ) {
       dispatch(setPendingAutoSubmit(false));
       dispatch(setPendingModality(null));
       setShowBuyPacksModal(true);
@@ -1800,7 +1842,15 @@ export default function MainContent() {
         imageQuality: imageQuality || undefined,
       });
     },
-    [dispatch, isProcessing, selectedModelId, currentChatId, runSSEPipeline, webSearchEnabled, imageQuality]
+    [
+      dispatch,
+      isProcessing,
+      selectedModelId,
+      currentChatId,
+      runSSEPipeline,
+      webSearchEnabled,
+      imageQuality,
+    ]
   );
 
   /**
@@ -1844,7 +1894,7 @@ export default function MainContent() {
     },
   ];
 
-  const maxAttachments = currentTier === 'pro' ? 15 : 5;
+  const maxAttachments = currentTier === 'pro' ? 10 : currentTier === 'lite' ? 5 : 1;
 
   const getFileExtension = (name) => {
     const parts = name.split('.');

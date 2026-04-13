@@ -4979,12 +4979,18 @@ function ThinkingBlock({
  * User prompt component with distinctive styling and collapse/expand for long messages.
  * Includes hover actions: copy and edit (sends content back to input).
  */
-function UserPrompt({ content, onEdit, createdAt, onRetry }) {
+function UserPrompt({ content, images, onEdit, createdAt, onRetry }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(-1);
   const contentRef = useRef(null);
   const [isLong, setIsLong] = useState(false);
   const LINE_LIMIT = 10;
+
+  const imageList = useMemo(() => {
+    if (!images || !Array.isArray(images) || images.length === 0) return null;
+    return images;
+  }, [images]);
 
   useEffect(() => {
     const lineCount = (content || '').split('\n').length;
@@ -5024,15 +5030,35 @@ function UserPrompt({ content, onEdit, createdAt, onRetry }) {
   return (
     <div className={styles.userPromptWrapper}>
       <div className={styles.userPromptCard}>
-        <div
-          ref={contentRef}
-          className={`${styles.userPromptText} ${
-            !isExpanded && isLong ? styles.userPromptCollapsed : ''
-          }`}
-          style={collapsedStyle}
-        >
-          {content}
-        </div>
+        {imageList && (
+          <div className={styles.userPromptImages}>
+            {imageList.map((img, idx) => (
+              <button
+                key={idx}
+                className={styles.userPromptImageThumb}
+                onClick={() => setLightboxIdx(idx)}
+                aria-label={img.fileName || `Attached image ${idx + 1}`}
+              >
+                <img
+                  src={img.dataUri}
+                  alt={img.fileName || `Attached image ${idx + 1}`}
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+        {content && (
+          <div
+            ref={contentRef}
+            className={`${styles.userPromptText} ${
+              !isExpanded && isLong ? styles.userPromptCollapsed : ''
+            }`}
+            style={collapsedStyle}
+          >
+            {content}
+          </div>
+        )}
         {isLong && (
           <button
             className={styles.userPromptToggle}
@@ -5043,6 +5069,21 @@ function UserPrompt({ content, onEdit, createdAt, onRetry }) {
           </button>
         )}
       </div>
+      {lightboxIdx >= 0 && imageList && (
+        <div
+          className={styles.imageLightbox}
+          onClick={() => setLightboxIdx(-1)}
+          role="dialog"
+          aria-label="Image preview"
+        >
+          <img
+            src={imageList[lightboxIdx]?.dataUri}
+            alt={imageList[lightboxIdx]?.fileName || 'Full size image'}
+            className={styles.imageLightboxImg}
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       <div className={styles.userPromptActions}>
         {timeStr && <span className={styles.userPromptTime}>{timeStr}</span>}
         <button
@@ -5599,6 +5640,7 @@ function Message({
         {isUser ? (
           <UserPrompt
             content={message.content}
+            images={message.images || message.attachments}
             onEdit={onEditPrompt}
             createdAt={message.createdAt}
             onRetry={onRetry}
