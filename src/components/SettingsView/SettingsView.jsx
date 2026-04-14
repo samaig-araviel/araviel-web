@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate, useParams } from 'react-router-dom';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
 import {
   selectCurrentTier,
   selectTextCredits,
@@ -105,8 +105,10 @@ const SHORTCUTS = [
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent);
 const modKey = isMac ? '⌘' : 'Ctrl';
 
-export default function SettingsView({ initialSection }) {
+export default function SettingsView() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { section } = useParams();
   const themeMode = useSelector(selectTheme);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const authUser = useSelector(selectAuthUser);
@@ -116,10 +118,7 @@ export default function SettingsView({ initialSection }) {
   const periodEnd = useSelector(selectPeriodEnd);
   const cancelAtPeriodEnd = useSelector(selectCancelAtPeriodEnd);
   const portalLoading = useSelector(selectPortalLoading);
-  const [activeSection, setActiveSection] = useState(initialSection || 'profile');
-  useEffect(() => {
-    if (initialSection) setActiveSection(initialSection);
-  }, [initialSection]);
+  const activeSection = section || 'profile';
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -215,7 +214,7 @@ export default function SettingsView({ initialSection }) {
   };
 
   const handleBack = () => {
-    dispatch(setActiveItem('home'));
+    navigate('/');
   };
 
   const handleAvatarChange = async (e) => {
@@ -322,7 +321,7 @@ export default function SettingsView({ initialSection }) {
                   className={`${styles.navItem} ${
                     activeSection === section.id ? styles.navItemActive : ''
                   }`}
-                  onClick={() => setActiveSection(section.id)}
+                  onClick={() => navigate(`/settings/${section.id}`)}
                 >
                   {section.label}
                 </button>
@@ -1029,7 +1028,7 @@ export default function SettingsView({ initialSection }) {
                           <div className={styles.subscriptionActions}>
                             <button
                               className={styles.upgradeBtn}
-                              onClick={() => dispatch(setActiveItem('pricing'))}
+                              onClick={() => navigate('/plans')}
                             >
                               Upgrade Plan
                             </button>
@@ -1074,7 +1073,7 @@ export default function SettingsView({ initialSection }) {
                               className={styles.planUpgradeBtn}
                               onClick={() =>
                                 tier === 'free'
-                                  ? dispatch(setActiveItem('pricing'))
+                                  ? navigate('/plans')
                                   : dispatch(createPortalThunk())
                               }
                               disabled={tier !== 'free' && portalLoading}

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   selectShowUpgradeModal,
   selectUpgradeContext,
@@ -10,7 +11,6 @@ import {
   createCheckoutThunk,
 } from '../../store/slices/subscriptionSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { getTierById, getDisplayPrice, SubscriptionTier } from '../../config/subscription';
 import styles from './UpgradeModal.module.css';
 
@@ -46,6 +46,7 @@ function CheckIcon() {
 
 export default function UpgradeModal() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const show = useSelector(selectShowUpgradeModal);
   const context = useSelector(selectUpgradeContext);
   const currentTier = useSelector(selectCurrentTier);
@@ -79,7 +80,7 @@ export default function UpgradeModal() {
 
   const handleViewPlans = () => {
     dispatch(hideUpgradeModal());
-    dispatch(setActiveItem('pricing'));
+    navigate('/plans');
   };
 
   return (

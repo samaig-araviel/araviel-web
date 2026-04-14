@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   selectInputValue,
@@ -108,7 +109,6 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, addProject } from '../../store/slices/projectsSlice';
-import { setActiveItem, selectActiveItem } from '../../store/slices/sidebarSlice';
 import {
   showUpgradeModal,
   setTextCredits,
@@ -638,6 +638,7 @@ function ImageLimitPrompt({ onClose, onBuyCredits, onUpgrade }) {
 
 export default function MainContent() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const inputValue = useSelector(selectInputValue);
   const mode = useSelector(selectMode);
   const messages = useSelector(selectMessages);
@@ -920,9 +921,7 @@ export default function MainContent() {
 
   const handleNavigateToProject = () => {
     if (!conversationProject) return;
-    // Store the project ID so ProjectsView can pick it up
-    window.__aravielNavigateToProject = conversationProject.id;
-    dispatch(setActiveItem('projects'));
+    navigate(`/projects/${conversationProject.id}`);
   };
 
   // Close project dropdown on outside click
@@ -2578,7 +2577,7 @@ export default function MainContent() {
           }}
           onUpgrade={() => {
             setShowImageLimitPrompt(false);
-            dispatch(setActiveItem('pricing'));
+            navigate('/plans');
           }}
         />
       )}

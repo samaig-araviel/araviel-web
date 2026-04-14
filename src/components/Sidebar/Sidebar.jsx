@@ -1,16 +1,13 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   selectSidebarCollapsed,
   toggleSidebar,
   setCollapsed,
-  selectActiveItem,
-  setActiveItem,
 } from '../../store/slices/sidebarSlice';
 import {
   createNewChat,
-  setCurrentChat,
-  setMessages,
   selectConversations,
   selectConversationsTotal,
   selectConversationsLoading,
@@ -23,7 +20,6 @@ import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { selectAuthUser, selectIsAuthenticated, signOut } from '../../store/slices/authSlice';
 import {
   fetchConversations,
-  fetchConversationMessages,
   updateConversation,
   deleteConversation,
   fetchProjects as fetchProjectsApi,
@@ -31,7 +27,6 @@ import {
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
-import { getGeneratedImages } from '../../services/imageGeneration';
 import { AuthModal } from '../Auth';
 import {
   PlusIcon,
@@ -154,6 +149,8 @@ function useDropdownPosition(menuOpenId) {
 
 export default function Sidebar() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { showError, showSuccess } = useToast();
   const collapsed = useSelector(selectSidebarCollapsed);
   const conversations = useSelector(selectConversations);
@@ -161,7 +158,6 @@ export default function Sidebar() {
   const conversationsLoading = useSelector(selectConversationsLoading);
   const currentChatId = useSelector(selectCurrentChatId);
   const themeMode = useSelector(selectTheme);
-  const activeItem = useSelector(selectActiveItem);
   const projects = useSelector(selectProjects);
   const [isMobile, setIsMobile] = useState(false);
   const [projectPickerFor, setProjectPickerFor] = useState(null); // chatId to assign to project
@@ -280,98 +276,16 @@ export default function Sidebar() {
 
   const handleNewChat = () => {
     dispatch(createNewChat());
-    dispatch(setActiveItem('home'));
+    navigate('/');
     if (isMobile) {
       dispatch(setCollapsed(true));
     }
   };
 
-  const handleChatClick = async (chatId) => {
-    dispatch(setCurrentChat(chatId));
-    dispatch(setActiveItem('home'));
+  const handleChatClick = (chatId) => {
+    navigate(`/conversations/${chatId}`);
     if (isMobile) {
       dispatch(setCollapsed(true));
-    }
-    // Load messages for this conversation
-    try {
-      const data = await fetchConversationMessages(chatId);
-      // Get locally stored generated images to re-attach to messages
-      const storedImages = getGeneratedImages();
-      // Map backend messages to the shape the frontend expects
-      const mappedMessages = (data.messages || []).map((msg) => {
-        const base = {
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date(msg.createdAt).getTime(),
-        };
-        if (msg.role === 'assistant') {
-          // Restore generatedImages from backend or localStorage
-          let generatedImages = msg.generatedImages || [];
-          if (generatedImages.length === 0) {
-            // Primary: match by messageId (deterministic)
-            let matched = storedImages.filter((img) => img.messageId && img.messageId === msg.id);
-            // Fallback: timestamp proximity
-            if (matched.length === 0) {
-              const msgTime = new Date(msg.createdAt).getTime();
-              matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
-            }
-            if (matched.length > 0) {
-              generatedImages = matched.map((img) => ({
-                url: img.url,
-                prompt: img.prompt,
-                model: img.model,
-                provider: img.provider,
-                id: img.id,
-              }));
-            }
-          }
-          // Last resort: extract images from message content markdown
-          if (generatedImages.length === 0 && msg.content) {
-            const imgRe = /!\[Generated image[^\]]*\]\(([^)]+)\)/g;
-            let m;
-            while ((m = imgRe.exec(msg.content)) !== null) {
-              generatedImages.push({
-                url: m[1],
-                prompt: msg.content.match(/!\[Generated image:?\s*([^\]]*)\]/)?.[1] || '',
-                model: msg.model?.name || 'unknown',
-                provider: msg.model?.provider || 'unknown',
-                id: `content-${msg.id}-${generatedImages.length}`,
-              });
-            }
-          }
-          Object.assign(base, {
-            modelId: msg.model?.id,
-            modelName: msg.model?.name,
-            provider: msg.model?.provider,
-            score: msg.model?.score,
-            reasoning: msg.model?.reasoning,
-            alternateModels: (msg.alternateModels || []).map((m) => ({
-              modelId: m.id,
-              modelName: m.name,
-              provider: m.provider,
-              score: m.score,
-              reasoning: m.reasoning,
-            })),
-            thinkingContent: msg.thinkingContent,
-            citations: msg.citations,
-            usage: msg.usage,
-            costUsd: msg.costUsd,
-            latencyMs: msg.latencyMs,
-            adeLatencyMs: msg.adeLatencyMs,
-            followUps: msg.followUps || [],
-            questions: msg.questions || [],
-            ...(generatedImages.length > 0 && { generatedImages }),
-          });
-        }
-        if (msg.role === 'user' && Array.isArray(msg.attachments) && msg.attachments.length > 0) {
-          base.attachments = msg.attachments;
-        }
-        return base;
-      });
-      dispatch(setMessages(mappedMessages));
-    } catch {
-      // Fail silently — conversation will appear empty
     }
   };
 
@@ -382,28 +296,28 @@ export default function Sidebar() {
   };
 
   const handleConversationsClick = () => {
-    dispatch(setActiveItem(activeItem === 'conversations' ? 'home' : 'conversations'));
+    navigate(location.pathname === '/conversations' ? '/' : '/conversations');
     if (isMobile) {
       dispatch(setCollapsed(true));
     }
   };
 
   const handleProjectsClick = () => {
-    dispatch(setActiveItem(activeItem === 'projects' ? 'home' : 'projects'));
+    navigate(location.pathname.startsWith('/projects') ? '/' : '/projects');
     if (isMobile) {
       dispatch(setCollapsed(true));
     }
   };
 
   const handleModelsClick = () => {
-    dispatch(setActiveItem(activeItem === 'models' ? 'home' : 'models'));
+    navigate(location.pathname === '/models' ? '/' : '/models');
     if (isMobile) {
       dispatch(setCollapsed(true));
     }
   };
 
   const handleGalleryClick = () => {
-    dispatch(setActiveItem(activeItem === 'gallery' ? 'home' : 'gallery'));
+    navigate(location.pathname.startsWith('/images') ? '/' : '/images');
     if (isMobile) {
       dispatch(setCollapsed(true));
     }
@@ -734,7 +648,7 @@ export default function Sidebar() {
 
         <nav className={styles.nav}>
           <button
-            className={`${styles.navItem} ${activeItem === 'conversations' ? styles.active : ''}`}
+            className={`${styles.navItem} ${location.pathname === '/conversations' ? styles.active : ''}`}
             onClick={handleConversationsClick}
             title="Conversations"
             aria-label="Conversations"
@@ -743,7 +657,7 @@ export default function Sidebar() {
             {showFullContent && <span>Conversations</span>}
           </button>
           <button
-            className={`${styles.navItem} ${activeItem === 'projects' ? styles.active : ''}`}
+            className={`${styles.navItem} ${location.pathname.startsWith('/projects') ? styles.active : ''}`}
             onClick={handleProjectsClick}
             title="Projects"
             aria-label="Projects"
@@ -752,7 +666,7 @@ export default function Sidebar() {
             {showFullContent && <span>Projects</span>}
           </button>
           <button
-            className={`${styles.navItem} ${activeItem === 'gallery' ? styles.active : ''}`}
+            className={`${styles.navItem} ${location.pathname.startsWith('/images') ? styles.active : ''}`}
             onClick={handleGalleryClick}
             title="Image Gallery"
             aria-label="Image Gallery"
@@ -761,7 +675,7 @@ export default function Sidebar() {
             {showFullContent && <span>Images</span>}
           </button>
           <button
-            className={`${styles.navItem} ${activeItem === 'models' ? styles.active : ''}`}
+            className={`${styles.navItem} ${location.pathname === '/models' ? styles.active : ''}`}
             onClick={handleModelsClick}
             title="Models"
             aria-label="Models"
@@ -1033,7 +947,7 @@ export default function Sidebar() {
                     if (!isAuthenticated) {
                       setAuthModalOpen(true);
                     } else {
-                      dispatch(setActiveItem('settings'));
+                      navigate('/settings');
                     }
                   }}
                 >
@@ -1044,7 +958,7 @@ export default function Sidebar() {
                   className={styles.userDropdownItem}
                   onClick={() => {
                     setUserMenuOpen(false);
-                    dispatch(setActiveItem('pricing'));
+                    navigate('/plans');
                   }}
                 >
                   <UpgradePlanIcon />
@@ -1055,7 +969,7 @@ export default function Sidebar() {
                     className={styles.userDropdownItem}
                     onClick={() => {
                       setUserMenuOpen(false);
-                      dispatch(setActiveItem('subscription'));
+                      navigate('/subscription');
                     }}
                   >
                     <CreditCardIcon />
@@ -1066,7 +980,7 @@ export default function Sidebar() {
                   className={styles.userDropdownItem}
                   onClick={() => {
                     setUserMenuOpen(false);
-                    dispatch(setActiveItem('usage'));
+                    navigate('/settings/usage');
                   }}
                 >
                   <ZapIcon />
@@ -1076,7 +990,7 @@ export default function Sidebar() {
                   className={styles.userDropdownItem}
                   onClick={() => {
                     setUserMenuOpen(false);
-                    dispatch(setActiveItem('personalisation'));
+                    navigate('/settings/personalisation');
                   }}
                 >
                   <EditIcon />

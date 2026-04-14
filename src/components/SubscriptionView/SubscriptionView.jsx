@@ -1,5 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   selectCurrentTier,
   selectBillingCycle,
@@ -13,7 +14,6 @@ import {
   fetchSubscriptionThunk,
   createPortalThunk,
 } from '../../store/slices/subscriptionSlice';
-import { setActiveItem } from '../../store/slices/sidebarSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { getTierById, getDisplayPrice, SubscriptionTier } from '../../config/subscription';
 import GuestGate from '../GuestGate/GuestGate';
@@ -61,6 +61,7 @@ function formatTime(dateStr) {
 
 export default function SubscriptionView() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
@@ -131,7 +132,7 @@ export default function SubscriptionView() {
         <div className={styles.header}>
           <button
             className={styles.backBtn}
-            onClick={() => dispatch(setActiveItem('home'))}
+            onClick={() => navigate('/')}
             aria-label="Back to chat"
           >
             <svg
@@ -237,14 +238,14 @@ export default function SubscriptionView() {
                 {(isFree || currentTier === SubscriptionTier.Lite) && (
                   <button
                     className={isFree ? styles.primaryBtn : styles.secondaryBtn}
-                    onClick={() => dispatch(setActiveItem('pricing'))}
+                    onClick={() => navigate('/plans')}
                   >
                     Upgrade Plan
                   </button>
                 )}
                 <button
                   className={styles.secondaryBtn}
-                  onClick={() => dispatch(setActiveItem('usage'))}
+                  onClick={() => navigate('/settings/usage')}
                 >
                   View Detailed Usage
                 </button>
