@@ -1872,6 +1872,7 @@ export default function MainContent() {
     setStreamedText('');
     setRouteResult(null);
     setIsManualRequest(false);
+    navigate('/');
   };
 
   /**
@@ -2338,7 +2339,9 @@ export default function MainContent() {
                   {(() => {
                     const available = projects
                       .filter(
-                        (p) => !p.is_archived && (!conversationProject || p.id !== conversationProject.id)
+                        (p) =>
+                          !p.is_archived &&
+                          (!conversationProject || p.id !== conversationProject.id)
                       )
                       .filter(
                         (p) =>
@@ -2410,19 +2413,23 @@ export default function MainContent() {
           </div>
         )}
         <div className={styles.topNavInner}>
-          {currentConv?.isReported && (
-            <span className={styles.reportedFlag} title="This conversation has been reported">
-              <FlagIcon />
-            </span>
+          {currentChatId && (
+            <>
+              {currentConv?.isReported && (
+                <span className={styles.reportedFlag} title="This conversation has been reported">
+                  <FlagIcon />
+                </span>
+              )}
+              <button
+                className={styles.shareBtn}
+                onClick={() => setShowShareModal(true)}
+                title="Share"
+                aria-label="Share conversation"
+              >
+                <ShareIcon />
+              </button>
+            </>
           )}
-          <button
-            className={styles.shareBtn}
-            onClick={() => setShowShareModal(true)}
-            title="Share"
-            aria-label="Share conversation"
-          >
-            <ShareIcon />
-          </button>
           <button
             className={styles.newChatNavBtn}
             onClick={handleNewChat}
@@ -2431,67 +2438,69 @@ export default function MainContent() {
           >
             <NewChatIcon />
           </button>
-          <div className={styles.chatMenuWrapper} ref={chatMenuRef}>
-            <button
-              className={`${styles.chatMenuBtn} ${showChatMenu ? styles.chatMenuBtnActive : ''}`}
-              onClick={() => setShowChatMenu(!showChatMenu)}
-              title="More options"
-              aria-label="More options"
-            >
-              <MoreVerticalIcon />
-            </button>
-            {showChatMenu && (
-              <div className={styles.chatMenuDropdown}>
-                <button
-                  className={styles.chatMenuItem}
-                  onClick={() => {
-                    setShowChatMenu(false);
-                    handleToggleStar();
-                  }}
-                >
-                  <StarIcon />
-                  <span>{currentConv?.isStarred ? 'Unstar' : 'Star conversation'}</span>
-                </button>
-                <button
-                  className={styles.chatMenuItem}
-                  onClick={() => {
-                    setShowChatMenu(false);
-                    handleToggleArchive();
-                  }}
-                >
-                  <ArchiveIcon />
-                  <span>{currentConv?.isArchived ? 'Unarchive' : 'Archive'}</span>
-                </button>
-                <button
-                  className={`${styles.chatMenuItem} ${
-                    currentConv?.isReported ? styles.chatMenuItemReported : ''
-                  }`}
-                  onClick={() => {
-                    setShowChatMenu(false);
-                    if (currentConv?.isReported) {
-                      handleUnreport();
-                    } else {
-                      setShowReportDialog(true);
-                    }
-                  }}
-                >
-                  <FlagIcon />
-                  <span>{currentConv?.isReported ? 'Unreport' : 'Report'}</span>
-                </button>
-                <div className={styles.chatMenuDivider} />
-                <button
-                  className={`${styles.chatMenuItem} ${styles.chatMenuItemDanger}`}
-                  onClick={() => {
-                    setShowChatMenu(false);
-                    setShowDeleteConfirm(true);
-                  }}
-                >
-                  <TrashIcon />
-                  <span>Delete</span>
-                </button>
-              </div>
-            )}
-          </div>
+          {currentChatId && (
+            <div className={styles.chatMenuWrapper} ref={chatMenuRef}>
+              <button
+                className={`${styles.chatMenuBtn} ${showChatMenu ? styles.chatMenuBtnActive : ''}`}
+                onClick={() => setShowChatMenu(!showChatMenu)}
+                title="More options"
+                aria-label="More options"
+              >
+                <MoreVerticalIcon />
+              </button>
+              {showChatMenu && (
+                <div className={styles.chatMenuDropdown}>
+                  <button
+                    className={styles.chatMenuItem}
+                    onClick={() => {
+                      setShowChatMenu(false);
+                      handleToggleStar();
+                    }}
+                  >
+                    <StarIcon />
+                    <span>{currentConv?.isStarred ? 'Unstar' : 'Star conversation'}</span>
+                  </button>
+                  <button
+                    className={styles.chatMenuItem}
+                    onClick={() => {
+                      setShowChatMenu(false);
+                      handleToggleArchive();
+                    }}
+                  >
+                    <ArchiveIcon />
+                    <span>{currentConv?.isArchived ? 'Unarchive' : 'Archive'}</span>
+                  </button>
+                  <button
+                    className={`${styles.chatMenuItem} ${
+                      currentConv?.isReported ? styles.chatMenuItemReported : ''
+                    }`}
+                    onClick={() => {
+                      setShowChatMenu(false);
+                      if (currentConv?.isReported) {
+                        handleUnreport();
+                      } else {
+                        setShowReportDialog(true);
+                      }
+                    }}
+                  >
+                    <FlagIcon />
+                    <span>{currentConv?.isReported ? 'Unreport' : 'Report'}</span>
+                  </button>
+                  <div className={styles.chatMenuDivider} />
+                  <button
+                    className={`${styles.chatMenuItem} ${styles.chatMenuItemDanger}`}
+                    onClick={() => {
+                      setShowChatMenu(false);
+                      setShowDeleteConfirm(true);
+                    }}
+                  >
+                    <TrashIcon />
+                    <span>Delete</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
