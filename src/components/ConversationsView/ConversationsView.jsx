@@ -18,7 +18,6 @@ import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { GuestGate } from '../GuestGate';
 import {
   fetchConversations,
-  fetchConversationMessages,
   fetchImportedConversations,
   fetchImportedConversationMessages,
   importConversations as importConversationsApi,
@@ -32,7 +31,6 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
-import { getGeneratedImages } from '../../services/imageGeneration';
 import {
   SearchIcon,
   StarIcon,
@@ -629,91 +627,13 @@ export default function ConversationsView() {
     }
   }, [conversationsLoading, conversations.length, conversationsTotal, loadConversations]);
 
-  const handleChatClick = async (chatId) => {
+  const handleChatClick = (chatId) => {
     if (selectMode) {
       toggleSelect(chatId);
       return;
     }
-    dispatch(setCurrentChat(chatId));
     dispatch(setImportedContext(null));
     navigate(`/conversations/${chatId}`);
-    try {
-      const data = await fetchConversationMessages(chatId);
-      const storedImages = getGeneratedImages();
-      const mappedMessages = (data.messages || []).map((msg) => {
-        const base = {
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date(msg.createdAt).getTime(),
-        };
-        if (msg.role === 'assistant') {
-          let generatedImages = msg.generatedImages || [];
-          if (generatedImages.length === 0) {
-            // Primary: match by messageId (deterministic)
-            let matched = storedImages.filter((img) => img.messageId && img.messageId === msg.id);
-            // Fallback for legacy images without messageId: use timestamp window
-            if (matched.length === 0) {
-              const msgTime = new Date(msg.createdAt).getTime();
-              matched = storedImages.filter(
-                (img) => !img.messageId && Math.abs(img.createdAt - msgTime) < 30000
-              );
-            }
-            if (matched.length > 0) {
-              generatedImages = matched.map((img) => ({
-                url: img.url,
-                prompt: img.prompt,
-                model: img.model,
-                provider: img.provider,
-                id: img.id,
-              }));
-            }
-          }
-          // Last resort: extract images from message content markdown
-          if (generatedImages.length === 0 && msg.content) {
-            const imgRe = /!\[Generated image[^\]]*\]\(([^)]+)\)/g;
-            let m;
-            while ((m = imgRe.exec(msg.content)) !== null) {
-              generatedImages.push({
-                url: m[1],
-                prompt: msg.content.match(/!\[Generated image:?\s*([^\]]*)\]/)?.[1] || '',
-                model: msg.model?.name || 'unknown',
-                provider: msg.model?.provider || 'unknown',
-                id: `content-${msg.id}-${generatedImages.length}`,
-              });
-            }
-          }
-          Object.assign(base, {
-            modelId: msg.model?.id,
-            modelName: msg.model?.name,
-            provider: msg.model?.provider,
-            score: msg.model?.score,
-            reasoning: msg.model?.reasoning,
-            alternateModels: (msg.alternateModels || []).map((m) => ({
-              modelId: m.id,
-              modelName: m.name,
-              provider: m.provider,
-              score: m.score,
-              reasoning: m.reasoning,
-            })),
-            thinkingContent: msg.thinkingContent,
-            citations: msg.citations,
-            usage: msg.usage,
-            costUsd: msg.costUsd,
-            latencyMs: msg.latencyMs,
-            adeLatencyMs: msg.adeLatencyMs,
-            ...(generatedImages.length > 0 && { generatedImages }),
-            feedback: msg.feedback || null,
-            followUps: msg.followUps || null,
-            questions: msg.questions || null,
-          });
-        }
-        return base;
-      });
-      dispatch(setMessages(mappedMessages));
-    } catch {
-      // Fail silently
-    }
   };
 
   const toggleSelect = (chatId) => {
