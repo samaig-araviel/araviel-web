@@ -20,8 +20,6 @@ import {
   setInputValue,
   setPendingAutoSubmit,
   setActiveProjectId,
-  setCurrentChat,
-  setMessages,
 } from '../../store/slices/chatSlice';
 import {
   fetchProjects,
@@ -29,11 +27,9 @@ import {
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
   fetchConversations,
-  fetchConversationMessages,
   updateConversation,
   deleteConversation,
 } from '../../services/api';
-import { getGeneratedImages } from '../../services/imageGeneration';
 import {
   SearchIcon,
   PlusIcon,
@@ -226,6 +222,7 @@ function ProjectFormModal({ project, onClose, onSubmit }) {
 
 function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onToggleArchive }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [chatInput, setChatInput] = useState('');
   const [conversations, setConversations] = useState([]);
   const [convsLoading, setConvsLoading] = useState(true);
@@ -304,81 +301,8 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
     }
   };
 
-  const handleConvClick = async (conv) => {
-    dispatch(setCurrentChat(conv.id));
+  const handleConvClick = (conv) => {
     navigate(`/conversations/${conv.id}`);
-    try {
-      const data = await fetchConversationMessages(conv.id);
-      const storedImages = getGeneratedImages();
-      const mappedMessages = (data.messages || []).map((msg) => {
-        const base = {
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: new Date(msg.createdAt).getTime(),
-        };
-        if (msg.role === 'assistant') {
-          let generatedImages = msg.generatedImages || [];
-          if (generatedImages.length === 0) {
-            // Primary: match by messageId (deterministic)
-            let matched = storedImages.filter((img) => img.messageId && img.messageId === msg.id);
-            // Fallback: timestamp proximity
-            if (matched.length === 0) {
-              const msgTime = new Date(msg.createdAt).getTime();
-              matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
-            }
-            if (matched.length > 0) {
-              generatedImages = matched.map((img) => ({
-                url: img.url,
-                prompt: img.prompt,
-                model: img.model,
-                provider: img.provider,
-                id: img.id,
-              }));
-            }
-          }
-          // Last resort: extract images from message content markdown
-          if (generatedImages.length === 0 && msg.content) {
-            const imgRe = /!\[Generated image[^\]]*\]\(([^)]+)\)/g;
-            let m;
-            while ((m = imgRe.exec(msg.content)) !== null) {
-              generatedImages.push({
-                url: m[1],
-                prompt: msg.content.match(/!\[Generated image:?\s*([^\]]*)\]/)?.[1] || '',
-                model: msg.model?.name || 'unknown',
-                provider: msg.model?.provider || 'unknown',
-                id: `content-${msg.id}-${generatedImages.length}`,
-              });
-            }
-          }
-          Object.assign(base, {
-            modelId: msg.model?.id,
-            modelName: msg.model?.name,
-            provider: msg.model?.provider,
-            score: msg.model?.score,
-            reasoning: msg.model?.reasoning,
-            alternateModels: (msg.alternateModels || []).map((m) => ({
-              modelId: m.id,
-              modelName: m.name,
-              provider: m.provider,
-              score: m.score,
-              reasoning: m.reasoning,
-            })),
-            thinkingContent: msg.thinkingContent,
-            citations: msg.citations,
-            usage: msg.usage,
-            costUsd: msg.costUsd,
-            latencyMs: msg.latencyMs,
-            adeLatencyMs: msg.adeLatencyMs,
-            ...(generatedImages.length > 0 && { generatedImages }),
-          });
-        }
-        return base;
-      });
-      dispatch(setMessages(mappedMessages));
-    } catch {
-      // Fail silently
-    }
   };
 
   const descriptionText = project.description || '';
@@ -793,7 +717,6 @@ export default function ProjectsView() {
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
-  const [selectedProject, setSelectedProject] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleteOption, setDeleteOption] = useState('project-only');
   const sortRef = useRef(null);
@@ -819,15 +742,19 @@ export default function ProjectsView() {
     }
   }, [loadProjects, isAuthenticated]);
 
-  // Handle deep link to specific project via route param
+  // Derive the currently-open project from the URL param.
+  // Single source of truth: URL + Redux `projects`. No drifting local cache.
+  const selectedProject = routeProjectId
+    ? projects.find((p) => p.id === routeProjectId) ?? null
+    : null;
+
+  // If the URL references a project that doesn't exist (deleted or stale link)
+  // after projects have loaded, redirect back to the list.
   useEffect(() => {
-    if (routeProjectId) {
-      const proj = projects.find((p) => p.id === routeProjectId);
-      if (proj) {
-        setSelectedProject(proj);
-      }
+    if (routeProjectId && !loading && projects.length > 0 && !selectedProject) {
+      navigate('/projects', { replace: true });
     }
-  }, [projects, routeProjectId]);
+  }, [routeProjectId, loading, projects.length, selectedProject, navigate]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -920,21 +847,18 @@ export default function ProjectsView() {
     const result = await updateProjectApi(editingProject.id, data);
     const updated = result.project || result;
     dispatch(updateProjectInStore({ id: editingProject.id, updates: updated }));
-    // Update selectedProject if viewing it
-    if (selectedProject?.id === editingProject.id) {
-      setSelectedProject({ ...selectedProject, ...updated });
-    }
   };
 
   const handleDelete = async () => {
     if (!deleteConfirm) return;
+    const wasSelected = selectedProject?.id === deleteConfirm.id;
     try {
       await deleteProjectApi(deleteConfirm.id, {
         deleteConversations: deleteOption === 'everything',
       });
       dispatch(removeProject(deleteConfirm.id));
-      if (selectedProject?.id === deleteConfirm.id) {
-        setSelectedProject(null);
+      if (wasSelected) {
+        navigate('/projects');
       }
     } catch {
       // Silently fail
@@ -946,9 +870,6 @@ export default function ProjectsView() {
   const handleToggleStar = async (project) => {
     const newVal = !project.is_starred;
     dispatch(updateProjectInStore({ id: project.id, updates: { is_starred: newVal } }));
-    if (selectedProject?.id === project.id) {
-      setSelectedProject({ ...selectedProject, is_starred: newVal });
-    }
     try {
       await updateProjectApi(project.id, { is_starred: newVal });
     } catch {
@@ -959,9 +880,6 @@ export default function ProjectsView() {
   const handleToggleArchive = async (project) => {
     const newVal = !project.is_archived;
     dispatch(updateProjectInStore({ id: project.id, updates: { is_archived: newVal } }));
-    if (selectedProject?.id === project.id) {
-      setSelectedProject({ ...selectedProject, is_archived: newVal });
-    }
     setMenuOpenId(null);
     try {
       await updateProjectApi(project.id, { is_archived: newVal });
@@ -983,17 +901,16 @@ export default function ProjectsView() {
   };
 
   const handleCardClick = (project) => {
-    setSelectedProject(project);
+    navigate(`/projects/${project.id}`);
   };
 
   // If viewing a project workspace
   if (selectedProject) {
-    const current = projects.find((p) => p.id === selectedProject.id) || selectedProject;
     return (
       <>
         <ProjectWorkspace
-          project={current}
-          onBack={() => setSelectedProject(null)}
+          project={selectedProject}
+          onBack={() => navigate('/projects')}
           onEdit={(p) => openEditModal(p)}
           onDelete={(p) => openDeleteConfirm(p)}
           onToggleStar={handleToggleStar}

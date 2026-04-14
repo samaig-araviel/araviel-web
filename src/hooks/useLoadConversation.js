@@ -102,6 +102,7 @@ export default function useLoadConversation() {
   const loadConversation = useCallback(
     async (chatId) => {
       dispatch(setCurrentChat(chatId));
+      dispatch(setMessages([]));
       try {
         const data = await fetchConversationMessages(chatId);
         const storedImages = getGeneratedImages();
