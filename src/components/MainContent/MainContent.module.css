@@ -48,12 +48,8 @@
   height: 52px;
   z-index: 10;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    var(--bg-primary) 0%,
-    var(--bg-primary) 60%,
-    transparent 100%
-  );
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .topNavInner {
@@ -77,22 +73,23 @@
   height: 14px;
 }
 
-/* Project context — top-left */
-.projectHeader {
+/* Breadcrumb — top-left title bar */
+.breadcrumb {
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 2px;
   margin-right: auto;
-  margin-left: 8px;
+  margin-left: 4px;
   position: relative;
-  animation: projectHeaderIn 0.3s cubic-bezier(0.2, 0, 0, 1);
+  min-width: 0;
+  animation: breadcrumbIn 0.25s cubic-bezier(0.2, 0, 0, 1);
 }
 
-@keyframes projectHeaderIn {
+@keyframes breadcrumbIn {
   from {
     opacity: 0;
-    transform: translateX(-8px);
+    transform: translateX(-6px);
   }
   to {
     opacity: 1;
@@ -100,107 +97,116 @@
   }
 }
 
-/* Warm amber project badge */
-.projectBadge {
+/* Project segment — navigates to the project */
+.breadcrumbProject {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px 5px 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: #b45309;
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.1) 0%, rgba(245, 158, 11, 0.07) 100%);
-  border: 1px solid rgba(217, 119, 6, 0.15);
-  border-radius: 20px;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.12s ease, color 0.12s ease;
   white-space: nowrap;
-  max-width: 160px;
+  max-width: 180px;
   flex-shrink: 0;
 }
 
-:global([data-theme='dark']) .projectBadge {
-  color: #fbbf24;
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12) 0%, rgba(217, 119, 6, 0.08) 100%);
-  border-color: rgba(251, 191, 36, 0.18);
+.breadcrumbProject:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
 }
 
-.projectBadge:hover {
-  background: linear-gradient(135deg, rgba(217, 119, 6, 0.16) 0%, rgba(245, 158, 11, 0.12) 100%);
-  border-color: rgba(217, 119, 6, 0.25);
-  transform: translateY(-0.5px);
-}
-
-:global([data-theme='dark']) .projectBadge:hover {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.18) 0%, rgba(217, 119, 6, 0.14) 100%);
-  border-color: rgba(251, 191, 36, 0.28);
-}
-
-.projectBadge svg {
-  width: 12px;
-  height: 12px;
+.breadcrumbProject svg {
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
-  opacity: 0.75;
+  color: var(--text-muted);
 }
 
-.projectBadge span {
+.breadcrumbProject span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Separator */
-.projectHeaderSep {
-  font-size: 16px;
+/* Thin separator between project and title */
+.breadcrumbSep {
+  font-size: 13px;
   color: var(--text-muted);
-  opacity: 0.3;
-  margin: 0 8px;
+  opacity: 0.4;
   user-select: none;
-  font-weight: 300;
+  padding: 0 2px;
+  line-height: 1;
 }
 
-/* Title + chevron as one clickable unit */
-.projectHeaderTitleBtn {
+/* Title segment — opens context menu */
+.breadcrumbTitleBtn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 6px 4px 2px;
+  gap: 5px;
+  padding: 5px 6px 5px 8px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  max-width: 260px;
+  transition: background-color 0.12s ease;
+  min-width: 0;
+  max-width: 320px;
 }
 
-.projectHeaderTitleBtn:hover {
+.breadcrumbTitleBtn:hover {
   background-color: var(--bg-hover);
 }
 
-.projectHeaderTitleBtn svg {
-  width: 13px;
-  height: 13px;
+.breadcrumbTitleBtn svg {
+  width: 12px;
+  height: 12px;
   color: var(--text-muted);
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
 
-.projectHeaderTitleBtnOpen {
+.breadcrumbTitleBtnOpen {
   background-color: var(--bg-hover);
 }
 
-.projectHeaderTitleBtnOpen svg {
+.breadcrumbTitleBtnOpen svg {
   transform: rotate(180deg);
 }
 
-.projectHeaderTitle {
-  font-size: 14px;
+.breadcrumbTitle {
+  font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Inline rename input */
+.breadcrumbRenameInput {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 4px 8px;
+  outline: none;
+  min-width: 160px;
+  max-width: 320px;
+  margin-left: 4px;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.breadcrumbRenameInput:focus {
+  border-color: var(--text-secondary);
+  box-shadow: 0 0 0 2px var(--bg-hover);
 }
 
 /* Project dropdown menu */
@@ -270,10 +276,17 @@
 .projectPickerHeader {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 6px 8px;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 4px;
+}
+
+.projectPickerHeaderTitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
 }
 
 .projectPickerBack {
@@ -331,8 +344,8 @@
 }
 
 .projectPickerSearchInput:focus {
-  border-color: #d97706;
-  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.08);
+  border-color: var(--text-secondary);
+  box-shadow: 0 0 0 2px var(--bg-hover);
 }
 
 .projectPickerSearchInput::placeholder {
@@ -370,7 +383,7 @@
   width: 14px;
   height: 14px;
   flex-shrink: 0;
-  color: #d97706;
+  color: var(--text-muted);
 }
 
 .projectPickerItem span {
@@ -396,23 +409,27 @@
   border-radius: 7px;
   font-size: 13px;
   font-weight: 500;
-  color: #d97706;
+  color: var(--text-primary);
   background: transparent;
   border: none;
+  border-bottom: 1px solid var(--border-color);
   cursor: pointer;
   transition: background-color 0.12s ease;
   text-align: left;
-  margin-bottom: 2px;
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-radius: 7px 7px 0 0;
 }
 
 .projectPickerCreate:hover {
-  background-color: rgba(217, 119, 6, 0.08);
+  background-color: var(--bg-hover);
 }
 
 .projectPickerCreate svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+  color: var(--text-muted);
 }
 
 /* Inline create project form inside dropdown */
@@ -434,8 +451,8 @@
 }
 
 .projectCreateInput:focus {
-  border-color: #d97706;
-  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1);
+  border-color: var(--text-secondary);
+  box-shadow: 0 0 0 2px var(--bg-hover);
 }
 
 .projectCreateInput::placeholder {
@@ -448,15 +465,15 @@
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
-  background-color: #d97706;
-  color: white;
+  background-color: var(--text-primary);
+  color: var(--bg-primary);
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
 .projectCreateSubmit:hover:not(:disabled) {
-  background-color: #b45309;
+  opacity: 0.88;
 }
 
 .projectCreateSubmit:active:not(:disabled) {
@@ -473,8 +490,8 @@
   width: 48px;
   height: 48px;
   border-radius: 14px;
-  background: rgba(217, 119, 6, 0.08);
-  color: #d97706;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2424,30 +2441,30 @@
   .topNav {
     padding: 0 12px;
     height: 56px;
-    background: linear-gradient(
-      to bottom,
-      var(--bg-primary) 0%,
-      var(--bg-primary) 70%,
-      transparent 100%
-    );
   }
 
-  .projectHeader {
+  .breadcrumb {
     margin-left: 40px;
   }
 
-  .projectBadge {
-    font-size: 11px;
-    padding: 4px 8px 4px 6px;
-    max-width: 110px;
-  }
-
-  .projectHeaderTitleBtn {
+  .breadcrumbProject {
+    font-size: 12px;
+    padding: 4px 6px;
     max-width: 120px;
   }
 
-  .projectHeaderTitle {
+  .breadcrumbTitleBtn {
+    max-width: 140px;
+  }
+
+  .breadcrumbTitle {
     font-size: 12px;
+  }
+
+  .breadcrumbRenameInput {
+    font-size: 12px;
+    min-width: 120px;
+    max-width: 180px;
   }
 
   .projectDropdown {

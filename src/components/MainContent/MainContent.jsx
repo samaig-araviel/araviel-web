@@ -96,6 +96,7 @@ import {
   TrashIcon,
   ProjectsIcon,
   ChevronDownIcon,
+  EditIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -714,9 +715,12 @@ export default function MainContent() {
   const [creatingProject, setCreatingProject] = useState(false);
   const [showRemoveFromProject, setShowRemoveFromProject] = useState(false);
   const [projectSearch, setProjectSearch] = useState('');
+  const [isRenamingTitle, setIsRenamingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
   const newProjectInputRef = useRef(null);
   const projectSearchRef = useRef(null);
   const projectDropdownRef = useRef(null);
+  const titleRenameInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const attachDropdownRef = useRef(null);
   const chatMenuRef = useRef(null);
@@ -924,6 +928,38 @@ export default function MainContent() {
     navigate(`/projects/${conversationProject.id}`);
   };
 
+  const handleStartRename = () => {
+    setTitleDraft(conversationTitle || '');
+    setIsRenamingTitle(true);
+    setShowProjectDropdown(false);
+  };
+
+  const handleCommitRename = async () => {
+    const trimmed = titleDraft.trim();
+    setIsRenamingTitle(false);
+    if (!currentChatId) return;
+    if (!trimmed || trimmed === conversationTitle) return;
+
+    const previousTitle = conversationTitle;
+    const prevConversations = [...conversations];
+    setConversationTitle(trimmed);
+    updateConvState(
+      conversations.map((c) => (c.id === currentChatId ? { ...c, title: trimmed } : c))
+    );
+    try {
+      await updateConversation(currentChatId, { title: trimmed });
+    } catch {
+      setConversationTitle(previousTitle);
+      updateConvState(prevConversations);
+      showError('Could not rename conversation. Try again.');
+    }
+  };
+
+  const handleCancelRename = () => {
+    setIsRenamingTitle(false);
+    setTitleDraft('');
+  };
+
   // Close project dropdown on outside click
   useEffect(() => {
     if (!showProjectDropdown) return;
@@ -953,6 +989,21 @@ export default function MainContent() {
       projectSearchRef.current.focus();
     }
   }, [showProjectPicker, showProjectCreate]);
+
+  // Focus + select the rename input when rename mode activates
+  useEffect(() => {
+    if (isRenamingTitle && titleRenameInputRef.current) {
+      const el = titleRenameInputRef.current;
+      el.focus();
+      el.select();
+    }
+  }, [isRenamingTitle]);
+
+  // Cancel rename if the user switches conversation mid-edit
+  useEffect(() => {
+    setIsRenamingTitle(false);
+    setTitleDraft('');
+  }, [currentChatId]);
 
   // Streaming / timeline state
   const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | researching | thinking | writing | complete
@@ -2154,53 +2205,97 @@ export default function MainContent() {
     >
       {/* Top nav bar */}
       <div className={styles.topNav}>
-        {/* Project context header — left side */}
-        {conversationProject && (
-          <div className={styles.projectHeader} ref={projectDropdownRef}>
-            <button
-              className={styles.projectBadge}
-              onClick={handleNavigateToProject}
-              title={`Go to ${conversationProject.name}`}
-            >
-              <ProjectsIcon />
-              <span>{conversationProject.name}</span>
-            </button>
-            <span className={styles.projectHeaderSep}>›</span>
-            <button
-              className={`${styles.projectHeaderTitleBtn} ${
-                showProjectDropdown ? styles.projectHeaderTitleBtnOpen : ''
-              }`}
-              onClick={() => {
-                setShowProjectDropdown(!showProjectDropdown);
-                setShowProjectPicker(false);
-                setProjectSearch('');
-              }}
-              aria-label="Project options"
-            >
-              <span className={styles.projectHeaderTitle}>{conversationTitle || 'Untitled'}</span>
-              <ChevronDownIcon />
-            </button>
+        {/* Breadcrumb — title + project context */}
+        {currentChatId && conversationTitle && (
+          <div className={styles.breadcrumb} ref={projectDropdownRef}>
+            {conversationProject && (
+              <>
+                <button
+                  className={styles.breadcrumbProject}
+                  onClick={handleNavigateToProject}
+                  title={`Open ${conversationProject.name}`}
+                >
+                  <ProjectsIcon />
+                  <span>{conversationProject.name}</span>
+                </button>
+                <span className={styles.breadcrumbSep} aria-hidden="true">
+                  /
+                </span>
+              </>
+            )}
 
-            {/* Project dropdown menu */}
-            {showProjectDropdown && !showProjectPicker && (
-              <div className={styles.projectDropdown}>
+            {isRenamingTitle ? (
+              <input
+                ref={titleRenameInputRef}
+                type="text"
+                className={styles.breadcrumbRenameInput}
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                onBlur={handleCommitRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleCommitRename();
+                  } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    handleCancelRename();
+                  }
+                }}
+                maxLength={200}
+                aria-label="Rename conversation"
+              />
+            ) : (
+              <button
+                className={`${styles.breadcrumbTitleBtn} ${
+                  showProjectDropdown ? styles.breadcrumbTitleBtnOpen : ''
+                }`}
+                onClick={() => {
+                  setShowProjectDropdown(!showProjectDropdown);
+                  setShowProjectPicker(false);
+                  setShowProjectCreate(false);
+                  setProjectSearch('');
+                }}
+                aria-haspopup="menu"
+                aria-expanded={showProjectDropdown}
+                aria-label="Conversation options"
+              >
+                <span className={styles.breadcrumbTitle}>{conversationTitle}</span>
+                <ChevronDownIcon />
+              </button>
+            )}
+
+            {/* Main dropdown menu */}
+            {showProjectDropdown && !showProjectPicker && !showProjectCreate && (
+              <div className={styles.projectDropdown} role="menu">
                 <button
                   className={styles.projectDropdownItem}
+                  role="menuitem"
+                  onClick={handleStartRename}
+                >
+                  <EditIcon />
+                  <span>Rename</span>
+                </button>
+                <button
+                  className={styles.projectDropdownItem}
+                  role="menuitem"
                   onClick={() => setShowProjectPicker(true)}
                 >
                   <ProjectsIcon />
-                  <span>Change project</span>
+                  <span>{conversationProject ? 'Change project' : 'Add to project'}</span>
                 </button>
-                <button
-                  className={`${styles.projectDropdownItem} ${styles.projectDropdownItemDanger}`}
-                  onClick={() => {
-                    setShowProjectDropdown(false);
-                    setShowRemoveFromProject(true);
-                  }}
-                >
-                  <CloseIcon />
-                  <span>Remove from project</span>
-                </button>
+                {conversationProject && (
+                  <button
+                    className={`${styles.projectDropdownItem} ${styles.projectDropdownItemDanger}`}
+                    role="menuitem"
+                    onClick={() => {
+                      setShowProjectDropdown(false);
+                      setShowRemoveFromProject(true);
+                    }}
+                  >
+                    <CloseIcon />
+                    <span>Remove from project</span>
+                  </button>
+                )}
               </div>
             )}
 
@@ -2214,6 +2309,7 @@ export default function MainContent() {
                       setShowProjectPicker(false);
                       setProjectSearch('');
                     }}
+                    aria-label="Back"
                   >
                     <ChevronLeftIcon />
                   </button>
@@ -2239,14 +2335,28 @@ export default function MainContent() {
                       <span>New project</span>
                     </button>
                   )}
-                  {projects
-                    .filter((p) => !p.is_archived && p.id !== conversationProject.id)
-                    .filter(
-                      (p) =>
-                        !projectSearch.trim() ||
-                        p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
-                    )
-                    .map((project) => (
+                  {(() => {
+                    const available = projects
+                      .filter(
+                        (p) => !p.is_archived && (!conversationProject || p.id !== conversationProject.id)
+                      )
+                      .filter(
+                        (p) =>
+                          !projectSearch.trim() ||
+                          p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
+                      );
+                    if (available.length === 0) {
+                      return (
+                        <p className={styles.projectPickerEmpty}>
+                          {projectSearch.trim()
+                            ? `No projects match "${projectSearch.trim()}"`
+                            : conversationProject
+                            ? 'No other projects available'
+                            : 'No projects yet — create one above'}
+                        </p>
+                      );
+                    }
+                    return available.map((project) => (
                       <button
                         key={project.id}
                         className={styles.projectPickerItem}
@@ -2255,20 +2365,8 @@ export default function MainContent() {
                         <ProjectsIcon />
                         <span>{project.name}</span>
                       </button>
-                    ))}
-                  {projects
-                    .filter((p) => !p.is_archived && p.id !== conversationProject.id)
-                    .filter(
-                      (p) =>
-                        !projectSearch.trim() ||
-                        p.name.toLowerCase().includes(projectSearch.trim().toLowerCase())
-                    ).length === 0 && (
-                    <p className={styles.projectPickerEmpty}>
-                      {projectSearch.trim()
-                        ? `No projects match "${projectSearch.trim()}"`
-                        : 'No other projects available'}
-                    </p>
-                  )}
+                    ));
+                  })()}
                 </div>
               </div>
             )}
@@ -2283,10 +2381,11 @@ export default function MainContent() {
                       setShowProjectCreate(false);
                       setNewProjectName('');
                     }}
+                    aria-label="Back"
                   >
                     <ChevronLeftIcon />
                   </button>
-                  <span>New project</span>
+                  <span className={styles.projectPickerHeaderTitle}>New project</span>
                 </div>
                 <form className={styles.projectCreateForm} onSubmit={handleCreateAndAssignProject}>
                   <input
