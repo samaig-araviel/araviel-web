@@ -16,6 +16,7 @@
   justify-content: flex-end;
   align-items: stretch;
   padding: 0;
+  padding-top: 24px;
 }
 
 /* When sub-conversation panel is open, make room on the right (card width + spacing) */

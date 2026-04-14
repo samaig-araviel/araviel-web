@@ -131,12 +131,8 @@
   justify-content: flex-end;
   gap: 2px;
   padding-top: 6px;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.userPromptWrapper:hover .userPromptActions {
   opacity: 1;
+  transition: opacity 0.15s ease;
 }
 
 .userPromptTime {
