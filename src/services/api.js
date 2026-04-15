@@ -369,6 +369,23 @@ export async function revokeConversationShare(conversationId) {
 }
 
 /**
+ * Rotate the share link: revoke the current token and issue a new one. This
+ * invalidates the previous URL (anyone who had it will now see a 404) and
+ * returns a fresh share with a new token + current snapshot.
+ *
+ * The partial unique index on `shared_conversations` guarantees that after
+ * DELETE there can be no active row, so the subsequent POST always inserts
+ * cleanly. If the POST fails after the DELETE succeeds, the caller will see
+ * the "no active share" state and can retry with a plain create.
+ * @param {string} conversationId
+ * @returns {Promise<Share>}
+ */
+export async function rotateConversationShare(conversationId) {
+  await revokeConversationShare(conversationId);
+  return createConversationShare(conversationId);
+}
+
+/**
  * List all active shares belonging to the authenticated user.
  * @returns {Promise<{ shares: Array<{ shareToken: string, conversationId: string, title: string | null, snapshotAt: string, createdAt: string, viewCount: number }> }>}
  */

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MessageList from '../MessageList/MessageList';
@@ -53,12 +53,14 @@ export default function SharedConversationView() {
     };
   }, []);
 
-  // Fetch once per token, aborting if the component unmounts mid-request so we
-  // never call setState after unmount.
-  const lastTokenRef = useRef(null);
+  // Fetch the snapshot whenever the token changes. The AbortController alone
+  // correctly handles React 18 StrictMode's synthetic double-invoke: the first
+  // effect's cleanup aborts the in-flight request, and the second invocation
+  // starts a fresh one that actually resolves. No token-equality guard — that
+  // caused the second invocation to early-return and leave the UI stuck on the
+  // loading spinner forever.
   useEffect(() => {
-    if (!token || lastTokenRef.current === token) return;
-    lastTokenRef.current = token;
+    if (!token) return undefined;
 
     const controller = new AbortController();
     setStatus('loading');
