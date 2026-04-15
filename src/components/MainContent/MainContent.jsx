@@ -112,6 +112,7 @@ import {
   createConversationShare,
   updateConversationShare,
   revokeConversationShare,
+  rotateConversationShare,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, addProject } from '../../store/slices/projectsSlice';
@@ -391,21 +392,56 @@ function createStages(status, modelName, isManualSelection, researchProgress) {
 }
 
 /**
+ * Format a past Date as a short relative label ("2 min ago", "yesterday",
+ * "Mar 14"). Falls back to an absolute medium-format date for anything over a
+ * week old so viewers always see a concrete timestamp.
+ */
+function formatRelativeTime(date) {
+  const now = Date.now();
+  const ms = now - date.getTime();
+  if (!Number.isFinite(ms) || ms < 0) {
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  const sec = Math.round(ms / 1000);
+  if (sec < 45) return 'just now';
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min} min ago`;
+  const hr = Math.round(min / 60);
+  if (hr < 24) return `${hr} hr ago`;
+  const day = Math.round(hr / 24);
+  if (day === 1) return 'yesterday';
+  if (day < 7) return `${day} days ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+/**
  * Share modal.
  *
- * Creates (or refreshes) a public, unguessable share link for a conversation.
- * On mount we check whether an active share already exists; if not, we create
- * one immediately so the "Copy link" affordance is available without an extra
- * click. The owner can refresh the snapshot to include newer messages or
- * revoke the link entirely.
+ * Renders one of three states, driven by whether an active share exists:
+ *
+ *   empty  — no active share; shows a primary "Create share link" CTA.
+ *   ready  — share exists; shows URL, metadata, and Copy/Update/Rotate/Unshare
+ *            actions. A contextual stale banner appears only when the
+ *            conversation has new messages since the last snapshot.
+ *   loading — initial fetch in-flight; shown briefly so we don't flash an
+ *            incorrect empty state.
+ *
+ * We intentionally do NOT auto-create a share on open: creating a public link
+ * is a deliberate action that should only happen when the user asks for it.
+ * Reopening the modal for a conversation that already has a share will show
+ * the existing link (the backend's partial unique index guarantees at most
+ * one active share per conversation, so there's never ambiguity).
  */
 function ShareModal({ conversationId, conversationTitle, messages, onClose, onSuccess, onError }) {
   const [share, setShare] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRevoking, setIsRevoking] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
+  const [rotateConfirm, setRotateConfirm] = useState(false);
 
   const shareUrl = useMemo(() => {
     if (!share?.shareToken) return null;
@@ -423,22 +459,19 @@ function ShareModal({ conversationId, conversationTitle, messages, onClose, onSu
     });
   }, [share, messages]);
 
-  // Fetch existing share or create one on mount.
+  // Look up the existing share when the modal opens. We do not create one
+  // automatically — creation is an explicit user action below.
   useEffect(() => {
     if (!conversationId) return undefined;
     let cancelled = false;
+    setLoading(true);
+    setError(null);
     (async () => {
       try {
         const { share: existing } = await fetchConversationShare(conversationId);
-        if (cancelled) return;
-        if (existing) {
-          setShare(existing);
-        } else {
-          const created = await createConversationShare(conversationId);
-          if (!cancelled) setShare(created);
-        }
+        if (!cancelled) setShare(existing ?? null);
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Could not create share link');
+        if (!cancelled) setError(err.message || 'Could not check share status');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -450,11 +483,31 @@ function ShareModal({ conversationId, conversationTitle, messages, onClose, onSu
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        // If the rotate-confirm prompt is open, ESC backs out of that first
+        // rather than closing the whole modal — less surprising.
+        if (rotateConfirm) setRotateConfirm(false);
+        else onClose();
+      }
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose]);
+  }, [onClose, rotateConfirm]);
+
+  const handleCreate = async () => {
+    if (isCreating || !conversationId) return;
+    setIsCreating(true);
+    setError(null);
+    try {
+      const created = await createConversationShare(conversationId);
+      setShare(created);
+      onSuccess?.('Share link created');
+    } catch (err) {
+      setError(err.message || 'Could not create share link');
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleCopyLink = () => {
     if (!shareUrl) return;
@@ -482,6 +535,33 @@ function ShareModal({ conversationId, conversationTitle, messages, onClose, onSu
     }
   };
 
+  const handleRotate = async () => {
+    if (isRotating || !conversationId) return;
+    setIsRotating(true);
+    setError(null);
+    try {
+      const rotated = await rotateConversationShare(conversationId);
+      setShare(rotated);
+      setLinkCopied(false);
+      setRotateConfirm(false);
+      onSuccess?.('New link generated — the old one no longer works');
+    } catch (err) {
+      // If the DELETE succeeded but the POST failed, the server now has no
+      // active share for this conversation. Clear local state so the UI
+      // returns to the empty-state CTA, from which the user can retry cleanly.
+      try {
+        const { share: current } = await fetchConversationShare(conversationId);
+        setShare(current ?? null);
+      } catch {
+        setShare(null);
+      }
+      setRotateConfirm(false);
+      setError(err.message || 'Could not rotate share link');
+    } finally {
+      setIsRotating(false);
+    }
+  };
+
   const handleRevoke = async () => {
     if (isRevoking || !conversationId) return;
     setIsRevoking(true);
@@ -497,14 +577,11 @@ function ShareModal({ conversationId, conversationTitle, messages, onClose, onSu
   };
 
   const previewTitle = conversationTitle?.trim() || 'Araviel Conversation';
-  const previewUrl = shareUrl ? shareUrl.replace(/^https?:\/\//, '') : 'Generating link…';
+  const previewUrl = shareUrl ? shareUrl.replace(/^https?:\/\//, '') : '';
   const snapshotAt = share?.snapshotAt ? new Date(share.snapshotAt) : null;
-  const snapshotLabel = snapshotAt
-    ? `Snapshot taken ${snapshotAt.toLocaleString(undefined, {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })}`
-    : null;
+  const snapshotRelative = snapshotAt ? formatRelativeTime(snapshotAt) : null;
+  const viewCount = share?.viewCount ?? 0;
+  const busy = isCreating || isUpdating || isRevoking || isRotating;
 
   return (
     <div className={styles.shareOverlay} onClick={onClose}>
@@ -523,15 +600,48 @@ function ShareModal({ conversationId, conversationTitle, messages, onClose, onSu
         </div>
 
         <p className={styles.shareModalDesc}>
-          Create a public link to share this conversation. Anyone with the link can view a read-only
-          snapshot — new messages won't be visible unless you update it.
+          {share
+            ? 'Anyone with this link can view a read-only snapshot of this conversation. Update it to include new messages, or unshare to revoke access.'
+            : 'Create a public link to share this conversation. Anyone with the link will see a read-only snapshot — no account needed.'}
         </p>
 
         {loading ? (
           <div className={styles.shareLoadingRow}>
             <span className={styles.shareSpinner} aria-hidden="true" />
-            <span>Preparing share link…</span>
+            <span>Checking share status…</span>
           </div>
+        ) : !share ? (
+          <>
+            {error && (
+              <div className={styles.shareError} role="alert">
+                {error}
+              </div>
+            )}
+            <div className={styles.shareEmptyState}>
+              <div className={styles.shareEmptyIcon} aria-hidden="true">
+                <LinkIcon />
+              </div>
+              <p className={styles.shareEmptyText}>This conversation isn't shared yet.</p>
+              <button
+                type="button"
+                className={`${styles.shareActionBtn} ${styles.sharePrimaryBtn}`}
+                onClick={handleCreate}
+                disabled={isCreating}
+              >
+                {isCreating ? (
+                  <>
+                    <span className={styles.shareSpinner} aria-hidden="true" />
+                    <span>Creating link…</span>
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon />
+                    <span>Create share link</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </>
         ) : (
           <>
             {error && (
@@ -551,75 +661,138 @@ function ShareModal({ conversationId, conversationTitle, messages, onClose, onSu
                 <span className={styles.sharePreviewUrl} title={shareUrl ?? ''}>
                   {previewUrl}
                 </span>
-                {snapshotLabel && <span className={styles.shareSnapshotMeta}>{snapshotLabel}</span>}
+                <span className={styles.shareSnapshotMeta}>
+                  {snapshotRelative ? `Snapshot ${snapshotRelative}` : 'Snapshot ready'}
+                  {viewCount > 0 && (
+                    <>
+                      <span className={styles.shareMetaDot} aria-hidden="true">
+                        ·
+                      </span>
+                      {viewCount === 1 ? '1 view' : `${viewCount.toLocaleString()} views`}
+                    </>
+                  )}
+                </span>
               </div>
             </div>
 
-            <div className={styles.shareModalActions}>
-              <button
-                type="button"
-                className={`${styles.shareActionBtn} ${styles.shareDangerBtn}`}
-                onClick={handleRevoke}
-                disabled={!share || isRevoking}
-              >
-                {isRevoking ? (
-                  <>
-                    <span className={styles.shareSpinner} aria-hidden="true" />
-                    <span>Revoking…</span>
-                  </>
-                ) : (
-                  <>
-                    <TrashIcon />
-                    <span>Unshare</span>
-                  </>
-                )}
-              </button>
-
-              <div className={styles.shareModalActionsGroup}>
-                {hasNewMessagesSinceShare && (
-                  <button
-                    type="button"
-                    className={`${styles.shareActionBtn} ${styles.shareSecondaryBtn}`}
-                    onClick={handleUpdate}
-                    disabled={isUpdating}
-                    title="Include messages sent since this link was created"
-                  >
-                    {isUpdating ? (
-                      <>
-                        <span className={styles.shareSpinner} aria-hidden="true" />
-                        <span>Updating…</span>
-                      </>
-                    ) : (
-                      <>
-                        <RefreshIcon />
-                        <span>Update</span>
-                      </>
-                    )}
-                  </button>
-                )}
-
+            {hasNewMessagesSinceShare && !rotateConfirm && (
+              <div className={styles.shareStaleBanner} role="status">
+                <div className={styles.shareStaleText}>
+                  <strong>New messages since this snapshot.</strong>
+                  <span>Update the link to include them, or leave it as-is.</span>
+                </div>
                 <button
                   type="button"
-                  className={`${styles.shareActionBtn} ${styles.shareCopyBtn} ${
-                    linkCopied ? styles.copied : ''
-                  }`}
-                  onClick={handleCopyLink}
-                  disabled={!shareUrl}
+                  className={`${styles.shareActionBtn} ${styles.shareSecondaryBtn} ${styles.shareStaleAction}`}
+                  onClick={handleUpdate}
+                  disabled={busy}
                 >
-                  {linkCopied ? (
+                  {isUpdating ? (
                     <>
-                      <CheckIcon />
-                      <span>Link copied</span>
+                      <span className={styles.shareSpinner} aria-hidden="true" />
+                      <span>Updating…</span>
                     </>
                   ) : (
                     <>
-                      <LinkIcon />
-                      <span>Copy link</span>
+                      <RefreshIcon />
+                      <span>Update snapshot</span>
                     </>
                   )}
                 </button>
               </div>
-            </div>
+            )}
+
+            {rotateConfirm ? (
+              <div className={styles.shareRotateConfirm} role="alertdialog">
+                <div className={styles.shareRotateText}>
+                  <strong>Generate a new link?</strong>
+                  <span>The current link will stop working for everyone who has it.</span>
+                </div>
+                <div className={styles.shareModalActionsGroup}>
+                  <button
+                    type="button"
+                    className={`${styles.shareActionBtn} ${styles.shareSecondaryBtn}`}
+                    onClick={() => setRotateConfirm(false)}
+                    disabled={isRotating}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.shareActionBtn} ${styles.shareDangerBtn}`}
+                    onClick={handleRotate}
+                    disabled={isRotating}
+                  >
+                    {isRotating ? (
+                      <>
+                        <span className={styles.shareSpinner} aria-hidden="true" />
+                        <span>Rotating…</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshIcon />
+                        <span>Rotate link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.shareModalActions}>
+                <button
+                  type="button"
+                  className={`${styles.shareActionBtn} ${styles.shareDangerBtn}`}
+                  onClick={handleRevoke}
+                  disabled={busy}
+                >
+                  {isRevoking ? (
+                    <>
+                      <span className={styles.shareSpinner} aria-hidden="true" />
+                      <span>Unsharing…</span>
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon />
+                      <span>Unshare</span>
+                    </>
+                  )}
+                </button>
+
+                <div className={styles.shareModalActionsGroup}>
+                  <button
+                    type="button"
+                    className={`${styles.shareActionBtn} ${styles.shareSecondaryBtn}`}
+                    onClick={() => setRotateConfirm(true)}
+                    disabled={busy}
+                    title="Invalidate the current link and generate a new one"
+                  >
+                    <RefreshIcon />
+                    <span>Rotate link</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.shareActionBtn} ${styles.shareCopyBtn} ${
+                      linkCopied ? styles.copied : ''
+                    }`}
+                    onClick={handleCopyLink}
+                    disabled={!shareUrl || busy}
+                  >
+                    {linkCopied ? (
+                      <>
+                        <CheckIcon />
+                        <span>Link copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <LinkIcon />
+                        <span>Copy link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

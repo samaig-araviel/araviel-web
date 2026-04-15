@@ -1120,6 +1120,133 @@
   margin-top: 2px;
 }
 
+.shareMetaDot {
+  margin: 0 6px;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Empty state — shown when the conversation has no active share yet. */
+.shareEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 16px 8px;
+  text-align: center;
+}
+
+.shareEmptyIcon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-hover), var(--bg-active));
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+.shareEmptyIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.shareEmptyText {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sharePrimaryBtn {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  padding: 10px 22px;
+}
+
+.sharePrimaryBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.sharePrimaryBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Contextual banner that surfaces when the conversation has new messages
+   since the last snapshot. Offers an inline "Update snapshot" action. */
+.shareStaleBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.shareStaleText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shareStaleText strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shareStaleText span {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.shareStaleAction {
+  padding: 8px 14px;
+  flex-shrink: 0;
+}
+
+/* Inline confirmation prompt for rotating the share link. Replaces the
+   default action row while active to keep decision load localised. */
+.shareRotateConfirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.shareRotateText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.shareRotateText strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shareRotateText span {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.shareRotateConfirm .shareModalActionsGroup {
+  justify-content: flex-end;
+}
+
 .container {
   width: 100%;
   max-width: 640px;
