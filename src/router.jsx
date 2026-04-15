@@ -9,8 +9,14 @@ import ModelsView from './components/ModelsView';
 import SettingsView from './components/SettingsView';
 import PricingView from './components/PricingView/PricingView';
 import SubscriptionView from './components/SubscriptionView/SubscriptionView';
+import SharedConversationView from './components/SharedConversationView';
 
 const router = createBrowserRouter([
+  // Public shared-conversation viewer. Deliberately a sibling of <App />
+  // (not a child) so it does NOT mount the sidebar, auth gate, or any
+  // owner-side chrome. Unauthenticated visitors land straight into the
+  // read-only snapshot.
+  { path: '/share/:token', element: <SharedConversationView /> },
   {
     path: '/',
     element: <App />,

@@ -4016,6 +4016,7 @@ function ResponseActions({
   conversationId,
   onOpenSourcesPanel,
   isSourcesPanelOpen,
+  readOnly = false,
 }) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState(message.feedback === 'like');
@@ -4197,11 +4198,11 @@ function ResponseActions({
           <div
             className={styles.modelPillSmallWrapper}
             ref={modelPillRef}
-            onClick={() => setShowModelDropdown((prev) => !prev)}
+            onClick={readOnly ? undefined : () => setShowModelDropdown((prev) => !prev)}
           >
             <div
               className={`${styles.modelPillSmall} ${
-                hasAlternates ? styles.modelPillSmallClickable : ''
+                hasAlternates && !readOnly ? styles.modelPillSmallClickable : ''
               }`}
               style={{
                 backgroundColor: isDark ? providerData.accentBgDark : providerData.accentBg,
@@ -4212,13 +4213,13 @@ function ResponseActions({
             >
               <LogoComponent size={12} />
               <span>{displayName}</span>
-              {hasAlternates && (
+              {hasAlternates && !readOnly && (
                 <span className={styles.modelPillChevron}>
                   <ChevronDownIcon />
                 </span>
               )}
             </div>
-            {showModelDropdown && (
+            {showModelDropdown && !readOnly && (
               <ModelPillDropdown
                 message={message}
                 isDark={isDark}
@@ -4238,22 +4239,26 @@ function ResponseActions({
       </div>
 
       <div className={styles.responseActionsRight}>
-        <button
-          className={`${styles.actionIcon} ${liked ? styles.actionIconActive : ''}`}
-          onClick={handleLike}
-          title="Like"
-          aria-label="Like response"
-        >
-          <ThumbsUpIcon />
-        </button>
-        <button
-          className={`${styles.actionIcon} ${disliked ? styles.actionIconActive : ''}`}
-          onClick={handleDislike}
-          title="Dislike"
-          aria-label="Dislike response"
-        >
-          <ThumbsDownIcon />
-        </button>
+        {!readOnly && (
+          <button
+            className={`${styles.actionIcon} ${liked ? styles.actionIconActive : ''}`}
+            onClick={handleLike}
+            title="Like"
+            aria-label="Like response"
+          >
+            <ThumbsUpIcon />
+          </button>
+        )}
+        {!readOnly && (
+          <button
+            className={`${styles.actionIcon} ${disliked ? styles.actionIconActive : ''}`}
+            onClick={handleDislike}
+            title="Dislike"
+            aria-label="Dislike response"
+          >
+            <ThumbsDownIcon />
+          </button>
+        )}
         <button
           className={`${styles.actionIcon} ${copied ? styles.actionIconCopied : ''}`}
           onClick={handleCopy}
@@ -4262,27 +4267,31 @@ function ResponseActions({
         >
           {copied ? <CheckIcon /> : <CopyIcon />}
         </button>
-        <button
-          className={styles.actionIcon}
-          onClick={handleRetryClick}
-          title="Retry"
-          aria-label="Retry response"
-        >
-          <RefreshIcon />
-        </button>
-        <div className={styles.shareActionWrapper}>
+        {!readOnly && (
           <button
             className={styles.actionIcon}
-            onClick={() => setShowShareDropdown(!showShareDropdown)}
-            title="Share"
-            aria-label="Share response"
+            onClick={handleRetryClick}
+            title="Retry"
+            aria-label="Retry response"
           >
-            <ShareIcon />
+            <RefreshIcon />
           </button>
-          {showShareDropdown && (
-            <ShareDropdown message={message} onClose={() => setShowShareDropdown(false)} />
-          )}
-        </div>
+        )}
+        {!readOnly && (
+          <div className={styles.shareActionWrapper}>
+            <button
+              className={styles.actionIcon}
+              onClick={() => setShowShareDropdown(!showShareDropdown)}
+              title="Share"
+              aria-label="Share response"
+            >
+              <ShareIcon />
+            </button>
+            {showShareDropdown && (
+              <ShareDropdown message={message} onClose={() => setShowShareDropdown(false)} />
+            )}
+          </div>
+        )}
       </div>
 
       {feedbackPanel && (
@@ -5086,14 +5095,16 @@ function UserPrompt({ content, images, onEdit, createdAt, onRetry }) {
       )}
       <div className={styles.userPromptActions}>
         {timeStr && <span className={styles.userPromptTime}>{timeStr}</span>}
-        <button
-          className={styles.userPromptActionBtn}
-          onClick={handleEdit}
-          title="Edit prompt"
-          aria-label="Edit prompt"
-        >
-          <EditIcon />
-        </button>
+        {onEdit && (
+          <button
+            className={styles.userPromptActionBtn}
+            onClick={handleEdit}
+            title="Edit prompt"
+            aria-label="Edit prompt"
+          >
+            <EditIcon />
+          </button>
+        )}
         <button
           className={`${styles.userPromptActionBtn} ${
             copied ? styles.userPromptActionBtnActive : ''
@@ -5104,14 +5115,16 @@ function UserPrompt({ content, images, onEdit, createdAt, onRetry }) {
         >
           {copied ? <CheckIcon /> : <CopyIcon />}
         </button>
-        <button
-          className={styles.userPromptActionBtn}
-          onClick={handleRetry}
-          title="Retry"
-          aria-label="Retry prompt"
-        >
-          <RefreshIcon />
-        </button>
+        {onRetry && (
+          <button
+            className={styles.userPromptActionBtn}
+            onClick={handleRetry}
+            title="Retry"
+            aria-label="Retry prompt"
+          >
+            <RefreshIcon />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -5143,6 +5156,7 @@ function Message({
   webSearchEnabled,
   onOpenSourcesPanel,
   isSourcesPanelOpen,
+  readOnly = false,
 }) {
   const isUser = message.role === 'user';
   const displayText = isStreaming ? streamedText : message.content;
@@ -5170,7 +5184,7 @@ function Message({
 
   // Handle text selection within the assistant message content
   const handleMouseUp = useCallback(() => {
-    if (isUser || isStreaming) return;
+    if (isUser || isStreaming || readOnly) return;
 
     // Small delay to let the selection settle
     if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
@@ -5203,7 +5217,7 @@ function Message({
         y: rect.top - containerRect.top - 8,
       });
     }, 10);
-  }, [isUser, isStreaming]);
+  }, [isUser, isStreaming, readOnly]);
 
   // Dismiss tooltip when clicking outside or when selection clears
   useEffect(() => {
@@ -5641,9 +5655,9 @@ function Message({
           <UserPrompt
             content={message.content}
             images={message.images || message.attachments}
-            onEdit={onEditPrompt}
+            onEdit={readOnly ? null : onEditPrompt}
             createdAt={message.createdAt}
-            onRetry={onRetry}
+            onRetry={readOnly ? null : onRetry}
           />
         ) : weatherData ? (
           <div className={styles.markdownContent} ref={markdownContentRef}>
@@ -5738,11 +5752,12 @@ function Message({
           conversationId={currentChatId}
           onOpenSourcesPanel={onOpenSourcesPanel}
           isSourcesPanelOpen={isSourcesPanelOpen}
+          readOnly={readOnly}
         />
       )}
 
       {/* Sub-conversation pills */}
-      {!isUser && !isStreaming && message.content && (
+      {!isUser && !isStreaming && message.content && !readOnly && (
         <SubConversationPills
           subConversations={subConversations}
           onOpen={handleOpenSubConv}
@@ -5893,6 +5908,7 @@ export default function MessageList({
   currentChatId,
   webSearchEnabled,
   onSendMessage,
+  readOnly = false,
 }) {
   const dispatch = useDispatch();
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -6136,7 +6152,7 @@ export default function MessageList({
                 hideThinking={isLast && isProcessing && msg.role === 'assistant'}
                 onFollowUpSelect={handleFollowUpSelect}
                 onQuestionsSend={handleQuestionsSend}
-                onRetry={onRetry}
+                onRetry={readOnly ? null : onRetry}
                 onSessionExpired={onSessionExpired}
                 onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}
@@ -6145,11 +6161,12 @@ export default function MessageList({
                 onSetSubConvPanelOwner={setSubConvPanelOwnerId}
                 currentChatId={currentChatId}
                 assistantIndex={assistantIndices.get(index) ?? -1}
-                onEditPrompt={handleEditPrompt}
+                onEditPrompt={readOnly ? null : handleEditPrompt}
                 onOpenCodePanel={handleOpenCodePanel}
                 webSearchEnabled={webSearchEnabled}
                 onOpenSourcesPanel={handleOpenSourcesPanel}
                 isSourcesPanelOpen={!!sourcesPanelCitations}
+                readOnly={readOnly}
               />
             </div>
           );
