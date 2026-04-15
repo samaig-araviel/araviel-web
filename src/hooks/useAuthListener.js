@@ -13,6 +13,7 @@ import { resetGuestPromptCount } from '../utils/guestSession';
 import { fetchCreditBalance } from '../services/credits';
 import { fetchSubscription } from '../services/subscription';
 import { clearImageCache } from '../services/imageGeneration';
+import { setLoggerUser } from '../lib/logger';
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -74,6 +75,7 @@ export default function useAuthListener() {
         case 'TOKEN_REFRESHED':
         case 'USER_UPDATED': {
           const user = mapUser(session?.user);
+          setLoggerUser(user?.id || null);
           dispatch(
             setAuth({
               user,
@@ -87,13 +89,15 @@ export default function useAuthListener() {
               .then((data) => {
                 if (data.balance) {
                   dispatch(setCreditBalance(data.balance));
-                  dispatch(setImageCredits({
-                    used: data.balance.monthly?.used ?? 0,
-                    limit: data.balance.monthly?.total ?? 5,
-                    remaining: data.balance.monthly?.remaining ?? 0,
-                    packRemaining: data.balance.packs?.remaining ?? 0,
-                    cycleResetsAt: data.balance.cycleResetsAt ?? null,
-                  }));
+                  dispatch(
+                    setImageCredits({
+                      used: data.balance.monthly?.used ?? 0,
+                      limit: data.balance.monthly?.total ?? 5,
+                      remaining: data.balance.monthly?.remaining ?? 0,
+                      packRemaining: data.balance.packs?.remaining ?? 0,
+                      cycleResetsAt: data.balance.cycleResetsAt ?? null,
+                    })
+                  );
                 }
               })
               .catch(() => {});
@@ -108,6 +112,7 @@ export default function useAuthListener() {
         }
         case 'SIGNED_OUT': {
           // 1. Reset guest prompt counters and clear image cache
+          setLoggerUser(null);
           resetGuestPromptCount();
           clearImageCache();
 

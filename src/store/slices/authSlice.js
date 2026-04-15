@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { supabase } from '../../lib/supabase';
 import { resetGuestPromptCount } from '../../utils/guestSession';
+import { logger } from '../../lib/logger';
 
 // ---------------------------------------------------------------------------
 // Helper: map a Supabase user object to our app's user shape
@@ -13,9 +14,7 @@ function mapUser(supabaseUser) {
     isAnonymous: supabaseUser.is_anonymous || false,
     avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
     fullName:
-      supabaseUser.user_metadata?.full_name ||
-      supabaseUser.user_metadata?.display_name ||
-      null,
+      supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.display_name || null,
   };
 }
 
@@ -52,12 +51,14 @@ export const initializeAuth = createAsyncThunk(
 
       // No active session — create an anonymous session so guest users
       // get a valid JWT for the limited prompts they're allowed.
-      const { data: anonData, error: anonError } =
-        await supabase.auth.signInAnonymously();
+      const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
       if (anonError) {
         // If anonymous auth is not enabled on the Supabase project, fail
         // gracefully — the user can still browse but chat won't work.
-        console.warn('Anonymous sign-in unavailable:', anonError.message);
+        logger.warn('Anonymous sign-in unavailable', {
+          route: 'auth.init',
+          reason: anonError.message,
+        });
         return { user: null, session: null };
       }
 
@@ -68,7 +69,7 @@ export const initializeAuth = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.message);
     }
-  },
+  }
 );
 
 /** Redirect the user to Google OAuth. */
@@ -86,7 +87,7 @@ export const signInWithGoogle = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.message);
     }
-  },
+  }
 );
 
 /** Sign in with email & password. */
@@ -106,7 +107,7 @@ export const signInWithEmail = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.message);
     }
-  },
+  }
 );
 
 /** Create a new account with email, password, and optional display name. */
@@ -127,22 +128,19 @@ export const signUpWithEmail = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.message);
     }
-  },
+  }
 );
 
 /** Sign the current user out. */
-export const signOut = createAsyncThunk(
-  'auth/signOut',
-  async (_, { rejectWithValue }) => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) return rejectWithValue(error.message);
-      return null;
-    } catch (err) {
-      return rejectWithValue(err.message);
-    }
-  },
-);
+export const signOut = createAsyncThunk('auth/signOut', async (_, { rejectWithValue }) => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) return rejectWithValue(error.message);
+    return null;
+  } catch (err) {
+    return rejectWithValue(err.message);
+  }
+});
 
 /** Send a password-reset email. */
 export const resetPassword = createAsyncThunk(
@@ -155,7 +153,7 @@ export const resetPassword = createAsyncThunk(
     } catch (err) {
       return rejectWithValue(err.message);
     }
-  },
+  }
 );
 
 // ---------------------------------------------------------------------------
@@ -318,7 +316,6 @@ export const selectAuthLoading = (state) => state.auth.isLoading;
 export const selectAuthError = (state) => state.auth.error;
 export const selectIsAuthenticated = (state) =>
   Boolean(state.auth.user) && !state.auth.user.isAnonymous;
-export const selectIsAnonymous = (state) =>
-  Boolean(state.auth.user) && state.auth.user.isAnonymous;
+export const selectIsAnonymous = (state) => Boolean(state.auth.user) && state.auth.user.isAnonymous;
 
 export default authSlice.reducer;

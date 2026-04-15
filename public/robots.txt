@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /plans
+Allow: /share/
+
+Disallow: /settings
+Disallow: /subscription
+Disallow: /conversations
+Disallow: /chat
+Disallow: /projects
+Disallow: /images
+Disallow: /models
+
+Sitemap: https://araviel.ai/sitemap.xml

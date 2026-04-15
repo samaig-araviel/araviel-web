@@ -115,6 +115,7 @@ import {
   rotateConversationShare,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
+import { logger } from '../../lib/logger';
 import { selectProjects, addProject } from '../../store/slices/projectsSlice';
 import {
   showUpgradeModal,
@@ -2035,7 +2036,10 @@ export default function MainContent() {
       try {
         compressedImages = await Promise.all(imageFiles.map((f) => compressImage(f.file)));
       } catch (err) {
-        console.error('[handleSubmit] Image compression failed:', err);
+        logger.warn('Image compression failed', {
+          route: 'chat.submit',
+          error: err?.message,
+        });
         // Continue without images — don't block the message
         compressedImages = [];
       }
@@ -2401,7 +2405,9 @@ export default function MainContent() {
         },
       ]);
     } catch (err) {
-      console.log('Screenshot cancelled:', err.message);
+      // Screen-capture rejection is user-initiated; log at debug so it shows
+      // up only in dev — this is not an application error.
+      logger.debug('Screenshot capture cancelled', { reason: err?.message });
     }
   };
 

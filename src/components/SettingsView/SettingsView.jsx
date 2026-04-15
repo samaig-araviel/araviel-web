@@ -34,6 +34,7 @@ import {
 import { createPackCheckoutSession } from '../../services/subscription';
 import { listMyShares, revokeConversationShare } from '../../services/api';
 import { useToast } from '../Toast/Toast';
+import { logger } from '../../lib/logger';
 import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
 import { GuestGate } from '../GuestGate';
 import {
@@ -303,8 +304,10 @@ export default function SettingsView() {
         setCreditsError(null);
       })
       .catch((err) => {
-        console.error('Failed to load credit balance:', err);
-        setCreditsError('Failed to load credit balance. Please try again.');
+        logger.error('Failed to load credit balance', err, { route: 'settings.credits' });
+        setCreditsError(
+          err?.userMessage || 'We could not load your credit balance. Please try again.'
+        );
       })
       .finally(() => setCreditsLoading(false));
   }, []);
@@ -355,7 +358,7 @@ export default function SettingsView() {
       updateSetting('avatarUrl', avatarUrl);
       dispatch(setUserAvatarUrl(avatarUrl));
     } catch (err) {
-      console.error('Avatar upload failed:', err);
+      logger.error('Avatar upload failed', err, { route: 'settings.avatar' });
     } finally {
       setAvatarUploading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = '';
@@ -377,7 +380,7 @@ export default function SettingsView() {
         throw new Error('No checkout URL received');
       }
     } catch (err) {
-      console.error('Failed to create checkout:', err);
+      logger.error('Failed to create pack checkout', err, { route: 'settings.checkout' });
       setPackLoading(false);
     }
   };

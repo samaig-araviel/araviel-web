@@ -17,6 +17,7 @@ import {
   reportSubConversation,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
+import { logger } from '../../lib/logger';
 import {
   CopyIcon,
   CheckIcon,
@@ -2697,7 +2698,10 @@ function ShareDropdown({ message, onClose }) {
         await generateAndDownload(spec);
         onClose();
       } catch (err) {
-        console.error(`Export as ${format} failed:`, err);
+        logger.error('Message export failed', err, {
+          route: 'message.export',
+          format,
+        });
       } finally {
         setGenerating(null);
       }
