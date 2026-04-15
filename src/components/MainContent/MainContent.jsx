@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -97,6 +97,7 @@ import {
   ProjectsIcon,
   ChevronDownIcon,
   EditIcon,
+  RefreshIcon,
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
@@ -107,6 +108,10 @@ import {
   updateConversation,
   reportConversation,
   createProject as createProjectApi,
+  fetchConversationShare,
+  createConversationShare,
+  updateConversationShare,
+  revokeConversationShare,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, addProject } from '../../store/slices/projectsSlice';
@@ -386,20 +391,63 @@ function createStages(status, modelName, isManualSelection, researchProgress) {
 }
 
 /**
- * Share modal component.
+ * Share modal.
+ *
+ * Creates (or refreshes) a public, unguessable share link for a conversation.
+ * On mount we check whether an active share already exists; if not, we create
+ * one immediately so the "Copy link" affordance is available without an extra
+ * click. The owner can refresh the snapshot to include newer messages or
+ * revoke the link entirely.
  */
-function ShareModal({ onClose }) {
+function ShareModal({ conversationId, conversationTitle, messages, onClose, onSuccess, onError }) {
+  const [share, setShare] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isRevoking, setIsRevoking] = useState(false);
 
-  const handleCopyLink = () => {
-    const shareUrl = window.location.href;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2500);
+  const shareUrl = useMemo(() => {
+    if (!share?.shareToken) return null;
+    return `${window.location.origin}/share/${share.shareToken}`;
+  }, [share]);
+
+  const hasNewMessagesSinceShare = useMemo(() => {
+    if (!share?.snapshotAt || !messages?.length) return false;
+    const snapshotMs = new Date(share.snapshotAt).getTime();
+    return messages.some((m) => {
+      const raw = m.createdAt ?? m.timestamp;
+      if (raw == null) return false;
+      const t = typeof raw === 'number' ? raw : new Date(raw).getTime();
+      return Number.isFinite(t) && t > snapshotMs;
     });
-  };
+  }, [share, messages]);
 
-  // Close on Escape
+  // Fetch existing share or create one on mount.
+  useEffect(() => {
+    if (!conversationId) return undefined;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { share: existing } = await fetchConversationShare(conversationId);
+        if (cancelled) return;
+        if (existing) {
+          setShare(existing);
+        } else {
+          const created = await createConversationShare(conversationId);
+          if (!cancelled) setShare(created);
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Could not create share link');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId]);
+
   useEffect(() => {
     const handleKey = (e) => {
       if (e.key === 'Escape') onClose();
@@ -408,51 +456,172 @@ function ShareModal({ onClose }) {
     return () => document.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
+  const handleCopyLink = () => {
+    if (!shareUrl) return;
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setLinkCopied(true);
+        setTimeout(() => setLinkCopied(false), 2500);
+      })
+      .catch((err) => onError?.(err.message || 'Could not copy link'));
+  };
+
+  const handleUpdate = async () => {
+    if (isUpdating || !conversationId) return;
+    setIsUpdating(true);
+    setError(null);
+    try {
+      const refreshed = await updateConversationShare(conversationId);
+      setShare(refreshed);
+      onSuccess?.('Snapshot updated');
+    } catch (err) {
+      setError(err.message || 'Could not update snapshot');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (isRevoking || !conversationId) return;
+    setIsRevoking(true);
+    setError(null);
+    try {
+      await revokeConversationShare(conversationId);
+      onSuccess?.('Share link revoked');
+      onClose();
+    } catch (err) {
+      setError(err.message || 'Could not revoke share link');
+      setIsRevoking(false);
+    }
+  };
+
+  const previewTitle = conversationTitle?.trim() || 'Araviel Conversation';
+  const previewUrl = shareUrl ? shareUrl.replace(/^https?:\/\//, '') : 'Generating link…';
+  const snapshotAt = share?.snapshotAt ? new Date(share.snapshotAt) : null;
+  const snapshotLabel = snapshotAt
+    ? `Snapshot taken ${snapshotAt.toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })}`
+    : null;
+
   return (
     <div className={styles.shareOverlay} onClick={onClose}>
-      <div className={styles.shareModal} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={styles.shareModal}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
+      >
         <div className={styles.shareModalHeader}>
-          <h3>Share conversation</h3>
+          <h3 id="share-modal-title">Share conversation</h3>
           <button className={styles.shareModalClose} onClick={onClose} aria-label="Close">
             <CloseIcon />
           </button>
         </div>
 
         <p className={styles.shareModalDesc}>
-          Create a public link to share this conversation. Anyone with the link will be able to view
-          it.
+          Create a public link to share this conversation. Anyone with the link can view a read-only
+          snapshot — new messages won't be visible unless you update it.
         </p>
 
-        <div className={styles.shareModalPreview}>
-          <div className={styles.sharePreviewIcon}>
-            <SparkleIcon />
+        {loading ? (
+          <div className={styles.shareLoadingRow}>
+            <span className={styles.shareSpinner} aria-hidden="true" />
+            <span>Preparing share link…</span>
           </div>
-          <div className={styles.sharePreviewInfo}>
-            <span className={styles.sharePreviewTitle}>Araviel Conversation</span>
-            <span className={styles.sharePreviewUrl}>araviel.com/share/...</span>
-          </div>
-        </div>
-
-        <div className={styles.shareModalActions}>
-          <button
-            className={`${styles.shareActionBtn} ${styles.shareCopyBtn} ${
-              linkCopied ? styles.copied : ''
-            }`}
-            onClick={handleCopyLink}
-          >
-            {linkCopied ? (
-              <>
-                <CheckIcon />
-                <span>Link copied</span>
-              </>
-            ) : (
-              <>
-                <LinkIcon />
-                <span>Copy link</span>
-              </>
+        ) : (
+          <>
+            {error && (
+              <div className={styles.shareError} role="alert">
+                {error}
+              </div>
             )}
-          </button>
-        </div>
+
+            <div className={styles.shareModalPreview}>
+              <div className={styles.sharePreviewIcon}>
+                <SparkleIcon />
+              </div>
+              <div className={styles.sharePreviewInfo}>
+                <span className={styles.sharePreviewTitle} title={previewTitle}>
+                  {previewTitle}
+                </span>
+                <span className={styles.sharePreviewUrl} title={shareUrl ?? ''}>
+                  {previewUrl}
+                </span>
+                {snapshotLabel && <span className={styles.shareSnapshotMeta}>{snapshotLabel}</span>}
+              </div>
+            </div>
+
+            <div className={styles.shareModalActions}>
+              <button
+                type="button"
+                className={`${styles.shareActionBtn} ${styles.shareDangerBtn}`}
+                onClick={handleRevoke}
+                disabled={!share || isRevoking}
+              >
+                {isRevoking ? (
+                  <>
+                    <span className={styles.shareSpinner} aria-hidden="true" />
+                    <span>Revoking…</span>
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon />
+                    <span>Unshare</span>
+                  </>
+                )}
+              </button>
+
+              <div className={styles.shareModalActionsGroup}>
+                {hasNewMessagesSinceShare && (
+                  <button
+                    type="button"
+                    className={`${styles.shareActionBtn} ${styles.shareSecondaryBtn}`}
+                    onClick={handleUpdate}
+                    disabled={isUpdating}
+                    title="Include messages sent since this link was created"
+                  >
+                    {isUpdating ? (
+                      <>
+                        <span className={styles.shareSpinner} aria-hidden="true" />
+                        <span>Updating…</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshIcon />
+                        <span>Update</span>
+                      </>
+                    )}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className={`${styles.shareActionBtn} ${styles.shareCopyBtn} ${
+                    linkCopied ? styles.copied : ''
+                  }`}
+                  onClick={handleCopyLink}
+                  disabled={!shareUrl}
+                >
+                  {linkCopied ? (
+                    <>
+                      <CheckIcon />
+                      <span>Link copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <LinkIcon />
+                      <span>Copy link</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -2643,7 +2812,16 @@ export default function MainContent() {
       )}
 
       {/* Share modal */}
-      {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} />}
+      {showShareModal && currentChatId && (
+        <ShareModal
+          conversationId={currentChatId}
+          conversationTitle={currentConv?.title}
+          messages={messages}
+          onClose={() => setShowShareModal(false)}
+          onSuccess={showSuccess}
+          onError={showError}
+        />
+      )}
 
       {showBuyPacksModal && <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />}
 

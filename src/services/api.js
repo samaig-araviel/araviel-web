@@ -296,6 +296,108 @@ export async function submitMessageFeedback(conversationId, messageId, feedback,
   return res.json();
 }
 
+// ─── Conversation Sharing ───────────────────────────────────────────────────
+
+/**
+ * Share object returned by the backend.
+ * @typedef {Object} Share
+ * @property {string} shareToken - UUID used in the public URL.
+ * @property {string} conversationId
+ * @property {string} snapshotAt - ISO timestamp; messages up to this are visible.
+ * @property {string} createdAt - ISO timestamp when the share was first created.
+ * @property {string|null} titleSnapshot - Conversation title at share time.
+ * @property {number} viewCount
+ */
+
+/**
+ * Fetch the active share for a conversation (owner-only).
+ * Returns `{ share: null }` if no active share exists.
+ * @param {string} conversationId
+ * @returns {Promise<{ share: Share | null }>}
+ */
+export async function fetchConversationShare(conversationId) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}/share`, { headers });
+  if (!res.ok) throw new Error(`Failed to fetch share: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Create a share link for a conversation. If one already exists, the backend
+ * refreshes the snapshot and returns it (idempotent).
+ * @param {string} conversationId
+ * @returns {Promise<Share>}
+ */
+export async function createConversationShare(conversationId) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}/share`, {
+    method: 'POST',
+    headers,
+  });
+  if (!res.ok) throw new Error(`Failed to create share link: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Refresh the snapshot on an existing share so it includes newer messages.
+ * @param {string} conversationId
+ * @returns {Promise<Share>}
+ */
+export async function updateConversationShare(conversationId) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}/share`, {
+    method: 'PATCH',
+    headers,
+  });
+  if (!res.ok) throw new Error(`Failed to update share link: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Revoke the active share for a conversation.
+ * @param {string} conversationId
+ * @returns {Promise<{ success: boolean }>}
+ */
+export async function revokeConversationShare(conversationId) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/conversations/${conversationId}/share`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) throw new Error(`Failed to revoke share link: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * List all active shares belonging to the authenticated user.
+ * @returns {Promise<{ shares: Array<{ shareToken: string, conversationId: string, title: string | null, snapshotAt: string, createdAt: string, viewCount: number }> }>}
+ */
+export async function listMyShares() {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE}/api/shares`, { headers });
+  if (!res.ok) throw new Error(`Failed to list shares: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Fetch a public shared conversation by token. Does NOT send auth headers.
+ * @param {string} shareToken
+ * @param {{ signal?: AbortSignal }} [options]
+ * @returns {Promise<{ shareToken: string, title: string, snapshotAt: string, sharedAt: string, messages: Array }>}
+ */
+export async function fetchSharedConversation(shareToken, options = {}) {
+  const res = await fetch(`${API_BASE}/api/shares/${shareToken}`, {
+    signal: options.signal,
+  });
+  if (res.status === 404) {
+    const err = new Error('Shared conversation not found');
+    err.code = 'SHARE_NOT_FOUND';
+    throw err;
+  }
+  if (!res.ok) throw new Error(`Failed to fetch shared conversation: ${res.status}`);
+  return res.json();
+}
+
 // ─── Sub-Conversation Actions ────────────────────────────────────────────────
 
 /**

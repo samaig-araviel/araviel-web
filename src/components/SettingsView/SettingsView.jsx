@@ -32,6 +32,8 @@ import {
   DEFAULT_SETTINGS,
 } from '../../services/settings';
 import { createPackCheckoutSession } from '../../services/subscription';
+import { listMyShares, revokeConversationShare } from '../../services/api';
+import { useToast } from '../Toast/Toast';
 import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
 import { GuestGate } from '../GuestGate';
 import {
@@ -104,6 +106,133 @@ const SHORTCUTS = [
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent);
 const modKey = isMac ? '⌘' : 'Ctrl';
+
+/**
+ * Manage the signed-in user's active share links. Mirrors Claude's
+ * Settings > Privacy > Manage: a simple list of shared conversations with a
+ * per-row "View" link (opens the public page) and "Unshare" button.
+ *
+ * Loading / empty / error states are rendered inline. The list is refetched
+ * when the section mounts and after each successful unshare — no global state
+ * needed.
+ */
+function SharedChatsManager() {
+  const { showError, showSuccess } = useToast();
+  const [shares, setShares] = useState(null); // null = loading
+  const [loadError, setLoadError] = useState('');
+  const [revokingToken, setRevokingToken] = useState(null);
+
+  const loadShares = useCallback(async (signal) => {
+    try {
+      const data = await listMyShares();
+      if (signal?.aborted) return;
+      setShares(Array.isArray(data?.shares) ? data.shares : []);
+      setLoadError('');
+    } catch (err) {
+      if (signal?.aborted) return;
+      setShares([]);
+      setLoadError(err?.message || 'Failed to load shared chats');
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadShares(controller.signal);
+    return () => controller.abort();
+  }, [loadShares]);
+
+  const handleUnshare = useCallback(
+    async (share) => {
+      if (revokingToken) return;
+      setRevokingToken(share.shareToken);
+      try {
+        await revokeConversationShare(share.conversationId);
+        setShares((prev) => (prev || []).filter((s) => s.shareToken !== share.shareToken));
+        showSuccess('Conversation unshared');
+      } catch (err) {
+        showError(err?.message || 'Failed to unshare conversation');
+      } finally {
+        setRevokingToken(null);
+      }
+    },
+    [revokingToken, showError, showSuccess]
+  );
+
+  const formatDate = (iso) => {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch {
+      return '';
+    }
+  };
+
+  if (shares === null) {
+    return (
+      <div className={styles.sharedChatsLoading}>
+        <div className={styles.sharedChatsSpinner} />
+        <span>Loading shared chats…</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return <div className={styles.sharedChatsError}>{loadError}</div>;
+  }
+
+  if (shares.length === 0) {
+    return (
+      <div className={styles.sharedChatsEmpty}>You haven&rsquo;t shared any conversations yet.</div>
+    );
+  }
+
+  return (
+    <ul className={styles.sharedChatsList}>
+      {shares.map((share) => {
+        const url = `${window.location.origin}/share/${share.shareToken}`;
+        const isRevoking = revokingToken === share.shareToken;
+        return (
+          <li key={share.shareToken} className={styles.sharedChatsRow}>
+            <div className={styles.sharedChatsMeta}>
+              <span className={styles.sharedChatsTitle}>
+                {share.title || 'Untitled conversation'}
+              </span>
+              <span className={styles.sharedChatsSub}>
+                Shared {formatDate(share.createdAt)}
+                {typeof share.viewCount === 'number'
+                  ? ` · ${share.viewCount} view${share.viewCount === 1 ? '' : 's'}`
+                  : ''}
+              </span>
+            </div>
+            <div className={styles.sharedChatsActions}>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.sharedChatsViewLink}
+              >
+                View
+              </a>
+              <button
+                type="button"
+                className={styles.sharedChatsUnshareBtn}
+                onClick={() => handleUnshare(share)}
+                disabled={isRevoking}
+              >
+                {isRevoking ? 'Unsharing…' : 'Unshare'}
+              </button>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 export default function SettingsView() {
   const dispatch = useDispatch();
@@ -1072,9 +1201,7 @@ export default function SettingsView() {
                             <button
                               className={styles.planUpgradeBtn}
                               onClick={() =>
-                                tier === 'free'
-                                  ? navigate('/plans')
-                                  : dispatch(createPortalThunk())
+                                tier === 'free' ? navigate('/plans') : dispatch(createPortalThunk())
                               }
                               disabled={tier !== 'free' && portalLoading}
                             >
@@ -1419,6 +1546,16 @@ export default function SettingsView() {
                         onChange={(v) => updateSetting('enableAnalytics', v)}
                       />
                     </div>
+                  </div>
+
+                  {/* Shared chats */}
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.fieldLabel}>Shared chats</label>
+                    <p className={styles.fieldLabelDesc}>
+                      Links to conversations you&rsquo;ve shared publicly. Unsharing revokes the
+                      link immediately.
+                    </p>
+                    <SharedChatsManager />
                   </div>
 
                   {/* Export data */}
