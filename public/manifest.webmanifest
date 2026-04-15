@@ -1,0 +1,17 @@
+{
+  "name": "Araviel",
+  "short_name": "Araviel",
+  "description": "A multi-model AI workspace. Chat with every leading model, build projects, generate images, and stay in flow — all from one interface.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf9f3",
+  "theme_color": "#fdf9f3",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ]
+}

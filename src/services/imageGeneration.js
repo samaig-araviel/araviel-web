@@ -1,5 +1,6 @@
 // Image generation service — manages limits, storage, and tracking
 import { getAuthHeaders } from './authHeaders';
+import { logger } from '../lib/logger';
 
 const API_BASE =
   import.meta.env.VITE_ARAVIEL_API_BASE ||
@@ -163,7 +164,9 @@ export async function fetchGeneratedImagesFromAPI({ limit = 50, offset = 0 } = {
     }
     return images;
   } catch (err) {
-    console.error('[imageGeneration] Failed to fetch images from API:', err);
+    logger.error('Failed to fetch generated images', err, {
+      route: 'images.list',
+    });
     // Fallback to cache if available
     return _cachedImages || [];
   }

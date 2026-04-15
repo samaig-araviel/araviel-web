@@ -1,5 +1,12 @@
 import { useState, useMemo, useCallback } from 'react';
-import { parseFileSpec, generateAndDownload, FORMAT_LABELS, FORMAT_ICONS, SUPPORTED_FORMATS } from '../../services/fileGenerator';
+import {
+  parseFileSpec,
+  generateAndDownload,
+  FORMAT_LABELS,
+  FORMAT_ICONS,
+  SUPPORTED_FORMATS,
+} from '../../services/fileGenerator';
+import { logger } from '../../lib/logger';
 import styles from './FileBlock.module.css';
 
 /**
@@ -22,8 +29,11 @@ export default function FileBlock({ spec, isStreaming = false }) {
       setStatus('done');
       setTimeout(() => setStatus('idle'), 3000);
     } catch (err) {
-      console.error('File generation failed:', err);
-      setErrorMsg(err.message || 'Generation failed');
+      logger.error('File generation failed', err, {
+        route: 'file.generate',
+        format: parsed?.format,
+      });
+      setErrorMsg(err?.userMessage || 'We could not generate that file. Please try again.');
       setStatus('error');
       setTimeout(() => setStatus('idle'), 5000);
     }
@@ -38,7 +48,9 @@ export default function FileBlock({ spec, isStreaming = false }) {
               <FileTypeIcon type="text" />
             </div>
             <div className={styles.info}>
-              <span className={styles.filename} style={{ opacity: 0.5 }}>Generating file...</span>
+              <span className={styles.filename} style={{ opacity: 0.5 }}>
+                Generating file...
+              </span>
               <span className={styles.meta}>Preparing download</span>
             </div>
             <div className={styles.action}>
@@ -72,9 +84,7 @@ export default function FileBlock({ spec, isStreaming = false }) {
           <span className={styles.filename}>{parsed.filename}</span>
           <span className={styles.meta}>
             {formatLabel}
-            {parsed.title && parsed.title !== parsed.filename && (
-              <> &middot; {parsed.title}</>
-            )}
+            {parsed.title && parsed.title !== parsed.filename && <> &middot; {parsed.title}</>}
           </span>
         </div>
         <div className={styles.action}>
@@ -103,9 +113,7 @@ export default function FileBlock({ spec, isStreaming = false }) {
           )}
         </div>
       </div>
-      {status === 'error' && errorMsg && (
-        <div className={styles.errorBanner}>{errorMsg}</div>
-      )}
+      {status === 'error' && errorMsg && <div className={styles.errorBanner}>{errorMsg}</div>}
     </div>
   );
 }
@@ -114,7 +122,16 @@ export default function FileBlock({ spec, isStreaming = false }) {
 
 function FileTypeIcon({ type }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       {type === 'pdf' && (
         <>
           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -170,7 +187,16 @@ function FileTypeIcon({ type }) {
 
 function DownloadIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
@@ -180,7 +206,16 @@ function DownloadIcon() {
 
 function CheckIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
@@ -188,7 +223,16 @@ function CheckIcon() {
 
 function SpinnerIcon() {
   return (
-    <svg className={styles.spinnerSvg} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <svg
+      className={styles.spinnerSvg}
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    >
       <path d="M12 2a10 10 0 0110 10" />
     </svg>
   );
