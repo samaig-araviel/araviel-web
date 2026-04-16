@@ -302,6 +302,13 @@ export default function Sidebar() {
     }
   };
 
+  const handleSearchClick = () => {
+    navigate('/search');
+    if (isMobile) {
+      dispatch(setCollapsed(true));
+    }
+  };
+
   const handleProjectsClick = () => {
     navigate(location.pathname.startsWith('/projects') ? '/' : '/projects');
     if (isMobile) {
@@ -632,8 +639,8 @@ export default function Sidebar() {
         </button>
 
         <button
-          className={styles.searchBtn}
-          onClick={() => setSearchOpen(true)}
+          className={`${styles.searchBtn} ${location.pathname === '/search' ? styles.active : ''}`}
+          onClick={handleSearchClick}
           title="Search"
           aria-label="Search"
         >
