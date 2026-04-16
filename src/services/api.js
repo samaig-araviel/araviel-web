@@ -435,8 +435,12 @@ export function createProject(project) {
 
 // ─── Search ─────────────────────────────────────────────────────────────────
 
-export function searchConversations(query, limit = 20) {
-  const params = new URLSearchParams({ search: query, limit: String(limit) });
+export function searchConversations(query, limit = 20, offset = 0) {
+  const params = new URLSearchParams({
+    search: query,
+    limit: String(limit),
+    offset: String(offset),
+  });
   return apiFetch(`/api/conversations?${params}`, {
     errorContext: 'search.conversations',
   });
@@ -447,8 +451,12 @@ export function searchProjects(query) {
   return apiFetch(`/api/projects?${params}`, { errorContext: 'search.projects' });
 }
 
-export function searchImages(query, limit = 12) {
-  const params = new URLSearchParams({ search: query, limit: String(limit) });
+export function searchImages(query, limit = 12, offset = 0) {
+  const params = new URLSearchParams({
+    search: query,
+    limit: String(limit),
+    offset: String(offset),
+  });
   return apiFetch(`/api/images?${params}`, { errorContext: 'search.images' });
 }
 
