@@ -66,8 +66,8 @@ export function formatRelativeDate(dateStr) {
 
 /**
  * Shared search controller for both SearchModal (popup) and SearchView (page).
- * Owns all state, debounced API calls, filtering, and keyboard navigation so
- * the two surfaces can never drift out of sync.
+ * Owns all state, debounced API calls, filtering, pagination, and keyboard
+ * navigation so the two surfaces can never drift out of sync.
  *
  * @param {object} [options]
  * @param {() => void} [options.onAfterNavigate] - Called after a result is
@@ -76,8 +76,20 @@ export function formatRelativeDate(dateStr) {
  *   onAfterNavigate (modal dismiss). Pages pass false.
  * @param {{query?: string, typeFilter?: string, dateFilter?: string}} [options.initialState]
  *   Seed values for the URL-synced page surface. Only read on first render.
+ * @param {{conversationsPageSize?: number, projectsPageSize?: number, imagesPageSize?: number}} [options.pagination]
+ *   When provided, each list is clipped to its page size and exposes a
+ *   load-more callback. Defaults to no pagination (all results shown).
  */
-export function useSearch({ onAfterNavigate, enableEscape = false, initialState } = {}) {
+export function useSearch({
+  onAfterNavigate,
+  enableEscape = false,
+  initialState,
+  pagination,
+} = {}) {
+  const conversationsPageSize = pagination?.conversationsPageSize ?? Infinity;
+  const projectsPageSize = pagination?.projectsPageSize ?? Infinity;
+  const imagesPageSize = pagination?.imagesPageSize ?? Infinity;
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const conversations = useSelector(selectConversations);
@@ -242,22 +254,82 @@ export function useSearch({ onAfterNavigate, enableEscape = false, initialState 
     return source;
   }, [images, apiImages, query, typeFilter, dateFilter]);
 
-  // Build flat result list for keyboard navigation (conversations + projects only, not images)
+  // ── Pagination ────────────────────────────────────────────────
+  // Each list has a "visible count" that grows via loadMore. Counts reset
+  // whenever the user changes the query or a filter so the user always
+  // starts from the first page after a new search.
+  const [visibleConversations, setVisibleConversations] = useState(conversationsPageSize);
+  const [visibleProjects, setVisibleProjects] = useState(projectsPageSize);
+  const [visibleImages, setVisibleImages] = useState(imagesPageSize);
+
+  useEffect(() => {
+    setVisibleConversations(conversationsPageSize);
+    setVisibleProjects(projectsPageSize);
+    setVisibleImages(imagesPageSize);
+  }, [query, typeFilter, dateFilter, conversationsPageSize, projectsPageSize, imagesPageSize]);
+
+  const displayedConversations = useMemo(
+    () => filteredConversations.slice(0, visibleConversations),
+    [filteredConversations, visibleConversations]
+  );
+  const displayedProjects = useMemo(
+    () => filteredProjects.slice(0, visibleProjects),
+    [filteredProjects, visibleProjects]
+  );
+  const displayedImages = useMemo(
+    () => filteredImages.slice(0, visibleImages),
+    [filteredImages, visibleImages]
+  );
+
+  const hasMoreConversations = filteredConversations.length > displayedConversations.length;
+  const hasMoreProjects = filteredProjects.length > displayedProjects.length;
+  const hasMoreImages = filteredImages.length > displayedImages.length;
+
+  const loadMoreConversations = useCallback(() => {
+    setVisibleConversations((n) => n + conversationsPageSize);
+  }, [conversationsPageSize]);
+  const loadMoreProjects = useCallback(() => {
+    setVisibleProjects((n) => n + projectsPageSize);
+  }, [projectsPageSize]);
+  const loadMoreImages = useCallback(() => {
+    setVisibleImages((n) => n + imagesPageSize);
+  }, [imagesPageSize]);
+
+  // Build flat result list for keyboard navigation — only covers visible
+  // items so keyboard nav never targets something the user cannot see.
+  // Images are intentionally excluded from keyboard navigation.
   const allResults = useMemo(() => {
     const items = [];
-    filteredConversations.forEach((conv) => {
+    displayedConversations.forEach((conv) => {
       items.push({ type: 'conversation', data: conv });
     });
-    filteredProjects.forEach((proj) => {
+    displayedProjects.forEach((proj) => {
       items.push({ type: 'project', data: proj });
     });
     return items;
-  }, [filteredConversations, filteredProjects]);
+  }, [displayedConversations, displayedProjects]);
 
-  // Reset active index when results change
+  // Reset active index only when the filter set changes. Load More (which
+  // extends the list) must preserve the user's current selection.
+  const filterKey = `${query}|${typeFilter}|${dateFilter}`;
+  const prevFilterKeyRef = useRef(filterKey);
   useEffect(() => {
-    setActiveIndex(allResults.length > 0 ? 0 : -1);
-  }, [allResults.length]);
+    const isFilterChange = prevFilterKeyRef.current !== filterKey;
+    prevFilterKeyRef.current = filterKey;
+
+    if (isFilterChange) {
+      setActiveIndex(allResults.length > 0 ? 0 : -1);
+      return;
+    }
+
+    // Filter unchanged — clamp / seed without jumping the user.
+    setActiveIndex((prev) => {
+      if (allResults.length === 0) return -1;
+      if (prev === -1) return 0;
+      if (prev >= allResults.length) return allResults.length - 1;
+      return prev;
+    });
+  }, [filterKey, allResults.length]);
 
   // Navigate to result
   const navigateToResult = useCallback(
@@ -329,9 +401,9 @@ export function useSearch({ onAfterNavigate, enableEscape = false, initialState 
   const noResults = hasQuery && !hasAnyResults && !apiLoading;
 
   const showImages =
-    filteredImages.length > 0 && typeFilter !== 'conversations' && typeFilter !== 'projects';
-  const showConversations = filteredConversations.length > 0;
-  const showProjects = filteredProjects.length > 0;
+    displayedImages.length > 0 && typeFilter !== 'conversations' && typeFilter !== 'projects';
+  const showConversations = displayedConversations.length > 0;
+  const showProjects = displayedProjects.length > 0;
 
   return {
     // state
@@ -343,11 +415,22 @@ export function useSearch({ onAfterNavigate, enableEscape = false, initialState 
     setDateFilter,
     activeIndex,
     setActiveIndex,
-    // derived data
+    // derived data — what to render
     projectMap,
-    filteredConversations,
-    filteredProjects,
-    filteredImages,
+    displayedConversations,
+    displayedProjects,
+    displayedImages,
+    // totals — for chip counts, section counts, and "view all" labels
+    totalConversations: filteredConversations.length,
+    totalProjects: filteredProjects.length,
+    totalImages: filteredImages.length,
+    // pagination
+    hasMoreConversations,
+    hasMoreProjects,
+    hasMoreImages,
+    loadMoreConversations,
+    loadMoreProjects,
+    loadMoreImages,
     // flags
     apiLoading,
     hasQuery,

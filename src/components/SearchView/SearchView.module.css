@@ -258,7 +258,72 @@
   line-height: 1.5;
 }
 
-/* ── Image carousel ── */
+/* ── Section footer (Load more / View all) ── */
+.sectionFooter {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 4px;
+}
+
+.loadMoreBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.loadMoreBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.loadMoreBtn:active {
+  transform: scale(0.99);
+}
+
+.viewAllBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.viewAllBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.viewAllArrow {
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+
+.viewAllBtn:hover .viewAllArrow {
+  transform: translateX(2px);
+}
+
+/* ── Image carousel (All tab) ── */
 .imageCarousel {
   display: flex;
   gap: 10px;
@@ -281,16 +346,29 @@
   border-radius: 2px;
 }
 
-.imageCard {
+/* Carousel-only card sizing. In the grid variant the grid controls width. */
+.imageCarousel .imageCard {
   flex-shrink: 0;
   width: 168px;
+  scroll-snap-align: start;
+}
+
+/* ── Image grid (Images tab) ── */
+.imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 4px 0 8px;
+}
+
+/* ── Image card (layout-agnostic) ── */
+.imageCard {
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
   transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
-  scroll-snap-align: start;
   text-align: left;
   font-family: inherit;
   color: inherit;
@@ -544,8 +622,13 @@
     display: none;
   }
 
-  .imageCard {
+  .imageCarousel .imageCard {
     width: 144px;
+  }
+
+  .imageGrid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
   }
 
   .imageThumb {
