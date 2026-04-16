@@ -1,15 +1,27 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import {
-  selectConversations,
-  selectConversationsTotal,
-  setCurrentChat,
-  setMessages,
-} from '../../store/slices/chatSlice';
+import { selectConversations, setCurrentChat, setMessages } from '../../store/slices/chatSlice';
 import { selectProjects } from '../../store/slices/projectsSlice';
 import { searchConversations, searchProjects, searchImages } from '../../services/api';
 import { getGeneratedImages } from '../../services/imageGeneration';
+
+// Size of each paginated API request. Load More issues a follow-up fetch
+// at this granularity when the user runs past the end of what's already
+// been pulled down. Matches the backend's default page size.
+const API_PAGE_SIZE = 20;
+
+function dedupById(list) {
+  const seen = new Set();
+  const out = [];
+  for (const item of list) {
+    if (item && !seen.has(item.id)) {
+      seen.add(item.id);
+      out.push(item);
+    }
+  }
+  return out;
+}
 
 export const TYPE_FILTERS = [
   { key: 'all', label: 'All' },
@@ -93,21 +105,41 @@ export function useSearch({
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const conversations = useSelector(selectConversations);
-  const conversationsTotal = useSelector(selectConversationsTotal);
   const projects = useSelector(selectProjects);
 
   const [query, setQuery] = useState(initialState?.query ?? '');
   const [typeFilter, setTypeFilter] = useState(initialState?.typeFilter ?? 'all');
   const [dateFilter, setDateFilter] = useState(initialState?.dateFilter ?? 'all');
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [apiConversations, setApiConversations] = useState(null);
-  const [apiProjects, setApiProjects] = useState(null);
+
+  // ── API search accumulators ───────────────────────────────────
+  // Each type carries the results we've fetched across every API page
+  // for the current query. Conversations expose a `total` so we know
+  // exactly when to stop; images use a "next page was full" heuristic
+  // because the endpoint doesn't return a count; projects aren't
+  // paginated server-side so a single fetch covers them.
+  const [apiConversations, setApiConversations] = useState([]);
+  const [apiConversationsTotal, setApiConversationsTotal] = useState(0);
+  const [apiConversationsLoadingMore, setApiConversationsLoadingMore] = useState(false);
+  const [apiProjects, setApiProjects] = useState([]);
+  const [apiImages, setApiImages] = useState([]);
+  const [apiImagesHasMoreServer, setApiImagesHasMoreServer] = useState(false);
+  const [apiImagesLoadingMore, setApiImagesLoadingMore] = useState(false);
   const [apiLoading, setApiLoading] = useState(false);
+
   const [images, setImages] = useState(() => getGeneratedImages() || []);
-  const [apiImages, setApiImages] = useState(null);
 
   const resultsRef = useRef(null);
   const debounceRef = useRef(null);
+  // Identifies the query that "owns" in-flight API requests so late
+  // responses from a superseded query can be discarded. Set before
+  // firing, checked before writing results.
+  const activeQueryRef = useRef('');
+  // Synchronous guards against double-fire of Load More — React's
+  // StrictMode double-invokes effects/reducers in dev, and the state
+  // flags don't update until after the current tick.
+  const fetchingMoreConversationsRef = useRef(false);
+  const fetchingMoreImagesRef = useRef(false);
 
   // Keep local image cache in sync if it's populated later.
   useEffect(() => {
@@ -128,15 +160,21 @@ export function useSearch({
     return map;
   }, [projects]);
 
-  // Determine if we need API search
-  const needsApiSearch = conversations.length < conversationsTotal;
-
-  // Debounced API search
+  // ── Debounced initial API search ──────────────────────────────
+  // Always runs whenever the query is long enough — never gated on the
+  // sidebar's cache state. Resets pagination state to page 0, then
+  // fetches the first page of every type in parallel.
+  const queryKey = query.trim();
   useEffect(() => {
-    if (!query.trim() || query.trim().length < 2) {
-      setApiConversations(null);
-      setApiProjects(null);
-      setApiImages(null);
+    if (queryKey.length < 2) {
+      activeQueryRef.current = '';
+      setApiConversations([]);
+      setApiConversationsTotal(0);
+      setApiConversationsLoadingMore(false);
+      setApiProjects([]);
+      setApiImages([]);
+      setApiImagesHasMoreServer(false);
+      setApiImagesLoadingMore(false);
       setApiLoading(false);
       return;
     }
@@ -145,49 +183,94 @@ export function useSearch({
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
+      activeQueryRef.current = queryKey;
       try {
-        const promises = [];
-        // Always search images via API (they aren't fully cached client-side)
-        promises.push(searchImages(query.trim(), 12));
+        const [convResult, projResult, imgResult] = await Promise.all([
+          searchConversations(queryKey, API_PAGE_SIZE, 0),
+          searchProjects(queryKey),
+          searchImages(queryKey, API_PAGE_SIZE, 0),
+        ]);
+        if (activeQueryRef.current !== queryKey) return;
 
-        if (needsApiSearch) {
-          promises.push(searchConversations(query.trim()));
-          promises.push(searchProjects(query.trim()));
-        } else {
-          promises.push(Promise.resolve(null));
-          promises.push(Promise.resolve(null));
-        }
+        const convs = convResult?.conversations ?? [];
+        setApiConversations(convs);
+        setApiConversationsTotal(convResult?.total ?? convs.length);
 
-        const [imgResult, convResult, projResult] = await Promise.all(promises);
-        setApiImages(imgResult?.images || []);
-        if (convResult) setApiConversations(convResult.conversations || []);
-        if (projResult) setApiProjects(projResult.projects || []);
+        setApiProjects(projResult?.projects ?? []);
+
+        const imgs = imgResult?.images ?? [];
+        setApiImages(imgs);
+        setApiImagesHasMoreServer(imgs.length === API_PAGE_SIZE);
       } catch {
-        // Silent fail — client-side results still available
+        // Silent fail — local results still render. Leave accumulators
+        // as-is so the UI stays stable.
       } finally {
-        setApiLoading(false);
+        if (activeQueryRef.current === queryKey) setApiLoading(false);
       }
     }, 200);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, needsApiSearch]);
+  }, [queryKey]);
 
-  // Filter conversations
+  // ── Follow-up API page fetches (Load More) ────────────────────
+  // Only fire if (a) the query is still current, (b) we aren't
+  // already fetching, and (c) the server has more rows to give.
+  const fetchMoreApiConversations = useCallback(async () => {
+    if (fetchingMoreConversationsRef.current) return;
+    if (apiConversations.length >= apiConversationsTotal) return;
+    if (queryKey.length < 2) return;
+
+    fetchingMoreConversationsRef.current = true;
+    setApiConversationsLoadingMore(true);
+    try {
+      const result = await searchConversations(queryKey, API_PAGE_SIZE, apiConversations.length);
+      if (activeQueryRef.current !== queryKey) return;
+      const page = result?.conversations ?? [];
+      setApiConversations((prev) => dedupById([...prev, ...page]));
+      if (typeof result?.total === 'number') {
+        setApiConversationsTotal(result.total);
+      }
+    } catch {
+      // Silent fail — user can retry by clicking Load more again.
+    } finally {
+      fetchingMoreConversationsRef.current = false;
+      setApiConversationsLoadingMore(false);
+    }
+  }, [apiConversations.length, apiConversationsTotal, queryKey]);
+
+  const fetchMoreApiImages = useCallback(async () => {
+    if (fetchingMoreImagesRef.current) return;
+    if (!apiImagesHasMoreServer) return;
+    if (queryKey.length < 2) return;
+
+    fetchingMoreImagesRef.current = true;
+    setApiImagesLoadingMore(true);
+    try {
+      const result = await searchImages(queryKey, API_PAGE_SIZE, apiImages.length);
+      if (activeQueryRef.current !== queryKey) return;
+      const page = result?.images ?? [];
+      setApiImages((prev) => dedupById([...prev, ...page]));
+      setApiImagesHasMoreServer(page.length === API_PAGE_SIZE);
+    } catch {
+      // Silent fail
+    } finally {
+      fetchingMoreImagesRef.current = false;
+      setApiImagesLoadingMore(false);
+    }
+  }, [apiImages.length, apiImagesHasMoreServer, queryKey]);
+
+  // ── Filtered (merged) lists ──────────────────────────────────
+  // Union Redux-cached entries with whatever the API has returned so
+  // fresh items found server-side appear even when they aren't in the
+  // sidebar yet. Date filter is applied client-side.
   const filteredConversations = useMemo(() => {
     if (typeFilter === 'projects' || typeFilter === 'images') return [];
 
-    const q = query.toLowerCase().trim();
+    const q = queryKey.toLowerCase();
     const dateThreshold = getDateThreshold(dateFilter);
-
-    let source = conversations || [];
-
-    if (apiConversations) {
-      const existingIds = new Set(source.map((c) => c.id));
-      const newFromApi = apiConversations.filter((c) => !existingIds.has(c.id));
-      source = [...source, ...newFromApi];
-    }
+    const source = dedupById([...(conversations || []), ...apiConversations]);
 
     return source.filter((conv) => {
       if (q && !conv.title?.toLowerCase().includes(q)) return false;
@@ -197,22 +280,14 @@ export function useSearch({
       }
       return true;
     });
-  }, [conversations, apiConversations, query, typeFilter, dateFilter]);
+  }, [conversations, apiConversations, queryKey, typeFilter, dateFilter]);
 
-  // Filter projects
   const filteredProjects = useMemo(() => {
     if (typeFilter === 'conversations' || typeFilter === 'images') return [];
 
-    const q = query.toLowerCase().trim();
+    const q = queryKey.toLowerCase();
     const dateThreshold = getDateThreshold(dateFilter);
-
-    let source = projects || [];
-
-    if (apiProjects) {
-      const existingIds = new Set(source.map((p) => p.id));
-      const newFromApi = apiProjects.filter((p) => !existingIds.has(p.id));
-      source = [...source, ...newFromApi];
-    }
+    const source = dedupById([...(projects || []), ...apiProjects]);
 
     return source.filter((proj) => {
       if (q && !proj.name?.toLowerCase().includes(q)) return false;
@@ -222,37 +297,27 @@ export function useSearch({
       }
       return true;
     });
-  }, [projects, apiProjects, query, typeFilter, dateFilter]);
+  }, [projects, apiProjects, queryKey, typeFilter, dateFilter]);
 
-  // Filter images
   const filteredImages = useMemo(() => {
     if (typeFilter === 'conversations' || typeFilter === 'projects') return [];
 
-    const q = query.toLowerCase().trim();
+    const q = queryKey.toLowerCase();
     const dateThreshold = getDateThreshold(dateFilter);
+    // When there's a query, the API is authoritative (covers all
+    // matches server-side). With no query we only have the local cache
+    // to preview.
+    const source = q ? dedupById([...apiImages, ...(images || [])]) : images || [];
 
-    // Use API results if searching, otherwise use local cache
-    let source = q && apiImages ? apiImages : images;
-
-    // For client-side filtering when not using API
-    if (!q || !apiImages) {
-      source = (images || []).filter((img) => {
-        if (q && !img.prompt?.toLowerCase().includes(q)) return false;
-        if (dateThreshold) {
-          const created = new Date(img.createdAt || img.created_at);
-          if (created < dateThreshold) return false;
-        }
-        return true;
-      });
-    } else if (dateThreshold) {
-      source = source.filter((img) => {
+    return source.filter((img) => {
+      if (q && !img.prompt?.toLowerCase().includes(q)) return false;
+      if (dateThreshold) {
         const created = new Date(img.createdAt || img.created_at);
-        return created >= dateThreshold;
-      });
-    }
-
-    return source;
-  }, [images, apiImages, query, typeFilter, dateFilter]);
+        if (created < dateThreshold) return false;
+      }
+      return true;
+    });
+  }, [images, apiImages, queryKey, typeFilter, dateFilter]);
 
   // ── Pagination ────────────────────────────────────────────────
   // Each list has a "visible count" that grows via loadMore. Counts reset
@@ -281,19 +346,51 @@ export function useSearch({
     [filteredImages, visibleImages]
   );
 
-  const hasMoreConversations = filteredConversations.length > displayedConversations.length;
-  const hasMoreProjects = filteredProjects.length > displayedProjects.length;
-  const hasMoreImages = filteredImages.length > displayedImages.length;
+  // "Has more" is true when either (a) we're still revealing slices of
+  // already-fetched data, or (b) the server has further pages we
+  // haven't pulled down yet. Projects have no server pagination, so
+  // only the local condition applies.
+  const hasMoreApiConversations = apiConversations.length < apiConversationsTotal;
+  const hasMoreApiImages = apiImagesHasMoreServer;
 
+  const hasMoreConversations =
+    filteredConversations.length > displayedConversations.length || hasMoreApiConversations;
+  const hasMoreProjects = filteredProjects.length > displayedProjects.length;
+  const hasMoreImages = filteredImages.length > displayedImages.length || hasMoreApiImages;
+
+  // Load More reveals the next slice locally and, when the reveal
+  // would outrun what's been fetched, transparently pulls the next
+  // API page. Functional state updates keep rapid clicks coherent;
+  // fetchMore is idempotent via its ref guard, so the side effect is
+  // safe even under StrictMode's double-invoke.
   const loadMoreConversations = useCallback(() => {
-    setVisibleConversations((n) => n + conversationsPageSize);
-  }, [conversationsPageSize]);
+    setVisibleConversations((prev) => {
+      const next = prev + conversationsPageSize;
+      if (hasMoreApiConversations && next > filteredConversations.length - conversationsPageSize) {
+        fetchMoreApiConversations();
+      }
+      return next;
+    });
+  }, [
+    conversationsPageSize,
+    hasMoreApiConversations,
+    fetchMoreApiConversations,
+    filteredConversations.length,
+  ]);
+
   const loadMoreProjects = useCallback(() => {
-    setVisibleProjects((n) => n + projectsPageSize);
+    setVisibleProjects((prev) => prev + projectsPageSize);
   }, [projectsPageSize]);
+
   const loadMoreImages = useCallback(() => {
-    setVisibleImages((n) => n + imagesPageSize);
-  }, [imagesPageSize]);
+    setVisibleImages((prev) => {
+      const next = prev + imagesPageSize;
+      if (hasMoreApiImages && next > filteredImages.length - imagesPageSize) {
+        fetchMoreApiImages();
+      }
+      return next;
+    });
+  }, [imagesPageSize, hasMoreApiImages, fetchMoreApiImages, filteredImages.length]);
 
   // Build flat result list for keyboard navigation — only covers visible
   // items so keyboard nav never targets something the user cannot see.
