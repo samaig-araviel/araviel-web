@@ -12,6 +12,21 @@ import styles from './SearchView.module.css';
 const VALID_TYPES = new Set(TYPE_FILTERS.map((f) => f.key));
 const VALID_DATES = new Set(DATE_FILTERS.map((f) => f.key));
 
+// Page sizes for the dedicated search page. The All tab shows the first
+// batch only and points the user to the specific tab for more. The
+// specific tabs start with the same batch and reveal more via Load More.
+// Images use a larger page size because the grid renders ~4 per row on
+// desktop, so 12 ≈ 3 rows of premium-density thumbnails.
+const CONVERSATIONS_PAGE_SIZE = 7;
+const PROJECTS_PAGE_SIZE = 7;
+const IMAGES_PAGE_SIZE = 12;
+
+const TYPE_LABEL_PLURAL = {
+  conversations: 'conversations',
+  projects: 'projects',
+  images: 'images',
+};
+
 function readInitialState(params) {
   const rawType = params.get('type');
   const rawDate = params.get('date');
@@ -40,9 +55,18 @@ export default function SearchView() {
     activeIndex,
     setActiveIndex,
     projectMap,
-    filteredConversations,
-    filteredProjects,
-    filteredImages,
+    displayedConversations,
+    displayedProjects,
+    displayedImages,
+    totalConversations,
+    totalProjects,
+    totalImages,
+    hasMoreConversations,
+    hasMoreProjects,
+    hasMoreImages,
+    loadMoreConversations,
+    loadMoreProjects,
+    loadMoreImages,
     apiLoading,
     hasQuery,
     hasAnyResults,
@@ -52,7 +76,15 @@ export default function SearchView() {
     showProjects,
     navigateToResult,
     resultsRef,
-  } = useSearch({ initialState, enableEscape: false });
+  } = useSearch({
+    initialState,
+    enableEscape: false,
+    pagination: {
+      conversationsPageSize: CONVERSATIONS_PAGE_SIZE,
+      projectsPageSize: PROJECTS_PAGE_SIZE,
+      imagesPageSize: IMAGES_PAGE_SIZE,
+    },
+  });
 
   // Autofocus input on mount
   useEffect(() => {
@@ -93,7 +125,13 @@ export default function SearchView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  const isAllTab = typeFilter === 'all';
+  const isImagesTab = typeFilter === 'images';
   let currentIndex = 0;
+
+  // "View all" on the All tab switches to the specific filter; the hook
+  // resets pagination automatically when typeFilter changes.
+  const viewAll = (tab) => setTypeFilter(tab);
 
   return (
     <div className={styles.page}>
@@ -156,13 +194,13 @@ export default function SearchView() {
               {f.key === 'images' && <PhotoIcon />}
               {f.label}
               {f.key === 'conversations' && hasQuery && (
-                <span className={styles.chipCount}>{filteredConversations.length}</span>
+                <span className={styles.chipCount}>{totalConversations}</span>
               )}
               {f.key === 'projects' && hasQuery && (
-                <span className={styles.chipCount}>{filteredProjects.length}</span>
+                <span className={styles.chipCount}>{totalProjects}</span>
               )}
               {f.key === 'images' && hasQuery && (
-                <span className={styles.chipCount}>{filteredImages.length}</span>
+                <span className={styles.chipCount}>{totalImages}</span>
               )}
             </button>
           ))}
@@ -204,10 +242,10 @@ export default function SearchView() {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionLabel}>Images</span>
-                <span className={styles.sectionCount}>{filteredImages.length}</span>
+                <span className={styles.sectionCount}>{totalImages}</span>
               </div>
-              <div className={styles.imageCarousel}>
-                {filteredImages.map((img) => (
+              <div className={isImagesTab ? styles.imageGrid : styles.imageCarousel}>
+                {displayedImages.map((img) => (
                   <button
                     key={img.id}
                     className={styles.imageCard}
@@ -226,6 +264,27 @@ export default function SearchView() {
                   </button>
                 ))}
               </div>
+              {isImagesTab && hasMoreImages && (
+                <div className={styles.sectionFooter}>
+                  <button type="button" className={styles.loadMoreBtn} onClick={loadMoreImages}>
+                    Load more
+                  </button>
+                </div>
+              )}
+              {isAllTab && hasMoreImages && (
+                <div className={styles.sectionFooter}>
+                  <button
+                    type="button"
+                    className={styles.viewAllBtn}
+                    onClick={() => viewAll('images')}
+                  >
+                    View all {totalImages} {TYPE_LABEL_PLURAL.images}
+                    <span aria-hidden="true" className={styles.viewAllArrow}>
+                      &rarr;
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -233,9 +292,9 @@ export default function SearchView() {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionLabel}>Conversations</span>
-                <span className={styles.sectionCount}>{filteredConversations.length}</span>
+                <span className={styles.sectionCount}>{totalConversations}</span>
               </div>
-              {filteredConversations.map((conv) => {
+              {displayedConversations.map((conv) => {
                 const idx = currentIndex++;
                 const projectName = conv.projectId ? projectMap[conv.projectId] : null;
                 return (
@@ -266,6 +325,31 @@ export default function SearchView() {
                   </button>
                 );
               })}
+              {!isAllTab && hasMoreConversations && (
+                <div className={styles.sectionFooter}>
+                  <button
+                    type="button"
+                    className={styles.loadMoreBtn}
+                    onClick={loadMoreConversations}
+                  >
+                    Load more
+                  </button>
+                </div>
+              )}
+              {isAllTab && hasMoreConversations && (
+                <div className={styles.sectionFooter}>
+                  <button
+                    type="button"
+                    className={styles.viewAllBtn}
+                    onClick={() => viewAll('conversations')}
+                  >
+                    View all {totalConversations} {TYPE_LABEL_PLURAL.conversations}
+                    <span aria-hidden="true" className={styles.viewAllArrow}>
+                      &rarr;
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -273,9 +357,9 @@ export default function SearchView() {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionLabel}>Projects</span>
-                <span className={styles.sectionCount}>{filteredProjects.length}</span>
+                <span className={styles.sectionCount}>{totalProjects}</span>
               </div>
-              {filteredProjects.map((proj) => {
+              {displayedProjects.map((proj) => {
                 const idx = currentIndex++;
                 return (
                   <button
@@ -307,6 +391,27 @@ export default function SearchView() {
                   </button>
                 );
               })}
+              {!isAllTab && hasMoreProjects && (
+                <div className={styles.sectionFooter}>
+                  <button type="button" className={styles.loadMoreBtn} onClick={loadMoreProjects}>
+                    Load more
+                  </button>
+                </div>
+              )}
+              {isAllTab && hasMoreProjects && (
+                <div className={styles.sectionFooter}>
+                  <button
+                    type="button"
+                    className={styles.viewAllBtn}
+                    onClick={() => viewAll('projects')}
+                  >
+                    View all {totalProjects} {TYPE_LABEL_PLURAL.projects}
+                    <span aria-hidden="true" className={styles.viewAllArrow}>
+                      &rarr;
+                    </span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

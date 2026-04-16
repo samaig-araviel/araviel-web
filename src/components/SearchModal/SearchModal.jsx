@@ -23,9 +23,12 @@ export default function SearchModal({ onClose }) {
     activeIndex,
     setActiveIndex,
     projectMap,
-    filteredConversations,
-    filteredProjects,
-    filteredImages,
+    displayedConversations,
+    displayedProjects,
+    displayedImages,
+    totalConversations,
+    totalProjects,
+    totalImages,
     apiLoading,
     hasQuery,
     hasAnyResults,
@@ -104,13 +107,13 @@ export default function SearchModal({ onClose }) {
               {f.key === 'images' && <PhotoIcon />}
               {f.label}
               {f.key === 'conversations' && hasQuery && (
-                <span className={styles.chipCount}>{filteredConversations.length}</span>
+                <span className={styles.chipCount}>{totalConversations}</span>
               )}
               {f.key === 'projects' && hasQuery && (
-                <span className={styles.chipCount}>{filteredProjects.length}</span>
+                <span className={styles.chipCount}>{totalProjects}</span>
               )}
               {f.key === 'images' && hasQuery && (
-                <span className={styles.chipCount}>{filteredImages.length}</span>
+                <span className={styles.chipCount}>{totalImages}</span>
               )}
             </button>
           ))}
@@ -143,10 +146,10 @@ export default function SearchModal({ onClose }) {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionLabel}>Images</span>
-                <span className={styles.sectionCount}>{filteredImages.length}</span>
+                <span className={styles.sectionCount}>{totalImages}</span>
               </div>
               <div className={styles.imageCarousel}>
-                {filteredImages.map((img) => (
+                {displayedImages.map((img) => (
                   <button
                     key={img.id}
                     className={styles.imageCard}
@@ -173,9 +176,9 @@ export default function SearchModal({ onClose }) {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionLabel}>Conversations</span>
-                <span className={styles.sectionCount}>{filteredConversations.length}</span>
+                <span className={styles.sectionCount}>{totalConversations}</span>
               </div>
-              {filteredConversations.map((conv) => {
+              {displayedConversations.map((conv) => {
                 const idx = currentIndex++;
                 const projectName = conv.projectId ? projectMap[conv.projectId] : null;
                 return (
@@ -214,9 +217,9 @@ export default function SearchModal({ onClose }) {
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
                 <span className={styles.sectionLabel}>Projects</span>
-                <span className={styles.sectionCount}>{filteredProjects.length}</span>
+                <span className={styles.sectionCount}>{totalProjects}</span>
               </div>
-              {filteredProjects.map((proj) => {
+              {displayedProjects.map((proj) => {
                 const idx = currentIndex++;
                 return (
                   <button
