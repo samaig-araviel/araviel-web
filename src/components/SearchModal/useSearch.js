@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { selectConversations, setCurrentChat, setMessages } from '../../store/slices/chatSlice';
+import { selectConversations } from '../../store/slices/chatSlice';
 import { selectProjects } from '../../store/slices/projectsSlice';
 import { searchConversations, searchProjects, searchImages } from '../../services/api';
 import { getGeneratedImages } from '../../services/imageGeneration';
@@ -91,18 +91,23 @@ export function formatRelativeDate(dateStr) {
  * @param {{conversationsPageSize?: number, projectsPageSize?: number, imagesPageSize?: number}} [options.pagination]
  *   When provided, each list is clipped to its page size and exposes a
  *   load-more callback. Defaults to no pagination (all results shown).
+ * @param {boolean} [options.fetchBaselineImages] - When true, hydrates
+ *   apiImages from the server even when the query is empty, so
+ *   surfaces that expose an images tab have real content regardless
+ *   of whether the gallery has been visited. The modal leaves this off
+ *   to preserve its minimal idle state.
  */
 export function useSearch({
   onAfterNavigate,
   enableEscape = false,
   initialState,
   pagination,
+  fetchBaselineImages = false,
 } = {}) {
   const conversationsPageSize = pagination?.conversationsPageSize ?? Infinity;
   const projectsPageSize = pagination?.projectsPageSize ?? Infinity;
   const imagesPageSize = pagination?.imagesPageSize ?? Infinity;
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const conversations = useSelector(selectConversations);
   const projects = useSelector(selectProjects);
@@ -161,12 +166,27 @@ export function useSearch({
   }, [projects]);
 
   // ── Debounced initial API search ──────────────────────────────
-  // Always runs whenever the query is long enough — never gated on the
-  // sidebar's cache state. Resets pagination state to page 0, then
-  // fetches the first page of every type in parallel.
+  // Fetches the first page of each type in parallel. Behaviour forks
+  // on query length:
+  //  • ≥ 2 characters — full search across conversations, projects
+  //    and images.
+  //  • empty — no search term. When `fetchBaselineImages` is on we
+  //    still hydrate the images list so surfaces like the dedicated
+  //    /search page can show content on their Images tab without the
+  //    user having opened the gallery. Conversations and projects
+  //    already come from Redux on sign-in, so they never need this
+  //    baseline fetch.
+  //  • exactly 1 character — too noisy to hit the server; no-op so
+  //    the UI doesn't flicker mid-typing.
   const queryKey = query.trim();
   useEffect(() => {
-    if (queryKey.length < 2) {
+    if (queryKey.length === 1) return;
+
+    const isSearch = queryKey.length >= 2;
+    const shouldFetchImages = isSearch || fetchBaselineImages;
+
+    if (!isSearch && !shouldFetchImages) {
+      // Idle modal with empty query — clear everything and bail.
       activeQueryRef.current = '';
       setApiConversations([]);
       setApiConversationsTotal(0);
@@ -182,37 +202,50 @@ export function useSearch({
     setApiLoading(true);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    // No debounce for the empty-query baseline — it only runs on mount
+    // (and when the user clears their query), never mid-typing.
+    const delay = isSearch ? 200 : 0;
     debounceRef.current = setTimeout(async () => {
       activeQueryRef.current = queryKey;
       try {
         const [convResult, projResult, imgResult] = await Promise.all([
-          searchConversations(queryKey, API_PAGE_SIZE, 0),
-          searchProjects(queryKey),
-          searchImages(queryKey, API_PAGE_SIZE, 0),
+          isSearch ? searchConversations(queryKey, API_PAGE_SIZE, 0) : Promise.resolve(null),
+          isSearch ? searchProjects(queryKey) : Promise.resolve(null),
+          shouldFetchImages ? searchImages(queryKey, API_PAGE_SIZE, 0) : Promise.resolve(null),
         ]);
         if (activeQueryRef.current !== queryKey) return;
 
-        const convs = convResult?.conversations ?? [];
-        setApiConversations(convs);
-        setApiConversationsTotal(convResult?.total ?? convs.length);
+        if (isSearch) {
+          const convs = convResult?.conversations ?? [];
+          setApiConversations(convs);
+          setApiConversationsTotal(convResult?.total ?? convs.length);
+          setApiProjects(projResult?.projects ?? []);
+        } else {
+          setApiConversations([]);
+          setApiConversationsTotal(0);
+          setApiProjects([]);
+        }
 
-        setApiProjects(projResult?.projects ?? []);
-
-        const imgs = imgResult?.images ?? [];
-        setApiImages(imgs);
-        setApiImagesHasMoreServer(imgs.length === API_PAGE_SIZE);
+        if (imgResult) {
+          const imgs = imgResult.images ?? [];
+          setApiImages(imgs);
+          setApiImagesHasMoreServer(imgs.length === API_PAGE_SIZE);
+        } else {
+          setApiImages([]);
+          setApiImagesHasMoreServer(false);
+        }
       } catch {
         // Silent fail — local results still render. Leave accumulators
         // as-is so the UI stays stable.
       } finally {
         if (activeQueryRef.current === queryKey) setApiLoading(false);
       }
-    }, 200);
+    }, delay);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [queryKey]);
+  }, [queryKey, fetchBaselineImages]);
 
   // ── Follow-up API page fetches (Load More) ────────────────────
   // Only fire if (a) the query is still current, (b) we aren't
@@ -304,10 +337,11 @@ export function useSearch({
 
     const q = queryKey.toLowerCase();
     const dateThreshold = getDateThreshold(dateFilter);
-    // When there's a query, the API is authoritative (covers all
-    // matches server-side). With no query we only have the local cache
-    // to preview.
-    const source = q ? dedupById([...apiImages, ...(images || [])]) : images || [];
+    // The API is the authoritative source (it covers every image the
+    // user owns). The in-memory cache is merged in as a harmless
+    // fallback for items the user has just generated this session and
+    // that haven't been returned by a server page yet.
+    const source = dedupById([...apiImages, ...(images || [])]);
 
     return source.filter((img) => {
       if (q && !img.prompt?.toLowerCase().includes(q)) return false;
@@ -428,22 +462,24 @@ export function useSearch({
     });
   }, [filterKey, allResults.length]);
 
-  // Navigate to result
+  // Navigate to result. Each target has its own URL shape — the route
+  // components themselves are responsible for loading state (e.g.
+  // ConversationRoute fetches messages when the :id param changes), so
+  // we must not pre-set currentChat here: doing that would make the
+  // route see "id === currentChatId" and skip loading.
   const navigateToResult = useCallback(
     (item) => {
       if (!item) return;
       if (item.type === 'conversation') {
-        dispatch(setCurrentChat(item.data.id));
-        dispatch(setMessages([]));
         navigate(`/conversations/${item.data.id}`);
       } else if (item.type === 'project') {
-        navigate('/projects');
+        navigate(`/projects/${item.data.id}`);
       } else if (item.type === 'image') {
-        navigate('/images');
+        navigate(`/images/${item.data.id}`);
       }
       onAfterNavigate?.();
     },
-    [dispatch, navigate, onAfterNavigate]
+    [navigate, onAfterNavigate]
   );
 
   // Keyboard navigation
