@@ -648,16 +648,9 @@ export default function Sidebar() {
 
         <nav className={styles.nav}>
           <button
-            className={`${styles.navItem} ${location.pathname === '/conversations' ? styles.active : ''}`}
-            onClick={handleConversationsClick}
-            title="Conversations"
-            aria-label="Conversations"
-          >
-            <ConversationsIcon />
-            {showFullContent && <span>Conversations</span>}
-          </button>
-          <button
-            className={`${styles.navItem} ${location.pathname.startsWith('/projects') ? styles.active : ''}`}
+            className={`${styles.navItem} ${
+              location.pathname.startsWith('/projects') ? styles.active : ''
+            }`}
             onClick={handleProjectsClick}
             title="Projects"
             aria-label="Projects"
@@ -666,13 +659,26 @@ export default function Sidebar() {
             {showFullContent && <span>Projects</span>}
           </button>
           <button
-            className={`${styles.navItem} ${location.pathname.startsWith('/images') ? styles.active : ''}`}
+            className={`${styles.navItem} ${
+              location.pathname.startsWith('/images') ? styles.active : ''
+            }`}
             onClick={handleGalleryClick}
             title="Image Gallery"
             aria-label="Image Gallery"
           >
             <ImageGalleryIcon />
-            {showFullContent && <span>Images</span>}
+            {showFullContent && <span>Gallery</span>}
+          </button>
+          <button
+            className={`${styles.navItem} ${
+              location.pathname === '/conversations' ? styles.active : ''
+            }`}
+            onClick={handleConversationsClick}
+            title="Conversation History"
+            aria-label="Conversation History"
+          >
+            <ConversationsIcon />
+            {showFullContent && <span>History</span>}
           </button>
           <button
             className={`${styles.navItem} ${location.pathname === '/models' ? styles.active : ''}`}
