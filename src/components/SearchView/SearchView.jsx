@@ -79,6 +79,7 @@ export default function SearchView() {
   } = useSearch({
     initialState,
     enableEscape: false,
+    fetchBaselineImages: true,
     pagination: {
       conversationsPageSize: CONVERSATIONS_PAGE_SIZE,
       projectsPageSize: PROJECTS_PAGE_SIZE,
@@ -127,6 +128,11 @@ export default function SearchView() {
 
   const isAllTab = typeFilter === 'all';
   const isImagesTab = typeFilter === 'images';
+  // Whether the active tab has anything to show. Distinct from
+  // `hasAnyResults` (which is global): the idle Images tab has baseline
+  // thumbnails, but the idle Conversations tab should still prompt the
+  // user to start typing.
+  const hasVisibleSection = showImages || showConversations || showProjects;
   let currentIndex = 0;
 
   // "View all" on the All tab switches to the specific filter; the hook
@@ -208,7 +214,7 @@ export default function SearchView() {
 
         {/* Results */}
         <div className={styles.results} ref={resultsRef}>
-          {!hasQuery && !hasAnyResults && (
+          {!hasQuery && !hasVisibleSection && (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
                 <SearchIcon />
