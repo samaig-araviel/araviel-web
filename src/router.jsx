@@ -5,6 +5,7 @@ import ConversationsView from './components/ConversationsView';
 import ConversationRoute from './components/ConversationRoute';
 import ProjectsView from './components/ProjectsView';
 import ImageGalleryView from './components/ImageGalleryView';
+import SearchView from './components/SearchView';
 import ModelsView from './components/ModelsView';
 import SettingsView from './components/SettingsView';
 import PricingView from './components/PricingView/PricingView';
@@ -111,6 +112,14 @@ const router = createBrowserRouter([
         element: (
           <RouteShell feature="images" seo={{ title: 'Image', noindex: true }}>
             <ImageGalleryView />
+          </RouteShell>
+        ),
+      },
+      {
+        path: 'search',
+        element: (
+          <RouteShell feature="search" seo={{ title: 'Search', noindex: true }}>
+            <SearchView />
           </RouteShell>
         ),
       },

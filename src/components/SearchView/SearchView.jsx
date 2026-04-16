@@ -1,18 +1,35 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { SearchIcon, ChatIcon, ProjectsIcon, StarIcon, CalendarIcon, PhotoIcon } from '../Icons';
 import {
-  SearchIcon,
-  ChatIcon,
-  ProjectsIcon,
-  StarIcon,
-  CalendarIcon,
-  CloseIcon,
-  PhotoIcon,
-} from '../Icons';
-import { useSearch, TYPE_FILTERS, DATE_FILTERS, formatRelativeDate } from './useSearch';
-import styles from './SearchModal.module.css';
+  useSearch,
+  TYPE_FILTERS,
+  DATE_FILTERS,
+  formatRelativeDate,
+} from '../SearchModal/useSearch';
+import styles from './SearchView.module.css';
 
-export default function SearchModal({ onClose }) {
+const VALID_TYPES = new Set(TYPE_FILTERS.map((f) => f.key));
+const VALID_DATES = new Set(DATE_FILTERS.map((f) => f.key));
+
+function readInitialState(params) {
+  const rawType = params.get('type');
+  const rawDate = params.get('date');
+  return {
+    query: params.get('q') || '',
+    typeFilter: rawType && VALID_TYPES.has(rawType) ? rawType : 'all',
+    dateFilter: rawDate && VALID_DATES.has(rawDate) ? rawDate : 'all',
+  };
+}
+
+export default function SearchView() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef(null);
+
+  // Read URL params once on first render; URL is the source of truth for
+  // initial values but we then own the state locally to avoid re-render loops.
+  const [initialState] = useState(() => readInitialState(searchParams));
+
   const {
     query,
     setQuery,
@@ -35,16 +52,58 @@ export default function SearchModal({ onClose }) {
     showProjects,
     navigateToResult,
     resultsRef,
-  } = useSearch({ onAfterNavigate: onClose, enableEscape: true });
+  } = useSearch({ initialState, enableEscape: false });
 
-  // Index offset for combining sections in keyboard navigation
+  // Autofocus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Sync state → URL. `replace: true` so Back goes to the previous page
+  // rather than walking through every keystroke. Omit default values to
+  // keep the URL clean.
+  const syncingFromParams = useRef(false);
+  useEffect(() => {
+    if (syncingFromParams.current) {
+      syncingFromParams.current = false;
+      return;
+    }
+    const next = new URLSearchParams();
+    const q = query.trim();
+    if (q) next.set('q', q);
+    if (typeFilter !== 'all') next.set('type', typeFilter);
+    if (dateFilter !== 'all') next.set('date', dateFilter);
+    // Only write if different to avoid triggering a no-op navigation.
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true });
+    }
+  }, [query, typeFilter, dateFilter, searchParams, setSearchParams]);
+
+  // Sync URL → state (Back/Forward navigation)
+  useEffect(() => {
+    const next = readInitialState(searchParams);
+    if (next.query !== query || next.typeFilter !== typeFilter || next.dateFilter !== dateFilter) {
+      syncingFromParams.current = true;
+      setQuery(next.query);
+      setTypeFilter(next.typeFilter);
+      setDateFilter(next.dateFilter);
+    }
+    // We only want this to run when the URL changes externally, not when
+    // local state drives a URL write. The guard ref handles that.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   let currentIndex = 0;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
-        {/* Search Header */}
-        <div className={styles.searchHeader}>
+    <div className={styles.page}>
+      <div className={styles.inner}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Search</h1>
+        </div>
+
+        {/* Search input */}
+        <div className={styles.searchBox}>
           <SearchIcon />
           <input
             ref={inputRef}
@@ -52,17 +111,13 @@ export default function SearchModal({ onClose }) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search everything..."
-            autoFocus
+            placeholder="Search conversations, projects, and images…"
             autoComplete="off"
             spellCheck="false"
           />
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close search">
-            <CloseIcon />
-          </button>
         </div>
 
-        {/* Navigation hints + filter bar */}
+        {/* Toolbar: keyboard hints + date filter */}
         <div className={styles.toolbar}>
           <div className={styles.navHints}>
             <span className={styles.navHint}>
@@ -72,22 +127,19 @@ export default function SearchModal({ onClose }) {
               Open <kbd>&crarr;</kbd>
             </span>
           </div>
-          <div className={styles.toolbarRight}>
-            <div className={styles.dateFilterWrap}>
-              <CalendarIcon />
-              <select
-                className={styles.dateSelect}
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-              >
-                {DATE_FILTERS.map((f) => (
-                  <option key={f.key} value={f.key}>
-                    {f.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <kbd className={styles.escKbd}>ESC</kbd>
+          <div className={styles.dateFilterWrap}>
+            <CalendarIcon />
+            <select
+              className={styles.dateSelect}
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+            >
+              {DATE_FILTERS.map((f) => (
+                <option key={f.key} value={f.key}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -116,9 +168,20 @@ export default function SearchModal({ onClose }) {
           ))}
         </div>
 
-        {/* Results area — fixed height, scrollable */}
+        {/* Results */}
         <div className={styles.results} ref={resultsRef}>
-          {/* No results — only when user has typed something */}
+          {!hasQuery && !hasAnyResults && (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>
+                <SearchIcon />
+              </div>
+              <span className={styles.emptyTitle}>Start typing to search</span>
+              <span className={styles.emptyHint}>
+                Search across conversations, projects, and generated images
+              </span>
+            </div>
+          )}
+
           {noResults && (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>
@@ -129,7 +192,6 @@ export default function SearchModal({ onClose }) {
             </div>
           )}
 
-          {/* Loading */}
           {apiLoading && hasQuery && !hasAnyResults && (
             <div className={styles.loadingDot}>
               <span />
@@ -138,7 +200,6 @@ export default function SearchModal({ onClose }) {
             </div>
           )}
 
-          {/* Images carousel section */}
           {showImages && (
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
@@ -168,7 +229,6 @@ export default function SearchModal({ onClose }) {
             </div>
           )}
 
-          {/* Conversation results */}
           {showConversations && (
             <div className={styles.section}>
               <div className={styles.sectionHeader}>
@@ -209,7 +269,6 @@ export default function SearchModal({ onClose }) {
             </div>
           )}
 
-          {/* Project results */}
           {showProjects && (
             <div className={styles.section}>
               <div className={styles.sectionHeader}>

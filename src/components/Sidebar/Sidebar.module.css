@@ -241,6 +241,11 @@
   color: var(--text-primary);
 }
 
+.searchBtn.active {
+  background-color: var(--bg-active);
+  color: var(--text-primary);
+}
+
 .searchBtn:active {
   transform: scale(0.98);
 }
