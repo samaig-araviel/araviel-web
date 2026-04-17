@@ -4560,36 +4560,67 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
         </div>
       </div>
 
-      <div className={styles.questionOptions}>
-        {current.options.map((option, idx) => (
-          <button
-            key={idx}
-            className={`${styles.questionOption} ${
-              isOptionSelected(option) ? styles.questionOptionSelected : ''
-            }`}
-            onClick={() => handleSelectOption(option)}
-          >
-            <span className={styles.questionOptionNumber}>{idx + 1}</span>
-            <span className={styles.questionOptionLabel}>{option}</span>
-            {isOptionSelected(option) && (
-              <svg
-                className={styles.questionOptionCheck}
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="none"
-              >
-                <path
-                  d="M11.5 4L5.5 10L2.5 7"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-          </button>
-        ))}
+      <div
+        className={styles.questionOptions}
+        role={isMultiSelect ? 'group' : undefined}
+        aria-label={isMultiSelect ? 'Select all that apply' : undefined}
+      >
+        {current.options.map((option, idx) => {
+          const selected = isOptionSelected(option);
+          return (
+            <button
+              key={idx}
+              type="button"
+              className={`${styles.questionOption} ${
+                selected ? styles.questionOptionSelected : ''
+              }`}
+              onClick={() => handleSelectOption(option)}
+              role={isMultiSelect ? 'checkbox' : undefined}
+              aria-checked={isMultiSelect ? selected : undefined}
+            >
+              {isMultiSelect ? (
+                <span
+                  className={`${styles.questionOptionCheckbox} ${
+                    selected ? styles.questionOptionCheckboxChecked : ''
+                  }`}
+                  aria-hidden="true"
+                >
+                  {selected && (
+                    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M11.5 4L5.5 10L2.5 7"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </span>
+              ) : (
+                <span className={styles.questionOptionNumber}>{idx + 1}</span>
+              )}
+              <span className={styles.questionOptionLabel}>{option}</span>
+              {!isMultiSelect && selected && (
+                <svg
+                  className={styles.questionOptionCheck}
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="none"
+                >
+                  <path
+                    d="M11.5 4L5.5 10L2.5 7"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </button>
+          );
+        })}
 
         <div
           className={`${styles.questionCustom} ${
