@@ -66,8 +66,8 @@
 }
 
 .sidebar.collapsed {
-  width: 58px;
-  padding: 12px 6px;
+  width: 54px;
+  padding: 12px 5px;
 }
 
 /* In-header collapse/expand chevron pill (replaces the external half-disc) */
@@ -220,9 +220,9 @@
 .collapsed .newChatBtn {
   justify-content: center;
   padding: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   margin-bottom: 6px;
   background-color: var(--text-primary);
   color: var(--bg-primary);
@@ -295,9 +295,9 @@
 .collapsed .searchBtn {
   justify-content: center;
   padding: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   margin-bottom: 6px;
 }
 
@@ -355,9 +355,9 @@
 .collapsed .navItem {
   justify-content: center;
   padding: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
 }
 
 .collapsed .navItem.active {
@@ -1002,7 +1002,7 @@
 
 .userDropdownCollapsed {
   position: fixed;
-  left: calc(58px + 12px + 4px);
+  left: calc(54px + 12px + 4px);
   right: auto;
   width: 210px;
   bottom: 72px;
@@ -1057,9 +1057,9 @@
 }
 
 .collapsed .userSection {
-  border-radius: 10px;
-  width: 38px;
-  height: 38px;
+  border-radius: 9px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   justify-content: center;
 }
