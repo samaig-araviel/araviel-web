@@ -52,6 +52,8 @@ import {
 import ModelSelector from '../ModelSelector/ModelSelector';
 import styles from './ImageGalleryView.module.css';
 
+const PAGE_SIZE = 9;
+
 const QUICK_PROMPTS = [
   {
     label: 'Cinematic portrait',
@@ -104,6 +106,7 @@ export default function ImageGalleryView() {
   const [lightboxIdx, setLightboxIdx] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [filterModel, setFilterModel] = useState('all');
+  const [displayedCount, setDisplayedCount] = useState(PAGE_SIZE);
   const [showFilters, setShowFilters] = useState(false);
   const [promptInput, setPromptInput] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
@@ -224,11 +227,18 @@ export default function ImageGalleryView() {
     };
   }, [loadImages, isAuthenticated, dispatch]);
 
+  // Reset pagination when the filter changes — a fresh view starts with PAGE_SIZE cards.
+  useEffect(() => {
+    setDisplayedCount(PAGE_SIZE);
+  }, [filterModel]);
+
   // Handle deep link to specific image via route param
   useEffect(() => {
     if (routeImageId && images.length > 0) {
       const idx = images.findIndex((img) => img.id === routeImageId);
       if (idx !== -1) {
+        // Ensure the target image is within the currently displayed slice
+        setDisplayedCount((c) => (idx >= c ? Math.ceil((idx + 1) / PAGE_SIZE) * PAGE_SIZE : c));
         setLightboxIdx(idx);
       }
     }
@@ -372,6 +382,9 @@ export default function ImageGalleryView() {
   const uniqueModels = [...new Set(images.map((img) => img.model).filter(Boolean))];
   const filteredImages =
     filterModel === 'all' ? images : images.filter((img) => img.model === filterModel);
+  const visibleImages = filteredImages.slice(0, displayedCount);
+  const hasMore = filteredImages.length > displayedCount;
+  const remaining = filteredImages.length - displayedCount;
 
   return (
     <div className={styles.galleryPage}>
@@ -676,80 +689,107 @@ export default function ImageGalleryView() {
 
             {filteredImages.length > 0 ? (
               <div className={styles.grid}>
-                {filteredImages.map((img, idx) => (
-                  <div key={img.id} className={styles.card}>
-                    <div className={styles.cardImageWrapper}>
-                      <button className={styles.cardImage} onClick={() => setLightboxIdx(idx)}>
-                        <img
-                          src={img.url}
-                          alt={img.prompt || 'Generated image'}
-                          loading="lazy"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.classList.add(styles.cardImageBroken);
-                          }}
-                        />
-                      </button>
-                      <div className={styles.cardOverlay}>
-                        <div className={styles.cardOverlayTop}>
-                          {img.model && <span className={styles.cardModelLabel}>{img.model}</span>}
-                        </div>
-                        <div className={styles.cardOverlayBottom}>
-                          <button
-                            className={styles.cardOverlayBtn}
-                            onClick={() => setLightboxIdx(idx)}
-                            title="View full size"
-                          >
-                            <MaximizeIcon />
-                          </button>
-                          <button
-                            className={styles.cardOverlayBtn}
-                            onClick={() => handleDownload(img)}
-                            title="Download"
-                          >
-                            <FileDownIcon />
-                          </button>
-                          <button
-                            className={`${styles.cardOverlayBtn} ${styles.cardDeleteBtn}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteConfirm(img.id);
+                {visibleImages.map((img, idx) => {
+                  // Only the most recent batch animates in — earlier cards stay put.
+                  const isNewlyLoaded = idx >= displayedCount - PAGE_SIZE;
+                  const cardClassName = isNewlyLoaded
+                    ? `${styles.card} ${styles.cardEnter}`
+                    : styles.card;
+                  const cardStyle = isNewlyLoaded
+                    ? { animationDelay: `${(idx % PAGE_SIZE) * 40}ms` }
+                    : undefined;
+                  return (
+                    <div key={img.id} className={cardClassName} style={cardStyle}>
+                      <div className={styles.cardImageWrapper}>
+                        <button className={styles.cardImage} onClick={() => setLightboxIdx(idx)}>
+                          <img
+                            src={img.url}
+                            alt={img.prompt || 'Generated image'}
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.classList.add(styles.cardImageBroken);
                             }}
-                            title="Delete"
-                          >
-                            <TrashIcon />
-                          </button>
+                          />
+                        </button>
+                        <div className={styles.cardOverlay}>
+                          <div className={styles.cardOverlayTop}>
+                            {img.model && (
+                              <span className={styles.cardModelLabel}>{img.model}</span>
+                            )}
+                          </div>
+                          <div className={styles.cardOverlayBottom}>
+                            <button
+                              className={styles.cardOverlayBtn}
+                              onClick={() => setLightboxIdx(idx)}
+                              title="View full size"
+                            >
+                              <MaximizeIcon />
+                            </button>
+                            <button
+                              className={styles.cardOverlayBtn}
+                              onClick={() => handleDownload(img)}
+                              title="Download"
+                            >
+                              <FileDownIcon />
+                            </button>
+                            <button
+                              className={`${styles.cardOverlayBtn} ${styles.cardDeleteBtn}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteConfirm(img.id);
+                              }}
+                              title="Delete"
+                            >
+                              <TrashIcon />
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {deleteConfirm === img.id && (
-                      <div className={styles.deleteOverlay}>
-                        <p>Delete this image?</p>
-                        <div className={styles.deleteActions}>
-                          <button
-                            className={styles.deleteCancelBtn}
-                            onClick={() => setDeleteConfirm(null)}
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            className={styles.deleteConfirmBtn}
-                            onClick={() => handleDelete(img.id)}
-                          >
-                            Delete
-                          </button>
+                      {deleteConfirm === img.id && (
+                        <div className={styles.deleteOverlay}>
+                          <p>Delete this image?</p>
+                          <div className={styles.deleteActions}>
+                            <button
+                              className={styles.deleteCancelBtn}
+                              onClick={() => setDeleteConfirm(null)}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              className={styles.deleteConfirmBtn}
+                              onClick={() => handleDelete(img.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className={styles.noResults}>
                 <p>No images match this filter.</p>
                 <button className={styles.clearFilterBtn} onClick={() => setFilterModel('all')}>
                   Show all
+                </button>
+              </div>
+            )}
+
+            {hasMore && (
+              <div className={styles.loadMoreWrap}>
+                <button
+                  type="button"
+                  className={styles.loadMoreBtn}
+                  onClick={() => setDisplayedCount((c) => c + PAGE_SIZE)}
+                >
+                  <span className={styles.loadMoreLabel}>Load more</span>
+                  <span className={styles.loadMoreCount}>
+                    {Math.min(PAGE_SIZE, remaining)} of {remaining} remaining
+                  </span>
                 </button>
               </div>
             )}
@@ -787,7 +827,7 @@ export default function ImageGalleryView() {
       {lightboxIdx !== null &&
         createPortal(
           <ImageDetailView
-            images={filteredImages}
+            images={visibleImages}
             startIndex={lightboxIdx}
             onClose={() => setLightboxIdx(null)}
             onDownload={handleDownload}
