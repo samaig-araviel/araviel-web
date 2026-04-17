@@ -1305,7 +1305,7 @@
   background-color: var(--bg-input);
   border: 1px solid var(--border-input);
   border-radius: 16px;
-  padding: 16px;
+  padding: 14px 16px;
   transition: border-color 0.15s ease, background-color 0.2s ease;
 }
 
@@ -1319,7 +1319,7 @@
   color: var(--text-primary);
   background: transparent;
   resize: none;
-  min-height: 44px;
+  min-height: 40px;
   max-height: 360px;
   line-height: 1.5;
   overflow-y: auto;
