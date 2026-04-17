@@ -1,12 +1,19 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
 .card {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 8px 10px 8px 12px;
+  padding: 8px 12px;
   border-radius: 12px;
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  max-width: 100%;
+  min-width: 0;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
@@ -113,50 +120,61 @@
   border-color: var(--border-input);
 }
 
-.buyButton {
+.addButton {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 10px 4px 8px;
-  border-radius: 8px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   border: 1px solid var(--border-color);
-  background-color: transparent;
+  background-color: var(--bg-secondary);
   color: var(--text-secondary);
-  font-size: 11.5px;
-  font-weight: 500;
-  white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.buyButton svg {
-  width: 12px;
-  height: 12px;
+.addButton svg {
+  width: 14px;
+  height: 14px;
 }
 
-.buyButton:hover {
+.addButton:hover {
   background-color: var(--bg-hover);
   border-color: var(--border-input);
   color: var(--text-primary);
 }
 
-.buyButton:focus-visible {
+@media (prefers-reduced-motion: no-preference) {
+  .addButton:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px -4px rgba(61, 53, 40, 0.12);
+  }
+
+  :global([data-theme='dark']) .addButton:hover {
+    box-shadow: 0 4px 10px -4px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.addButton:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.addButton:focus-visible {
   outline: 2px solid var(--text-secondary);
   outline-offset: 2px;
 }
 
-.buyButtonLabel {
-  line-height: 1;
-}
-
-.buyButtonUrgent {
+.addButtonUrgent {
   background-color: #d97706;
   border-color: #d97706;
   color: #fff;
 }
 
-.buyButtonUrgent:hover {
+.addButtonUrgent:hover {
   background-color: #b45309;
   border-color: #b45309;
   color: #fff;
@@ -183,8 +201,12 @@
 
 /* Responsive — collapse to a tight single row on narrow viewports */
 @media (max-width: 480px) {
+  .root {
+    gap: 6px;
+  }
+
   .card {
-    padding: 7px 8px 7px 10px;
+    padding: 7px 10px;
   }
 
   .secondaryRow {
@@ -199,18 +221,9 @@
     display: none;
   }
 
-  .buyButtonLabel {
-    display: none;
-  }
-
-  .buyButton {
-    padding: 5px;
-    border-radius: 8px;
-  }
-
-  .buyButton svg {
-    width: 14px;
-    height: 14px;
+  .addButton {
+    width: 30px;
+    height: 30px;
   }
 }
 
@@ -220,7 +233,7 @@
   }
 
   .card,
-  .buyButton {
+  .addButton {
     transition: none;
   }
 }
