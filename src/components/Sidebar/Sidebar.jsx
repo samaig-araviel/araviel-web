@@ -597,14 +597,6 @@ export default function Sidebar() {
       />
 
       <aside className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''}`}>
-        <button
-          className={styles.collapseBtn}
-          onClick={() => dispatch(toggleSidebar())}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <ChevronLeftIcon />
-        </button>
-
         <div className={styles.header}>
           <div className={styles.logo}>
             {showFullContent ? (
@@ -622,7 +614,7 @@ export default function Sidebar() {
               </button>
             )}
           </div>
-          {isMobile && (
+          {isMobile ? (
             <button
               className={styles.mobileCloseBtn}
               onClick={handleCloseSidebar}
@@ -630,6 +622,17 @@ export default function Sidebar() {
             >
               <CloseIcon />
             </button>
+          ) : (
+            showFullContent && (
+              <button
+                className={styles.collapseChevron}
+                onClick={() => dispatch(toggleSidebar())}
+                aria-label="Collapse sidebar"
+                title="Collapse sidebar"
+              >
+                <ChevronLeftIcon />
+              </button>
+            )
           )}
         </div>
 
@@ -653,7 +656,13 @@ export default function Sidebar() {
           )}
         </button>
 
-        <nav className={styles.nav}>
+        {showFullContent && (
+          <h2 className={styles.sectionLabel} id="sidebarMenuLabel">
+            Menu
+          </h2>
+        )}
+
+        <nav className={styles.nav} aria-labelledby="sidebarMenuLabel">
           <button
             className={`${styles.navItem} ${
               location.pathname.startsWith('/projects') ? styles.active : ''
@@ -698,10 +707,14 @@ export default function Sidebar() {
           </button>
         </nav>
 
-        {showFullContent && <div className={styles.navDivider} />}
+        {showFullContent && (
+          <h2 className={styles.sectionLabel} id="sidebarRecentsLabel">
+            Recents
+          </h2>
+        )}
 
         {showFullContent && (
-          <div className={styles.recents}>
+          <div className={styles.recents} aria-labelledby="sidebarRecentsLabel">
             <div className={styles.recentsHeaderRow}>
               <div className={styles.recentsToggle}>
                 <button
@@ -894,7 +907,18 @@ export default function Sidebar() {
         )}
 
         <div className={styles.footer}>
-          <div className={styles.userMenuWrapper} ref={userMenuRef}>
+          {!showFullContent && isAuthenticated && (
+            <span
+              className={`${styles.tierBadge} ${
+                userTier && userTier !== 'free' ? styles.tierBadgePaid : ''
+              }`}
+              title={`${userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan`}
+              aria-label={`${userTier} plan`}
+            >
+              {userTier.slice(0, 3)}
+            </span>
+          )}
+          <div className={styles.userCard} ref={userMenuRef}>
             <button
               className={`${styles.userSection} ${userMenuOpen ? styles.userSectionOpen : ''}`}
               onClick={() => setUserMenuOpen(!userMenuOpen)}
