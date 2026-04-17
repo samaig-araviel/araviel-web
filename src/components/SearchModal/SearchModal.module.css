@@ -38,7 +38,12 @@
   border-radius: 20px;
   max-width: 680px;
   width: 92%;
-  max-height: 560px;
+  /* Hold a stable baseline height so the dialog doesn't visibly
+     collapse around short results or empty states. 80vh caps it on
+     short viewports so nothing clips; the mobile media query below
+     overrides with 75vh/80vh for narrow screens. */
+  height: 560px;
+  max-height: 80vh;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.08),
     0 0 0 1px rgba(0, 0, 0, 0.03);
   animation: dialogIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
@@ -548,6 +553,10 @@
   justify-content: center;
   padding: 40px;
   gap: 5px;
+  /* Fill the results area so the dots sit visually centred on the
+     dialog's consistent height, rather than hugging the top edge. */
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .loadingDot span {
@@ -588,6 +597,10 @@
   padding: 48px 20px;
   gap: 10px;
   color: var(--text-muted);
+  /* Fill the results area so the message sits visually centred on the
+     dialog's consistent height, rather than hugging the top edge. */
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .emptyIcon {
