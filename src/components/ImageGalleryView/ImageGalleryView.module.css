@@ -211,68 +211,13 @@
   display: none;
 }
 
-/* ===== Usage Pill ===== */
+/* ===== Credit balance wrapper ===== */
 .usagePill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 16px 6px 12px;
-  border-radius: 100px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
   margin: 0 auto;
-  transition: border-color 0.3s ease;
-}
-
-.usagePill:hover {
-  border-color: var(--text-muted);
-}
-
-.usagePillDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  flex-shrink: 0;
-  animation: pillPulse 2.4s ease-in-out infinite;
-}
-
-@keyframes pillPulse {
-  0%,
-  100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.3);
-  }
-}
-
-.usagePillText {
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.01em;
-}
-
-.usagePillBadge {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: var(--bg-icon-button);
-  color: var(--text-icon-button);
-  opacity: 0.8;
-}
-
-.usagePillLimit {
-  font-size: 10.5px;
-  color: #d97706;
-  font-weight: 500;
-  margin-left: 2px;
+  max-width: 100%;
+  width: fit-content;
 }
 
 /* ===== Quality Dropdown ===== */
