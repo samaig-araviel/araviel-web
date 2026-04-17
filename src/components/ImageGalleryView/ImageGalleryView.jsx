@@ -30,10 +30,7 @@ import {
   getLimitInfo,
 } from '../../services/imageGeneration';
 import { PROVIDERS } from '../../data/models';
-import {
-  selectCurrentTier,
-  setImageCredits,
-} from '../../store/slices/subscriptionSlice';
+import { selectCurrentTier, setImageCredits } from '../../store/slices/subscriptionSlice';
 import {
   CloseIcon,
   FileDownIcon,
@@ -152,13 +149,15 @@ export default function ImageGalleryView() {
       .then((data) => {
         if (data.balance) {
           dispatch(setCreditBalance(data.balance));
-          dispatch(setImageCredits({
-            used: data.balance.monthly?.used ?? 0,
-            limit: data.balance.monthly?.total ?? 5,
-            remaining: data.balance.monthly?.remaining ?? 0,
-            packRemaining: data.balance.packs?.remaining ?? 0,
-            cycleResetsAt: data.balance.cycleResetsAt ?? null,
-          }));
+          dispatch(
+            setImageCredits({
+              used: data.balance.monthly?.used ?? 0,
+              limit: data.balance.monthly?.total ?? 5,
+              remaining: data.balance.monthly?.remaining ?? 0,
+              packRemaining: data.balance.packs?.remaining ?? 0,
+              cycleResetsAt: data.balance.cycleResetsAt ?? null,
+            })
+          );
         }
       })
       .catch(() => {});
@@ -193,13 +192,15 @@ export default function ImageGalleryView() {
         .then((data) => {
           if (data?.balance) {
             dispatch(setCreditBalance(data.balance));
-            dispatch(setImageCredits({
-              used: data.balance.monthly?.used ?? 0,
-              limit: data.balance.monthly?.total ?? 5,
-              remaining: data.balance.monthly?.remaining ?? 0,
-              packRemaining: data.balance.packs?.remaining ?? 0,
-              cycleResetsAt: data.balance.cycleResetsAt ?? null,
-            }));
+            dispatch(
+              setImageCredits({
+                used: data.balance.monthly?.used ?? 0,
+                limit: data.balance.monthly?.total ?? 5,
+                remaining: data.balance.monthly?.remaining ?? 0,
+                packRemaining: data.balance.packs?.remaining ?? 0,
+                cycleResetsAt: data.balance.cycleResetsAt ?? null,
+              })
+            );
           }
         })
         .catch(() => {});
@@ -549,6 +550,7 @@ export default function ImageGalleryView() {
           {/* Credit balance */}
           <div className={styles.usagePill}>
             <CreditBalance
+              tier={creditBalance?.tier ?? 'free'}
               onBuyCredits={() => {
                 if (!isAuthenticated) {
                   setShowAuthModal(true);
@@ -557,13 +559,6 @@ export default function ImageGalleryView() {
                 }
               }}
             />
-            <span className={styles.usagePillBadge}>
-              {creditBalance?.tier === 'pro'
-                ? 'PRO'
-                : creditBalance?.tier === 'lite'
-                ? 'LITE'
-                : 'FREE'}
-            </span>
           </div>
           {showBuyPacks && <BuyPacksModal onClose={() => setShowBuyPacks(false)} />}
         </div>
@@ -953,7 +948,9 @@ function ImageDetailView({ images, startIndex, onClose, onDownload, onDelete }) 
               )}
               <div className={styles.detailMetaRow}>
                 {img.provider && (
-                  <span className={styles.detailMetaChip}>{providerData?.name || img.provider}</span>
+                  <span className={styles.detailMetaChip}>
+                    {providerData?.name || img.provider}
+                  </span>
                 )}
                 {img.size && <span className={styles.detailMetaChip}>{img.size}</span>}
                 {images.length > 1 && (

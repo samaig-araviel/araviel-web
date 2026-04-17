@@ -1,93 +1,226 @@
-.container {
+.card {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px 8px 12px;
+  border-radius: 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  max-width: 100%;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.balanceMain {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
+.card:hover {
+  border-color: var(--border-input);
 }
 
-.available {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.01em;
+.cardUrgent {
+  border-color: rgba(217, 119, 6, 0.35);
 }
 
-.availableLabel {
-  font-size: 11px;
-  color: var(--text-muted);
-  white-space: nowrap;
+.cardUrgent:hover {
+  border-color: rgba(217, 119, 6, 0.55);
 }
 
-.breakdown {
+.primaryRow {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+}
+
+.pulseDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--text-muted);
+  flex-shrink: 0;
+  animation: creditPulse 2.4s ease-in-out infinite;
+}
+
+.cardUrgent .pulseDot {
+  background-color: #d97706;
+}
+
+@keyframes creditPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+.available {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.availableUrgent {
+  color: #d97706;
+}
+
+.availableLabel {
+  font-size: 11.5px;
   color: var(--text-muted);
-  font-size: 11px;
-}
-
-.monthly {
   white-space: nowrap;
 }
 
-.monthlyDepleted {
+.bonus {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 1px 5px;
+  border-radius: 5px;
+  background-color: var(--bg-active);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
   white-space: nowrap;
-  opacity: 0.5;
 }
 
-.separator {
-  opacity: 0.3;
-  font-size: 8px;
+.spacer {
+  flex: 1;
+  min-width: 4px;
 }
 
-.packs {
-  white-space: nowrap;
-  color: #d97706;
+.tierBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  text-transform: uppercase;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-.resetInfo {
-  white-space: nowrap;
-  font-style: italic;
-  opacity: 0.7;
-}
-
-.resetInfoUrgent {
-  white-space: nowrap;
-  font-style: italic;
-  color: #d97706;
+.tierBadgePaid {
+  color: var(--text-primary);
+  background-color: var(--bg-active);
+  border-color: var(--border-input);
 }
 
 .buyButton {
-  padding: 3px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-input);
-  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: transparent;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 500;
-  cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.buyButton svg {
+  width: 12px;
+  height: 12px;
 }
 
 .buyButton:hover {
-  background: var(--bg-icon-button);
-  color: var(--text-icon-button);
-  border-color: var(--bg-icon-button);
+  background-color: var(--bg-hover);
+  border-color: var(--border-input);
+  color: var(--text-primary);
+}
+
+.buyButton:focus-visible {
+  outline: 2px solid var(--text-secondary);
+  outline-offset: 2px;
+}
+
+.buyButtonLabel {
+  line-height: 1;
 }
 
 .buyButtonUrgent {
-  background: var(--bg-icon-button);
-  color: var(--text-icon-button);
-  border-color: var(--bg-icon-button);
+  background-color: #d97706;
+  border-color: #d97706;
+  color: #fff;
 }
 
 .buyButtonUrgent:hover {
-  opacity: 0.85;
+  background-color: #b45309;
+  border-color: #b45309;
+  color: #fff;
+}
+
+.secondaryRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-left: 14px;
+  line-height: 1.3;
+}
+
+.secondaryDivider {
+  opacity: 0.5;
+  font-size: 9px;
+}
+
+.secondaryUrgent {
+  color: #d97706;
+}
+
+/* Responsive — collapse to a tight single row on narrow viewports */
+@media (max-width: 480px) {
+  .card {
+    padding: 7px 8px 7px 10px;
+  }
+
+  .secondaryRow {
+    display: none;
+  }
+
+  .availableLabel {
+    display: none;
+  }
+
+  .bonus {
+    display: none;
+  }
+
+  .buyButtonLabel {
+    display: none;
+  }
+
+  .buyButton {
+    padding: 5px;
+    border-radius: 8px;
+  }
+
+  .buyButton svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulseDot {
+    animation: none;
+  }
+
+  .card,
+  .buyButton {
+    transition: none;
+  }
 }
