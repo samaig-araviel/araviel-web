@@ -2154,6 +2154,29 @@
   opacity: 0.7;
 }
 
+.questionOptionCheckbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1.5px solid var(--text-muted);
+  color: transparent;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.questionOption:hover .questionOptionCheckbox {
+  border-color: var(--text-secondary);
+}
+
+.questionOptionCheckboxChecked {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+  color: var(--bg-primary);
+}
+
 /* --- Custom Input --- */
 .questionCustom {
   display: flex;
