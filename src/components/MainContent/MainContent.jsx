@@ -2778,14 +2778,25 @@ export default function MainContent() {
               </button>
             </>
           )}
-          <button
-            className={styles.newChatNavBtn}
-            onClick={handleNewChat}
-            title="New Chat"
-            aria-label="Start new chat"
-          >
-            <NewChatIcon />
-          </button>
+          {isAuthenticated ? (
+            <button
+              className={styles.newChatNavBtn}
+              onClick={handleNewChat}
+              title="New Chat"
+              aria-label="Start new chat"
+            >
+              <NewChatIcon />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={styles.signUpNavBtn}
+              onClick={() => setShowGuestLimitModal(true)}
+              aria-label="Sign up or sign in"
+            >
+              <span className={styles.signUpNavBtnLabel}>Sign up</span>
+            </button>
+          )}
           {currentChatId && (
             <div className={styles.chatMenuWrapper} ref={chatMenuRef}>
               <button
@@ -3599,6 +3610,21 @@ export default function MainContent() {
           </div>
         )}
       </div>
+
+      {!hasMessages && (
+        <div className={styles.providersBadge} aria-hidden="true">
+          <span className={styles.providersBadgeLabel}>Providers available</span>
+          <div className={styles.providersBadgeDashes}>
+            {Object.values(PROVIDERS).map((p) => (
+              <span
+                key={p.id}
+                className={styles.providersBadgeDash}
+                style={{ backgroundColor: p.accentColor }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
