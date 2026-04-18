@@ -581,6 +581,43 @@
   height: 18px;
 }
 
+/* Guest sign-up CTA — replaces .newChatNavBtn in the top-right when not authenticated */
+.signUpNavBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow);
+}
+
+.signUpNavBtn:hover {
+  opacity: 0.92;
+  box-shadow: var(--shadow-lg);
+}
+
+.signUpNavBtn:active {
+  transform: scale(0.97);
+}
+
+.signUpNavBtn:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 2px;
+}
+
+.signUpNavBtnLabel {
+  line-height: 1;
+}
+
 /* Chat menu (3-dot) */
 .chatMenuWrapper {
   position: relative;
@@ -2923,5 +2960,55 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* "Providers available" indicator — bottom-right of the landing screen */
+.providersBadge {
+  position: absolute;
+  right: 20px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+  opacity: 0;
+  animation: providersBadgeIn 0.5s cubic-bezier(0.2, 0, 0, 1) 0.15s forwards;
+}
+
+.providersBadgeLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.providersBadgeDashes {
+  display: flex;
+  gap: 4px;
+}
+
+.providersBadgeDash {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+
+@keyframes providersBadgeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .providersBadge {
+    display: none;
   }
 }
