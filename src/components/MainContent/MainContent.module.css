@@ -1290,6 +1290,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 /* When in chat mode, input sticks to bottom */
@@ -2963,84 +2965,182 @@
   }
 }
 
-/* "Providers available" rail — vertical floating stack on the right edge */
-.providersBadge {
+/* Ambient provider field — faded provider badges scattered across the
+   landing backdrop. Decorative only; pointer-events: none on the layer so
+   they never intercept clicks on the real UI underneath. */
+.ambientProviders {
   position: absolute;
-  right: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  pointer-events: auto;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
   opacity: 0;
-  animation: providersBadgeIn 0.5s cubic-bezier(0.2, 0, 0, 1) 0.15s forwards;
+  animation: ambientProvidersIn 0.7s cubic-bezier(0.2, 0, 0, 1) 0.2s forwards;
 }
 
-.providersBadgeLabel {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  user-select: none;
-  text-align: center;
-}
-
-.providersBadgeList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  list-style: none;
-  padding: 6px;
-  margin: 0;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-}
-
-.providersBadgeItem {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.providersBadgeIcon {
-  width: 28px;
-  height: 28px;
+.ambientProvider {
+  position: absolute;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  background-color: transparent;
-  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  gap: 10px;
+  white-space: nowrap;
+  user-select: none;
+  opacity: 0.55;
+  transition: opacity 0.35s ease;
+  pointer-events: auto;
   cursor: default;
 }
 
-.providersBadgeIcon:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-hover);
-  transform: scale(1.08);
+.ambientProvider:hover {
+  opacity: 0.95;
 }
 
-@keyframes providersBadgeIn {
+.ambientProviderComingSoon {
+  opacity: 0.3;
+}
+
+.ambientProviderComingSoon:hover {
+  opacity: 0.55;
+}
+
+.ambientProviderIcon {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-button);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  order: 0;
+}
+
+.ambientProviderDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #c2683f;
+  flex-shrink: 0;
+  order: 1;
+}
+
+.ambientProviderDotMuted {
+  background-color: var(--border-input);
+}
+
+.ambientProviderText {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  order: 2;
+}
+
+.ambientProviderLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+
+.ambientProviderSubLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.ambientProviderComingSoon .ambientProviderSubLabel {
+  font-style: italic;
+}
+
+/* Positions — intentionally scattered so the greeting + input stay centred.
+   Right-side badges flip their inner order so the icon sits outboard. */
+.ambientProvider_topLeft {
+  top: 22%;
+  left: 6%;
+}
+
+.ambientProvider_topCenter {
+  top: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ambientProvider_topRight {
+  top: 22%;
+  right: 6%;
+}
+
+.ambientProvider_topRight .ambientProviderIcon {
+  order: 2;
+}
+
+.ambientProvider_topRight .ambientProviderText {
+  order: 0;
+  align-items: flex-end;
+}
+
+.ambientProvider_bottomLeft {
+  bottom: 22%;
+  left: 6%;
+}
+
+.ambientProvider_bottomCenter {
+  bottom: 11%;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ambientProvider_bottomCenter .ambientProviderIcon {
+  order: 2;
+}
+
+.ambientProvider_bottomCenter .ambientProviderText {
+  order: 0;
+  align-items: flex-end;
+}
+
+.ambientProvider_bottomRight {
+  bottom: 22%;
+  right: 6%;
+}
+
+.ambientProvider_bottomRight .ambientProviderIcon {
+  order: 2;
+}
+
+.ambientProvider_bottomRight .ambientProviderText {
+  order: 0;
+  align-items: flex-end;
+}
+
+@keyframes ambientProvidersIn {
   from {
     opacity: 0;
-    transform: translate(6px, -50%);
   }
   to {
     opacity: 1;
-    transform: translate(0, -50%);
   }
 }
 
-/* Hide on narrow screens so it never crowds the input */
-@media (max-width: 1024px) {
-  .providersBadge {
+/* Hide on narrow screens so the ambient field never crowds the input. */
+@media (max-width: 1100px) {
+  .ambientProvider_topCenter,
+  .ambientProvider_bottomCenter {
     display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .ambientProviders {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambientProviders {
+    animation: none;
+    opacity: 1;
   }
 }
