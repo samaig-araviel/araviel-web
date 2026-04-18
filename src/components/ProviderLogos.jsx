@@ -77,3 +77,16 @@ export const XAILogo = ({ size = 18 }) => (
     />
   </svg>
 );
+
+export const ElevenLabsLogo = ({ size = 18 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <rect x="6" y="5" width="3.5" height="14" rx="0.6" fill="currentColor" />
+    <rect x="14.5" y="5" width="3.5" height="14" rx="0.6" fill="currentColor" />
+  </svg>
+);
