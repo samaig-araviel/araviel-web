@@ -3575,9 +3575,7 @@ export default function MainContent() {
               aria-hidden="true"
             />
           </form>
-          <p className={styles.disclaimer}>
-            Araviel can make mistakes. Please verify important information.
-          </p>
+          <p className={styles.disclaimer}>AI outputs can be wrong. Always verify.</p>
 
           {!hasMessages && activeDropdown && currentPromptData && (
             <div className={styles.promptsDropdown} ref={dropdownRef}>
