@@ -9,30 +9,9 @@ import {
   selectAuthError,
   setAuthError,
 } from '../../store/slices/authSlice';
+import { getRememberMePreference, setRememberMePreference } from '../../lib/authStorage';
 import { CloseIcon } from '../Icons';
 import styles from './AuthModal.module.css';
-
-const REMEMBER_ME_STORAGE_KEY = 'araviel.auth.rememberMe';
-
-function readRememberMePreference() {
-  if (typeof window === 'undefined') return true;
-  try {
-    const stored = window.localStorage.getItem(REMEMBER_ME_STORAGE_KEY);
-    // Default to true when no preference has been saved yet.
-    return stored === null ? true : stored === 'true';
-  } catch {
-    return true;
-  }
-}
-
-function writeRememberMePreference(value) {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(REMEMBER_ME_STORAGE_KEY, String(value));
-  } catch {
-    // Ignore storage errors — the checkbox still reflects the user's intent for this session.
-  }
-}
 
 const GoogleIcon = () => (
   <svg className={styles.googleIcon} viewBox="0 0 24 24">
@@ -76,10 +55,10 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(() => readRememberMePreference());
+  const [rememberMe, setRememberMe] = useState(() => getRememberMePreference());
 
   useEffect(() => {
-    writeRememberMePreference(rememberMe);
+    setRememberMePreference(rememberMe);
   }, [rememberMe]);
 
   const clearState = useCallback(() => {

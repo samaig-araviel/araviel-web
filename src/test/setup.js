@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom/vitest';
 
-// Mock localStorage
-const localStorageMock = (() => {
+// Factory so localStorage and sessionStorage get independent stores but
+// otherwise behave identically.
+function createStorageMock() {
   let store = {};
   return {
     getItem: vi.fn((key) => store[key] ?? null),
@@ -19,9 +20,13 @@ const localStorageMock = (() => {
     },
     key: vi.fn((index) => Object.keys(store)[index] ?? null),
   };
-})();
+}
+
+const localStorageMock = createStorageMock();
+const sessionStorageMock = createStorageMock();
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock });
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -47,8 +52,9 @@ Object.defineProperty(globalThis, 'crypto', {
 
 // Environment variables are set via vitest.config.js env option
 
-// Clear localStorage between tests
+// Clear storage between tests
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   vi.clearAllMocks();
 });
