@@ -2995,14 +2995,6 @@
   opacity: 0.95;
 }
 
-.ambientProviderComingSoon {
-  opacity: 0.3;
-}
-
-.ambientProviderComingSoon:hover {
-  opacity: 0.55;
-}
-
 .ambientProviderIcon {
   width: 34px;
   height: 34px;
