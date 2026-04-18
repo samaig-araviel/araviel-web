@@ -2963,51 +2963,83 @@
   }
 }
 
-/* "Providers available" indicator — bottom-right of the landing screen */
+/* "Providers available" rail — vertical floating stack on the right edge */
 .providersBadge {
   position: absolute;
   right: 20px;
-  bottom: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  pointer-events: none;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
   opacity: 0;
   animation: providersBadgeIn 0.5s cubic-bezier(0.2, 0, 0, 1) 0.15s forwards;
 }
 
 .providersBadgeLabel {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 600;
   color: var(--text-muted);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  user-select: none;
+  text-align: center;
 }
 
-.providersBadgeDashes {
+.providersBadgeList {
   display: flex;
-  gap: 4px;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+  padding: 6px;
+  margin: 0;
+  background-color: var(--bg-button);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
-.providersBadgeDash {
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-  opacity: 0.85;
+.providersBadgeItem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.providersBadgeIcon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background-color: transparent;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+  cursor: default;
+}
+
+.providersBadgeIcon:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+  transform: scale(1.08);
 }
 
 @keyframes providersBadgeIn {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translate(6px, -50%);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(0, -50%);
   }
 }
 
-@media (max-width: 640px) {
+/* Hide on narrow screens so it never crowds the input */
+@media (max-width: 1024px) {
   .providersBadge {
     display: none;
   }

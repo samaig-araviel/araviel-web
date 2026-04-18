@@ -125,6 +125,7 @@ import {
 } from '../../store/slices/subscriptionSlice';
 import { getNextTier } from '../../config/subscription';
 import { PROVIDERS, isImageGenerationModel } from '../../data/models';
+import { getProviderLogo } from '../getProviderLogo';
 import { compressImage, isAcceptedImageType } from '../../utils/imageCompression';
 import {
   canGenerateImage,
@@ -156,6 +157,18 @@ const getGreeting = () => {
   if (hour < 18) return 'Good afternoon.';
   return 'Good evening.';
 };
+
+// Providers surfaced in the landing "Providers available" rail.
+// Order is intentional (most-used first) and labels use the product names
+// users recognise, not the company names stored in PROVIDERS.
+const LANDING_PROVIDERS = [
+  { id: 'openai', label: 'ChatGPT' },
+  { id: 'anthropic', label: 'Claude' },
+  { id: 'google', label: 'Gemini' },
+  { id: 'perplexity', label: 'Perplexity' },
+  { id: 'xai', label: 'Grok' },
+  { id: 'elevenlabs', label: 'ElevenLabs' },
+];
 
 const MODE_CONFIG = [
   {
@@ -3612,18 +3625,26 @@ export default function MainContent() {
       </div>
 
       {!hasMessages && (
-        <div className={styles.providersBadge} aria-hidden="true">
+        <aside className={styles.providersBadge} aria-label="Providers available">
           <span className={styles.providersBadgeLabel}>Providers available</span>
-          <div className={styles.providersBadgeDashes}>
-            {Object.values(PROVIDERS).map((p) => (
-              <span
-                key={p.id}
-                className={styles.providersBadgeDash}
-                style={{ backgroundColor: p.accentColor }}
-              />
-            ))}
-          </div>
-        </div>
+          <ul className={styles.providersBadgeList}>
+            {LANDING_PROVIDERS.map(({ id, label }) => {
+              const Logo = getProviderLogo(id);
+              return (
+                <li key={id} className={styles.providersBadgeItem}>
+                  <span
+                    className={styles.providersBadgeIcon}
+                    title={label}
+                    role="img"
+                    aria-label={label}
+                  >
+                    <Logo size={16} />
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </aside>
       )}
     </main>
   );
