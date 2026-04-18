@@ -16,6 +16,7 @@ import {
 } from '../../data/models';
 import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import { CloseIcon, SearchIcon, CheckIcon, FilterIcon, ChevronDownIcon } from '../Icons';
+import { getProviderLogo } from '../getProviderLogo';
 // updateUserTier removed — tier is now determined by subscription, not a manual toggle
 import styles from './ModelsView.module.css';
 
@@ -98,6 +99,7 @@ function SelectedModelPill({ modelId, onSelect }) {
   const model = MODELS.find((m) => m.id === modelId);
   if (!model) return null;
   const provider = PROVIDERS[model.provider];
+  const ProviderLogo = getProviderLogo(provider.id);
 
   return (
     <div className={styles.selectedPill} onClick={() => onSelect(model)} role="button" tabIndex={0}>
@@ -108,8 +110,9 @@ function SelectedModelPill({ modelId, onSelect }) {
           '--chip-text': provider.accentText,
           '--chip-bg-dark': provider.accentBgDark,
         }}
+        aria-label={provider.name}
       >
-        {provider.logoChar}
+        <ProviderLogo size={13} />
       </span>
       <span className={styles.selectedPillLabel}>{model.name}</span>
       <span className={styles.selectedPillTag}>Default</span>
@@ -221,6 +224,7 @@ function ProviderFilterDropdown({ activeFilter, onFilterChange, providerCounts }
   }, []);
 
   const activeProvider = activeFilter !== 'all' ? PROVIDERS[activeFilter] : null;
+  const ActiveProviderLogo = activeProvider ? getProviderLogo(activeProvider.id) : null;
   const totalCount = MODELS.length;
 
   return (
@@ -232,7 +236,7 @@ function ProviderFilterDropdown({ activeFilter, onFilterChange, providerCounts }
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className={styles.filterTriggerIcon}>
-          <FilterIcon />
+          {ActiveProviderLogo ? <ActiveProviderLogo size={14} /> : <FilterIcon />}
         </span>
         <span className={styles.filterTriggerLabel}>
           {activeProvider ? activeProvider.shortName : 'All providers'}
@@ -270,6 +274,7 @@ function ProviderFilterDropdown({ activeFilter, onFilterChange, providerCounts }
             const provider = PROVIDERS[pid];
             const count = providerCounts[pid] || 0;
             if (count === 0) return null;
+            const ProviderLogo = getProviderLogo(pid);
             return (
               <button
                 key={pid}
@@ -281,7 +286,17 @@ function ProviderFilterDropdown({ activeFilter, onFilterChange, providerCounts }
                   setIsOpen(false);
                 }}
               >
-                <span className={styles.filterMenuDot}>{provider.logoChar}</span>
+                <span
+                  className={styles.filterMenuDot}
+                  style={{
+                    '--chip-bg': provider.accentBg,
+                    '--chip-text': provider.accentText,
+                    '--chip-bg-dark': provider.accentBgDark,
+                  }}
+                  aria-hidden="true"
+                >
+                  <ProviderLogo size={12} />
+                </span>
                 <span className={styles.filterMenuLabel}>{provider.name}</span>
                 <span className={styles.filterMenuCount}>{count}</span>
                 {activeFilter === pid && (
@@ -302,6 +317,7 @@ function ProviderFilterDropdown({ activeFilter, onFilterChange, providerCounts }
 
 function ModelCard({ model, isSelected, isLocked, onSelect }) {
   const provider = PROVIDERS[model.provider];
+  const ProviderLogo = getProviderLogo(provider.id);
 
   return (
     <div
@@ -320,8 +336,9 @@ function ModelCard({ model, isSelected, isLocked, onSelect }) {
               '--chip-text': provider.accentText,
               '--chip-bg-dark': provider.accentBgDark,
             }}
+            aria-label={provider.name}
           >
-            {provider.logoChar}
+            <ProviderLogo size={15} />
           </span>
           <div className={styles.cardBadges}>
             {isSelected && <span className={styles.cardSelectedBadge}>Selected</span>}
@@ -388,6 +405,7 @@ function ModelCard({ model, isSelected, isLocked, onSelect }) {
 
 function ProviderGroupHeader({ providerId, count }) {
   const provider = PROVIDERS[providerId];
+  const ProviderLogo = getProviderLogo(providerId);
   return (
     <div className={styles.providerGroupHeader}>
       <span
@@ -397,8 +415,9 @@ function ProviderGroupHeader({ providerId, count }) {
           '--chip-text': provider.accentText,
           '--chip-bg-dark': provider.accentBgDark,
         }}
+        aria-hidden="true"
       >
-        {provider.logoChar}
+        <ProviderLogo size={13} />
       </span>
       <span className={styles.providerGroupName}>{provider.name}</span>
       <span className={styles.providerGroupCount}>{count}</span>
@@ -509,6 +528,7 @@ function ModelDetailPanel({
   onClose,
 }) {
   const provider = PROVIDERS[model.provider];
+  const ProviderLogo = getProviderLogo(provider.id);
   const panelRef = useRef(null);
   const nextTier = NEXT_TIER[userTier];
 
@@ -533,8 +553,9 @@ function ModelDetailPanel({
                 '--chip-text': provider.accentText,
                 '--chip-bg-dark': provider.accentBgDark,
               }}
+              aria-label={provider.name}
             >
-              {provider.logoChar}
+              <ProviderLogo size={22} />
             </span>
             <div>
               <h2 className={styles.detailName}>{model.name}</h2>
