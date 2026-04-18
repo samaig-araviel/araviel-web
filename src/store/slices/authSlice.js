@@ -90,10 +90,15 @@ export const signInWithGoogle = createAsyncThunk(
   }
 );
 
-/** Sign in with email & password. */
+/** Sign in with email & password.
+ *
+ * The `rememberMe` flag reflects the user's "Remember me" choice. It is
+ * persisted via the AuthModal so the preference survives across sessions;
+ * the underlying Supabase client already persists the session itself.
+ */
 export const signInWithEmail = createAsyncThunk(
   'auth/signInWithEmail',
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password, rememberMe = true }, { rejectWithValue }) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -103,6 +108,7 @@ export const signInWithEmail = createAsyncThunk(
       return {
         user: mapUser(data.user),
         session: mapSession(data.session),
+        rememberMe,
       };
     } catch (err) {
       return rejectWithValue(err.message);

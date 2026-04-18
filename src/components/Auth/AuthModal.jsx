@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   signInWithGoogle,
@@ -11,6 +11,28 @@ import {
 } from '../../store/slices/authSlice';
 import { CloseIcon } from '../Icons';
 import styles from './AuthModal.module.css';
+
+const REMEMBER_ME_STORAGE_KEY = 'araviel.auth.rememberMe';
+
+function readRememberMePreference() {
+  if (typeof window === 'undefined') return true;
+  try {
+    const stored = window.localStorage.getItem(REMEMBER_ME_STORAGE_KEY);
+    // Default to true when no preference has been saved yet.
+    return stored === null ? true : stored === 'true';
+  } catch {
+    return true;
+  }
+}
+
+function writeRememberMePreference(value) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(REMEMBER_ME_STORAGE_KEY, String(value));
+  } catch {
+    // Ignore storage errors — the checkbox still reflects the user's intent for this session.
+  }
+}
 
 const GoogleIcon = () => (
   <svg className={styles.googleIcon} viewBox="0 0 24 24">
@@ -54,6 +76,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => readRememberMePreference());
+
+  useEffect(() => {
+    writeRememberMePreference(rememberMe);
+  }, [rememberMe]);
 
   const clearState = useCallback(() => {
     setEmail('');
@@ -112,7 +139,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     }
 
     if (activeTab === 'signin') {
-      const result = await dispatch(signInWithEmail({ email: email.trim(), password }));
+      const result = await dispatch(signInWithEmail({ email: email.trim(), password, rememberMe }));
       if (result.meta.requestStatus === 'fulfilled') {
         handleClose();
       }
@@ -297,8 +324,36 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
                 </button>
               </div>
               {activeTab === 'signin' && (
-                <div className={styles.forgotLink}>
-                  <button type="button" onClick={handleForgotPassword}>
+                <div className={styles.credentialsRow}>
+                  <label className={styles.rememberMe}>
+                    <input
+                      type="checkbox"
+                      className={styles.rememberMeInput}
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    <span className={styles.rememberMeBox} aria-hidden="true">
+                      <svg
+                        className={styles.rememberMeCheck}
+                        viewBox="0 0 16 16"
+                        width="10"
+                        height="10"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="3 8.5 6.5 12 13 4.5" />
+                      </svg>
+                    </span>
+                    <span className={styles.rememberMeLabel}>Remember me</span>
+                  </label>
+                  <button
+                    type="button"
+                    className={styles.forgotLinkBtn}
+                    onClick={handleForgotPassword}
+                  >
                     Forgot password?
                   </button>
                 </div>

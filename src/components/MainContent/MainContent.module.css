@@ -3116,7 +3116,8 @@
   }
 }
 
-/* Hide on narrow screens so the ambient field never crowds the input. */
+/* Narrow desktops / tablets: drop the two centre badges so the greeting
+   and input never compete with them. */
 @media (max-width: 1100px) {
   .ambientProvider_topCenter,
   .ambientProvider_bottomCenter {
@@ -3124,9 +3125,64 @@
   }
 }
 
+/* Mobile: keep the four corner badges visible as compact icon-only chips so
+   the ambient presence of every provider still reads on small screens. */
 @media (max-width: 820px) {
-  .ambientProviders {
+  .ambientProvider {
+    gap: 6px;
+    opacity: 0.7;
+  }
+
+  .ambientProviderIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .ambientProviderIcon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ambientProviderText {
     display: none;
+  }
+
+  .ambientProvider_topLeft {
+    top: 12%;
+    left: 4%;
+  }
+
+  .ambientProvider_topRight {
+    top: 12%;
+    right: 4%;
+  }
+
+  .ambientProvider_bottomLeft {
+    bottom: 14%;
+    left: 4%;
+  }
+
+  .ambientProvider_bottomRight {
+    bottom: 14%;
+    right: 4%;
+  }
+}
+
+/* Very small phones: tighten further so the icons never cross the input. */
+@media (max-width: 480px) {
+  .ambientProviderIcon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .ambientProvider_topLeft,
+  .ambientProvider_topRight {
+    top: 8%;
+  }
+
+  .ambientProvider_bottomLeft,
+  .ambientProvider_bottomRight {
+    bottom: 10%;
   }
 }
 
