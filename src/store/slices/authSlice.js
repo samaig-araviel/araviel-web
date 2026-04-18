@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { supabase } from '../../lib/supabase';
+import { setRememberMePreference } from '../../lib/authStorage';
 import { resetGuestPromptCount } from '../../utils/guestSession';
 import { logger } from '../../lib/logger';
 
@@ -100,6 +101,12 @@ export const signInWithEmail = createAsyncThunk(
   'auth/signInWithEmail',
   async ({ email, password, rememberMe = true }, { rejectWithValue }) => {
     try {
+      // Record the preference BEFORE the sign-in call so the storage adapter
+      // writes the new session to the correct bucket (local vs. session
+      // storage) on the very first write. Doing this after the call would
+      // leak the session into the previously-active storage.
+      setRememberMePreference(rememberMe);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
