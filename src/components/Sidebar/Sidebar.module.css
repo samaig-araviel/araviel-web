@@ -66,8 +66,9 @@
 }
 
 .sidebar.collapsed {
-  width: 54px;
-  padding: 12px 5px;
+  width: 48px;
+  padding: 10px 4px;
+  align-items: center;
 }
 
 /* In-header collapse/expand chevron pill (replaces the external half-disc) */
@@ -220,9 +221,9 @@
 .collapsed .newChatBtn {
   justify-content: center;
   padding: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   margin-bottom: 6px;
   background-color: var(--text-primary);
   color: var(--bg-primary);
@@ -251,8 +252,8 @@
 }
 
 .collapsed .newChatBtn svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .searchBtn {
@@ -295,10 +296,15 @@
 .collapsed .searchBtn {
   justify-content: center;
   padding: 0;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 9px;
   margin-bottom: 6px;
+}
+
+.collapsed .searchBtn svg {
+  width: 17px;
+  height: 17px;
 }
 
 .searchKbd {
@@ -352,12 +358,27 @@
   box-shadow: inset 3px 0 0 var(--text-primary);
 }
 
+.collapsed .nav {
+  align-items: center;
+}
+
 .collapsed .navItem {
   justify-content: center;
   padding: 0;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 9px;
+}
+
+.collapsed .navItem svg {
+  width: 17px;
+  height: 17px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .collapsed .navItem:hover {
+    transform: none;
+  }
 }
 
 .collapsed .navItem.active {
@@ -789,11 +810,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   color: var(--text-muted);
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.recentsCollapsedIcon svg {
+  width: 17px;
+  height: 17px;
 }
 
 .recentsCollapsedIcon:hover {
@@ -1058,8 +1084,8 @@
 
 .collapsed .userSection {
   border-radius: 9px;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   justify-content: center;
 }
