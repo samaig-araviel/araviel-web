@@ -158,16 +158,34 @@ const getGreeting = () => {
   return 'Good evening.';
 };
 
-// Providers surfaced in the landing "Providers available" rail.
-// Order is intentional (most-used first) and labels use the product names
-// users recognise, not the company names stored in PROVIDERS.
-const LANDING_PROVIDERS = [
-  { id: 'openai', label: 'ChatGPT' },
-  { id: 'anthropic', label: 'Claude' },
-  { id: 'google', label: 'Gemini' },
-  { id: 'perplexity', label: 'Perplexity' },
-  { id: 'xai', label: 'Grok' },
-  { id: 'elevenlabs', label: 'ElevenLabs' },
+// Ambient provider badges scattered around the landing screen.
+// Purely decorative; communicates the range of providers Araveil orchestrates.
+// Order matches the visual layout (clockwise from top-left).
+const AMBIENT_PROVIDERS = [
+  { id: 'anthropic', label: 'Claude', subLabel: 'Opus 4.7', available: true, position: 'topLeft' },
+  { id: 'xai', label: 'Grok', subLabel: 'Coming soon', available: false, position: 'topCenter' },
+  { id: 'openai', label: 'ChatGPT', subLabel: 'GPT-5', available: true, position: 'topRight' },
+  {
+    id: 'perplexity',
+    label: 'Perplexity',
+    subLabel: 'Sonar Large',
+    available: true,
+    position: 'bottomLeft',
+  },
+  {
+    id: 'elevenlabs',
+    label: 'ElevenLabs',
+    subLabel: 'Coming soon',
+    available: false,
+    position: 'bottomCenter',
+  },
+  {
+    id: 'google',
+    label: 'Gemini',
+    subLabel: '2.5 Pro',
+    available: true,
+    position: 'bottomRight',
+  },
 ];
 
 const MODE_CONFIG = [
@@ -3625,26 +3643,33 @@ export default function MainContent() {
       </div>
 
       {!hasMessages && (
-        <aside className={styles.providersBadge} aria-label="Providers available">
-          <span className={styles.providersBadgeLabel}>Providers available</span>
-          <ul className={styles.providersBadgeList}>
-            {LANDING_PROVIDERS.map(({ id, label }) => {
-              const Logo = getProviderLogo(id);
-              return (
-                <li key={id} className={styles.providersBadgeItem}>
-                  <span
-                    className={styles.providersBadgeIcon}
-                    title={label}
-                    role="img"
-                    aria-label={label}
-                  >
-                    <Logo size={16} />
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </aside>
+        <div className={styles.ambientProviders} aria-hidden="true">
+          {AMBIENT_PROVIDERS.map(({ id, label, subLabel, available, position }) => {
+            const Logo = getProviderLogo(id);
+            const positionClass = styles[`ambientProvider_${position}`];
+            return (
+              <div
+                key={id}
+                className={`${styles.ambientProvider} ${positionClass} ${
+                  available ? '' : styles.ambientProviderComingSoon
+                }`}
+              >
+                <span className={styles.ambientProviderIcon}>
+                  <Logo size={18} />
+                </span>
+                <span
+                  className={`${styles.ambientProviderDot} ${
+                    available ? '' : styles.ambientProviderDotMuted
+                  }`}
+                />
+                <span className={styles.ambientProviderText}>
+                  <span className={styles.ambientProviderLabel}>{label}</span>
+                  <span className={styles.ambientProviderSubLabel}>{subLabel}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
       )}
     </main>
   );
