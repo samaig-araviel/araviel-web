@@ -32,6 +32,12 @@ const initialState = {
   pendingModality: null, // null = default 'text', or 'image' when prompt originates from image view
   selectedModality: 'text', // 'text' | 'image' — user-selected modality in ModalityBar
   imageQuality: 'standard', // 'standard' | 'hd' | 'ultra'
+  // One-shot override triggered by the Image quick-prompt pill. When set, the
+  // modality/quality are forced to image + tier default for the next message,
+  // then reverted to `previousModality` / `previousQuality` after submit. Any
+  // manual change to a *different* value clears the override so the user's
+  // explicit choice wins.
+  quickPromptImageOverride: null, // { previousModality, previousQuality } | null
   creditBalance: null, // { monthly, packs, combined, tier, cycleResetsAt } — fetched from backend
   activeProjectId: null, // set when starting a chat from a project workspace
   // Imported conversation context for continuing imported chats
@@ -125,6 +131,7 @@ const chatSlice = createSlice({
       state.pendingModality = null;
       state.selectedModality = 'text';
       state.imageQuality = 'standard';
+      state.quickPromptImageOverride = null;
       state.activeProjectId = null;
       state.importedContext = null;
     },
@@ -141,10 +148,48 @@ const chatSlice = createSlice({
       state.pendingModality = action.payload;
     },
     setSelectedModality: (state, action) => {
-      state.selectedModality = action.payload;
+      const next = action.payload;
+      // A real value change (not a no-op re-select) counts as the user taking
+      // manual control and cancels any pending quick-prompt one-shot.
+      if (state.quickPromptImageOverride && next !== state.selectedModality) {
+        state.quickPromptImageOverride = null;
+      }
+      state.selectedModality = next;
     },
     setImageQuality: (state, action) => {
-      state.imageQuality = action.payload;
+      const next = action.payload;
+      if (state.quickPromptImageOverride && next !== state.imageQuality) {
+        state.quickPromptImageOverride = null;
+      }
+      state.imageQuality = next;
+    },
+    /**
+     * Apply the Image quick-prompt one-shot override. Saves the current
+     * modality + quality (only the first time, so repeated clicks don't
+     * overwrite the original), then forces modality to 'image' and quality
+     * to the supplied tier default.
+     */
+    applyImageQuickPromptOverride: (state, action) => {
+      const tierDefaultQuality = action.payload;
+      if (!state.quickPromptImageOverride) {
+        state.quickPromptImageOverride = {
+          previousModality: state.selectedModality,
+          previousQuality: state.imageQuality,
+        };
+      }
+      state.selectedModality = 'image';
+      state.imageQuality = tierDefaultQuality;
+    },
+    /**
+     * Revert the Image quick-prompt one-shot override. Called after the
+     * next message has been submitted so the modality bounces back to
+     * whatever it was before the pill was clicked.
+     */
+    revertQuickPromptImageOverride: (state) => {
+      if (!state.quickPromptImageOverride) return;
+      state.selectedModality = state.quickPromptImageOverride.previousModality;
+      state.imageQuality = state.quickPromptImageOverride.previousQuality;
+      state.quickPromptImageOverride = null;
     },
     setCreditBalance: (state, action) => {
       state.creditBalance = action.payload;
@@ -201,6 +246,8 @@ export const {
   setPendingModality,
   setSelectedModality,
   setImageQuality,
+  applyImageQuickPromptOverride,
+  revertQuickPromptImageOverride,
   setCreditBalance,
   setActiveProjectId,
   setImportedContext,
@@ -228,6 +275,7 @@ export const selectPendingAutoSubmit = (state) => state.chat.pendingAutoSubmit;
 export const selectPendingModality = (state) => state.chat.pendingModality;
 export const selectSelectedModality = (state) => state.chat.selectedModality;
 export const selectImageQuality = (state) => state.chat.imageQuality;
+export const selectQuickPromptImageOverride = (state) => state.chat.quickPromptImageOverride;
 export const selectCreditBalance = (state) => state.chat.creditBalance;
 export const selectActiveProjectId = (state) => state.chat.activeProjectId;
 export const selectConversations = (state) => state.chat.conversations;

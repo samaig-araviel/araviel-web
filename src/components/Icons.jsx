@@ -456,6 +456,24 @@ export const PhotoIcon = () => (
   </svg>
 );
 
+export const PaletteIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 2a10 10 0 1 0 0 20c1.5 0 2-1 2-2a2 2 0 0 0-2-2h-1a2 2 0 0 1-2-2 2 2 0 0 1 2-2h4a5 5 0 0 0 5-5c0-4-4-7-9-7z"></path>
+    <circle cx="7.5" cy="10.5" r="1"></circle>
+    <circle cx="12" cy="7.5" r="1"></circle>
+    <circle cx="16.5" cy="10.5" r="1"></circle>
+  </svg>
+);
+
 export const FileIcon = () => (
   <svg
     width="20"

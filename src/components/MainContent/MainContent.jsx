@@ -45,6 +45,7 @@ import {
   selectCreditBalance,
   setCreditBalance,
   setSelectedModality,
+  revertQuickPromptImageOverride,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -246,6 +247,7 @@ const MOOD_OPTIONS = [
 ];
 
 import { promptsData, quickPromptKeys } from '../../utils/quickPromptsData';
+import { handleQuickPromptSelection } from '../../utils/quickPromptHandler';
 
 // SVG icon components for cloud providers
 function GoogleDriveIcon() {
@@ -2112,6 +2114,11 @@ export default function MainContent() {
       imageQuality: willGenerateImage ? imageQuality : undefined,
       images: compressedImages.length > 0 ? compressedImages : undefined,
     });
+
+    // Image quick-prompt one-shot: after the message completes, revert
+    // modality + quality to whatever the user had before clicking the pill.
+    // A no-op when no override is active.
+    dispatch(revertQuickPromptImageOverride());
   };
 
   // Auto-submit when navigating from another view (e.g. Image Gallery quick prompt).
@@ -2204,8 +2211,14 @@ export default function MainContent() {
     }
   };
 
-  const handlePromptSelect = (text) => {
-    dispatch(setInputValue(text + ' '));
+  const handlePromptSelect = (pillKey, itemIndex) => {
+    const applied = handleQuickPromptSelection({
+      dispatch,
+      pillKey,
+      itemIndex,
+      currentTier,
+    });
+    if (!applied) return;
     setActiveDropdown(null);
     if (textareaRef.current) {
       textareaRef.current.focus();
@@ -3606,7 +3619,7 @@ export default function MainContent() {
                     <button
                       key={index}
                       className={styles.promptItem}
-                      onClick={() => handlePromptSelect(item.text)}
+                      onClick={() => handlePromptSelect(activeDropdown, index)}
                     >
                       <span className={styles.promptItemIcon}>
                         <ItemIcon />

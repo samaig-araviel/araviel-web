@@ -2,6 +2,10 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const STORAGE_KEY = 'araviel-analytics';
 const MILESTONES = [10, 50, 100, 500, 1000, 5000];
+// Bounded ring buffer for client-side product telemetry events. Keeps the
+// localStorage payload predictable while still retaining recent history for
+// debugging and downstream aggregation.
+const EVENT_HISTORY_LIMIT = 500;
 
 function loadFromStorage() {
   try {
@@ -48,6 +52,7 @@ const defaultState = {
     latencyCount: 0,
     latencyByModel: {},
     promptSnippets: [],
+    events: [],
   },
   monthlyBudget: null,
   budgetAlertThreshold: 0.8,
@@ -186,15 +191,39 @@ const analyticsSlice = createSlice({
       Object.assign(state, defaultState);
       saveToStorage(state);
     },
+
+    /**
+     * Record a structured product-telemetry event.
+     * Kept deliberately small: a name and a flat bag of properties. The
+     * buffer is capped at EVENT_HISTORY_LIMIT to bound localStorage growth.
+     *
+     * @param {{ name: string, properties?: object, timestamp?: number }} payload
+     */
+    recordEvent(state, action) {
+      const { name, properties, timestamp } = action.payload || {};
+      if (!name) return;
+      const stats = state.lifetimeStats;
+      if (!Array.isArray(stats.events)) stats.events = [];
+      stats.events.push({
+        name,
+        properties: properties || {},
+        timestamp: timestamp || Date.now(),
+      });
+      if (stats.events.length > EVENT_HISTORY_LIMIT) {
+        stats.events = stats.events.slice(-EVENT_HISTORY_LIMIT);
+      }
+      saveToStorage(state);
+    },
   },
 });
 
-export const { recordMessage, setMonthlyBudget, setBudgetAlertThreshold, resetStats } =
+export const { recordMessage, recordEvent, setMonthlyBudget, setBudgetAlertThreshold, resetStats } =
   analyticsSlice.actions;
 
 // Selectors
 export const selectLifetimeStats = (state) => state.analytics.lifetimeStats;
 export const selectMonthlyBudget = (state) => state.analytics.monthlyBudget;
 export const selectBudgetAlertThreshold = (state) => state.analytics.budgetAlertThreshold;
+export const selectRecentEvents = (state) => state.analytics.lifetimeStats.events || [];
 
 export default analyticsSlice.reducer;
