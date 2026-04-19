@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import analyticsReducer, {
   recordMessage,
+  recordEvent,
   setMonthlyBudget,
   setBudgetAlertThreshold,
   resetStats,
   selectLifetimeStats,
   selectMonthlyBudget,
   selectBudgetAlertThreshold,
+  selectRecentEvents,
 } from './analyticsSlice';
 
 describe('analyticsSlice', () => {
@@ -128,10 +130,7 @@ describe('analyticsSlice', () => {
     it('does not overwrite firstUsedAt on subsequent messages', () => {
       let state = analyticsReducer(defaultState, recordMessage(basePayload));
       const laterTimestamp = new Date(Date.now() + 10000).toISOString();
-      state = analyticsReducer(
-        state,
-        recordMessage({ ...basePayload, timestamp: laterTimestamp })
-      );
+      state = analyticsReducer(state, recordMessage({ ...basePayload, timestamp: laterTimestamp }));
       expect(state.lifetimeStats.firstUsedAt).toBe(basePayload.timestamp);
     });
 
@@ -192,6 +191,53 @@ describe('analyticsSlice', () => {
     it('sets the threshold', () => {
       const state = analyticsReducer(defaultState, setBudgetAlertThreshold(0.9));
       expect(state.budgetAlertThreshold).toBe(0.9);
+    });
+  });
+
+  describe('recordEvent', () => {
+    it('appends a structured event with default timestamp', () => {
+      const state = analyticsReducer(
+        defaultState,
+        recordEvent({ name: 'quick_prompt_selected', properties: { pill_category: 'code' } })
+      );
+      expect(state.lifetimeStats.events).toHaveLength(1);
+      const evt = state.lifetimeStats.events[0];
+      expect(evt.name).toBe('quick_prompt_selected');
+      expect(evt.properties).toEqual({ pill_category: 'code' });
+      expect(typeof evt.timestamp).toBe('number');
+    });
+
+    it('preserves a provided timestamp', () => {
+      const state = analyticsReducer(
+        defaultState,
+        recordEvent({ name: 'x', properties: {}, timestamp: 1234567890 })
+      );
+      expect(state.lifetimeStats.events[0].timestamp).toBe(1234567890);
+    });
+
+    it('ignores payloads without a name', () => {
+      const state = analyticsReducer(defaultState, recordEvent({ properties: { a: 1 } }));
+      expect(state.lifetimeStats.events).toHaveLength(0);
+    });
+
+    it('defaults properties to an empty object', () => {
+      const state = analyticsReducer(defaultState, recordEvent({ name: 'x' }));
+      expect(state.lifetimeStats.events[0].properties).toEqual({});
+    });
+
+    it('caps the event buffer at 500', () => {
+      let state = defaultState;
+      for (let i = 0; i < 510; i++) {
+        state = analyticsReducer(state, recordEvent({ name: `e${i}`, properties: { i } }));
+      }
+      expect(state.lifetimeStats.events).toHaveLength(500);
+      expect(state.lifetimeStats.events[0].name).toBe('e10');
+      expect(state.lifetimeStats.events[499].name).toBe('e509');
+    });
+
+    it('selectRecentEvents returns the latest event array', () => {
+      const state = analyticsReducer(defaultState, recordEvent({ name: 'a', properties: {} }));
+      expect(selectRecentEvents({ analytics: state })).toHaveLength(1);
     });
   });
 

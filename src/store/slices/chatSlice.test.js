@@ -21,6 +21,8 @@ import chatReducer, {
   setPendingModality,
   setSelectedModality,
   setImageQuality,
+  applyImageQuickPromptOverride,
+  revertQuickPromptImageOverride,
   setCreditBalance,
   setActiveProjectId,
   setImportedContext,
@@ -46,6 +48,7 @@ import chatReducer, {
   selectPendingModality,
   selectSelectedModality,
   selectImageQuality,
+  selectQuickPromptImageOverride,
   selectCreditBalance,
   selectActiveProjectId,
   selectConversations,
@@ -83,6 +86,7 @@ describe('chatSlice', () => {
       expect(defaultState.isProcessing).toBe(false);
       expect(defaultState.selectedModality).toBe('text');
       expect(defaultState.imageQuality).toBe('standard');
+      expect(defaultState.quickPromptImageOverride).toBeNull();
       expect(defaultState.creditBalance).toBeNull();
       expect(defaultState.conversations).toEqual([]);
     });
@@ -302,6 +306,91 @@ describe('chatSlice', () => {
     });
   });
 
+  describe('quick-prompt image override', () => {
+    it('applyImageQuickPromptOverride saves previous values and switches to image + tier default', () => {
+      const state = chatReducer(defaultState, applyImageQuickPromptOverride('hd'));
+      expect(state.selectedModality).toBe('image');
+      expect(state.imageQuality).toBe('hd');
+      expect(state.quickPromptImageOverride).toEqual({
+        previousModality: 'text',
+        previousQuality: 'standard',
+      });
+    });
+
+    it('repeated applyImageQuickPromptOverride does not overwrite the original previous values', () => {
+      let state = chatReducer(defaultState, applyImageQuickPromptOverride('hd'));
+      // Simulate a second click, which should keep the original previous values.
+      state = chatReducer(state, applyImageQuickPromptOverride('ultra'));
+      expect(state.quickPromptImageOverride).toEqual({
+        previousModality: 'text',
+        previousQuality: 'standard',
+      });
+      expect(state.imageQuality).toBe('ultra');
+    });
+
+    it('revertQuickPromptImageOverride restores previous modality and quality and clears the override', () => {
+      let state = chatReducer(defaultState, applyImageQuickPromptOverride('ultra'));
+      state = chatReducer(state, revertQuickPromptImageOverride());
+      expect(state.selectedModality).toBe('text');
+      expect(state.imageQuality).toBe('standard');
+      expect(state.quickPromptImageOverride).toBeNull();
+    });
+
+    it('revertQuickPromptImageOverride is a no-op when no override is active', () => {
+      const state = chatReducer(defaultState, revertQuickPromptImageOverride());
+      expect(state).toEqual(defaultState);
+    });
+
+    it('a manual setSelectedModality to a different value clears the override (user wins)', () => {
+      let state = chatReducer(defaultState, applyImageQuickPromptOverride('hd'));
+      state = chatReducer(state, setSelectedModality('text'));
+      expect(state.selectedModality).toBe('text');
+      expect(state.quickPromptImageOverride).toBeNull();
+    });
+
+    it('a manual setImageQuality to a different value clears the override (user wins)', () => {
+      let state = chatReducer(defaultState, applyImageQuickPromptOverride('hd'));
+      state = chatReducer(state, setImageQuality('ultra'));
+      expect(state.imageQuality).toBe('ultra');
+      expect(state.quickPromptImageOverride).toBeNull();
+    });
+
+    it('a no-op manual setSelectedModality (same value) keeps the one-shot alive', () => {
+      let state = chatReducer(defaultState, applyImageQuickPromptOverride('hd'));
+      // User reselects "image" — already set by the override, no actual change.
+      state = chatReducer(state, setSelectedModality('image'));
+      expect(state.quickPromptImageOverride).toEqual({
+        previousModality: 'text',
+        previousQuality: 'standard',
+      });
+    });
+
+    it('a no-op manual setImageQuality (same value) keeps the one-shot alive', () => {
+      let state = chatReducer(defaultState, applyImageQuickPromptOverride('hd'));
+      state = chatReducer(state, setImageQuality('hd'));
+      expect(state.quickPromptImageOverride).toEqual({
+        previousModality: 'text',
+        previousQuality: 'standard',
+      });
+    });
+
+    it('createNewChat clears any active override', () => {
+      let state = chatReducer(defaultState, applyImageQuickPromptOverride('ultra'));
+      state = chatReducer(state, createNewChat());
+      expect(state.quickPromptImageOverride).toBeNull();
+      expect(state.selectedModality).toBe('text');
+      expect(state.imageQuality).toBe('standard');
+    });
+
+    it('selectQuickPromptImageOverride returns the current override shape', () => {
+      const state = chatReducer(defaultState, applyImageQuickPromptOverride('hd'));
+      expect(selectQuickPromptImageOverride({ chat: state })).toEqual({
+        previousModality: 'text',
+        previousQuality: 'standard',
+      });
+    });
+  });
+
   describe('setCreditBalance', () => {
     it('sets the credit balance', () => {
       const balance = { monthly: 100, packs: 20 };
@@ -347,10 +436,7 @@ describe('chatSlice', () => {
         defaultState,
         setConversations({ conversations: [{ id: '1' }], total: 3 })
       );
-      state = chatReducer(
-        state,
-        appendConversations({ conversations: [{ id: '2' }], total: 3 })
-      );
+      state = chatReducer(state, appendConversations({ conversations: [{ id: '2' }], total: 3 }));
       expect(state.conversations).toHaveLength(2);
       expect(state.conversationsTotal).toBe(3);
     });

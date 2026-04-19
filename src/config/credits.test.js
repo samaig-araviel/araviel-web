@@ -8,6 +8,8 @@ import {
   PACK_EXPIRY_DAYS,
   GUEST_TEXT_LIMIT,
   GUEST_IMAGE_LIMIT,
+  TIER_IMAGE_QUALITY_DEFAULTS,
+  getDefaultImageQualityForTier,
 } from './credits';
 
 describe('credits config', () => {
@@ -95,6 +97,37 @@ describe('credits config', () => {
     it('pack credits scale up', () => {
       expect(IMAGE_PACKS.starter.credits).toBeLessThan(IMAGE_PACKS.creator.credits);
       expect(IMAGE_PACKS.creator.credits).toBeLessThan(IMAGE_PACKS.studio.credits);
+    });
+  });
+
+  describe('TIER_IMAGE_QUALITY_DEFAULTS', () => {
+    it('maps each tier to a valid quality value', () => {
+      expect(TIER_IMAGE_QUALITY_DEFAULTS.free).toBe('standard');
+      expect(TIER_IMAGE_QUALITY_DEFAULTS.lite).toBe('hd');
+      expect(TIER_IMAGE_QUALITY_DEFAULTS.pro).toBe('ultra');
+    });
+
+    it('default quality escalates with tier (cost strictly non-decreasing)', () => {
+      expect(IMAGE_QUALITY_COSTS[TIER_IMAGE_QUALITY_DEFAULTS.free]).toBeLessThanOrEqual(
+        IMAGE_QUALITY_COSTS[TIER_IMAGE_QUALITY_DEFAULTS.lite]
+      );
+      expect(IMAGE_QUALITY_COSTS[TIER_IMAGE_QUALITY_DEFAULTS.lite]).toBeLessThanOrEqual(
+        IMAGE_QUALITY_COSTS[TIER_IMAGE_QUALITY_DEFAULTS.pro]
+      );
+    });
+  });
+
+  describe('getDefaultImageQualityForTier', () => {
+    it('returns the tier-specific default', () => {
+      expect(getDefaultImageQualityForTier('free')).toBe('standard');
+      expect(getDefaultImageQualityForTier('lite')).toBe('hd');
+      expect(getDefaultImageQualityForTier('pro')).toBe('ultra');
+    });
+
+    it('falls back to standard for unknown or missing tiers', () => {
+      expect(getDefaultImageQualityForTier(null)).toBe('standard');
+      expect(getDefaultImageQualityForTier(undefined)).toBe('standard');
+      expect(getDefaultImageQualityForTier('enterprise')).toBe('standard');
     });
   });
 

@@ -28,6 +28,24 @@ export const IMAGE_QUALITY_OPTIONS = [
   { value: 'ultra', label: 'Ultra', cost: 4 },
 ];
 
+// Tier-aware image quality defaults used when switching modality via a
+// shortcut (e.g. the Image quick-prompt pill). Free stays on the cheapest
+// tier, Lite steps up to HD, Pro gets Ultra by default.
+export const TIER_IMAGE_QUALITY_DEFAULTS = {
+  free: 'standard',
+  lite: 'hd',
+  pro: 'ultra',
+};
+
+/**
+ * Resolve the default image quality for a given subscription tier, falling
+ * back to 'standard' if the tier is unknown.
+ * @param {string | null | undefined} tier
+ * @returns {'standard' | 'hd' | 'ultra'}
+ */
+export const getDefaultImageQualityForTier = (tier) =>
+  TIER_IMAGE_QUALITY_DEFAULTS[tier] || 'standard';
+
 export const IMAGE_PACKS = {
   starter: { credits: 20, label: 'Starter Pack', price: '£3.99' },
   creator: { credits: 50, label: 'Creator Pack', price: '£7.99' },
