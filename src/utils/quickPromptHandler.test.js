@@ -137,6 +137,49 @@ describe('handleQuickPromptSelection — quick prompt flow', () => {
       expect(selectImageQuality(store.getState())).toBe('hd');
     });
 
+    it('selecting a non-image prompt after an image one reverts modality to text', () => {
+      // 1. Pick an image prompt — modality flips to image.
+      handleQuickPromptSelection({
+        dispatch: store.dispatch,
+        pillKey: IMAGE_QUICK_PROMPT_KEY,
+        itemIndex: 0,
+        currentTier: 'pro',
+      });
+      expect(selectSelectedModality(store.getState())).toBe('image');
+      expect(selectImageQuality(store.getState())).toBe('ultra');
+
+      // 2. Pick a Code prompt — modality must bounce back to text immediately,
+      //    without needing a submit. Input text updates too.
+      const codeItem = promptsData.code.items[0];
+      handleQuickPromptSelection({
+        dispatch: store.dispatch,
+        pillKey: 'code',
+        itemIndex: 0,
+        currentTier: 'pro',
+      });
+      const state = store.getState();
+      expect(selectInputValue(state)).toBe(codeItem.text + ' ');
+      expect(selectSelectedModality(state)).toBe('text');
+      expect(selectImageQuality(state)).toBe('standard');
+      expect(selectQuickPromptImageOverride(state)).toBeNull();
+    });
+
+    it('switching between non-image pills never touches modality', () => {
+      handleQuickPromptSelection({
+        dispatch: store.dispatch,
+        pillKey: 'write',
+        itemIndex: 1,
+        currentTier: 'lite',
+      });
+      handleQuickPromptSelection({
+        dispatch: store.dispatch,
+        pillKey: 'research',
+        itemIndex: 2,
+        currentTier: 'lite',
+      });
+      expect(selectSelectedModality(store.getState())).toBe('text');
+    });
+
     it('manual quality change beats the one-shot modality revert', () => {
       handleQuickPromptSelection({
         dispatch: store.dispatch,

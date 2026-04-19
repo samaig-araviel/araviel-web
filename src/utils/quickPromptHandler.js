@@ -1,4 +1,8 @@
-import { setInputValue, applyImageQuickPromptOverride } from '../store/slices/chatSlice';
+import {
+  setInputValue,
+  applyImageQuickPromptOverride,
+  revertQuickPromptImageOverride,
+} from '../store/slices/chatSlice';
 import { recordEvent } from '../store/slices/analyticsSlice';
 import { getDefaultImageQualityForTier } from '../config/credits';
 import { promptsData, IMAGE_QUICK_PROMPT_KEY } from './quickPromptsData';
@@ -43,6 +47,11 @@ export function handleQuickPromptSelection({ dispatch, pillKey, itemIndex, curre
 
   if (isImagePill) {
     dispatch(applyImageQuickPromptOverride(getDefaultImageQualityForTier(currentTier)));
+  } else {
+    // Picking a non-image prompt after an image one cancels the pending
+    // one-shot so the modality bounces back to whatever it was before the
+    // Image pill was clicked. A no-op when no override is active.
+    dispatch(revertQuickPromptImageOverride());
   }
 
   dispatch(
