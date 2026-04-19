@@ -125,6 +125,29 @@ export function formatPricePerM(pricePerK) {
 export const MODELS = [
   // ===== ANTHROPIC =====
   {
+    id: 'claude-opus-4-7',
+    name: 'Claude Opus 4.7',
+    provider: 'anthropic',
+    tagline: 'Most capable Claude with step-change agentic coding and high-res vision',
+    description:
+      'Most capable Claude. Agentic coding, adaptive thinking, high-res vision (2576px), task budgets. 1M context, 128K output. Released April 2026.',
+    speedTier: getSpeedTier(2000),
+    pricing: { inputPerM: 5.0, outputPerM: 25.0 },
+    context: { inputTokens: 1000000, outputTokens: 128000 },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: true,
+      webSearch: true,
+      functionCalling: true,
+      streaming: true,
+    },
+    bestFor: ['Agentic coding', 'Complex reasoning', 'Long-horizon autonomy', 'Vision & document analysis'],
+    badge: 'Flagship',
+    accessTier: ACCESS_TIERS.pro,
+    creditCost: 22,
+  },
+  {
     id: 'claude-opus-4-6',
     name: 'Claude Opus 4.6',
     provider: 'anthropic',
@@ -143,7 +166,7 @@ export const MODELS = [
       streaming: true,
     },
     bestFor: ['Complex reasoning', 'Coding', 'Agentic workflows', 'Creative writing'],
-    badge: 'Flagship',
+    badge: null,
     accessTier: ACCESS_TIERS.pro,
     creditCost: 22,
   },
