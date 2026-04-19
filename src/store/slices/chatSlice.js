@@ -216,14 +216,6 @@ const chatSlice = createSlice({
     setConversationsLoading: (state, action) => {
       state.conversationsLoading = action.payload;
     },
-    updateConversationTitle: (state, action) => {
-      const { id, title } = action.payload ?? {};
-      if (!id || typeof title !== 'string' || title.length === 0) return;
-      const conv = state.conversations.find((c) => c.id === id);
-      if (conv) {
-        conv.title = title;
-      }
-    },
     resetChatState: (state) => {
       // Preserve user's model preference (persisted in localStorage), reset everything else
       const selectedModelId = state.selectedModelId;
@@ -263,7 +255,6 @@ export const {
   setConversations,
   appendConversations,
   setConversationsLoading,
-  updateConversationTitle,
   resetChatState,
 } = chatSlice.actions;
 

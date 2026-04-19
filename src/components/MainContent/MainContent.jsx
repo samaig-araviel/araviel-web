@@ -40,7 +40,6 @@ import {
   selectConversations,
   selectConversationsTotal,
   setConversations,
-  updateConversationTitle,
   selectSelectedModality,
   selectImageQuality,
   selectCreditBalance,
@@ -1762,25 +1761,6 @@ export default function MainContent() {
               if (assistantMsgAdded && data.questions) {
                 dispatch(updateLastMessage({ questions: data.questions }));
               }
-            } else if (type === 'title') {
-              // LLM-generated conversation title arrived from the backend.
-              // Update Redux (drives the sidebar re-render) and the header
-              // local state if the user is currently viewing this chat.
-              if (
-                data?.conversationId &&
-                typeof data?.title === 'string' &&
-                data.title.length > 0
-              ) {
-                dispatch(
-                  updateConversationTitle({
-                    id: data.conversationId,
-                    title: data.title,
-                  })
-                );
-                if (data.conversationId === currentChatId) {
-                  setConversationTitle(data.title);
-                }
-              }
             } else if (type === 'done') {
               receivedDone = true;
               const totalDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
@@ -2672,14 +2652,7 @@ export default function MainContent() {
                 aria-expanded={showProjectDropdown}
                 aria-label="Conversation options"
               >
-                <span
-                  key={conversationTitle}
-                  className={styles.breadcrumbTitle}
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {conversationTitle}
-                </span>
+                <span className={styles.breadcrumbTitle}>{conversationTitle}</span>
                 <ChevronDownIcon />
               </button>
             )}
