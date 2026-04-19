@@ -30,6 +30,7 @@ import chatReducer, {
   setConversations,
   appendConversations,
   setConversationsLoading,
+  updateConversationTitle,
   resetChatState,
   selectInputValue,
   selectMode,
@@ -444,6 +445,53 @@ describe('chatSlice', () => {
     it('setConversationsLoading sets loading state', () => {
       const state = chatReducer(defaultState, setConversationsLoading(true));
       expect(state.conversationsLoading).toBe(true);
+    });
+
+    describe('updateConversationTitle', () => {
+      it('updates the title of a matching conversation', () => {
+        let state = chatReducer(
+          defaultState,
+          setConversations({
+            conversations: [
+              { id: 'a', title: 'placeholder...' },
+              { id: 'b', title: 'other' },
+            ],
+            total: 2,
+          })
+        );
+        state = chatReducer(
+          state,
+          updateConversationTitle({ id: 'a', title: 'Clean descriptive title' })
+        );
+        expect(state.conversations).toEqual([
+          { id: 'a', title: 'Clean descriptive title' },
+          { id: 'b', title: 'other' },
+        ]);
+      });
+
+      it('is a no-op when the conversation id is unknown', () => {
+        const initial = {
+          ...defaultState,
+          conversations: [{ id: 'a', title: 'placeholder...' }],
+        };
+        const state = chatReducer(
+          initial,
+          updateConversationTitle({ id: 'missing', title: 'New' })
+        );
+        expect(state.conversations).toEqual([{ id: 'a', title: 'placeholder...' }]);
+      });
+
+      it('ignores empty or missing title', () => {
+        const initial = {
+          ...defaultState,
+          conversations: [{ id: 'a', title: 'placeholder...' }],
+        };
+        const noTitle = chatReducer(initial, updateConversationTitle({ id: 'a', title: '' }));
+        expect(noTitle.conversations[0].title).toBe('placeholder...');
+
+        const noPayload = chatReducer(initial, updateConversationTitle());
+        expect(noPayload.conversations[0].title).toBe('placeholder...');
+      });
     });
   });
 
