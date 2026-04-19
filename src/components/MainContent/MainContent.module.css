@@ -187,6 +187,25 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Subtle fade when the title swaps in (e.g. LLM-generated title replaces placeholder). */
+  animation: breadcrumbTitleSwap 180ms ease-out;
+}
+
+@keyframes breadcrumbTitleSwap {
+  from {
+    opacity: 0;
+    transform: translateY(-1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .breadcrumbTitle {
+    animation: none;
+  }
 }
 
 /* Inline rename input */
