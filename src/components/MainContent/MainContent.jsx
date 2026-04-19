@@ -40,6 +40,7 @@ import {
   selectConversations,
   selectConversationsTotal,
   setConversations,
+  updateConversationTitle,
   selectSelectedModality,
   selectImageQuality,
   selectCreditBalance,
@@ -1753,6 +1754,18 @@ export default function MainContent() {
                 dispatch(updateLastMessage({ generatedImages: newImages }));
                 accumulatedImages = newImages;
               }
+            } else if (type === 'title') {
+              if (
+                data?.conversationId &&
+                typeof data?.title === 'string' &&
+                data.title.length > 0
+              ) {
+                // Sidebar reflects the new title instantly via Redux; breadcrumb
+                // is updated in place since this handler already short-circuits
+                // on abort above (so the user is still viewing this chat).
+                dispatch(updateConversationTitle({ id: data.conversationId, title: data.title }));
+                setConversationTitle(data.title);
+              }
             } else if (type === 'followups') {
               if (assistantMsgAdded && data.suggestions) {
                 dispatch(updateLastMessage({ followUps: data.suggestions }));
@@ -2652,7 +2665,14 @@ export default function MainContent() {
                 aria-expanded={showProjectDropdown}
                 aria-label="Conversation options"
               >
-                <span className={styles.breadcrumbTitle}>{conversationTitle}</span>
+                <span
+                  key={conversationTitle}
+                  className={styles.breadcrumbTitle}
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  {conversationTitle}
+                </span>
                 <ChevronDownIcon />
               </button>
             )}
