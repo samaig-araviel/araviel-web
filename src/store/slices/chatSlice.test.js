@@ -30,6 +30,7 @@ import chatReducer, {
   setConversations,
   appendConversations,
   setConversationsLoading,
+  updateConversationTitle,
   resetChatState,
   selectInputValue,
   selectMode,
@@ -444,6 +445,42 @@ describe('chatSlice', () => {
     it('setConversationsLoading sets loading state', () => {
       const state = chatReducer(defaultState, setConversationsLoading(true));
       expect(state.conversationsLoading).toBe(true);
+    });
+
+    it('updateConversationTitle updates a matching conversation title', () => {
+      let state = chatReducer(
+        defaultState,
+        setConversations({
+          conversations: [
+            { id: 'c1', title: 'Old...' },
+            { id: 'c2', title: 'Other' },
+          ],
+          total: 2,
+        })
+      );
+      state = chatReducer(state, updateConversationTitle({ id: 'c1', title: 'Fresh title' }));
+      expect(state.conversations[0].title).toBe('Fresh title');
+      expect(state.conversations[1].title).toBe('Other');
+    });
+
+    it('updateConversationTitle is a no-op for unknown ids', () => {
+      let state = chatReducer(
+        defaultState,
+        setConversations({ conversations: [{ id: 'c1', title: 'Old' }], total: 1 })
+      );
+      state = chatReducer(state, updateConversationTitle({ id: 'missing', title: 'Nope' }));
+      expect(state.conversations[0].title).toBe('Old');
+    });
+
+    it('updateConversationTitle ignores empty or missing titles', () => {
+      let state = chatReducer(
+        defaultState,
+        setConversations({ conversations: [{ id: 'c1', title: 'Old' }], total: 1 })
+      );
+      state = chatReducer(state, updateConversationTitle({ id: 'c1', title: '' }));
+      state = chatReducer(state, updateConversationTitle({ id: 'c1' }));
+      state = chatReducer(state, updateConversationTitle());
+      expect(state.conversations[0].title).toBe('Old');
     });
   });
 
