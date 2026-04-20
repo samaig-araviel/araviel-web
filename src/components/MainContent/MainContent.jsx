@@ -103,6 +103,7 @@ import {
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
+import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
 import {
   sendMessage,
   consumeSSEStream,
@@ -3242,7 +3243,7 @@ export default function MainContent() {
                   </span>
                 </div>
               )}
-              <textarea
+              <MarkdownTextarea
                 ref={textareaRef}
                 className={styles.input}
                 placeholder={hasMessages ? 'Reply...' : 'Ask anything...'}

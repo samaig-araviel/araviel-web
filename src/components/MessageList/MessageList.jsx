@@ -73,6 +73,7 @@ import { detectWeatherResponse, extractWeatherData } from '../WeatherCard/weathe
 import { generateAndDownload } from '../../services/fileGenerator';
 import { dedupeCitations } from '../../utils/dedupeCitations';
 import styles from './MessageList.module.css';
+import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
 
 // Initialize mermaid with sensible defaults
 mermaid.initialize({
@@ -3618,7 +3619,7 @@ function SubConversationPanel({
         <div className={styles.subConvInputSection}>
           <form className={styles.subConvInputContainer} onSubmit={handleSubmit}>
             <div className={styles.subConvInputWrapper}>
-              <textarea
+              <MarkdownTextarea
                 ref={textareaRef}
                 className={styles.subConvTextarea}
                 placeholder="Ask about this..."
@@ -3630,6 +3631,7 @@ function SubConversationPanel({
                 onKeyDown={handleKeyDown}
                 disabled={isSending}
                 rows={1}
+                aria-label="Follow-up input"
               />
               <div className={styles.subConvInputActions}>
                 <button

@@ -55,6 +55,7 @@ import {
 import ModelSelector from '../ModelSelector/ModelSelector';
 import ModalityBar from '../ModalityBar/ModalityBar';
 import styles from './ProjectsView.module.css';
+import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
 
 const FILTER_TABS = [
   { id: 'all', label: 'All' },
@@ -411,7 +412,7 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
                   ))}
                 </div>
               )}
-              <textarea
+              <MarkdownTextarea
                 ref={textareaRef}
                 className={styles.wsChatInput}
                 value={chatInput}
@@ -419,6 +420,7 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
                 onKeyDown={handleKeyDown}
                 placeholder={`Ask anything about ${project.name}...`}
                 rows={1}
+                aria-label={`Project ${project.name} input`}
               />
               <div className={styles.wsChatActions}>
                 <div className={styles.wsChatLeft}>
