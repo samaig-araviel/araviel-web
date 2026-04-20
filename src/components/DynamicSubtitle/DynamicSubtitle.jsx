@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { selectConversations, selectInputValue } from '../../store/slices/chatSlice';
 import { fetchConversationMessages } from '../../services/api';
-import { buildSubtitle, inferIntent, summariseTitle } from '../../utils/conversationIntent';
+import { buildSubtitle, summariseTitle } from '../../utils/conversationIntent';
 import styles from './DynamicSubtitle.module.css';
 
 const STALE_WINDOW_MS = 48 * 60 * 60 * 1000;
@@ -79,14 +79,13 @@ export default function DynamicSubtitle({ onOpen, isInputActive = false }) {
   const subject = summariseTitle(sourceText);
   if (!subject) return null;
 
-  const intent = inferIntent(sourceText);
-  const cacheKey = `${candidate.id}::${intent}::${subject}`;
+  const cacheKey = `${candidate.id}::${subject}`;
   let prose;
   let cta;
   if (cacheRef.current.key === cacheKey) {
     ({ prose, cta } = cacheRef.current);
   } else {
-    const built = buildSubtitle(intent, subject, candidate.id);
+    const built = buildSubtitle(subject, candidate.id);
     prose = built.prose;
     cta = built.cta;
     cacheRef.current = { key: cacheKey, prose, cta };
