@@ -1,12 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  hashString,
-  inferIntent,
-  summariseTitle,
-  buildSubtitle,
-  PROSE,
-  CTAS,
-} from './conversationIntent';
+import { hashString, summariseTitle, buildSubtitle, PROSE, CTAS } from './conversationIntent';
 
 describe('hashString', () => {
   it('returns a stable unsigned 32-bit integer', () => {
@@ -24,31 +17,6 @@ describe('hashString', () => {
   it('handles nullish input without throwing', () => {
     expect(() => hashString(undefined)).not.toThrow();
     expect(() => hashString(null)).not.toThrow();
-  });
-});
-
-describe('inferIntent', () => {
-  it.each([
-    ['Draft a launch email', 'writing'],
-    ['Rewrite my bio', 'writing'],
-    ['Compare vector databases', 'research'],
-    ['What is vector search?', 'research'],
-    ['Paris itinerary for October', 'planning'],
-    ['Budget for wedding venue', 'planning'],
-    ['Refactor auth middleware', 'coding'],
-    ['Fix the typescript error in the API', 'coding'],
-    ['Analyse quarterly revenue', 'analysis'],
-    ['Breakdown the investor memo', 'analysis'],
-    ['Generate a logo for the brand', 'image'],
-    ['Midjourney prompt for wallpaper', 'image'],
-  ])('classifies %p as %p', (text, intent) => {
-    expect(inferIntent(text)).toBe(intent);
-  });
-
-  it('falls back to general for unknown topics', () => {
-    expect(inferIntent('Weekend thoughts')).toBe('general');
-    expect(inferIntent('')).toBe('general');
-    expect(inferIntent(undefined)).toBe('general');
   });
 });
 
@@ -86,75 +54,87 @@ describe('buildSubtitle', () => {
   const subject = 'launch email';
 
   it('returns a prose string containing the subject and a CTA from the shared bank', () => {
-    const { prose, cta } = buildSubtitle('writing', subject, 'conv-1');
+    const { prose, cta } = buildSubtitle(subject, 'conv-1');
     expect(prose).toContain(subject);
     expect(CTAS).toContain(cta);
   });
 
   it('is deterministic for the same seed + subject', () => {
-    const a = buildSubtitle('research', subject, 'conv-42');
-    const b = buildSubtitle('research', subject, 'conv-42');
+    const a = buildSubtitle(subject, 'conv-42');
+    const b = buildSubtitle(subject, 'conv-42');
     expect(a).toEqual(b);
   });
 
-  it('varies across different seeds for the same intent', () => {
+  it('varies across different seeds', () => {
     const seeds = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    const proses = new Set(seeds.map((s) => buildSubtitle('writing', subject, s).prose));
+    const proses = new Set(seeds.map((s) => buildSubtitle(subject, s).prose));
     expect(proses.size).toBeGreaterThan(1);
   });
 
   it('never renders an unresolved token', () => {
-    for (const intent of Object.keys(PROSE)) {
-      for (const seed of ['x', 'y', 'z', '1', '2', '3']) {
-        const { prose } = buildSubtitle(intent, subject, seed);
-        expect(prose).not.toMatch(/\{[^}]+\}/);
-      }
+    for (const seed of ['x', 'y', 'z', '1', '2', '3']) {
+      const { prose } = buildSubtitle(subject, seed);
+      expect(prose).not.toMatch(/\{[^}]+\}/);
     }
   });
 
-  it('always returns a sentence ending in a full stop', () => {
-    for (const intent of Object.keys(PROSE)) {
-      for (const seed of ['1', '2', '3', '4', '5']) {
-        const { prose } = buildSubtitle(intent, subject, seed);
-        expect(prose.trim().endsWith('.')).toBe(true);
-      }
+  it('reads as a complete sentence ending in a full stop', () => {
+    for (const seed of ['1', '2', '3', '4', '5']) {
+      const { prose } = buildSubtitle(subject, seed);
+      expect(prose.trim().endsWith('.')).toBe(true);
     }
   });
 
-  it('unknown intent falls back to general without throwing', () => {
-    const { prose } = buildSubtitle('nonsense', subject, 'seed');
-    expect(prose).toContain(subject);
+  it('reads naturally for any kind of subject phrase', () => {
+    const subjects = [
+      'Group trip plan and budget',
+      'Launch email',
+      'Refactor auth middleware',
+      'What is vector search?',
+      'Paris itinerary for October',
+      'Draft a launch email',
+    ];
+    for (const s of subjects) {
+      for (let i = 0; i < PROSE.length; i += 1) {
+        const { prose } = buildSubtitle(s, `seed-${i}`);
+        expect(prose).toContain(s);
+        expect(prose).not.toMatch(/[-\u2013\u2014]/);
+      }
+    }
   });
 });
 
-describe('PROSE banks', () => {
-  it('each intent has at least 12 variants', () => {
-    for (const intent of Object.keys(PROSE)) {
-      expect(PROSE[intent].length).toBeGreaterThanOrEqual(12);
-    }
+describe('PROSE bank', () => {
+  it('exposes at least 5 universal variants', () => {
+    expect(PROSE.length).toBeGreaterThanOrEqual(5);
   });
 
   it('every template contains {subject}', () => {
-    for (const intent of Object.keys(PROSE)) {
-      for (const template of PROSE[intent]) {
-        expect(template).toContain('{subject}');
-      }
+    for (const template of PROSE) {
+      expect(template).toContain('{subject}');
     }
   });
 
   it('no template contains a hyphen, en dash, or em dash', () => {
-    for (const intent of Object.keys(PROSE)) {
-      for (const template of PROSE[intent]) {
-        expect(template).not.toMatch(/[-\u2013\u2014]/);
-      }
+    for (const template of PROSE) {
+      expect(template).not.toMatch(/[-\u2013\u2014]/);
     }
   });
 
   it('every template ends with a full stop', () => {
-    for (const intent of Object.keys(PROSE)) {
-      for (const template of PROSE[intent]) {
-        expect(template.trim().endsWith('.')).toBe(true);
-      }
+    for (const template of PROSE) {
+      expect(template.trim().endsWith('.')).toBe(true);
+    }
+  });
+
+  it('treats {subject} as the object of a preposition for grammar safety', () => {
+    // Each template should introduce the subject with a preposition
+    // ("on", "to", "with", "about") so the line reads correctly
+    // regardless of whether the title is a noun phrase, verb phrase
+    // or question.
+    const safeLeadIns = / (on|to|with|about) \{subject\}/;
+    for (const template of PROSE) {
+      expect(template).toMatch(safeLeadIns);
     }
   });
 });
