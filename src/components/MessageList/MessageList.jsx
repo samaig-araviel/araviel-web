@@ -3042,7 +3042,12 @@ function ModelPillDropdown({ message, isDark, position, onClose, onSelectAlterna
   const fitLabel = getFitLabel(message.score);
 
   const dropdown = (
-    <div className={styles.modelDropdown} ref={dropdownRef} style={fixedStyle || {}}>
+    <div
+      className={styles.modelDropdown}
+      ref={dropdownRef}
+      style={fixedStyle || {}}
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Current / chosen model */}
       <div className={styles.modelDropdownSection}>
         <span className={styles.modelDropdownSectionLabel}>Responded with</span>
