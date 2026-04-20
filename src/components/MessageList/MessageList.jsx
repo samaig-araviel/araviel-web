@@ -71,6 +71,7 @@ import ArtifactBlock from '../ArtifactBlock/ArtifactBlock';
 import WeatherCard from '../WeatherCard';
 import { detectWeatherResponse, extractWeatherData } from '../WeatherCard/weatherParser';
 import { generateAndDownload } from '../../services/fileGenerator';
+import { dedupeCitations } from '../../utils/dedupeCitations';
 import styles from './MessageList.module.css';
 
 // Initialize mermaid with sensible defaults
@@ -5858,6 +5859,11 @@ function SourcesSidePanel({ citations, onClose, panelRef }) {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
+  // Defensive dedup: historical messages and some providers hand us the same
+  // URL multiple times. Collapse by normalized URL so the list and count both
+  // reflect unique sources.
+  const uniqueCitations = useMemo(() => dedupeCitations(citations), [citations]);
+
   return (
     <div className={styles.sourcesPanel} ref={panelRef}>
       <div className={styles.sourcesPanelHeader}>
@@ -5874,10 +5880,10 @@ function SourcesSidePanel({ citations, onClose, panelRef }) {
         </button>
       </div>
       <div className={styles.sourcesPanelSubheader}>
-        {citations.length} source{citations.length !== 1 ? 's' : ''} found
+        {uniqueCitations.length} source{uniqueCitations.length !== 1 ? 's' : ''} found
       </div>
       <div className={styles.sourcesPanelList}>
-        {citations.map((citation, idx) => {
+        {uniqueCitations.map((citation, idx) => {
           let favicon = '';
           let hostname = '';
           let sourceName = '';
