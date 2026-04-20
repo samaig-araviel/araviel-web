@@ -51,6 +51,7 @@ import {
 } from '../Icons';
 import ModelSelector from '../ModelSelector/ModelSelector';
 import styles from './ImageGalleryView.module.css';
+import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
 
 const PAGE_SIZE = 9;
 
@@ -431,7 +432,7 @@ export default function ImageGalleryView() {
                   : ''
               }`}
             >
-              <textarea
+              <MarkdownTextarea
                 ref={promptInputRef}
                 className={styles.promptInput}
                 placeholder="Describe an image..."
@@ -439,6 +440,7 @@ export default function ImageGalleryView() {
                 onChange={handlePromptInputChange}
                 onKeyDown={handlePromptKeyDown}
                 rows={1}
+                aria-label="Image prompt input"
               />
               <div className={styles.promptActions}>
                 <div className={styles.promptActionsLeft} ref={attachMenuRef}>

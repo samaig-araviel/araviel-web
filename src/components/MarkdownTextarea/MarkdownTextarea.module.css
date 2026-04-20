@@ -1,0 +1,150 @@
+/**
+ * MarkdownTextarea overlays a highlight mirror under a transparent textarea.
+ *
+ * Hard constraints to keep caret/selection aligned with the mirror:
+ *   - All font metrics (family, size, weight, style, letter-spacing, line-height)
+ *     must be IDENTICAL between .textarea and .mirror. We therefore only style
+ *     tokens with colour, background, and text-decoration — never font-weight,
+ *     font-style, or font-family.
+ *   - Padding, border, width, min/max-height come from the parent's className,
+ *     which we apply to BOTH the textarea and the mirror. The wrapper itself
+ *     is a contentless positioning context.
+ *
+ * Specificity note: we intentionally prefix the critical rules with `.wrap`
+ * so the compiled selectors have specificity (0,2,0). That beats any single-
+ * class caller rule (0,1,0) regardless of stylesheet source order, which is
+ * what guarantees the textarea text stays transparent and the mirror stays
+ * coloured no matter what the parent's class declares.
+ */
+
+.wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+/*
+ * Mirror: the visible highlighted text. Absolutely positioned, pointer-events
+ * disabled so clicks pass through to the textarea below. `inset: 0` makes it
+ * fill the wrap, which sizes itself from the textarea's layout height.
+ */
+.wrap .mirror {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  color: var(--text-primary);
+  /* The parent's class supplies font-size, line-height, padding, and overflow
+     behaviour — we inherit overflow so the mirror's content can scroll in
+     lockstep with the textarea below. Box-sizing is pinned to match the
+     browser-default textarea box so padding doesn't misalign the two layers. */
+  box-sizing: border-box;
+  /* Hide the mirror's scrollbar — only the textarea surfaces one to the user.
+     The mirror's scrollTop is synced from the textarea via JS. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  /* Neutralise any min/max height the caller set for the textarea — the
+     mirror must size from the wrap (and therefore the textarea) only. */
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+.wrap .mirror::-webkit-scrollbar {
+  display: none;
+}
+
+/*
+ * Textarea: the interactive layer. Text is transparent so only the caret and
+ * selection show through; the mirror paints the styled glyphs underneath.
+ */
+.wrap .textarea {
+  position: relative;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--text-primary);
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* Keep the placeholder visible on the textarea (the mirror is empty then). */
+.wrap .textarea::placeholder {
+  color: var(--text-muted);
+  -webkit-text-fill-color: var(--text-muted);
+  opacity: 1;
+}
+
+/*
+ * Selection highlight: browsers render the textarea's selection rectangle
+ * on top of the mirror. The textarea's text is transparent, so we override
+ * ::selection to show a tinted rectangle without painting invisible glyphs.
+ */
+.wrap .textarea::selection {
+  background-color: color-mix(in srgb, var(--text-primary) 22%, transparent);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+[data-theme='dark'] .wrap .textarea::selection {
+  background-color: color-mix(in srgb, var(--text-primary) 28%, transparent);
+}
+
+/*
+ * Token styles. Colour-only — no metric-affecting properties allowed.
+ */
+.muted {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.code {
+  background-color: color-mix(in srgb, var(--text-muted) 14%, transparent);
+  border-radius: 3px;
+  /* box-shadow acts as a "padding-free" inset rim that won't shift layout. */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-muted) 18%, transparent);
+}
+
+[data-theme='dark'] .code {
+  background-color: color-mix(in srgb, var(--text-muted) 22%, transparent);
+}
+
+.linkText {
+  color: var(--accent-primary, #8b5cf6);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent-primary, #8b5cf6) 50%, transparent);
+  text-underline-offset: 2px;
+}
+
+.linkUrl {
+  color: var(--text-muted);
+}
+
+.strike {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 70%, transparent);
+}
+
+.fenceBody {
+  background-color: color-mix(in srgb, var(--text-muted) 10%, transparent);
+}
+
+[data-theme='dark'] .fenceBody {
+  background-color: color-mix(in srgb, var(--text-muted) 18%, transparent);
+}
+
+.hr {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/*
+ * Trailing caret row: when the textarea ends in a newline it reserves a blank
+ * line for the caret. A <div>'s final \n alone doesn't produce that line, so
+ * we render a zero-width placeholder to guarantee a matching row height.
+ */
+.trailingNewline::after {
+  content: '\200B';
+}
