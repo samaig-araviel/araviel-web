@@ -5106,7 +5106,7 @@ function UserPrompt({ content, images, onEdit, createdAt, onRetry }) {
             }`}
             style={collapsedStyle}
           >
-            {content}
+            {renderMarkdown(content)}
           </div>
         )}
         {isLong && (

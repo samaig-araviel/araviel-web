@@ -181,10 +181,87 @@
   line-height: 1.65;
   color: var(--text-primary);
   font-weight: 500;
-  white-space: pre-wrap;
   word-break: break-word;
   overflow: hidden;
   position: relative;
+}
+
+/* Markdown styling inside the user prompt — lighter than assistant content
+   so the prompt still reads as an input artefact, but renders code, emphasis,
+   links, and lists properly instead of leaking raw markdown tokens. */
+.userPromptText p {
+  margin: 0 0 8px;
+}
+
+.userPromptText p:last-child {
+  margin-bottom: 0;
+}
+
+.userPromptText strong {
+  font-weight: 650;
+}
+
+.userPromptText em {
+  font-style: italic;
+}
+
+.userPromptText a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: var(--border-input);
+  transition: text-decoration-color 0.15s ease;
+}
+
+.userPromptText a:hover {
+  text-decoration-color: var(--text-primary);
+}
+
+.userPromptText ul,
+.userPromptText ol {
+  margin: 6px 0 8px;
+  padding-left: 22px;
+}
+
+.userPromptText li {
+  margin: 2px 0;
+}
+
+.userPromptText :not(pre) > code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.88em;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  font-weight: 500;
+}
+
+[data-theme='dark'] .userPromptText :not(pre) > code {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.userPromptText blockquote {
+  margin: 6px 0;
+  padding: 4px 12px;
+  border-left: 3px solid var(--border-input);
+  color: var(--text-secondary);
+}
+
+.userPromptText h1,
+.userPromptText h2,
+.userPromptText h3,
+.userPromptText h4 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: 8px 0 4px;
+  line-height: 1.4;
+}
+
+/* Code blocks inside user prompts: tighten margins so they sit snugly
+   inside the card without ballooning its height. */
+.userPromptText .codeBlock {
+  margin: 8px 0 6px;
 }
 
 .userPromptCollapsed {
@@ -7309,6 +7386,12 @@
     max-width: none;
     min-width: 0;
     border-radius: 0;
+  }
+
+  /* Touch devices can't drag-resize — hide the grip so its dots don't bleed
+     onto the viewport's left edge when the panel is full-width. */
+  .codeSidePanelResizeHandle {
+    display: none;
   }
 
   /* Hide sidebar on mobile — only toggle via button */
