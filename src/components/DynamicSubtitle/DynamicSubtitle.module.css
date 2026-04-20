@@ -1,0 +1,74 @@
+.line {
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.005em;
+  color: var(--text-muted);
+  margin: 0 0 32px;
+  text-align: center;
+  /* Embossed letterpress — no borders, no background. */
+  text-shadow: 0 1px 0 var(--emboss-highlight);
+  transition: opacity 150ms ease, filter 150ms ease;
+}
+
+.prose {
+  color: inherit;
+}
+
+.cta {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: var(--text-secondary);
+  text-shadow: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+.cta:hover,
+.cta:focus-visible {
+  color: var(--text-primary);
+  border-bottom-color: currentColor;
+}
+
+.cta:focus {
+  outline: none;
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--text-secondary);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Dimmed state — active while the main input is focused or has content.
+   The line stays mounted so layout does not shift; it just recedes. */
+.dimmed {
+  opacity: 0.35;
+}
+
+.dimmed .cta {
+  pointer-events: none;
+  cursor: default;
+  border-bottom-color: transparent;
+  color: var(--text-muted);
+}
+
+@media (max-width: 640px) {
+  .line {
+    font-size: 17px;
+    margin-bottom: 24px;
+    padding: 0 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line,
+  .cta {
+    transition: none;
+  }
+}

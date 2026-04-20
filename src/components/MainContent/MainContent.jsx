@@ -151,6 +151,7 @@ import {
   incrementGuestImageCount,
 } from '../../utils/guestSession';
 import { AuthModal } from '../Auth';
+import DynamicSubtitle from '../DynamicSubtitle/DynamicSubtitle';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
 
@@ -1095,6 +1096,7 @@ export default function MainContent() {
   const [projectSearch, setProjectSearch] = useState('');
   const [isRenamingTitle, setIsRenamingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const newProjectInputRef = useRef(null);
   const projectSearchRef = useRef(null);
   const projectDropdownRef = useRef(null);
@@ -2245,6 +2247,15 @@ export default function MainContent() {
     }
   }, []);
 
+  const handleOpenRecent = useCallback(
+    (conversationId) => {
+      if (!conversationId) return;
+      navigate(`/conversations/${conversationId}`);
+      requestAnimationFrame(() => focusInput());
+    },
+    [navigate, focusInput]
+  );
+
   const handleCloseDropdown = () => {
     setActiveDropdown(null);
   };
@@ -3152,7 +3163,7 @@ export default function MainContent() {
         {!hasMessages && (
           <>
             <h1 className={styles.greeting}>{getGreeting()}</h1>
-            <p className={styles.subtitle}>What can I help you orchestrate today?</p>
+            <DynamicSubtitle onOpen={handleOpenRecent} isInputActive={isInputFocused} />
           </>
         )}
 
@@ -3250,6 +3261,8 @@ export default function MainContent() {
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
+                onFocus={() => setIsInputFocused(true)}
+                onBlur={() => setIsInputFocused(false)}
                 disabled={isProcessing}
                 rows={1}
                 aria-label="Message input"
