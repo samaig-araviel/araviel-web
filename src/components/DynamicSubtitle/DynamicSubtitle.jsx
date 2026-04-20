@@ -86,8 +86,7 @@ export default function DynamicSubtitle({ onOpen, isInputActive = false }) {
   if (cacheRef.current.key === cacheKey) {
     ({ prose, cta } = cacheRef.current);
   } else {
-    const updatedAt = candidate.updatedAt ? new Date(candidate.updatedAt) : null;
-    const built = buildSubtitle(intent, subject, candidate.id, { updatedAt });
+    const built = buildSubtitle(intent, subject, candidate.id);
     prose = built.prose;
     cta = built.cta;
     cacheRef.current = { key: cacheKey, prose, cta };
@@ -97,14 +96,14 @@ export default function DynamicSubtitle({ onOpen, isInputActive = false }) {
 
   return (
     <p className={classes} aria-hidden={dimmedState ? 'true' : undefined}>
-      <span className={styles.prose}>{prose} </span>
+      <span className={styles.prose}>{prose}</span>
       <button
         type="button"
         className={styles.cta}
         onClick={() => onOpen?.(candidate.id)}
         tabIndex={dimmedState ? -1 : 0}
         aria-hidden={dimmedState ? 'true' : undefined}
-        aria-label={`${cta}: ${subject}`}
+        aria-label={`${cta} ${subject}`}
       >
         {cta}
       </button>

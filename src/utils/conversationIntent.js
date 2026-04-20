@@ -5,7 +5,9 @@
  * fallback), we infer an intent, trim the subject into a readable phrase,
  * and build a prose + CTA pair deterministically — the same conversation
  * always renders the same sentence, but different conversations get
- * meaningful variety.
+ * meaningful variety. Templates are intentionally short, sentence-cased,
+ * and free of em-dashes / hyphens so the line reads naturally on a
+ * single row.
  */
 
 /**
@@ -26,7 +28,7 @@ export function hashString(input) {
 const INTENT_KEYWORDS = [
   [
     'coding',
-    /\b(code|coding|bug|debug|error|stack ?trace|function|api|endpoint|refactor|typescript|javascript|python|react|vue|svelte|rust|go(?:lang)?|java|kotlin|swift|sql|regex|compile|build|deploy|docker|kubernetes|k8s|test suite|unit test|jest|vitest|pytest|npm|yarn|package\.json|webpack|vite)\b/i,
+    /\b(code|coding|bug|debug|error|stack ?trace|function|api|endpoint|refactor|typescript|javascript|python|react|vue|svelte|rust|go(?:lang)?|java|kotlin|swift|sql|regex|compile|build|deploy|docker|kubernetes|k8s|test suite|unit test|jest|vitest|pytest|npm|yarn|webpack|vite)\b/i,
   ],
   [
     'writing',
@@ -34,7 +36,7 @@ const INTENT_KEYWORDS = [
   ],
   [
     'research',
-    /\b(research|compare|comparison|sources|citations|literature|study|studies|evidence|vs\.?|versus|what is|why does|how does|pros and cons|difference between|explain the)\b/i,
+    /\b(research|compare|comparison|sources|citations|literature|study|studies|evidence|versus|what is|why does|how does|pros and cons|difference between|explain the)\b/i,
   ],
   [
     'planning',
@@ -42,11 +44,11 @@ const INTENT_KEYWORDS = [
   ],
   [
     'analysis',
-    /\b(analy[sz]e|analy[sz]is|breakdown|review|audit|critique|evaluate|assess|interpret|unpack|dissect|deep dive|summari[sz]e|tldr)\b/i,
+    /\b(analyse|analyze|analysis|breakdown|review|audit|critique|evaluate|assess|interpret|unpack|dissect|deep dive|summarise|summarize|tldr)\b/i,
   ],
   [
     'image',
-    /\b(image|picture|photo|photograph|illustration|logo|icon|wallpaper|artwork|painting|sketch|render|generate|diffusion|midjourney|dalle|dall-e|stable diffusion)\b/i,
+    /\b(image|picture|photo|photograph|illustration|logo|icon|wallpaper|artwork|painting|sketch|render|generate|diffusion|midjourney|dalle|stable diffusion)\b/i,
   ],
 ];
 
@@ -69,219 +71,149 @@ export function inferIntent(text) {
  * subject phrase. Strips wrapping quotes, trailing punctuation and
  * collapses whitespace. Truncates on a word boundary.
  * @param {string} text
- * @param {number} [maxChars=48]
+ * @param {number} [maxChars=36]
  * @returns {string}
  */
-export function summariseTitle(text, maxChars = 48) {
+export function summariseTitle(text, maxChars = 36) {
   if (!text || typeof text !== 'string') return '';
   let out = text.replace(/\s+/g, ' ').trim();
   out = out.replace(/^["'“”‘’`]+|["'“”‘’`]+$/g, '');
-  out = out.replace(/[.!?,;:\-–—]+$/g, '').trim();
+  out = out.replace(/[.!?,;:\u2013\u2014]+$/g, '').trim();
   if (out.length <= maxChars) return out;
   const clipped = out.slice(0, maxChars);
   const lastSpace = clipped.lastIndexOf(' ');
   const base = lastSpace > maxChars * 0.6 ? clipped.slice(0, lastSpace) : clipped;
-  return `${base.replace(/[.!?,;:\-–—]+$/g, '').trim()}…`;
+  return `${base.replace(/[.!?,;:\u2013\u2014]+$/g, '').trim()}\u2026`;
 }
 
 /**
- * Prose bank. Each intent has at least 10 variants. Templates may
- * contain `{subject}` (always resolved) and optional contextual tokens
- * `{recency}` and `{timeOfDay}`. Templates with an unresolved token are
- * skipped during selection so we never render dangling phrases.
+ * Prose bank. Each intent has at least 12 short, dash-free variants —
+ * one complete sentence ending in a full stop. The CTA word is rendered
+ * separately so the full line reads as either one sentence + imperative
+ * or as a pair of micro-sentences.
  */
 export const PROSE = {
   writing: [
-    'You were drafting {subject} earlier —',
-    '{subject} was still taking shape when you stepped away —',
-    'Your draft of {subject} is waiting where you left it —',
-    'You were mid-sentence on {subject} —',
-    "That {subject} piece isn't quite finished —",
-    'You were shaping the voice of {subject} —',
-    'Your draft for {subject} is half-written —',
-    '{subject} — you were finding the right opening —',
-    'Your {subject} draft is still resting —',
-    'You were polishing {subject} {recency} —',
-    'You were rewriting {subject} {timeOfDay} —',
-    '{subject} was almost there when you paused —',
+    'You were drafting {subject}.',
+    'Your {subject} draft is still resting.',
+    'Your draft of {subject} is waiting.',
+    'You were mid sentence on {subject}.',
+    'That {subject} piece is unfinished.',
+    'You were polishing {subject}.',
+    'Your {subject} draft is half written.',
+    'You were rewriting {subject}.',
+    '{subject} was almost there.',
+    'You were shaping the voice of {subject}.',
+    'You were editing {subject}.',
+    'Your {subject} is ready for one more pass.',
   ],
   research: [
-    'You were digging into {subject} —',
-    'You were chasing sources on {subject} —',
-    '{subject} — you had a few threads open —',
-    'You were weighing options for {subject} —',
-    'Your {subject} research is still open —',
-    'You were comparing notes on {subject} —',
-    'You were mapping {subject} {recency} —',
-    'You had questions about {subject} —',
-    'You were gathering context on {subject} —',
-    "{subject} — you weren't quite done looking —",
-    'You were cross-checking {subject} {timeOfDay} —',
-    '{subject} still has a few loose ends to tie —',
+    'You were digging into {subject}.',
+    'You were chasing sources on {subject}.',
+    'You had a few threads open on {subject}.',
+    'Your {subject} research is still open.',
+    'You were comparing notes on {subject}.',
+    'You had questions about {subject}.',
+    'You were gathering context on {subject}.',
+    '{subject} still has loose ends.',
+    'You were cross checking {subject}.',
+    'You were mapping {subject}.',
+    'You were weighing the angles on {subject}.',
+    '{subject} still has open questions.',
   ],
   planning: [
-    'You were mapping out {subject} —',
-    'Your {subject} plan is still coming together —',
-    '{subject} — you were sketching the shape of it —',
-    'You were lining up the pieces for {subject} —',
-    'Your {subject} is still in draft form —',
-    'You were weighing options for {subject} {recency} —',
-    '{subject} — a few decisions still to make —',
-    'You were outlining {subject} {timeOfDay} —',
-    'Your {subject} plan is almost ready —',
-    'You were pacing out {subject} —',
-    'That {subject} plan is still taking shape —',
-    '{subject} — you had it half-built —',
+    'You were mapping out {subject}.',
+    'Your {subject} is still taking shape.',
+    'You were sketching {subject}.',
+    'You were lining up the pieces of {subject}.',
+    'Your {subject} is still in draft.',
+    'You were weighing options for {subject}.',
+    '{subject} has decisions still to make.',
+    'You were outlining {subject}.',
+    'Your {subject} is almost ready.',
+    'You were pacing out {subject}.',
+    'You had {subject} half built.',
+    '{subject} is one detail away from done.',
   ],
   coding: [
-    'You were mid-flow on {subject} —',
-    'You were deep in {subject} —',
-    '{subject} was almost passing —',
-    'You were debugging {subject} —',
-    'Your {subject} branch is still open —',
-    'You were refactoring {subject} {recency} —',
-    '{subject} — you had the shape of it —',
-    'You were wiring up {subject} —',
-    'You were tracing through {subject} —',
-    '{subject} was one step from green —',
-    'You were shipping {subject} {timeOfDay} —',
-    'Your {subject} fix is one edit away —',
+    'You were mid flow on {subject}.',
+    'You were deep in {subject}.',
+    '{subject} was almost passing.',
+    'You were debugging {subject}.',
+    'Your work on {subject} is still open.',
+    'You were refactoring {subject}.',
+    'You had the shape of {subject}.',
+    'You were wiring up {subject}.',
+    'You were tracing through {subject}.',
+    '{subject} is one step from green.',
+    'You were shipping {subject}.',
+    'Your {subject} fix is one edit away.',
   ],
   analysis: [
-    'You were unpacking {subject} —',
-    'You were pulling {subject} apart —',
-    '{subject} — you were following the thread —',
-    'You were breaking down {subject} —',
-    'You were weighing {subject} {recency} —',
-    'Your {subject} review is still open —',
-    'You were reading between the lines of {subject} —',
-    '{subject} — a few more angles to consider —',
-    'You were tracing the logic of {subject} —',
-    'You were stress-testing {subject} {timeOfDay} —',
-    '{subject} still has more to say —',
-    'You were laying out {subject} piece by piece —',
+    'You were unpacking {subject}.',
+    'You were pulling {subject} apart.',
+    'You were following the thread on {subject}.',
+    'You were breaking down {subject}.',
+    'You were weighing {subject}.',
+    'Your review of {subject} is still open.',
+    'You were reading between the lines of {subject}.',
+    '{subject} has more angles to consider.',
+    'You were tracing the logic of {subject}.',
+    'You were stress testing {subject}.',
+    '{subject} still has more to say.',
+    'You were laying out {subject} piece by piece.',
   ],
   image: [
-    'Your {subject} image session is still open —',
-    'You were iterating on {subject} —',
-    'You were refining {subject} —',
-    '{subject} — you were dialling in the look —',
-    'Your {subject} was almost there —',
-    'You were tweaking {subject} {recency} —',
-    'You were reshaping {subject} —',
-    '{subject} — a few more passes and it lands —',
-    'You were exploring variations of {subject} —',
-    'You were composing {subject} {timeOfDay} —',
-    '{subject} just needs one more pass —',
-    'You were colouring in {subject} —',
+    'Your {subject} session is still open.',
+    'You were iterating on {subject}.',
+    'You were refining {subject}.',
+    'You were dialling in the look of {subject}.',
+    'Your {subject} was almost there.',
+    'You were tweaking {subject}.',
+    'You were reshaping {subject}.',
+    '{subject} just needs one more pass.',
+    'You were exploring variations of {subject}.',
+    'You were composing {subject}.',
+    'You were colouring in {subject}.',
+    '{subject} is one render away.',
   ],
   general: [
-    'You were chatting about {subject} —',
-    "{subject} — you weren't quite done —",
-    'That {subject} thread is still open —',
-    'You had more to say about {subject} —',
-    'You were circling {subject} {recency} —',
-    '{subject} — you had it on your mind —',
-    'You were working through {subject} —',
-    'You left off on {subject} —',
-    '{subject} was still in motion when you paused —',
-    'You were picking apart {subject} {timeOfDay} —',
-    '{subject} is still sitting with you —',
-    'You were mulling over {subject} —',
+    'You were chatting about {subject}.',
+    'That {subject} thread is still open.',
+    'You had more to say about {subject}.',
+    'You were circling {subject}.',
+    '{subject} was on your mind.',
+    'You were working through {subject}.',
+    'You left off on {subject}.',
+    '{subject} is still in motion.',
+    'You were picking apart {subject}.',
+    '{subject} is sitting with you.',
+    'You were mulling over {subject}.',
+    'You were sitting with {subject}.',
   ],
 };
 
 /**
- * Shared CTA bank. Picked independently of the prose so intent and CTA
- * vary in lockstep without feeling patterned.
+ * Shared CTA bank. Picked independently of the prose so the imperative
+ * varies in lockstep with the sentence.
  */
 export const CTAS = ['Continue', 'Pick it up', 'Keep going', 'Jump back in', 'Resume', 'Open it'];
 
 /**
- * Resolve optional contextual tokens based on the "now" reference time
- * and the conversation's last-updated timestamp.
- * @param {Date} now
- * @param {Date|null} updatedAt
- * @returns {{ recency: string|null; timeOfDay: string }}
- */
-function resolveTokens(now, updatedAt) {
-  const hour = now.getHours();
-  let timeOfDay;
-  if (hour < 5) timeOfDay = 'last night';
-  else if (hour < 12) timeOfDay = 'this morning';
-  else if (hour < 18) timeOfDay = 'this afternoon';
-  else timeOfDay = 'tonight';
-
-  let recency = null;
-  if (updatedAt instanceof Date && !Number.isNaN(updatedAt.getTime())) {
-    const sameDay =
-      updatedAt.getFullYear() === now.getFullYear() &&
-      updatedAt.getMonth() === now.getMonth() &&
-      updatedAt.getDate() === now.getDate();
-    if (sameDay) {
-      recency = 'earlier today';
-    } else {
-      const yesterday = new Date(now);
-      yesterday.setDate(now.getDate() - 1);
-      const wasYesterday =
-        updatedAt.getFullYear() === yesterday.getFullYear() &&
-        updatedAt.getMonth() === yesterday.getMonth() &&
-        updatedAt.getDate() === yesterday.getDate();
-      if (wasYesterday) recency = 'yesterday';
-    }
-  }
-
-  return { recency, timeOfDay };
-}
-
-function applyTokens(template, subject, tokens) {
-  let out = template.replace(/\{subject\}/g, subject);
-  if (out.includes('{recency}')) {
-    if (!tokens.recency) return null;
-    out = out.replace(/\{recency\}/g, tokens.recency);
-  }
-  if (out.includes('{timeOfDay}')) {
-    out = out.replace(/\{timeOfDay\}/g, tokens.timeOfDay);
-  }
-  return out;
-}
-
-/**
  * Build a deterministic { prose, cta } pair for the given intent + subject.
- * Selection is indexed by hashString(seed) — pass the conversation id as
- * the seed so the same conversation always renders the same sentence.
+ * Selection is indexed by hashString(seed::subject) — pass the
+ * conversation id as the seed so the same conversation always renders
+ * the same sentence.
  *
  * @param {string} intent
  * @param {string} subject
  * @param {string} [seed] — conversation id or any stable identifier
- * @param {object} [opts]
- * @param {Date}   [opts.now=new Date()]
- * @param {Date|null} [opts.updatedAt=null]
  * @returns {{ prose: string; cta: string }}
  */
-export function buildSubtitle(intent, subject, seed = '', opts = {}) {
-  const now = opts.now instanceof Date ? opts.now : new Date();
-  const updatedAt = opts.updatedAt instanceof Date ? opts.updatedAt : null;
-  const tokens = resolveTokens(now, updatedAt);
-
+export function buildSubtitle(intent, subject, seed = '') {
   const bank = PROSE[intent] || PROSE.general;
   const hash = hashString(`${seed}::${subject}`);
-
-  let prose = null;
-  for (let i = 0; i < bank.length; i += 1) {
-    const template = bank[(hash + i) % bank.length];
-    const resolved = applyTokens(template, subject, tokens);
-    if (resolved) {
-      prose = resolved;
-      break;
-    }
-  }
-
-  if (!prose) {
-    const fallback = bank.find((t) => !t.includes('{recency}')) || bank[0];
-    prose = applyTokens(fallback, subject, tokens) || fallback.replace(/\{[^}]+\}/g, subject);
-  }
-
+  const prose = bank[hash % bank.length].replace(/\{subject\}/g, subject);
   const cta = CTAS[hash % CTAS.length];
   return { prose, cta };
 }

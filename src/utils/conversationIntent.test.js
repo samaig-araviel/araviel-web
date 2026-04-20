@@ -37,7 +37,7 @@ describe('inferIntent', () => {
     ['Budget for wedding venue', 'planning'],
     ['Refactor auth middleware', 'coding'],
     ['Fix the typescript error in the API', 'coding'],
-    ['Analyze quarterly revenue', 'analysis'],
+    ['Analyse quarterly revenue', 'analysis'],
     ['Breakdown the investor memo', 'analysis'],
     ['Generate a logo for the brand', 'image'],
     ['Midjourney prompt for wallpaper', 'image'],
@@ -68,6 +68,11 @@ describe('summariseTitle', () => {
     expect(out.endsWith('…')).toBe(true);
     expect(out.length).toBeLessThanOrEqual(31);
     expect(out).not.toMatch(/\s…$/);
+  });
+
+  it('defaults to a 36 character ceiling', () => {
+    const long = 'a '.repeat(40).trim();
+    expect(summariseTitle(long).length).toBeLessThanOrEqual(37);
   });
 
   it('returns empty string for nullish or non-string input', () => {
@@ -101,45 +106,19 @@ describe('buildSubtitle', () => {
   it('never renders an unresolved token', () => {
     for (const intent of Object.keys(PROSE)) {
       for (const seed of ['x', 'y', 'z', '1', '2', '3']) {
-        const { prose } = buildSubtitle(intent, subject, seed, {
-          now: new Date('2026-04-20T12:00:00Z'),
-          updatedAt: null,
-        });
+        const { prose } = buildSubtitle(intent, subject, seed);
         expect(prose).not.toMatch(/\{[^}]+\}/);
       }
     }
   });
 
-  it('expands {recency} when updatedAt is today', () => {
-    const now = new Date('2026-04-20T12:00:00Z');
-    let found = false;
-    for (let i = 0; i < 50; i += 1) {
-      const { prose } = buildSubtitle('writing', subject, `seed-${i}`, {
-        now,
-        updatedAt: new Date('2026-04-20T09:00:00Z'),
-      });
-      if (prose.includes('earlier today')) {
-        found = true;
-        break;
+  it('always returns a sentence ending in a full stop', () => {
+    for (const intent of Object.keys(PROSE)) {
+      for (const seed of ['1', '2', '3', '4', '5']) {
+        const { prose } = buildSubtitle(intent, subject, seed);
+        expect(prose.trim().endsWith('.')).toBe(true);
       }
     }
-    expect(found).toBe(true);
-  });
-
-  it('expands {timeOfDay} from the current hour', () => {
-    const morning = new Date('2026-04-20T09:00:00');
-    let found = false;
-    for (let i = 0; i < 50; i += 1) {
-      const { prose } = buildSubtitle('writing', subject, `seed-${i}`, {
-        now: morning,
-        updatedAt: morning,
-      });
-      if (prose.includes('this morning')) {
-        found = true;
-        break;
-      }
-    }
-    expect(found).toBe(true);
   });
 
   it('unknown intent falls back to general without throwing', () => {
@@ -149,9 +128,9 @@ describe('buildSubtitle', () => {
 });
 
 describe('PROSE banks', () => {
-  it('each intent has at least 10 variants', () => {
+  it('each intent has at least 12 variants', () => {
     for (const intent of Object.keys(PROSE)) {
-      expect(PROSE[intent].length).toBeGreaterThanOrEqual(10);
+      expect(PROSE[intent].length).toBeGreaterThanOrEqual(12);
     }
   });
 
@@ -162,11 +141,33 @@ describe('PROSE banks', () => {
       }
     }
   });
+
+  it('no template contains a hyphen, en dash, or em dash', () => {
+    for (const intent of Object.keys(PROSE)) {
+      for (const template of PROSE[intent]) {
+        expect(template).not.toMatch(/[-\u2013\u2014]/);
+      }
+    }
+  });
+
+  it('every template ends with a full stop', () => {
+    for (const intent of Object.keys(PROSE)) {
+      for (const template of PROSE[intent]) {
+        expect(template.trim().endsWith('.')).toBe(true);
+      }
+    }
+  });
 });
 
 describe('CTAS bank', () => {
   it('exposes at least 4 unique CTAs', () => {
     expect(new Set(CTAS).size).toBe(CTAS.length);
     expect(CTAS.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('contains no dashes', () => {
+    for (const cta of CTAS) {
+      expect(cta).not.toMatch(/[-\u2013\u2014]/);
+    }
   });
 });
