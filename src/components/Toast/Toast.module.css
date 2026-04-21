@@ -40,6 +40,10 @@
   border-color: var(--success-color, #22c55e);
 }
 
+.toastWarning {
+  border-color: var(--warning-color, #d4a52a);
+}
+
 .toastIcon {
   flex-shrink: 0;
   width: 18px;
@@ -55,6 +59,10 @@
 
 .toastIconSuccess {
   color: var(--success-color, #22c55e);
+}
+
+.toastIconWarning {
+  color: var(--warning-color, #d4a52a);
 }
 
 .toastBody {

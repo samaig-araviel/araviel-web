@@ -8,6 +8,8 @@ import { setCreditBalance } from './store/slices/chatSlice';
 import { subscribeToCreditPackChanges, fetchCreditBalance } from './services/credits';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import useAuthListener from './hooks/useAuthListener';
+import useAnswerFont from './hooks/useAnswerFont';
+import useUsageLimitWarnings from './hooks/useUsageLimitWarnings';
 import Sidebar from './components/Sidebar';
 import UpgradeModal from './components/UpgradeModal/UpgradeModal';
 import styles from './components/Auth/AuthModal.module.css';
@@ -19,6 +21,10 @@ export default function App() {
 
   // Initialize auth listener — subscribes to Supabase auth state changes
   useAuthListener();
+  // Apply the answer-font CSS variable based on the user's saved preference.
+  useAnswerFont();
+  // Watch credit balances and warn when configured thresholds are crossed.
+  useUsageLimitWarnings();
 
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const authLoading = useSelector(selectAuthLoading);
@@ -58,13 +64,15 @@ export default function App() {
           .then((data) => {
             if (data.balance) {
               dispatch(setCreditBalance(data.balance));
-              dispatch(setImageCredits({
-                used: data.balance.monthly?.used ?? 0,
-                limit: data.balance.monthly?.total ?? 5,
-                remaining: data.balance.monthly?.remaining ?? 0,
-                packRemaining: data.balance.packs?.remaining ?? 0,
-                cycleResetsAt: data.balance.cycleResetsAt ?? null,
-              }));
+              dispatch(
+                setImageCredits({
+                  used: data.balance.monthly?.used ?? 0,
+                  limit: data.balance.monthly?.total ?? 5,
+                  remaining: data.balance.monthly?.remaining ?? 0,
+                  packRemaining: data.balance.packs?.remaining ?? 0,
+                  cycleResetsAt: data.balance.cycleResetsAt ?? null,
+                })
+              );
             }
           })
           .catch(() => {});

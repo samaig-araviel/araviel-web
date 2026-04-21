@@ -16,14 +16,10 @@ describe('settings service', () => {
         'customInstructions',
         'occupation',
         'expertise',
-        'fontSize',
         'answerFont',
-        'compactMode',
         'sendWithEnter',
-        'showCodeLineNumbers',
         'defaultModel',
         'enableReasoning',
-        'showModelInfo',
         'webSearchDefault',
         'imageQualityDefault',
         'enableFollowUps',
@@ -33,7 +29,7 @@ describe('settings service', () => {
         'locationMetadata',
         'notifyNewFeatures',
         'notifyUsageLimits',
-        'notifySounds',
+        'usageLimitThresholds',
         'avatarUrl',
         'fullName',
         'phone',
@@ -50,19 +46,15 @@ describe('settings service', () => {
       expect(DEFAULT_SETTINGS.displayName).toBe('User');
       expect(DEFAULT_SETTINGS.preferredLanguage).toBe('English');
       expect(DEFAULT_SETTINGS.responseTone).toBe('default');
-      expect(DEFAULT_SETTINGS.fontSize).toBe('medium');
-      expect(DEFAULT_SETTINGS.answerFont).toBe('sans-serif');
+      expect(DEFAULT_SETTINGS.answerFont).toBe('system');
       expect(DEFAULT_SETTINGS.defaultModel).toBe('auto');
       expect(DEFAULT_SETTINGS.imageQualityDefault).toBe('standard');
       expect(DEFAULT_SETTINGS.webSearchDefault).toBe('auto');
     });
 
     it('has boolean settings with correct defaults', () => {
-      expect(DEFAULT_SETTINGS.compactMode).toBe(false);
       expect(DEFAULT_SETTINGS.sendWithEnter).toBe(true);
-      expect(DEFAULT_SETTINGS.showCodeLineNumbers).toBe(true);
       expect(DEFAULT_SETTINGS.enableReasoning).toBe(true);
-      expect(DEFAULT_SETTINGS.showModelInfo).toBe(true);
       expect(DEFAULT_SETTINGS.enableFollowUps).toBe(true);
       expect(DEFAULT_SETTINGS.saveHistory).toBe(true);
       expect(DEFAULT_SETTINGS.enableAnalytics).toBe(true);
@@ -70,7 +62,6 @@ describe('settings service', () => {
       expect(DEFAULT_SETTINGS.locationMetadata).toBe(false);
       expect(DEFAULT_SETTINGS.notifyNewFeatures).toBe(true);
       expect(DEFAULT_SETTINGS.notifyUsageLimits).toBe(true);
-      expect(DEFAULT_SETTINGS.notifySounds).toBe(true);
     });
 
     it('has empty string defaults for profile fields', () => {
@@ -83,6 +74,15 @@ describe('settings service', () => {
       expect(DEFAULT_SETTINGS.phone).toBe('');
       expect(DEFAULT_SETTINGS.website).toBe('');
       expect(DEFAULT_SETTINGS.location).toBe('');
+    });
+
+    it('has sensible threshold defaults for usage limit warnings', () => {
+      expect(Array.isArray(DEFAULT_SETTINGS.usageLimitThresholds)).toBe(true);
+      expect(DEFAULT_SETTINGS.usageLimitThresholds.length).toBeGreaterThan(0);
+      for (const t of DEFAULT_SETTINGS.usageLimitThresholds) {
+        expect(t).toBeGreaterThan(0);
+        expect(t).toBeLessThanOrEqual(100);
+      }
     });
   });
 });

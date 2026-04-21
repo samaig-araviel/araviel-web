@@ -57,8 +57,18 @@ const SECTIONS = [
   { id: 'models', label: 'Model preferences' },
   { id: 'usage', label: 'Usage & credits' },
   { id: 'notifications', label: 'Notifications' },
-  { id: 'shortcuts', label: 'Shortcuts' },
   { id: 'data', label: 'Data & privacy' },
+];
+
+// Selectable tripwires for the "Usage limit warnings" panel. Values are the
+// *remaining* percentage — e.g. 50 means "warn when 50% of credits are left".
+const USAGE_THRESHOLD_OPTIONS = [50, 20, 10, 5];
+
+const ANSWER_FONTS = [
+  { id: 'system', label: 'System', sample: 'inherit' },
+  { id: 'sans-serif', label: 'Sans-serif', sample: 'sans-serif' },
+  { id: 'serif', label: 'Serif', sample: 'serif' },
+  { id: 'mono', label: 'Monospace', sample: 'monospace' },
 ];
 
 const LANGUAGES = [
@@ -92,17 +102,6 @@ const TONES = [
   { id: 'quirky', label: 'Quirky', description: 'Playful and imaginative' },
   { id: 'efficient', label: 'Efficient', description: 'Concise and plain' },
   { id: 'cynical', label: 'Cynical', description: 'Critical and sarcastic' },
-];
-
-const SHORTCUTS = [
-  { keys: ['/', 'N'], label: 'New chat' },
-  { keys: ['/', 'S'], label: 'Open settings' },
-  { keys: ['Enter'], label: 'Send message' },
-  { keys: ['Shift', 'Enter'], label: 'New line in message' },
-  { keys: ['Ctrl', 'Enter'], label: 'Send message (when Enter is off)' },
-  { keys: ['Esc'], label: 'Close modal / menu' },
-  { keys: ['Ctrl', '/'], label: 'Toggle sidebar' },
-  { keys: ['Ctrl', 'Shift', 'C'], label: 'Copy last response' },
 ];
 
 const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent);
@@ -249,6 +248,14 @@ export default function SettingsView() {
   const cancelAtPeriodEnd = useSelector(selectCancelAtPeriodEnd);
   const portalLoading = useSelector(selectPortalLoading);
   const activeSection = section || 'profile';
+
+  // Redirect stale/removed section URLs (e.g. the old Shortcuts page) to the
+  // profile tab instead of rendering an empty content area.
+  useEffect(() => {
+    if (section && !SECTIONS.some((s) => s.id === section)) {
+      navigate('/settings/profile', { replace: true });
+    }
+  }, [section, navigate]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -340,6 +347,9 @@ export default function SettingsView() {
   const handleSave = async () => {
     setSaving(true);
     await saveSettings(settings);
+    // Notify hooks that watch localStorage (answer font, usage warnings, etc.)
+    // within the same tab — the `storage` event only fires cross-tab.
+    window.dispatchEvent(new CustomEvent('araviel-settings-updated'));
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -702,72 +712,31 @@ export default function SettingsView() {
                   </div>
 
                   <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Font size</label>
-                    <div className={styles.segmentedControl}>
-                      {['small', 'medium', 'large'].map((size) => (
-                        <button
-                          key={size}
-                          className={`${styles.segmentedBtn} ${
-                            settings.fontSize === size ? styles.segmentedBtnActive : ''
-                          }`}
-                          onClick={() => updateSetting('fontSize', size)}
-                        >
-                          {size.charAt(0).toUpperCase() + size.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
                     <label className={styles.fieldLabel}>Answer font style</label>
                     <p className={styles.fieldLabelDesc}>Choose the font style for AI responses.</p>
                     <div className={styles.segmentedControl}>
-                      {[
-                        { id: 'sans-serif', label: 'Sans-serif' },
-                        { id: 'serif', label: 'Serif' },
-                        { id: 'mono', label: 'Monospace' },
-                      ].map((font) => (
+                      {ANSWER_FONTS.map((font) => (
                         <button
                           key={font.id}
                           className={`${styles.segmentedBtn} ${
                             settings.answerFont === font.id ? styles.segmentedBtnActive : ''
                           }`}
-                          onClick={() => updateSetting('answerFont', font.id)}
-                          style={{ fontFamily: font.id === 'mono' ? 'monospace' : font.id }}
+                          onClick={() => {
+                            updateSetting('answerFont', font.id);
+                            // Apply immediately so the user sees the change
+                            // without having to hit "Save changes".
+                            const el = document.documentElement;
+                            if (font.id === 'system') {
+                              el.removeAttribute('data-answer-font');
+                            } else {
+                              el.setAttribute('data-answer-font', font.id);
+                            }
+                          }}
+                          style={{ fontFamily: font.sample }}
                         >
                           {font.label}
                         </button>
                       ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Compact mode</span>
-                        <span className={styles.toggleDesc}>
-                          Reduce spacing and padding for a denser layout.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.compactMode}
-                        onChange={(v) => updateSetting('compactMode', v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Show line numbers in code blocks</span>
-                        <span className={styles.toggleDesc}>
-                          Display line numbers alongside code snippets.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.showCodeLineNumbers}
-                        onChange={(v) => updateSetting('showCodeLineNumbers', v)}
-                      />
                     </div>
                   </div>
 
@@ -955,21 +924,6 @@ export default function SettingsView() {
                           updateSetting('enableReasoning', v);
                           dispatch(setExtendedThinking(v));
                         }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Show model information</span>
-                        <span className={styles.toggleDesc}>
-                          Display which model and provider generated each response.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.showModelInfo}
-                        onChange={(v) => updateSetting('showModelInfo', v)}
                       />
                     </div>
                   </div>
@@ -1431,51 +1385,42 @@ export default function SettingsView() {
                         onChange={(v) => updateSetting('notifyUsageLimits', v)}
                       />
                     </div>
-                  </div>
 
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Sound effects</span>
-                        <span className={styles.toggleDesc}>
-                          Play a sound when a response finishes generating.
+                    {settings.notifyUsageLimits && (
+                      <div className={styles.thresholdPanel}>
+                        <span className={styles.thresholdTitle}>Warn me when I have</span>
+                        <span className={styles.thresholdDesc}>
+                          Pick one or more thresholds — we&apos;ll nudge you as each one gets
+                          crossed so there are no surprises.
                         </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.notifySounds}
-                        onChange={(v) => updateSetting('notifySounds', v)}
-                      />
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* ═══ SHORTCUTS ═══ */}
-              {activeSection === 'shortcuts' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Keyboard shortcuts</h2>
-                    <p className={styles.sectionDesc}>
-                      Speed up your workflow with these keyboard shortcuts.
-                    </p>
-                  </div>
-
-                  <div className={styles.shortcutList}>
-                    {SHORTCUTS.map((shortcut, i) => (
-                      <div key={i} className={styles.shortcutRow}>
-                        <span className={styles.shortcutLabel}>{shortcut.label}</span>
-                        <div className={styles.shortcutKeys}>
-                          {shortcut.keys.map((key, j) => (
-                            <span key={j}>
-                              <kbd className={styles.kbd}>{key === 'Ctrl' ? modKey : key}</kbd>
-                              {j < shortcut.keys.length - 1 && (
-                                <span className={styles.kbdPlus}>+</span>
-                              )}
-                            </span>
-                          ))}
+                        <div className={styles.thresholdChipRow}>
+                          {USAGE_THRESHOLD_OPTIONS.map((pct) => {
+                            const current = Array.isArray(settings.usageLimitThresholds)
+                              ? settings.usageLimitThresholds
+                              : [];
+                            const active = current.includes(pct);
+                            return (
+                              <button
+                                key={pct}
+                                type="button"
+                                className={`${styles.thresholdChip} ${
+                                  active ? styles.thresholdChipActive : ''
+                                }`}
+                                aria-pressed={active}
+                                onClick={() => {
+                                  const next = active
+                                    ? current.filter((v) => v !== pct)
+                                    : [...current, pct].sort((a, b) => b - a);
+                                  updateSetting('usageLimitThresholds', next);
+                                }}
+                              >
+                                {pct}% left
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 </section>
               )}

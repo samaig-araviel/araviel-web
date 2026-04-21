@@ -139,6 +139,7 @@ import {
 import { fetchCreditBalance } from '../../services/credits';
 import { getCreditCost } from '../../services/credits';
 import { saveSettings } from '../../services/settings';
+import { readBooleanSetting } from '../../lib/localSettings';
 import ModalityBar from '../ModalityBar/ModalityBar';
 import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
@@ -1561,16 +1562,7 @@ export default function MainContent() {
           mood: mood || undefined,
           autoStrategy: autoStrategy || undefined,
           weather: userLocation?.weather || undefined,
-          requestFollowUps: (() => {
-            try {
-              return (
-                JSON.parse(localStorage.getItem('araviel-settings') || '{}').enableFollowUps !==
-                false
-              );
-            } catch {
-              return true;
-            }
-          })(),
+          requestFollowUps: readBooleanSetting('enableFollowUps', true),
           extendedThinking: extendedThinking || undefined,
           deepResearch: deepResearch || undefined,
           googleThinking: googleThinking || undefined,
@@ -2261,7 +2253,13 @@ export default function MainContent() {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    const sendWithEnter = readBooleanSetting('sendWithEnter', true);
+    const modifierPressed = e.metaKey || e.ctrlKey;
+    // With "Send with Enter" on, plain Enter and Cmd/Ctrl+Enter both submit.
+    // With it off, only Cmd/Ctrl+Enter submits and plain Enter falls through
+    // to the browser's default newline behaviour.
+    if (sendWithEnter || modifierPressed) {
       e.preventDefault();
       handleSubmit(e);
     }
