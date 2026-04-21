@@ -39,6 +39,23 @@ const SuccessIcon = () => (
   </svg>
 );
 
+const WarningIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
 const CloseIcon = () => (
   <svg
     width="14"
@@ -55,24 +72,36 @@ const CloseIcon = () => (
   </svg>
 );
 
+const TOAST_VISUALS = {
+  error: {
+    border: styles.toastError,
+    icon: styles.toastIconError,
+    Icon: ErrorIcon,
+  },
+  success: {
+    border: styles.toastSuccess,
+    icon: styles.toastIconSuccess,
+    Icon: SuccessIcon,
+  },
+  warning: {
+    border: styles.toastWarning,
+    icon: styles.toastIconWarning,
+    Icon: WarningIcon,
+  },
+};
+
 function ToastItem({ toast, onDismiss }) {
-  const typeClass =
-    toast.type === 'error'
-      ? styles.toastError
-      : toast.type === 'success'
-      ? styles.toastSuccess
-      : '';
-  const iconClass =
-    toast.type === 'error'
-      ? styles.toastIconError
-      : toast.type === 'success'
-      ? styles.toastIconSuccess
-      : '';
+  const visuals = TOAST_VISUALS[toast.type] ?? TOAST_VISUALS.error;
+  const { Icon } = visuals;
 
   return (
-    <div className={`${styles.toast} ${typeClass} ${toast.exiting ? styles.toastExiting : ''}`}>
-      <div className={`${styles.toastIcon} ${iconClass}`}>
-        {toast.type === 'error' ? <ErrorIcon /> : <SuccessIcon />}
+    <div
+      className={`${styles.toast} ${visuals.border} ${toast.exiting ? styles.toastExiting : ''}`}
+      role={toast.type === 'error' ? 'alert' : 'status'}
+      aria-live={toast.type === 'error' ? 'assertive' : 'polite'}
+    >
+      <div className={`${styles.toastIcon} ${visuals.icon}`}>
+        <Icon />
       </div>
       <div className={styles.toastBody}>
         <span className={styles.toastMessage}>{toast.message}</span>
@@ -150,8 +179,15 @@ export function ToastProvider({ children }) {
     [show]
   );
 
+  const showWarning = useCallback(
+    (message, options = {}) => {
+      return show({ message, type: 'warning', ...options });
+    },
+    [show]
+  );
+
   return (
-    <ToastContext.Provider value={{ show, showError, showSuccess, dismiss }}>
+    <ToastContext.Provider value={{ show, showError, showSuccess, showWarning, dismiss }}>
       {children}
       {createPortal(
         <div className={styles.toastContainer}>

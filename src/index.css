@@ -5,6 +5,11 @@
 }
 
 :root {
+  /* Answer font — resolved by [data-answer-font] on <html>. Defaults to the
+     app's system stack so responses inherit the Araviel look. */
+  --answer-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+
   /* Light theme - Warm sand/dune tones */
   --bg-primary: #fdf9f3;
   --bg-secondary: #f7f0e6;
@@ -24,6 +29,22 @@
   --shadow: 0 1px 3px rgba(61, 53, 40, 0.06);
   --shadow-lg: 0 4px 12px rgba(61, 53, 40, 0.08);
   --emboss-highlight: rgba(255, 253, 246, 0.65);
+}
+
+/* Answer font presets — applied by <html data-answer-font="..."> */
+[data-answer-font='sans-serif'] {
+  --answer-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+}
+
+[data-answer-font='serif'] {
+  --answer-font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia,
+    'Times New Roman', serif;
+}
+
+[data-answer-font='mono'] {
+  --answer-font-family: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas',
+    ui-monospace, monospace;
 }
 
 [data-theme='dark'] {

@@ -18,6 +18,7 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { logger } from '../../lib/logger';
+import { readBooleanSetting } from '../../lib/localSettings';
 import {
   CopyIcon,
   CheckIcon,
@@ -5612,11 +5613,14 @@ function Message({
   const hasGeneratedImages = message.generatedImages && message.generatedImages.length > 0;
 
   // Follow-ups and questions are AI-generated and provided by the backend.
+  // Respect the "Follow-up suggestions" preference — when the user has turned
+  // it off we still keep the data on the message (no backend round-trip), but
+  // suppress it in the UI so toggling is instant and non-destructive.
   const followUps = useMemo(() => {
-    if (!isUser && isLastAssistant && !isStreaming && message.followUps?.length > 0) {
-      return message.followUps.slice(0, 5);
-    }
-    return [];
+    if (isUser || !isLastAssistant || isStreaming) return [];
+    if (!(message.followUps?.length > 0)) return [];
+    if (!readBooleanSetting('enableFollowUps', true)) return [];
+    return message.followUps.slice(0, 5);
   }, [isUser, isLastAssistant, isStreaming, message.followUps]);
 
   const questions = useMemo(() => {
