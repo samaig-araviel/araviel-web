@@ -17,7 +17,7 @@ export const DEFAULT_SETTINGS = {
   answerFont: 'system',
   sendWithEnter: true,
   defaultModel: 'auto',
-  enableReasoning: true,
+  enableReasoning: false,
   webSearchDefault: 'auto',
   imageQualityDefault: 'standard',
   enableFollowUps: true,

@@ -37,6 +37,7 @@ import { useToast } from '../Toast/Toast';
 import { logger } from '../../lib/logger';
 import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
 import { GuestGate } from '../GuestGate';
+import SubscriptionSummary from '../SubscriptionView/SubscriptionSummary';
 import {
   ChevronLeftIcon,
   SunIcon,
@@ -55,6 +56,7 @@ const SECTIONS = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'personalization', label: 'Personalization' },
   { id: 'models', label: 'Model preferences' },
+  { id: 'subscription', label: 'Subscription' },
   { id: 'usage', label: 'Usage & credits' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'data', label: 'Data & privacy' },
@@ -942,6 +944,19 @@ export default function SettingsView() {
                       />
                     </div>
                   </div>
+                </section>
+              )}
+
+              {/* ═══ SUBSCRIPTION ═══ */}
+              {activeSection === 'subscription' && (
+                <section className={styles.section}>
+                  <div className={styles.sectionHeader}>
+                    <h2 className={styles.sectionTitle}>Subscription</h2>
+                    <p className={styles.sectionDesc}>
+                      Manage your plan, monitor credit usage, and access billing.
+                    </p>
+                  </div>
+                  <SubscriptionSummary />
                 </section>
               )}
 

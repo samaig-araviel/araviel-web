@@ -54,7 +54,7 @@ describe('settings service', () => {
 
     it('has boolean settings with correct defaults', () => {
       expect(DEFAULT_SETTINGS.sendWithEnter).toBe(true);
-      expect(DEFAULT_SETTINGS.enableReasoning).toBe(true);
+      expect(DEFAULT_SETTINGS.enableReasoning).toBe(false);
       expect(DEFAULT_SETTINGS.enableFollowUps).toBe(true);
       expect(DEFAULT_SETTINGS.saveHistory).toBe(true);
       expect(DEFAULT_SETTINGS.enableAnalytics).toBe(true);
