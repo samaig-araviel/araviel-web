@@ -1294,7 +1294,7 @@
 
 .genLightboxImg {
   max-width: 80vw;
-  max-height: calc(100vh - 220px);
+  max-height: calc(var(--app-height) - 220px);
   border-radius: 14px;
   object-fit: contain;
   box-shadow: 0 16px 56px rgba(0, 0, 0, 0.5);
@@ -4626,7 +4626,7 @@
     transform: translate(-50%, -50%);
     width: calc(100vw - 40px);
     max-width: 400px;
-    max-height: calc(100dvh - 80px);
+    max-height: calc(var(--app-height) - 80px);
     border: 1px solid var(--border-color);
     border-radius: 16px;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.1);
@@ -5792,7 +5792,7 @@
 .modelInfoPopup {
   width: 440px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 64px);
+  max-height: calc(var(--app-height) - 64px);
   overflow-y: auto;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -6111,7 +6111,7 @@
 .upgradePopup {
   width: 380px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 64px);
+  max-height: calc(var(--app-height) - 64px);
   overflow: hidden;
   border-radius: 20px;
   background: var(--bg-primary);

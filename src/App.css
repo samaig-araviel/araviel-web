@@ -1,6 +1,6 @@
 .app {
   display: flex;
-  height: 100vh;
+  height: var(--app-height);
   width: 100%;
   max-width: 100vw;
   overflow: hidden;

@@ -1212,7 +1212,7 @@
 
 .detailImage {
   max-width: 80vw;
-  max-height: calc(100vh - 260px);
+  max-height: calc(var(--app-height) - 260px);
   border-radius: 14px;
   object-fit: contain;
   box-shadow: 0 16px 56px rgba(0, 0, 0, 0.5);
@@ -1366,7 +1366,7 @@
 
   .detailImage {
     max-width: 95vw;
-    max-height: calc(100vh - 240px);
+    max-height: calc(var(--app-height) - 240px);
   }
 
   .detailTopBar {
