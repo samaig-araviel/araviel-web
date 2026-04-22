@@ -29,6 +29,20 @@
   --shadow: 0 1px 3px rgba(61, 53, 40, 0.06);
   --shadow-lg: 0 4px 12px rgba(61, 53, 40, 0.08);
   --emboss-highlight: rgba(255, 253, 246, 0.65);
+
+  /* Visible viewport height. Tracks iOS Safari's address bar on modern
+     browsers so fixed-shell layouts don't push the nav or input off-screen. */
+  --app-height: 100dvh;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
+@supports not (height: 100dvh) {
+  :root {
+    --app-height: 100vh;
+  }
 }
 
 /* Answer font presets — applied by <html data-answer-font="..."> */
@@ -85,6 +99,7 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
 }
 
 button {

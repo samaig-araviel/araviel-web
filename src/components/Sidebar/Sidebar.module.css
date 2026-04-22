@@ -2,8 +2,8 @@
 .mobileMenuBtn {
   display: none;
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: calc(16px + var(--safe-area-top));
+  left: calc(16px + var(--safe-area-left));
   z-index: 1001;
   width: 36px;
   height: 36px;
@@ -1338,11 +1338,10 @@
     position: fixed;
     top: 0;
     left: 0;
-    height: 100vh;
-    height: 100dvh;
+    height: var(--app-height);
     width: 300px;
     margin: 0;
-    padding: 16px 12px;
+    padding: calc(16px + var(--safe-area-top)) 12px calc(16px + var(--safe-area-bottom));
     border-radius: 0 16px 16px 0;
     border-left: none;
     transform: translateX(-100%);
