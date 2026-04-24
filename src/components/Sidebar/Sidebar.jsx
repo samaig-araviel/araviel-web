@@ -683,7 +683,7 @@ export default function Sidebar() {
             aria-label="Image Gallery"
           >
             <ImageGalleryIcon />
-            {showFullContent && <span>Gallery</span>}
+            {showFullContent && <span>Images</span>}
           </button>
           <button
             className={`${styles.navItem} ${
@@ -694,7 +694,7 @@ export default function Sidebar() {
             aria-label="Conversation History"
           >
             <ConversationsIcon />
-            {showFullContent && <span>History</span>}
+            {showFullContent && <span>Conversations</span>}
           </button>
           <button
             className={`${styles.navItem} ${location.pathname === '/models' ? styles.active : ''}`}
