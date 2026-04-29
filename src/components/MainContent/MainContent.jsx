@@ -151,7 +151,6 @@ import {
   incrementGuestImageCount,
 } from '../../utils/guestSession';
 import { AuthModal } from '../Auth';
-import GuestLimitOverlay from '../GuestLimitOverlay/GuestLimitOverlay';
 import DynamicSubtitle from '../DynamicSubtitle/DynamicSubtitle';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
@@ -3087,10 +3086,11 @@ export default function MainContent() {
 
       {showBuyPacksModal && <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />}
 
-      {/* Guest prompt limit overlay — full-page glassy sign-up surface */}
-      <GuestLimitOverlay
+      {/* Guest prompt limit — uniform sign-up surface */}
+      <AuthModal
         isOpen={showGuestLimitModal}
         onClose={() => setShowGuestLimitModal(false)}
+        initialTab="signup"
       />
 
       {/* Session expired modal */}
