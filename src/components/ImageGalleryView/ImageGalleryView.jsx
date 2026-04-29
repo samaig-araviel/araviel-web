@@ -14,11 +14,7 @@ import {
   setCreditBalance,
 } from '../../store/slices/chatSlice';
 import { AuthModal } from '../Auth';
-import {
-  hasReachedGuestImageLimit,
-  incrementGuestImageCount,
-  getRemainingGuestImages,
-} from '../../utils/guestSession';
+import { hasReachedGuestImageLimit, incrementGuestImageCount } from '../../utils/guestSession';
 import { fetchCreditBalance } from '../../services/credits';
 import { IMAGE_QUALITY_OPTIONS } from '../../config/credits';
 import CreditBalance from '../CreditBalance/CreditBalance';
@@ -396,42 +392,7 @@ export default function ImageGalleryView() {
           <p className={styles.heroSubtitle}>Describe what you imagine and bring it to life</p>
 
           <form className={styles.promptForm} onSubmit={handlePromptSubmit}>
-            {/* Guest image limit banner */}
-            {!isAuthenticated &&
-              !hasReachedGuestImageLimit() &&
-              getRemainingGuestImages() === 1 && (
-                <div className={styles.guestBanner}>
-                  <span className={styles.guestBannerText}>1 free image creation</span>
-                  <span className={styles.guestBannerDot} />
-                  <button
-                    type="button"
-                    className={styles.guestBannerLink}
-                    onClick={() => setShowAuthModal(true)}
-                  >
-                    Sign up for more
-                  </button>
-                </div>
-              )}
-            {!isAuthenticated && hasReachedGuestImageLimit() && (
-              <div className={`${styles.guestBanner} ${styles.guestBannerUrgent}`}>
-                <span className={styles.guestBannerText}>Free image creation used</span>
-                <span className={styles.guestBannerDot} />
-                <button
-                  type="button"
-                  className={styles.guestBannerLink}
-                  onClick={() => setShowAuthModal(true)}
-                >
-                  Sign up to create more
-                </button>
-              </div>
-            )}
-            <div
-              className={`${styles.promptInputWrapper} ${
-                !isAuthenticated && (getRemainingGuestImages() <= 1 || hasReachedGuestImageLimit())
-                  ? styles.promptInputWrapperWithBanner
-                  : ''
-              }`}
-            >
+            <div className={styles.promptInputWrapper}>
               <MarkdownTextarea
                 ref={promptInputRef}
                 className={styles.promptInput}
