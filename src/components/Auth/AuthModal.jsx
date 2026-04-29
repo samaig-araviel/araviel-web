@@ -10,11 +10,10 @@ import {
   setAuthError,
 } from '../../store/slices/authSlice';
 import { getRememberMePreference, setRememberMePreference } from '../../lib/authStorage';
-import { CloseIcon } from '../Icons';
 import styles from './AuthModal.module.css';
 
 const GoogleIcon = () => (
-  <svg className={styles.googleIcon} viewBox="0 0 24 24">
+  <svg className={styles.googleIcon} viewBox="0 0 24 24" aria-hidden="true">
     <path
       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
       fill="#4285F4"
@@ -34,13 +33,60 @@ const GoogleIcon = () => (
   </svg>
 );
 
+const ArrowLeftIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <line x1="19" y1="12" x2="5" y2="12" />
+    <polyline points="12 19 5 12 12 5" />
+  </svg>
+);
+
+const EyeIcon = ({ open }) => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    {open ? (
+      <>
+        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+        <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+        <line x1="1" y1="1" x2="23" y2="23" />
+      </>
+    ) : (
+      <>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    )}
+  </svg>
+);
+
 /**
- * AuthModal — Premium login/signup modal with Google OAuth + email/password.
+ * AuthModal — Full-page, glassy auth surface used everywhere a guest
+ * needs to sign in or sign up. Single uniform presentation across the
+ * app: chat input limits, side-nav Sign up, project/settings/etc.
+ * gates, session expiry.
  *
  * Props:
  * - isOpen: boolean
  * - onClose: () => void
- * - initialTab: 'signin' | 'signup' (default: 'signin')
+ * - initialTab: 'signin' | 'signup' (default 'signin')
  */
 export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const dispatch = useDispatch();
@@ -51,10 +97,10 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(() => getRememberMePreference());
 
   useEffect(() => {
@@ -65,10 +111,32 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     setEmail('');
     setPassword('');
     setDisplayName('');
+    setShowPassword(false);
     setLocalError('');
     setSuccessMessage('');
     dispatch(setAuthError(null));
   }, [dispatch]);
+
+  const handleClose = useCallback(() => {
+    clearState();
+    setShowForgotPassword(false);
+    setActiveTab(initialTab);
+    onClose();
+  }, [clearState, initialTab, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    setActiveTab(initialTab);
+  }, [isOpen, initialTab]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isOpen, handleClose]);
 
   const handleTabSwitch = (tab) => {
     setActiveTab(tab);
@@ -76,20 +144,14 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     setShowForgotPassword(false);
   };
 
-  const handleClose = () => {
-    clearState();
-    setShowForgotPassword(false);
-    onClose();
-  };
-
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setLocalError('');
     dispatch(setAuthError(null));
     dispatch(signInWithGoogle());
   };
 
-  const handleEmailSubmit = async (e) => {
-    e.preventDefault();
+  const handleEmailSubmit = async (event) => {
+    event.preventDefault();
     setLocalError('');
     setSuccessMessage('');
     dispatch(setAuthError(null));
@@ -122,17 +184,18 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       if (result.meta.requestStatus === 'fulfilled') {
         handleClose();
       }
-    } else {
-      const result = await dispatch(
-        signUpWithEmail({
-          email: email.trim(),
-          password,
-          displayName: displayName.trim() || undefined,
-        })
-      );
-      if (result.meta.requestStatus === 'fulfilled') {
-        setSuccessMessage('Account created! Check your email to confirm.');
-      }
+      return;
+    }
+
+    const result = await dispatch(
+      signUpWithEmail({
+        email: email.trim(),
+        password,
+        displayName: displayName.trim() || undefined,
+      })
+    );
+    if (result.meta.requestStatus === 'fulfilled') {
+      setSuccessMessage('Account created. Check your email to confirm.');
     }
   };
 
@@ -143,7 +206,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     setPassword('');
   };
 
-  const handleBackToSignIn = () => {
+  const handleBackFromForgot = () => {
     setShowForgotPassword(false);
     setLocalError('');
     setSuccessMessage('');
@@ -152,70 +215,78 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   if (!isOpen) return null;
 
   const errorMessage = localError || authError;
+  const isSignUp = activeTab === 'signup';
+
+  let heading;
+  let subtitle;
+  if (showForgotPassword) {
+    heading = 'Reset your password';
+    subtitle = "Enter your email and we'll send you a reset link.";
+  } else if (isSignUp) {
+    heading = 'Create your account';
+    subtitle = 'Get started with Araviel for free.';
+  } else {
+    heading = 'Welcome back';
+    subtitle = 'Sign in to access all your conversations and settings.';
+  }
+
+  let submitLabel;
+  if (showForgotPassword) submitLabel = 'Send reset link';
+  else if (isSignUp) submitLabel = 'Create account';
+  else submitLabel = 'Sign in';
+
+  const handleBackBtn = showForgotPassword ? handleBackFromForgot : handleClose;
+  const backLabel = showForgotPassword ? 'Back to sign in' : 'Back';
 
   return (
-    <div className={styles.overlay} onClick={handleClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <button className={styles.closeBtn} onClick={handleClose} aria-label="Close">
-          <CloseIcon />
-        </button>
+    <div
+      className={styles.overlay}
+      role="dialog"
+      aria-modal="true"
+      aria-label={heading}
+      onClick={handleClose}
+    >
+      <button
+        type="button"
+        className={styles.backBtn}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleBackBtn();
+        }}
+      >
+        <ArrowLeftIcon />
+        <span>{backLabel}</span>
+      </button>
 
-        <div className={styles.header}>
-          <div className={styles.logoMark}>A</div>
-          <h2 className={styles.title}>
-            {showForgotPassword
-              ? 'Reset password'
-              : activeTab === 'signin'
-              ? 'Welcome back'
-              : 'Create your account'}
-          </h2>
-          <p className={styles.subtitle}>
-            {showForgotPassword
-              ? "Enter your email and we'll send you a reset link."
-              : activeTab === 'signin'
-              ? 'Sign in to access all your conversations and settings.'
-              : 'Get started with Araviel for free.'}
-          </p>
+      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.logoMark} aria-hidden="true">
+          A
         </div>
+        <h1 className={styles.heading}>{heading}</h1>
+        <p className={styles.subtitle}>{subtitle}</p>
 
         {!showForgotPassword && (
           <>
-            <div className={styles.tabs}>
-              <button
-                className={`${styles.tab} ${activeTab === 'signin' ? styles.tabActive : ''}`}
-                onClick={() => handleTabSwitch('signin')}
-              >
-                Sign in
-              </button>
-              <button
-                className={`${styles.tab} ${activeTab === 'signup' ? styles.tabActive : ''}`}
-                onClick={() => handleTabSwitch('signup')}
-              >
-                Sign up
-              </button>
-            </div>
-
-            <div className={styles.oauthSection}>
-              <button
-                className={styles.googleBtn}
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-              >
-                <GoogleIcon />
-                <span>Continue with Google</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              className={styles.googleBtn}
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+            >
+              <GoogleIcon />
+              <span>Continue with Google</span>
+            </button>
 
             <div className={styles.divider}>
-              <div className={styles.dividerLine} />
+              <span className={styles.dividerLine} />
               <span className={styles.dividerText}>or</span>
-              <div className={styles.dividerLine} />
+              <span className={styles.dividerLine} />
             </div>
           </>
         )}
 
-        <form className={styles.form} onSubmit={handleEmailSubmit}>
-          {activeTab === 'signup' && !showForgotPassword && (
+        <form className={styles.form} onSubmit={handleEmailSubmit} noValidate>
+          {!showForgotPassword && isSignUp && (
             <div className={styles.fieldGroup}>
               <label className={styles.label} htmlFor="auth-name">
                 Name
@@ -258,10 +329,10 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
                   id="auth-password"
                   className={styles.input}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={activeTab === 'signup' ? 'Min. 6 characters' : 'Your password'}
+                  placeholder={isSignUp ? 'Min. 6 characters' : 'Your password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={activeTab === 'signup' ? 'new-password' : 'current-password'}
+                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
                   required
                 />
                 <button
@@ -270,39 +341,10 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
+                  <EyeIcon open={showPassword} />
                 </button>
               </div>
-              {activeTab === 'signin' && (
+              {!isSignUp && (
                 <div className={styles.credentialsRow}>
                   <label className={styles.rememberMe}>
                     <input
@@ -344,36 +386,36 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
           {successMessage && <div className={styles.success}>{successMessage}</div>}
 
           <button className={styles.submitBtn} type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <span className={styles.spinner} />
-            ) : showForgotPassword ? (
-              'Send reset link'
-            ) : activeTab === 'signin' ? (
-              'Sign in'
-            ) : (
-              'Create account'
-            )}
+            {isLoading ? <span className={styles.spinner} aria-hidden="true" /> : submitLabel}
           </button>
         </form>
 
-        {showForgotPassword ? (
-          <div className={styles.footerLink}>
-            <button onClick={handleBackToSignIn}>Back to sign in</button>
-          </div>
-        ) : (
-          <div className={styles.footerLink}>
-            {activeTab === 'signin' ? (
+        {!showForgotPassword && (
+          <p className={styles.footer}>
+            {isSignUp ? (
               <>
-                Don&apos;t have an account?{' '}
-                <button onClick={() => handleTabSwitch('signup')}>Sign up</button>
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  className={styles.footerLink}
+                  onClick={() => handleTabSwitch('signin')}
+                >
+                  Sign in
+                </button>
               </>
             ) : (
               <>
-                Already have an account?{' '}
-                <button onClick={() => handleTabSwitch('signin')}>Sign in</button>
+                New to Araviel?{' '}
+                <button
+                  type="button"
+                  className={styles.footerLink}
+                  onClick={() => handleTabSwitch('signup')}
+                >
+                  Create an account
+                </button>
               </>
             )}
-          </div>
+          </p>
         )}
       </div>
     </div>
