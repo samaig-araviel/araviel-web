@@ -147,11 +147,11 @@ import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import {
   hasReachedGuestLimit,
   incrementGuestPromptCount,
-  getRemainingGuestPrompts,
   hasReachedGuestImageLimit,
   incrementGuestImageCount,
 } from '../../utils/guestSession';
 import { AuthModal } from '../Auth';
+import GuestLimitOverlay from '../GuestLimitOverlay/GuestLimitOverlay';
 import DynamicSubtitle from '../DynamicSubtitle/DynamicSubtitle';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
@@ -1084,7 +1084,6 @@ export default function MainContent() {
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
   const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
   const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
-  const [guestPromptsLeft, setGuestPromptsLeft] = useState(getRemainingGuestPrompts());
   const isAuthenticated = useSelector(selectIsAuthenticated);
   // conversationProject is now derived from Redux — see below
   const [conversationTitle, setConversationTitle] = useState('');
@@ -2109,7 +2108,6 @@ export default function MainContent() {
         incrementGuestImageCount();
       } else {
         incrementGuestPromptCount();
-        setGuestPromptsLeft(getRemainingGuestPrompts());
       }
     }
 
@@ -3089,11 +3087,10 @@ export default function MainContent() {
 
       {showBuyPacksModal && <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />}
 
-      {/* Guest prompt limit modal */}
-      <AuthModal
+      {/* Guest prompt limit overlay — full-page glassy sign-up surface */}
+      <GuestLimitOverlay
         isOpen={showGuestLimitModal}
         onClose={() => setShowGuestLimitModal(false)}
-        initialTab="signup"
       />
 
       {/* Session expired modal */}
@@ -3167,40 +3164,7 @@ export default function MainContent() {
 
         <div className={styles.inputSection}>
           <form className={styles.inputContainer} onSubmit={handleSubmit}>
-            {/* Guest prompt counter — always visible for anonymous users */}
-            {!isAuthenticated && guestPromptsLeft > 0 && (
-              <div className={styles.guestBanner}>
-                <span className={styles.guestBannerText}>
-                  {guestPromptsLeft} free {guestPromptsLeft === 1 ? 'prompt' : 'prompts'} remaining
-                </span>
-                <span className={styles.guestBannerDot} />
-                <button
-                  type="button"
-                  className={styles.guestBannerLink}
-                  onClick={() => setShowGuestLimitModal(true)}
-                >
-                  Sign up for more
-                </button>
-              </div>
-            )}
-            {!isAuthenticated && guestPromptsLeft <= 0 && (
-              <div className={`${styles.guestBanner} ${styles.guestBannerUrgent}`}>
-                <span className={styles.guestBannerText}>You&apos;ve used your free prompts</span>
-                <span className={styles.guestBannerDot} />
-                <button
-                  type="button"
-                  className={styles.guestBannerLink}
-                  onClick={() => setShowGuestLimitModal(true)}
-                >
-                  Sign up to continue
-                </button>
-              </div>
-            )}
-            <div
-              className={`${styles.inputWrapper} ${
-                !isAuthenticated ? styles.inputWrapperWithBanner : ''
-              }`}
-            >
+            <div className={styles.inputWrapper}>
               {attachedFiles.length > 0 && (
                 <div className={styles.attachedFiles}>
                   <div className={styles.attachedFilesScroll}>
