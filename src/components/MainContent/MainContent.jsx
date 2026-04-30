@@ -162,34 +162,16 @@ const getGreeting = () => {
   return 'Good evening.';
 };
 
-// Ambient provider badges scattered around the landing screen.
-// Purely decorative; communicates the range of providers Araveil orchestrates.
-// Order matches the visual layout (clockwise from top-left).
+// Ambient provider badges anchored as a horizontal strip near the bottom of
+// the landing screen. Purely decorative; communicates the range of providers
+// Araveil orchestrates. Array order is the visual reading order.
 const AMBIENT_PROVIDERS = [
-  { id: 'anthropic', label: 'Claude', subLabel: 'Opus 4.7', available: true, position: 'topLeft' },
-  { id: 'xai', label: 'Grok', subLabel: 'Coming soon', available: false, position: 'topCenter' },
-  { id: 'openai', label: 'ChatGPT', subLabel: 'GPT-5', available: true, position: 'topRight' },
-  {
-    id: 'perplexity',
-    label: 'Perplexity',
-    subLabel: 'Sonar Large',
-    available: true,
-    position: 'bottomLeft',
-  },
-  {
-    id: 'elevenlabs',
-    label: 'ElevenLabs',
-    subLabel: 'Coming soon',
-    available: false,
-    position: 'bottomCenter',
-  },
-  {
-    id: 'google',
-    label: 'Gemini',
-    subLabel: '2.5 Pro',
-    available: true,
-    position: 'bottomRight',
-  },
+  { id: 'anthropic', label: 'Claude', subLabel: 'Opus 4.7', available: true },
+  { id: 'xai', label: 'Grok', subLabel: 'Coming soon', available: false },
+  { id: 'openai', label: 'ChatGPT', subLabel: 'GPT-5', available: true },
+  { id: 'perplexity', label: 'Perplexity', subLabel: 'Sonar Large', available: true },
+  { id: 'elevenlabs', label: 'ElevenLabs', subLabel: 'Coming soon', available: false },
+  { id: 'google', label: 'Gemini', subLabel: '2.5 Pro', available: true },
 ];
 
 const MODE_CONFIG = [
@@ -3653,13 +3635,12 @@ export default function MainContent() {
 
       {!hasMessages && (
         <div className={styles.ambientProviders} aria-hidden="true">
-          {AMBIENT_PROVIDERS.map(({ id, label, subLabel, available, position }) => {
+          {AMBIENT_PROVIDERS.map(({ id, label, subLabel, available }) => {
             const Logo = getProviderLogo(id);
-            const positionClass = styles[`ambientProvider_${position}`];
             return (
               <div
                 key={id}
-                className={`${styles.ambientProvider} ${positionClass} ${
+                className={`${styles.ambientProvider} ${
                   available ? '' : styles.ambientProviderComingSoon
                 }`}
               >
