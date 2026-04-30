@@ -6,6 +6,7 @@ import chatReducer from './slices/chatSlice';
 import analyticsReducer from './slices/analyticsSlice';
 import projectsReducer from './slices/projectsSlice';
 import subscriptionReducer from './slices/subscriptionSlice';
+import onboardingReducer from './slices/onboardingSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,5 +17,6 @@ export const store = configureStore({
     analytics: analyticsReducer,
     projects: projectsReducer,
     subscription: subscriptionReducer,
+    onboarding: onboardingReducer,
   },
 });

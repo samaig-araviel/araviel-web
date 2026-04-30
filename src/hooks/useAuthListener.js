@@ -14,6 +14,11 @@ import { fetchCreditBalance } from '../services/credits';
 import { fetchSubscription } from '../services/subscription';
 import { clearImageCache } from '../services/imageGeneration';
 import { setLoggerUser } from '../lib/logger';
+import {
+  fetchVerificationStatus,
+  resetOnboardingState,
+  verifyWithGoogle,
+} from '../store/slices/onboardingSlice';
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -107,6 +112,25 @@ export default function useAuthListener() {
                 dispatch(setSubscriptionData(data));
               })
               .catch(() => {});
+
+            // Age verification gate. Always fetch status; on Google OAuth the
+            // session also carries a short-lived `provider_token` (only on
+            // the very first callback) which we forward to the API for
+            // silent verification via the People API. If Google's response
+            // lacks a usable birthday, we fall through to the manual screen.
+            const isGoogleSignIn =
+              session?.user?.app_metadata?.provider === 'google' &&
+              Boolean(session?.provider_token);
+            const statusPromise = dispatch(fetchVerificationStatus()).unwrap();
+            if (isGoogleSignIn) {
+              statusPromise
+                .then((verification) => {
+                  if (verification?.enabled && verification?.status === 'pending') {
+                    dispatch(verifyWithGoogle({ providerToken: session.provider_token }));
+                  }
+                })
+                .catch(() => {});
+            }
           }
           break;
         }
@@ -124,6 +148,7 @@ export default function useAuthListener() {
           dispatch(resetChatState());
           dispatch(resetProjectsState());
           dispatch(resetSubscriptionState());
+          dispatch(resetOnboardingState());
 
           // 4. Re-create anonymous session so guest flow works
           dispatch(initializeAuth());
