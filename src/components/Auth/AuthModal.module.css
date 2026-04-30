@@ -415,6 +415,25 @@
   text-underline-offset: 2px;
 }
 
+/* Verify-email view — sits in place of the form when a signup is
+   awaiting confirmation. Layout mirrors the form's vertical rhythm so
+   the panel feels stable across mode switches. */
+.verifyActions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.verifyActions .submitBtn {
+  margin-top: 0;
+}
+
+.verifyActions .footer {
+  margin: 4px 0 0;
+}
+
 /* Footer mode toggle */
 .footer {
   margin: 18px 0 0;

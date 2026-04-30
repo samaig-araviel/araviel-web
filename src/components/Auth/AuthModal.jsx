@@ -1,16 +1,22 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   signInWithGoogle,
   signInWithEmail,
   signUpWithEmail,
   resetPassword,
+  resendConfirmationEmail,
   selectAuthLoading,
   selectAuthError,
+  selectIsOAuthRedirecting,
+  selectPendingEmailVerification,
   setAuthError,
+  clearPendingEmailVerification,
 } from '../../store/slices/authSlice';
 import { getRememberMePreference, setRememberMePreference } from '../../lib/authStorage';
 import styles from './AuthModal.module.css';
+
+const RESEND_COOLDOWN_SECONDS = 30;
 
 const GoogleIcon = () => (
   <svg className={styles.googleIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -92,6 +98,8 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const dispatch = useDispatch();
   const isLoading = useSelector(selectAuthLoading);
   const authError = useSelector(selectAuthError);
+  const isOAuthRedirecting = useSelector(selectIsOAuthRedirecting);
+  const pendingEmailVerification = useSelector(selectPendingEmailVerification);
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const [email, setEmail] = useState('');
@@ -102,10 +110,23 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const [localError, setLocalError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [rememberMe, setRememberMe] = useState(() => getRememberMePreference());
+  // Cooldown timer for the "Resend confirmation email" button so a single
+  // user can't spam the endpoint past Supabase's own rate limit.
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const resendTimerRef = useRef(null);
 
   useEffect(() => {
     setRememberMePreference(rememberMe);
   }, [rememberMe]);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined;
+    resendTimerRef.current = setTimeout(
+      () => setResendCooldown((value) => Math.max(0, value - 1)),
+      1000
+    );
+    return () => clearTimeout(resendTimerRef.current);
+  }, [resendCooldown]);
 
   const clearState = useCallback(() => {
     setEmail('');
@@ -195,8 +216,45 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       })
     );
     if (result.meta.requestStatus === 'fulfilled') {
-      setSuccessMessage('Account created. Check your email to confirm.');
+      // The slice has either committed a real session (project disabled
+      // email confirmation) or stashed a pendingEmailVerification entry.
+      // In the second case the modal automatically switches to its
+      // "Check your inbox" view via the `mode` derivation below; we only
+      // need to clear local form state here.
+      setPassword('');
+      setDisplayName('');
+      setSuccessMessage('');
+      // Seed the resend cooldown so the just-sent email is the only one
+      // for at least RESEND_COOLDOWN_SECONDS.
+      if (!result.payload?.session) {
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      }
     }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!pendingEmailVerification?.email || resendCooldown > 0) return;
+    setLocalError('');
+    setSuccessMessage('');
+    dispatch(setAuthError(null));
+    setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    const result = await dispatch(
+      resendConfirmationEmail({ email: pendingEmailVerification.email })
+    );
+    if (result.meta.requestStatus === 'fulfilled') {
+      setSuccessMessage('Confirmation email sent. Check your inbox.');
+    }
+  };
+
+  const handleUseDifferentEmail = () => {
+    dispatch(clearPendingEmailVerification());
+    dispatch(setAuthError(null));
+    setLocalError('');
+    setSuccessMessage('');
+    setEmail('');
+    setPassword('');
+    setActiveTab('signup');
+    setResendCooldown(0);
   };
 
   const handleForgotPassword = () => {
@@ -216,10 +274,19 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
 
   const errorMessage = localError || authError;
   const isSignUp = activeTab === 'signup';
+  // `verifyEmail` takes precedence over signin/signup tabs while a
+  // pending verification exists — the user just submitted signup and is
+  // waiting on the confirmation link in their inbox. The Redux flag is
+  // cleared on real sign-in (via the listener) or on "use different
+  // email", so the modal returns to its normal flow automatically.
+  const isVerifyEmail = Boolean(pendingEmailVerification);
 
   let heading;
   let subtitle;
-  if (showForgotPassword) {
+  if (isVerifyEmail) {
+    heading = 'Check your inbox';
+    subtitle = `We sent a confirmation link to ${pendingEmailVerification.email}. Click the link to activate your account.`;
+  } else if (showForgotPassword) {
     heading = 'Reset your password';
     subtitle = "Enter your email and we'll send you a reset link.";
   } else if (isSignUp) {
@@ -265,16 +332,37 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
         <h1 className={styles.heading}>{heading}</h1>
         <p className={styles.subtitle}>{subtitle}</p>
 
-        {!showForgotPassword && (
+        {isVerifyEmail && (
+          <div className={styles.verifyActions}>
+            <button
+              type="button"
+              className={styles.submitBtn}
+              onClick={handleResendConfirmation}
+              disabled={resendCooldown > 0}
+            >
+              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend confirmation email'}
+            </button>
+            {successMessage && <div className={styles.success}>{successMessage}</div>}
+            {errorMessage && <div className={styles.error}>{errorMessage}</div>}
+            <p className={styles.footer}>
+              Wrong email?{' '}
+              <button type="button" className={styles.footerLink} onClick={handleUseDifferentEmail}>
+                Use a different email
+              </button>
+            </p>
+          </div>
+        )}
+
+        {!isVerifyEmail && !showForgotPassword && (
           <>
             <button
               type="button"
               className={styles.googleBtn}
               onClick={handleGoogleSignIn}
-              disabled={isLoading}
+              disabled={isLoading || isOAuthRedirecting}
             >
               <GoogleIcon />
-              <span>Continue with Google</span>
+              <span>{isOAuthRedirecting ? 'Redirecting to Google…' : 'Continue with Google'}</span>
             </button>
 
             <div className={styles.divider}>
@@ -285,112 +373,114 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
           </>
         )}
 
-        <form className={styles.form} onSubmit={handleEmailSubmit} noValidate>
-          {!showForgotPassword && isSignUp && (
+        {!isVerifyEmail && (
+          <form className={styles.form} onSubmit={handleEmailSubmit} noValidate>
+            {!showForgotPassword && isSignUp && (
+              <div className={styles.fieldGroup}>
+                <label className={styles.label} htmlFor="auth-name">
+                  Name
+                </label>
+                <input
+                  id="auth-name"
+                  className={styles.input}
+                  type="text"
+                  placeholder="Your name (optional)"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  autoComplete="name"
+                />
+              </div>
+            )}
+
             <div className={styles.fieldGroup}>
-              <label className={styles.label} htmlFor="auth-name">
-                Name
+              <label className={styles.label} htmlFor="auth-email">
+                Email
               </label>
               <input
-                id="auth-name"
+                id="auth-email"
                 className={styles.input}
-                type="text"
-                placeholder="Your name (optional)"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                autoComplete="name"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
               />
             </div>
-          )}
 
-          <div className={styles.fieldGroup}>
-            <label className={styles.label} htmlFor="auth-email">
-              Email
-            </label>
-            <input
-              id="auth-email"
-              className={styles.input}
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              required
-            />
-          </div>
-
-          {!showForgotPassword && (
-            <div className={styles.fieldGroup}>
-              <label className={styles.label} htmlFor="auth-password">
-                Password
-              </label>
-              <div className={styles.passwordWrapper}>
-                <input
-                  id="auth-password"
-                  className={styles.input}
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder={isSignUp ? 'Min. 6 characters' : 'Your password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                  required
-                />
-                <button
-                  type="button"
-                  className={styles.passwordToggle}
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  <EyeIcon open={showPassword} />
-                </button>
-              </div>
-              {!isSignUp && (
-                <div className={styles.credentialsRow}>
-                  <label className={styles.rememberMe}>
-                    <input
-                      type="checkbox"
-                      className={styles.rememberMeInput}
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-                    <span className={styles.rememberMeBox} aria-hidden="true">
-                      <svg
-                        className={styles.rememberMeCheck}
-                        viewBox="0 0 16 16"
-                        width="10"
-                        height="10"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="3 8.5 6.5 12 13 4.5" />
-                      </svg>
-                    </span>
-                    <span className={styles.rememberMeLabel}>Remember me</span>
-                  </label>
+            {!showForgotPassword && (
+              <div className={styles.fieldGroup}>
+                <label className={styles.label} htmlFor="auth-password">
+                  Password
+                </label>
+                <div className={styles.passwordWrapper}>
+                  <input
+                    id="auth-password"
+                    className={styles.input}
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder={isSignUp ? 'Min. 6 characters' : 'Your password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                    required
+                  />
                   <button
                     type="button"
-                    className={styles.forgotLinkBtn}
-                    onClick={handleForgotPassword}
+                    className={styles.passwordToggle}
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    Forgot password?
+                    <EyeIcon open={showPassword} />
                   </button>
                 </div>
-              )}
-            </div>
-          )}
+                {!isSignUp && (
+                  <div className={styles.credentialsRow}>
+                    <label className={styles.rememberMe}>
+                      <input
+                        type="checkbox"
+                        className={styles.rememberMeInput}
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
+                      <span className={styles.rememberMeBox} aria-hidden="true">
+                        <svg
+                          className={styles.rememberMeCheck}
+                          viewBox="0 0 16 16"
+                          width="10"
+                          height="10"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="3 8.5 6.5 12 13 4.5" />
+                        </svg>
+                      </span>
+                      <span className={styles.rememberMeLabel}>Remember me</span>
+                    </label>
+                    <button
+                      type="button"
+                      className={styles.forgotLinkBtn}
+                      onClick={handleForgotPassword}
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
-          {errorMessage && <div className={styles.error}>{errorMessage}</div>}
-          {successMessage && <div className={styles.success}>{successMessage}</div>}
+            {errorMessage && <div className={styles.error}>{errorMessage}</div>}
+            {successMessage && <div className={styles.success}>{successMessage}</div>}
 
-          <button className={styles.submitBtn} type="submit" disabled={isLoading}>
-            {isLoading ? <span className={styles.spinner} aria-hidden="true" /> : submitLabel}
-          </button>
-        </form>
+            <button className={styles.submitBtn} type="submit" disabled={isLoading}>
+              {isLoading ? <span className={styles.spinner} aria-hidden="true" /> : submitLabel}
+            </button>
+          </form>
+        )}
 
-        {!showForgotPassword && (
+        {!isVerifyEmail && !showForgotPassword && (
           <p className={styles.footer}>
             {isSignUp ? (
               <>
