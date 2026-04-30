@@ -14,8 +14,6 @@ import SharedConversationView from './components/SharedConversationView';
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary';
 import NotFound from './components/ErrorBoundary/NotFound';
 import RouteShell from './components/RouteShell/RouteShell';
-import AgeEntryView from './components/Onboarding/AgeEntryView';
-import BlockedView from './components/Onboarding/BlockedView';
 import { WEB_APPLICATION_JSON_LD, ORGANIZATION_JSON_LD } from './lib/seo';
 
 const router = createBrowserRouter([
@@ -171,27 +169,6 @@ const router = createBrowserRouter([
         element: (
           <RouteShell feature="subscription" seo={{ title: 'Subscription', noindex: true }}>
             <SubscriptionView />
-          </RouteShell>
-        ),
-      },
-      // Post-signup age verification flow. Sits inside <App /> so it
-      // inherits the global theme/auth bootstrap, but the views render
-      // their own full-screen surface and the AgeGate around <Outlet />
-      // intentionally leaves /onboarding/* untouched so they can render
-      // without redirect loops.
-      {
-        path: 'onboarding/age',
-        element: (
-          <RouteShell feature="onboarding-age" seo={{ title: 'Welcome', noindex: true }}>
-            <AgeEntryView />
-          </RouteShell>
-        ),
-      },
-      {
-        path: 'onboarding/blocked',
-        element: (
-          <RouteShell feature="onboarding-blocked" seo={{ title: 'Not available', noindex: true }}>
-            <BlockedView />
           </RouteShell>
         ),
       },

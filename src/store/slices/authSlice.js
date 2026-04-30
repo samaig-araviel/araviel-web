@@ -73,24 +73,14 @@ export const initializeAuth = createAsyncThunk(
   }
 );
 
-/** Redirect the user to Google OAuth.
- *
- * Requests the optional `user.birthday.read` scope so the API can attempt
- * silent age verification via the People API on the very first callback.
- * If the user (or the OAuth client config) declines the scope, the People
- * API simply returns no birthday and we fall back to manual entry —
- * nothing breaks.
- */
+/** Redirect the user to Google OAuth. */
 export const signInWithGoogle = createAsyncThunk(
   'auth/signInWithGoogle',
   async (_, { rejectWithValue }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          scopes: 'https://www.googleapis.com/auth/user.birthday.read',
-        },
+        options: { redirectTo: window.location.origin },
       });
       if (error) return rejectWithValue(error.message);
       // The browser will redirect — no meaningful return value.
