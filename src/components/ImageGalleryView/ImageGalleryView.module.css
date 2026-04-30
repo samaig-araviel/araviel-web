@@ -77,6 +77,9 @@
   max-height: 120px;
   overflow-y: auto;
   scrollbar-width: none;
+  /* Hero section sets text-align: center; override here so prompt text
+     (and the markdown mirror) flow left-to-right inside the input. */
+  text-align: left;
 }
 
 .promptInput::-webkit-scrollbar {
