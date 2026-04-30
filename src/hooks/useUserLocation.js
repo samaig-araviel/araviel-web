@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 const STORAGE_KEY = 'araviel-user-location';
 const PERMISSION_KEY = 'araviel-location-permission';
+const ASKED_KEY = 'araviel-location-asked';
 const WEATHER_STALE_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
@@ -42,12 +43,33 @@ export default function useUserLocation() {
     return localStorage.getItem(PERMISSION_KEY) || 'prompt';
   });
 
-  // Check permission state on mount and auto-request location
+  // Check permission state on mount and auto-request location at most once.
+  //
+  // We only auto-prompt the very first time the user lands on the app. After
+  // that, browsers keep `permission.state === 'prompt'` for "Just this time"
+  // grants, dismissals (X), and "Continue blocking" denials that don't persist
+  // — so re-firing getCurrentPosition() on every reload would re-show the OS
+  // prompt indefinitely. The ASKED_KEY flag marks "we've already had our one
+  // chance to ask"; the user can opt back in by calling clearLocation().
   useEffect(() => {
     if (!navigator.geolocation) {
       setPermission('unavailable');
       return;
     }
+
+    const tryAutoRequest = (state) => {
+      if (state === 'granted') {
+        // Persistent grant — refresh data without re-prompting (the browser
+        // suppresses the UI when permission is already granted).
+        if (!localStorage.getItem(STORAGE_KEY)) requestLocationRef.current();
+        return;
+      }
+      if (state === 'denied') return;
+      if (localStorage.getItem(STORAGE_KEY)) return;
+      if (localStorage.getItem(ASKED_KEY) === 'true') return;
+      localStorage.setItem(ASKED_KEY, 'true');
+      requestLocationRef.current();
+    };
 
     if (navigator.permissions) {
       navigator.permissions
@@ -65,25 +87,11 @@ export default function useUserLocation() {
             }
           });
 
-          // Auto-request location if permission hasn't been denied and we don't have location yet
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (!stored && result.state !== 'denied') {
-            requestLocationRef.current();
-          }
+          tryAutoRequest(result.state);
         })
-        .catch(() => {
-          // permissions API not fully supported — try requesting anyway if no stored location
-          const stored = localStorage.getItem(STORAGE_KEY);
-          if (!stored) {
-            requestLocationRef.current();
-          }
-        });
+        .catch(() => tryAutoRequest('prompt'));
     } else {
-      // No permissions API — try requesting if no stored location
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
-        requestLocationRef.current();
-      }
+      tryAutoRequest('prompt');
     }
   }, []);
 
@@ -208,6 +216,7 @@ export default function useUserLocation() {
     setPermission('prompt');
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(PERMISSION_KEY);
+    localStorage.removeItem(ASKED_KEY);
   }, []);
 
   return { location, permission, requestLocation, clearLocation };
