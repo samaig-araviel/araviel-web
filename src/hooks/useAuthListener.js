@@ -14,7 +14,31 @@ import { fetchCreditBalance } from '../services/credits';
 import { fetchSubscription } from '../services/subscription';
 import { clearImageCache } from '../services/imageGeneration';
 import { setLoggerUser } from '../lib/logger';
-import { mapUser, mapSession, isFullyAuthenticated } from '../lib/authMappers';
+
+// ---------------------------------------------------------------------------
+// Helpers: map Supabase objects to our app shapes
+// ---------------------------------------------------------------------------
+
+function mapUser(supabaseUser) {
+  if (!supabaseUser) return null;
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email || null,
+    isAnonymous: supabaseUser.is_anonymous || false,
+    avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+    fullName:
+      supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.display_name || null,
+  };
+}
+
+function mapSession(session) {
+  if (!session) return null;
+  return {
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at: session.expires_at,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // localStorage keys to clear on sign-out (user-specific data)
@@ -58,13 +82,8 @@ export default function useAuthListener() {
               session: mapSession(session),
             })
           );
-          // Sync tier/credits from backend only for fully authenticated
-          // users — i.e. non-anonymous AND email-confirmed. An
-          // email-pending user is technically non-anonymous (Supabase
-          // converts them on signUp) but their account doesn't have any
-          // server-side credits or subscription yet, and our API treats
-          // them as a guest, so calling these endpoints would just churn.
-          if (event === 'SIGNED_IN' && isFullyAuthenticated(user)) {
+          // On real (non-anonymous) sign-in, sync tier/credits from backend
+          if (event === 'SIGNED_IN' && user && !user.isAnonymous) {
             resetGuestPromptCount();
             fetchCreditBalance()
               .then((data) => {

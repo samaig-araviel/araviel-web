@@ -34,51 +34,14 @@ describe('authSlice', () => {
   });
 
   describe('setAuth', () => {
-    it('sets user and session for a confirmed user and clears pending', () => {
-      const user = {
-        id: 'u1',
-        email: 'test@test.com',
-        isAnonymous: false,
-        emailConfirmedAt: '2026-04-30T12:00:00Z',
-      };
-      const session = { access_token: 'token' };
-      const state = authReducer(
-        { ...initialState, pendingEmailVerification: { email: 'old@test.com' } },
-        setAuth({ user, session })
-      );
-      expect(state.user).toEqual(user);
-      expect(state.session).toEqual(session);
-      expect(state.pendingEmailVerification).toBeNull();
-      expect(state.error).toBeNull();
-      expect(state.isLoading).toBe(false);
-    });
-
-    it('records pending verification for an email-pending user (anon-conversion case)', () => {
-      // Supabase converts an active anonymous session into an email-pending
-      // user on signUp: is_anonymous flips to false but email_confirmed_at
-      // stays null. setAuth must NOT treat this as an authenticated sign-in;
-      // it has to keep prompting the user to confirm.
-      const user = {
-        id: 'u1',
-        email: 'pending@test.com',
-        isAnonymous: false,
-        emailConfirmedAt: null,
-      };
+    it('sets user and session', () => {
+      const user = { id: 'u1', email: 'test@test.com', isAnonymous: false };
       const session = { access_token: 'token' };
       const state = authReducer(initialState, setAuth({ user, session }));
       expect(state.user).toEqual(user);
       expect(state.session).toEqual(session);
-      expect(state.pendingEmailVerification).toEqual({ email: 'pending@test.com' });
-    });
-
-    it('leaves pending verification alone for an anonymous user', () => {
-      const user = { id: 'anon', isAnonymous: true, emailConfirmedAt: null };
-      const session = { access_token: 'anon-tok' };
-      const state = authReducer(
-        { ...initialState, pendingEmailVerification: { email: 'pending@test.com' } },
-        setAuth({ user, session })
-      );
-      expect(state.pendingEmailVerification).toEqual({ email: 'pending@test.com' });
+      expect(state.error).toBeNull();
+      expect(state.isLoading).toBe(false);
     });
   });
 
@@ -175,25 +138,13 @@ describe('authSlice', () => {
     });
 
     it('handles signInWithEmail.fulfilled', () => {
-      // Supabase blocks signInWithPassword for unconfirmed users with
-      // "Email not confirmed", so reaching `fulfilled` always means a
-      // confirmed user. The reducer commits user/session and defensively
-      // clears any lingering pending verification (e.g. from a prior
-      // signup attempt with a different email).
-      const user = {
-        id: 'u1',
-        email: 'test@test.com',
-        isAnonymous: false,
-        emailConfirmedAt: '2026-04-30T12:00:00Z',
-      };
+      const user = { id: 'u1' };
       const session = { access_token: 'tok' };
-      const state = authReducer(
-        { ...initialState, pendingEmailVerification: { email: 'old@test.com' } },
-        { type: 'auth/signInWithEmail/fulfilled', payload: { user, session } }
-      );
+      const state = authReducer(initialState, {
+        type: 'auth/signInWithEmail/fulfilled',
+        payload: { user, session },
+      });
       expect(state.user).toEqual(user);
-      expect(state.session).toEqual(session);
-      expect(state.pendingEmailVerification).toBeNull();
       expect(state.isLoading).toBe(false);
     });
 
@@ -205,66 +156,36 @@ describe('authSlice', () => {
       expect(state.error).toBe('Wrong password');
     });
 
-    it('handles signUpWithEmail.fulfilled for a fresh email-pending signup (no session)', () => {
+    it('handles signUpWithEmail.fulfilled with no session (email confirmation pending)', () => {
       const state = authReducer(initialState, {
         type: 'auth/signUpWithEmail/fulfilled',
         payload: {
-          user: { id: 'new', email: 'new@example.com', emailConfirmedAt: null },
+          user: { id: 'new' },
           session: null,
           emailSubmitted: 'new@example.com',
         },
       });
-      // No confirmed email — must NOT commit user/session, must surface
-      // pending verification so the modal flips to the "Check your inbox"
-      // view.
+      // No session means no real auth yet — the user must NOT be
+      // written to state. Instead, the email is held as a pending
+      // verification so the modal/banner can prompt them.
       expect(state.user).toBeNull();
       expect(state.session).toBeNull();
       expect(state.pendingEmailVerification).toEqual({ email: 'new@example.com' });
       expect(state.isLoading).toBe(false);
     });
 
-    it('handles signUpWithEmail.fulfilled for the anon-conversion case', () => {
-      // The bug case. Supabase JS, on `signUp` against an active anonymous
-      // session, converts the user in place and returns the still-valid
-      // session. `is_anonymous` is now false but `email_confirmed_at` is
-      // still null. The reducer must NOT commit the user — it must hold
-      // pending and let the modal show the verify view.
+    it('handles signUpWithEmail.fulfilled with an immediate session', () => {
       const state = authReducer(initialState, {
         type: 'auth/signUpWithEmail/fulfilled',
         payload: {
-          user: {
-            id: 'new',
-            email: 'new@example.com',
-            isAnonymous: false,
-            emailConfirmedAt: null,
-          },
-          session: { access_token: 'still-anon-session-tok' },
-          emailSubmitted: 'new@example.com',
-        },
-      });
-      expect(state.user).toBeNull();
-      expect(state.session).toBeNull();
-      expect(state.pendingEmailVerification).toEqual({ email: 'new@example.com' });
-      expect(state.isLoading).toBe(false);
-    });
-
-    it('handles signUpWithEmail.fulfilled when Supabase returns a confirmed user', () => {
-      // Some Supabase projects disable email confirmation entirely; in that
-      // case `email_confirmed_at` is filled in immediately. Then the signup
-      // IS a real authentication — commit user/session, skip pending.
-      const state = authReducer(initialState, {
-        type: 'auth/signUpWithEmail/fulfilled',
-        payload: {
-          user: {
-            id: 'new',
-            email: 'new@example.com',
-            isAnonymous: false,
-            emailConfirmedAt: '2026-04-30T12:00:00Z',
-          },
+          user: { id: 'new' },
           session: { access_token: 'tok' },
           emailSubmitted: 'new@example.com',
         },
       });
+      // When email confirmation is disabled at the project level the
+      // signup IS a real auth — commit user/session and skip the
+      // pending-verification path.
       expect(state.user.id).toBe('new');
       expect(state.session.access_token).toBe('tok');
       expect(state.pendingEmailVerification).toBeNull();
@@ -318,12 +239,7 @@ describe('authSlice', () => {
   describe('selectors', () => {
     const authenticatedState = {
       auth: {
-        user: {
-          id: 'u1',
-          email: 'test@test.com',
-          isAnonymous: false,
-          emailConfirmedAt: '2026-04-30T12:00:00Z',
-        },
+        user: { id: 'u1', email: 'test@test.com', isAnonymous: false },
         session: { access_token: 'tok' },
         isLoading: false,
         error: null,
@@ -332,22 +248,8 @@ describe('authSlice', () => {
 
     const anonymousState = {
       auth: {
-        user: { id: 'anon-1', isAnonymous: true, emailConfirmedAt: null },
+        user: { id: 'anon-1', isAnonymous: true },
         session: { access_token: 'anon-tok' },
-        isLoading: false,
-        error: null,
-      },
-    };
-
-    const emailPendingState = {
-      auth: {
-        user: {
-          id: 'pending-1',
-          email: 'pending@test.com',
-          isAnonymous: false,
-          emailConfirmedAt: null,
-        },
-        session: { access_token: 'tok' },
         isLoading: false,
         error: null,
       },
@@ -373,20 +275,12 @@ describe('authSlice', () => {
       expect(selectAuthError(emptyState)).toBe('err');
     });
 
-    it('selectIsAuthenticated returns true for confirmed non-anonymous user', () => {
+    it('selectIsAuthenticated returns true for non-anonymous user', () => {
       expect(selectIsAuthenticated(authenticatedState)).toBe(true);
     });
 
     it('selectIsAuthenticated returns false for anonymous user', () => {
       expect(selectIsAuthenticated(anonymousState)).toBe(false);
-    });
-
-    it('selectIsAuthenticated returns false for email-pending user', () => {
-      // Critical: a user mid-conversion (is_anonymous=false but
-      // email_confirmed_at=null) must NOT be considered authenticated.
-      // Otherwise the gate logic flips and we drop them into the app
-      // before they confirm.
-      expect(selectIsAuthenticated(emailPendingState)).toBe(false);
     });
 
     it('selectIsAuthenticated returns false for null user', () => {
