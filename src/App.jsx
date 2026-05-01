@@ -12,7 +12,6 @@ import useAnswerFont from './hooks/useAnswerFont';
 import useUsageLimitWarnings from './hooks/useUsageLimitWarnings';
 import Sidebar from './components/Sidebar';
 import UpgradeModal from './components/UpgradeModal/UpgradeModal';
-import PendingEmailBanner from './components/PendingEmailBanner/PendingEmailBanner';
 import styles from './components/Auth/AuthModal.module.css';
 import './App.css';
 
@@ -130,11 +129,8 @@ export default function App() {
 
   return (
     <div className="app">
-      <PendingEmailBanner />
-      <div className="appContent">
-        <Sidebar />
-        <Outlet />
-      </div>
+      <Sidebar />
+      <Outlet />
       <UpgradeModal />
       <SpeedInsights />
     </div>

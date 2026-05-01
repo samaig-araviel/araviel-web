@@ -19,8 +19,6 @@ describe('authSlice', () => {
     session: null,
     isLoading: true,
     error: null,
-    pendingEmailVerification: null,
-    isOAuthRedirecting: false,
   };
 
   describe('initial state', () => {
@@ -156,39 +154,12 @@ describe('authSlice', () => {
       expect(state.error).toBe('Wrong password');
     });
 
-    it('handles signUpWithEmail.fulfilled with no session (email confirmation pending)', () => {
+    it('handles signUpWithEmail.fulfilled', () => {
       const state = authReducer(initialState, {
         type: 'auth/signUpWithEmail/fulfilled',
-        payload: {
-          user: { id: 'new' },
-          session: null,
-          emailSubmitted: 'new@example.com',
-        },
+        payload: { user: { id: 'new' }, session: null },
       });
-      // No session means no real auth yet — the user must NOT be
-      // written to state. Instead, the email is held as a pending
-      // verification so the modal/banner can prompt them.
-      expect(state.user).toBeNull();
-      expect(state.session).toBeNull();
-      expect(state.pendingEmailVerification).toEqual({ email: 'new@example.com' });
-      expect(state.isLoading).toBe(false);
-    });
-
-    it('handles signUpWithEmail.fulfilled with an immediate session', () => {
-      const state = authReducer(initialState, {
-        type: 'auth/signUpWithEmail/fulfilled',
-        payload: {
-          user: { id: 'new' },
-          session: { access_token: 'tok' },
-          emailSubmitted: 'new@example.com',
-        },
-      });
-      // When email confirmation is disabled at the project level the
-      // signup IS a real auth — commit user/session and skip the
-      // pending-verification path.
       expect(state.user.id).toBe('new');
-      expect(state.session.access_token).toBe('tok');
-      expect(state.pendingEmailVerification).toBeNull();
       expect(state.isLoading).toBe(false);
     });
 
