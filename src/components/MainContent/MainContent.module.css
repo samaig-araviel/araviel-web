@@ -636,6 +636,46 @@
   line-height: 1;
 }
 
+/* Guest sign-in CTA — secondary, ghost style sitting to the left of
+   .signUpNavBtn so the pair reads "Sign in   Sign up" with the
+   primary action emphasised. */
+.signInNavBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.12s ease,
+    border-color 0.15s ease;
+}
+
+.signInNavBtn:hover {
+  background-color: var(--bg-button-hover);
+  color: var(--text-primary);
+  border-color: var(--border-input);
+}
+
+.signInNavBtn:active {
+  transform: scale(0.97);
+}
+
+.signInNavBtn:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 2px;
+}
+
+.signInNavBtnLabel {
+  line-height: 1;
+}
+
 /* Chat menu (3-dot) */
 .chatMenuWrapper {
   position: relative;
