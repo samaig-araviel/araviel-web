@@ -14,7 +14,7 @@ import SharedConversationView from './components/SharedConversationView';
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary';
 import NotFound from './components/ErrorBoundary/NotFound';
 import RouteShell from './components/RouteShell/RouteShell';
-import { AuthRoute } from './components/Auth';
+import { AuthRoute, VerifyAgeView } from './components/Auth';
 import { WEB_APPLICATION_JSON_LD, ORGANIZATION_JSON_LD } from './lib/seo';
 
 const router = createBrowserRouter([
@@ -87,6 +87,22 @@ const router = createBrowserRouter([
             }}
           >
             <AuthRoute initialTab="signup" />
+          </RouteShell>
+        ),
+      },
+      {
+        path: 'signup/verify-age',
+        element: (
+          <RouteShell
+            feature="signup-verify-age"
+            seo={{
+              title: 'Verify your age',
+              description:
+                'Confirm your date of birth to complete signing up for Araviel. You must be 13 or older.',
+              noindex: true,
+            }}
+          >
+            <VerifyAgeView />
           </RouteShell>
         ),
       },
