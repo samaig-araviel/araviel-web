@@ -3058,15 +3058,9 @@
   }
 }
 
-/* Short viewports: re-flow the strip into normal document flow beneath the
-   welcome stack so it never overlaps the action buttons. */
-@media (max-height: 720px) {
-  .ambientProviders {
-    position: static;
-    margin-top: 28px;
-    padding: 0;
-  }
-}
+/* Short viewports: keep the provider strip pinned to the footer. The
+   absolute positioning (defined above) is intentional at every height
+   so the row never floats up under the chat input on shorter screens. */
 
 @media (prefers-reduced-motion: reduce) {
   .ambientProviders {
