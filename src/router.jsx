@@ -14,6 +14,7 @@ import SharedConversationView from './components/SharedConversationView';
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary';
 import NotFound from './components/ErrorBoundary/NotFound';
 import RouteShell from './components/RouteShell/RouteShell';
+import { AuthRoute } from './components/Auth';
 import { WEB_APPLICATION_JSON_LD, ORGANIZATION_JSON_LD } from './lib/seo';
 
 const router = createBrowserRouter([
@@ -56,6 +57,36 @@ const router = createBrowserRouter([
             }}
           >
             <MainContent />
+          </RouteShell>
+        ),
+      },
+      {
+        path: 'login',
+        element: (
+          <RouteShell
+            feature="login"
+            seo={{
+              title: 'Sign in',
+              description: 'Sign in to your Araviel account.',
+              noindex: true,
+            }}
+          >
+            <AuthRoute initialTab="signin" />
+          </RouteShell>
+        ),
+      },
+      {
+        path: 'signup',
+        element: (
+          <RouteShell
+            feature="signup"
+            seo={{
+              title: 'Sign up',
+              description: 'Create a free Araviel account.',
+              noindex: true,
+            }}
+          >
+            <AuthRoute initialTab="signup" />
           </RouteShell>
         ),
       },

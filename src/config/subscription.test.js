@@ -18,12 +18,10 @@ import {
 
 describe('subscription config', () => {
   describe('SubscriptionTier enum', () => {
-    it('contains all 5 tiers', () => {
+    it('contains the live tiers', () => {
       expect(SubscriptionTier.Free).toBe('free');
       expect(SubscriptionTier.Lite).toBe('lite');
       expect(SubscriptionTier.Pro).toBe('pro');
-      expect(SubscriptionTier.Ultra).toBe('ultra');
-      expect(SubscriptionTier.Apex).toBe('apex');
     });
   });
 
@@ -46,8 +44,8 @@ describe('subscription config', () => {
   });
 
   describe('SUBSCRIPTION_TIERS', () => {
-    it('contains exactly 5 tiers', () => {
-      expect(SUBSCRIPTION_TIERS).toHaveLength(5);
+    it('contains the live tiers', () => {
+      expect(SUBSCRIPTION_TIERS).toHaveLength(3);
     });
 
     it('each tier has required properties', () => {
@@ -80,7 +78,7 @@ describe('subscription config', () => {
 
   describe('TIER_ORDER', () => {
     it('orders tiers from lowest to highest', () => {
-      expect(TIER_ORDER).toEqual(['free', 'lite', 'pro', 'ultra', 'apex']);
+      expect(TIER_ORDER).toEqual(['free', 'lite', 'pro']);
     });
   });
 

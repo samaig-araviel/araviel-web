@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
-import { AuthModal } from '../Auth';
 import styles from './GuestGate.module.css';
 
 /**
- * GuestGate — A beautiful inline login prompt shown to guest users
- * when they try to access features that require authentication.
+ * GuestGate — Inline sign-in prompt shown to guest users on routes that
+ * require authentication. Sends visitors to the dedicated /signup or
+ * /login route, preserving the current path as `location.state.from`
+ * so they are redirected back after authenticating.
  *
  * Props:
  * - icon: ReactNode — Icon component to display
@@ -22,58 +24,55 @@ export default function GuestGate({
   actionLabel = 'Sign in to continue',
   compact = false,
 }) {
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const goToLogin = useCallback(() => {
+    navigate('/login', { state: { from: location.pathname + location.search } });
+  }, [navigate, location.pathname, location.search]);
+
+  const goToSignup = useCallback(() => {
+    navigate('/signup', { state: { from: location.pathname + location.search } });
+  }, [navigate, location.pathname, location.search]);
 
   return (
-    <>
-      <div className={`${styles.container} ${compact ? styles.compact : ''}`}>
-        <div className={styles.content}>
-          {icon && <div className={styles.icon}>{icon}</div>}
-          <h2 className={styles.title}>{title}</h2>
-          <p className={styles.description}>{description}</p>
-          <button className={styles.signInBtn} onClick={() => setAuthModalOpen(true)}>
-            {actionLabel}
-          </button>
-          <button
-            className={styles.signUpLink}
-            onClick={() => setAuthModalOpen(true)}
-          >
-            Don&apos;t have an account? <span>Sign up for free</span>
-          </button>
-        </div>
+    <div className={`${styles.container} ${compact ? styles.compact : ''}`}>
+      <div className={styles.content}>
+        {icon && <div className={styles.icon}>{icon}</div>}
+        <h2 className={styles.title}>{title}</h2>
+        <p className={styles.description}>{description}</p>
+        <button className={styles.signInBtn} onClick={goToLogin}>
+          {actionLabel}
+        </button>
+        <button className={styles.signUpLink} onClick={goToSignup}>
+          Don&apos;t have an account? <span>Sign up for free</span>
+        </button>
       </div>
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        initialTab="signup"
-      />
-    </>
+    </div>
   );
 }
 
 /**
- * useGuestGate — Hook that returns whether the user is a guest
- * and a function to show the auth modal.
+ * useGuestGate — Hook that returns whether the user is a guest and a
+ * `requireAuth` function that navigates to /signup (preserving the
+ * current path as `state.from`) when called for a non-authenticated
+ * user. `GateModal` is a no-op kept for back-compat with existing
+ * callers; safe to drop once all sites have migrated.
  */
 export function useGuestGate() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const requireAuth = () => {
+  const requireAuth = useCallback(() => {
     if (!isAuthenticated) {
-      setAuthModalOpen(true);
+      navigate('/signup', { state: { from: location.pathname + location.search } });
       return true; // blocked
     }
     return false; // allowed
-  };
+  }, [isAuthenticated, navigate, location.pathname, location.search]);
 
-  const GateModal = () => (
-    <AuthModal
-      isOpen={authModalOpen}
-      onClose={() => setAuthModalOpen(false)}
-      initialTab="signup"
-    />
-  );
+  const GateModal = () => null;
 
-  return { isGuest: !isAuthenticated, requireAuth, GateModal, setAuthModalOpen };
+  return { isGuest: !isAuthenticated, requireAuth, GateModal };
 }

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link, useLocation } from 'react-router-dom';
 import {
   signInWithGoogle,
   signInWithEmail,
@@ -90,6 +91,7 @@ const EyeIcon = ({ open }) => (
  */
 export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const dispatch = useDispatch();
+  const location = useLocation();
   const isLoading = useSelector(selectAuthLoading);
   const authError = useSelector(selectAuthError);
 
@@ -137,12 +139,6 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, handleClose]);
-
-  const handleTabSwitch = (tab) => {
-    setActiveTab(tab);
-    clearState();
-    setShowForgotPassword(false);
-  };
 
   const handleGoogleSignIn = () => {
     setLocalError('');
@@ -395,24 +391,24 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
             {isSignUp ? (
               <>
                 Already have an account?{' '}
-                <button
-                  type="button"
+                <Link
+                  to="/login"
+                  state={location.state}
                   className={styles.footerLink}
-                  onClick={() => handleTabSwitch('signin')}
                 >
                   Sign in
-                </button>
+                </Link>
               </>
             ) : (
               <>
                 New to Araviel?{' '}
-                <button
-                  type="button"
+                <Link
+                  to="/signup"
+                  state={location.state}
                   className={styles.footerLink}
-                  onClick={() => handleTabSwitch('signup')}
                 >
                   Create an account
-                </button>
+                </Link>
               </>
             )}
           </p>
