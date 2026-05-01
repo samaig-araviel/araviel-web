@@ -2904,12 +2904,15 @@
   font-weight: 500;
 }
 
-/* Ambient provider strip — a single horizontal centred row anchored near
-   the bottom of the main area. Decorative; communicates the range of
-   providers Araveil orchestrates without competing with the welcome stack.
-   The wrapper is non-interactive; only the badges opt back in for hover. */
+/* Ambient provider strip — a single horizontal centred row pinned to
+   the viewport footer. Decorative; communicates the range of providers
+   Araveil orchestrates without competing with the welcome stack. The
+   wrapper is non-interactive; only the badges opt back in for hover.
+   `position: fixed` (instead of absolute-to-.main) keeps the row at
+   the bottom of the visible viewport regardless of how tall the main
+   column grows or how its flex layout centres its contents. */
 .ambientProviders {
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
   bottom: calc(28px + var(--safe-area-bottom));
