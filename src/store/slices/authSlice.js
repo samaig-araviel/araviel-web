@@ -3,7 +3,33 @@ import { supabase } from '../../lib/supabase';
 import { setRememberMePreference } from '../../lib/authStorage';
 import { resetGuestPromptCount } from '../../utils/guestSession';
 import { logger } from '../../lib/logger';
-import { mapUser, mapSession, hasPendingEmailVerification } from '../../lib/authMappers';
+
+// ---------------------------------------------------------------------------
+// Helper: map a Supabase user object to our app's user shape
+// ---------------------------------------------------------------------------
+function mapUser(supabaseUser) {
+  if (!supabaseUser) return null;
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email || null,
+    isAnonymous: supabaseUser.is_anonymous || false,
+    avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
+    fullName:
+      supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.display_name || null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helper: map a Supabase session to a minimal session shape
+// ---------------------------------------------------------------------------
+function mapSession(session) {
+  if (!session) return null;
+  return {
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_at: session.expires_at,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Async thunks
@@ -97,16 +123,7 @@ export const signInWithEmail = createAsyncThunk(
   }
 );
 
-/** Create a new account with email, password, and optional display name.
- *
- * When email confirmation is enabled in Supabase (the project default for
- * Araviel), a successful `signUp` returns a `user` object but a `null`
- * session — the user record exists but no session is issued until they
- * click the link in the confirmation email. The slice surfaces this as a
- * `pendingEmailVerification` state instead of writing a half-formed user
- * into Redux: the modal switches to its "check your email" view, and the
- * underlying anonymous session keeps the rest of the app usable.
- */
+/** Create a new account with email, password, and optional display name. */
 export const signUpWithEmail = createAsyncThunk(
   'auth/signUpWithEmail',
   async ({ email, password, displayName }, { rejectWithValue }) => {
@@ -114,38 +131,13 @@ export const signUpWithEmail = createAsyncThunk(
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { display_name: displayName },
-          emailRedirectTo: window.location.origin,
-        },
+        options: { data: { display_name: displayName } },
       });
       if (error) return rejectWithValue(error.message);
       return {
         user: mapUser(data.user),
         session: mapSession(data.session),
-        emailSubmitted: email,
       };
-    } catch (err) {
-      return rejectWithValue(err.message);
-    }
-  }
-);
-
-/** Re-send the signup confirmation email for a user who hasn't confirmed yet.
- * Supabase enforces its own rate limit; the UI applies a short cooldown on
- * top so the button isn't a spam vector.
- */
-export const resendConfirmationEmail = createAsyncThunk(
-  'auth/resendConfirmationEmail',
-  async ({ email }, { rejectWithValue }) => {
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email,
-        options: { emailRedirectTo: window.location.origin },
-      });
-      if (error) return rejectWithValue(error.message);
-      return { email };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -186,44 +178,18 @@ const initialState = {
   session: null,
   isLoading: true,
   error: null,
-  // When a user signs up with email but Supabase requires email
-  // confirmation, no session is issued. We hold the email here so the
-  // AuthModal can render its "check your email" view and the global
-  // banner can prompt them until they confirm. Cleared on sign-in
-  // (confirmation flow lands them with a real session) and on sign-out.
-  pendingEmailVerification: null,
-  // True only while a Google OAuth redirect is in flight. Kept separate
-  // from `isLoading` so the modal can keep its CTA in the "Redirecting…"
-  // state until the browser actually navigates away — avoids the
-  // momentary flash of the modal closing before Google's screen appears.
-  isOAuthRedirecting: false,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    /** Set user and session (typically called from the auth listener).
-     *
-     * The pending-verification flag is derived purely from the user object
-     * here: a Supabase user with an email but no `email_confirmed_at` is
-     * email-pending — we surface that via `pendingEmailVerification` no
-     * matter how it arrived (signUp success, USER_UPDATED after Supabase
-     * converted an anon user, an `INITIAL_SESSION` rehydration on reload,
-     * etc.). Once the email is confirmed the same path clears the flag.
-     */
+    /** Set user and session (typically called from the auth listener). */
     setAuth(state, action) {
       state.user = action.payload.user;
       state.session = action.payload.session;
       state.error = null;
       state.isLoading = false;
-      state.isOAuthRedirecting = false;
-      const nextUser = action.payload.user;
-      if (hasPendingEmailVerification(nextUser)) {
-        state.pendingEmailVerification = { email: nextUser.email };
-      } else if (nextUser && nextUser.emailConfirmedAt) {
-        state.pendingEmailVerification = null;
-      }
     },
     /** Clear all auth state (e.g. on sign-out). */
     clearAuth(state) {
@@ -231,13 +197,6 @@ const authSlice = createSlice({
       state.session = null;
       state.error = null;
       state.isLoading = false;
-      state.pendingEmailVerification = null;
-      state.isOAuthRedirecting = false;
-    },
-    /** Manually clear the pending email verification (e.g. user dismisses
-     *  the banner or chooses "use a different email"). */
-    clearPendingEmailVerification(state) {
-      state.pendingEmailVerification = null;
     },
     /** Explicitly toggle the loading flag. */
     setAuthLoading(state, action) {
@@ -266,37 +225,24 @@ const authSlice = createSlice({
         state.session = action.payload.session;
         state.isLoading = false;
         state.error = null;
-        // Restore the pending-verification prompt across reloads:
-        // Supabase persists the email-pending session in localStorage, so
-        // a returning user lands here with `email && !emailConfirmedAt`.
-        // The banner needs the flag to prompt them.
-        if (hasPendingEmailVerification(action.payload.user)) {
-          state.pendingEmailVerification = { email: action.payload.user.email };
-        }
       })
       .addCase(initializeAuth.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Failed to initialize auth';
       });
 
-    // signInWithGoogle — `fulfilled` resolves the moment Supabase has
-    // queued the redirect; the browser navigation itself happens a tick
-    // later. We deliberately leave `isOAuthRedirecting` true so the
-    // modal can keep showing "Redirecting…" until the page changes,
-    // avoiding the previous flash of the modal closing before Google's
-    // consent screen appeared.
+    // signInWithGoogle
     builder
       .addCase(signInWithGoogle.pending, (state) => {
         state.isLoading = true;
-        state.isOAuthRedirecting = true;
         state.error = null;
       })
       .addCase(signInWithGoogle.fulfilled, (state) => {
+        // Browser redirects — state will be updated by the auth listener
         state.isLoading = false;
       })
       .addCase(signInWithGoogle.rejected, (state, action) => {
         state.isLoading = false;
-        state.isOAuthRedirecting = false;
         state.error = action.payload || 'Google sign-in failed';
       });
 
@@ -311,12 +257,6 @@ const authSlice = createSlice({
         state.session = action.payload.session;
         state.isLoading = false;
         state.error = null;
-        // Supabase blocks signInWithPassword for unconfirmed emails ("Email
-        // not confirmed"), so reaching `fulfilled` implies a confirmed user.
-        // Clear any lingering pending state defensively (e.g. user signed
-        // in to a different account than the one they previously had a
-        // pending verification for).
-        state.pendingEmailVerification = null;
         resetGuestPromptCount();
       })
       .addCase(signInWithEmail.rejected, (state, action) => {
@@ -325,52 +265,22 @@ const authSlice = createSlice({
       });
 
     // signUpWithEmail
-    //
-    // The session can be non-null here even when the user hasn't confirmed —
-    // when `signUp` runs against an active anonymous session, Supabase
-    // *converts* the anon user into an email-pending user, keeping the
-    // existing session valid. The only field that distinguishes "really
-    // authenticated" from "email pending" is `email_confirmed_at`, so the
-    // reducer keys on that exclusively. The earlier `if (session)` check
-    // was the source of the "drops you into the app" bug.
     builder
       .addCase(signUpWithEmail.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(signUpWithEmail.fulfilled, (state, action) => {
+        state.user = action.payload.user;
+        state.session = action.payload.session;
         state.isLoading = false;
         state.error = null;
-        const newUser = action.payload.user;
-        if (newUser?.emailConfirmedAt) {
-          state.user = newUser;
-          state.session = action.payload.session;
-          state.pendingEmailVerification = null;
-          resetGuestPromptCount();
-        } else {
-          // Email-pending. Hold the email so the modal/banner can prompt
-          // the user; deliberately do NOT commit user/session here — that
-          // would flip selectIsAuthenticated to true and drop the user
-          // into the app. The auth listener will receive a USER_UPDATED
-          // shortly after this and write the canonical user via setAuth,
-          // which preserves pendingEmailVerification because the user is
-          // still email-pending.
-          state.pendingEmailVerification = {
-            email: action.payload.emailSubmitted,
-          };
-        }
+        resetGuestPromptCount();
       })
       .addCase(signUpWithEmail.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Sign-up failed';
       });
-
-    // resendConfirmationEmail — surfaces errors via the slice but doesn't
-    // mutate session state. We don't toggle `isLoading` here so it
-    // doesn't fight with the modal's button-level cooldown spinner.
-    builder.addCase(resendConfirmationEmail.rejected, (state, action) => {
-      state.error = action.payload || 'Failed to resend confirmation email';
-    });
 
     // signOut
     builder
@@ -409,38 +319,16 @@ const authSlice = createSlice({
 // Exports
 // ---------------------------------------------------------------------------
 
-export const {
-  setAuth,
-  clearAuth,
-  setAuthLoading,
-  setAuthError,
-  setUserAvatarUrl,
-  clearPendingEmailVerification,
-} = authSlice.actions;
+export const { setAuth, clearAuth, setAuthLoading, setAuthError, setUserAvatarUrl } =
+  authSlice.actions;
 
 // Selectors
 export const selectAuthUser = (state) => state.auth.user;
 export const selectAuthSession = (state) => state.auth.session;
 export const selectAuthLoading = (state) => state.auth.isLoading;
 export const selectAuthError = (state) => state.auth.error;
-
-/**
- * `true` only for fully authenticated users — non-anonymous AND
- * email-confirmed. An "email-pending" user (signed up but hasn't yet
- * clicked the confirmation link) is intentionally NOT authenticated:
- * they should still see the verify view in the modal and the prompt
- * banner, and the rest of the app should continue treating them as a
- * guest until they confirm. Using `email_confirmed_at` (rather than
- * `is_anonymous`) is what makes this robust against Supabase's
- * "convert anonymous user to email user on signUp" behavior, which
- * flips `is_anonymous` to `false` while the email is still unconfirmed.
- */
 export const selectIsAuthenticated = (state) =>
-  Boolean(state.auth.user) &&
-  !state.auth.user.isAnonymous &&
-  Boolean(state.auth.user.emailConfirmedAt);
+  Boolean(state.auth.user) && !state.auth.user.isAnonymous;
 export const selectIsAnonymous = (state) => Boolean(state.auth.user) && state.auth.user.isAnonymous;
-export const selectPendingEmailVerification = (state) => state.auth.pendingEmailVerification;
-export const selectIsOAuthRedirecting = (state) => state.auth.isOAuthRedirecting;
 
 export default authSlice.reducer;
