@@ -27,7 +27,6 @@ import {
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
-import { AuthModal } from '../Auth';
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -171,7 +170,6 @@ export default function Sidebar() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userTier = useSelector(selectCurrentTier);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const userMenuRef = useRef(null);
   const renameInputRef = useRef(null);
@@ -982,7 +980,9 @@ export default function Sidebar() {
                   onClick={() => {
                     setUserMenuOpen(false);
                     if (!isAuthenticated) {
-                      setAuthModalOpen(true);
+                      navigate('/login', {
+                        state: { from: location.pathname + location.search },
+                      });
                     } else {
                       navigate('/settings');
                     }
@@ -1054,7 +1054,9 @@ export default function Sidebar() {
                     className={styles.userDropdownItem}
                     onClick={() => {
                       setUserMenuOpen(false);
-                      setAuthModalOpen(true);
+                      navigate('/login', {
+                        state: { from: location.pathname + location.search },
+                      });
                     }}
                   >
                     <LogOutIcon />
@@ -1146,9 +1148,6 @@ export default function Sidebar() {
           onError={showError}
         />
       )}
-
-      {/* Auth modal */}
-      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
       {/* Search modal */}
       {searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}

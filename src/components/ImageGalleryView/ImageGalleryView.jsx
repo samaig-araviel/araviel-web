@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import {
   setInputValue,
@@ -13,7 +13,6 @@ import {
   setImageQuality,
   setCreditBalance,
 } from '../../store/slices/chatSlice';
-import { AuthModal } from '../Auth';
 import { hasReachedGuestImageLimit, incrementGuestImageCount } from '../../utils/guestSession';
 import { fetchCreditBalance } from '../../services/credits';
 import { IMAGE_QUALITY_OPTIONS } from '../../config/credits';
@@ -96,6 +95,7 @@ const QUICK_PROMPTS = [
 export default function ImageGalleryView() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { id: routeImageId } = useParams();
   const creditBalance = useSelector(selectCreditBalance);
   const imageQuality = useSelector(selectImageQuality);
@@ -108,7 +108,6 @@ export default function ImageGalleryView() {
   const [promptInput, setPromptInput] = useState('');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showBuyPacks, setShowBuyPacks] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [qualityOpen, setQualityOpen] = useState(false);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const promptInputRef = useRef(null);
@@ -313,7 +312,7 @@ export default function ImageGalleryView() {
   const firePromptInChat = (prompt) => {
     // Guest image limit check
     if (!isAuthenticated && hasReachedGuestImageLimit()) {
-      setShowAuthModal(true);
+      navigate('/signup', { state: { from: location.pathname + location.search } });
       return;
     }
     // Track guest image usage
@@ -529,7 +528,9 @@ export default function ImageGalleryView() {
               tier={creditBalance?.tier ?? 'free'}
               onBuyCredits={() => {
                 if (!isAuthenticated) {
-                  setShowAuthModal(true);
+                  navigate('/signup', {
+                    state: { from: location.pathname + location.search },
+                  });
                 } else {
                   setShowBuyPacks(true);
                 }
@@ -802,12 +803,6 @@ export default function ImageGalleryView() {
           document.body
         )}
 
-      {/* Guest auth modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        initialTab="signup"
-      />
     </div>
   );
 }

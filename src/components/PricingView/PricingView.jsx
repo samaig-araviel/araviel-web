@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   selectCurrentTier,
   selectBillingCycle,
@@ -14,13 +14,13 @@ import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { getAvailableTiers, SubscriptionTier } from '../../config/subscription';
 import BillingToggle from './BillingToggle';
 import TierCard from './TierCard';
-import { AuthModal } from '../Auth';
 import { useToast } from '../Toast/Toast';
 import styles from './PricingView.module.css';
 
 export default function PricingView() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { showError } = useToast();
   const currentTier = useSelector(selectCurrentTier);
   const billingCycle = useSelector(selectBillingCycle);
@@ -28,11 +28,10 @@ export default function PricingView() {
   const subscriptionError = useSelector(selectSubscriptionError);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const tiers = getAvailableTiers();
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const handleCtaClick = (tier) => {
     if (!isAuthenticated) {
-      setShowAuthModal(true);
+      navigate('/signup', { state: { from: location.pathname + location.search } });
       return;
     }
 
@@ -116,12 +115,6 @@ export default function PricingView() {
           <p>Prices shown in GBP. Cancel or change your plan anytime.</p>
         </div>
       </div>
-
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        initialTab="signup"
-      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   selectInputValue,
@@ -150,7 +150,6 @@ import {
   hasReachedGuestImageLimit,
   incrementGuestImageCount,
 } from '../../utils/guestSession';
-import { AuthModal } from '../Auth';
 import DynamicSubtitle from '../DynamicSubtitle/DynamicSubtitle';
 import useUserLocation from '../../hooks/useUserLocation';
 import styles from './MainContent.module.css';
@@ -1001,6 +1000,7 @@ function ImageLimitPrompt({ onClose, onBuyCredits, onUpgrade }) {
 export default function MainContent() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const inputValue = useSelector(selectInputValue);
   const mode = useSelector(selectMode);
   const messages = useSelector(selectMessages);
@@ -1063,8 +1063,6 @@ export default function MainContent() {
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [showLimitToast, setShowLimitToast] = useState(false);
   const [showImageLimitPrompt, setShowImageLimitPrompt] = useState(false);
-  const [showGuestLimitModal, setShowGuestLimitModal] = useState(false);
-  const [showSessionExpiredModal, setShowSessionExpiredModal] = useState(false);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   // conversationProject is now derived from Redux — see below
   const [conversationTitle, setConversationTitle] = useState('');
@@ -1862,7 +1860,7 @@ export default function MainContent() {
               } else if (data.code === 'GUEST_LIMIT') {
                 dispatch(setIsProcessing(false));
                 // Guest limit reached — show sign-up auth modal
-                setShowGuestLimitModal(true);
+                navigate('/signup', { state: { from: location.pathname + location.search } });
                 if (assistantMsgAdded) {
                   dispatch(
                     updateLastMessage({
@@ -1992,11 +1990,11 @@ export default function MainContent() {
     // Guest limit checks — separate text and image counters
     if (!isAuthenticated) {
       if (willGenerateImage && hasReachedGuestImageLimit()) {
-        setShowGuestLimitModal(true);
+        navigate('/signup', { state: { from: location.pathname + location.search } });
         return;
       }
       if (!willGenerateImage && hasReachedGuestLimit()) {
-        setShowGuestLimitModal(true);
+        navigate('/signup', { state: { from: location.pathname + location.search } });
         return;
       }
     }
@@ -2128,11 +2126,11 @@ export default function MainContent() {
     const willGenImage =
       modality === 'image' || (selectedModelId && isImageGenerationModel(selectedModelId));
 
-    // Guest image limit — show AuthModal (sign up), not "Upgrade to Pro"
+    // Guest image limit — bounce to /signup, not "Upgrade to Pro"
     if (!isAuthenticated && willGenImage && hasReachedGuestImageLimit()) {
       dispatch(setPendingAutoSubmit(false));
       dispatch(setPendingModality(null));
-      setShowGuestLimitModal(true);
+      navigate('/signup', { state: { from: location.pathname + location.search } });
       return;
     }
 
@@ -2844,7 +2842,7 @@ export default function MainContent() {
             <button
               type="button"
               className={styles.signUpNavBtn}
-              onClick={() => setShowGuestLimitModal(true)}
+              onClick={() => navigate('/signup', { state: { from: location.pathname + location.search } })}
               aria-label="Sign up or sign in"
             >
               <span className={styles.signUpNavBtnLabel}>Sign up</span>
@@ -3068,20 +3066,6 @@ export default function MainContent() {
 
       {showBuyPacksModal && <BuyPacksModal onClose={() => setShowBuyPacksModal(false)} />}
 
-      {/* Guest prompt limit — uniform sign-up surface */}
-      <AuthModal
-        isOpen={showGuestLimitModal}
-        onClose={() => setShowGuestLimitModal(false)}
-        initialTab="signup"
-      />
-
-      {/* Session expired modal */}
-      <AuthModal
-        isOpen={showSessionExpiredModal}
-        onClose={() => setShowSessionExpiredModal(false)}
-        initialTab="signin"
-      />
-
       {/* Gallery preview */}
       {showGallery && galleryFiles.length > 0 && (
         <GalleryPreview
@@ -3123,7 +3107,7 @@ export default function MainContent() {
           isStreaming={isStreaming}
           streamedText={streamedText}
           onRetry={handleRetry}
-          onSessionExpired={() => setShowSessionExpiredModal(true)}
+          onSessionExpired={() => navigate('/login', { state: { from: location.pathname + location.search } })}
           onAlternateModelRequest={handleAlternateModelRequest}
           onSubConvPanelToggle={setIsSubConvPanelOpen}
           onCodePanelToggle={setIsCodePanelOpen}
