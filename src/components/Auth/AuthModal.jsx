@@ -272,21 +272,17 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       role="dialog"
       aria-modal="true"
       aria-label={heading}
-      onClick={handleClose}
     >
       <button
         type="button"
         className={styles.backBtn}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleBackBtn();
-        }}
+        onClick={handleBackBtn}
       >
         <ArrowLeftIcon />
         <span>{backLabel}</span>
       </button>
 
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.panel}>
         <div className={styles.logoMark} aria-hidden="true">
           A
         </div>
