@@ -2953,7 +2953,11 @@
    column grows or how its flex layout centres its contents. */
 .ambientProviders {
   position: fixed;
-  left: 0;
+  /* Sidebar publishes its current rendered width as --sidebar-width on
+     the root. Offsetting `left` by it keeps the centred strip aligned
+     with the main column instead of disappearing under the open
+     sidebar. Falls back to 0 if the variable isn't set yet. */
+  left: var(--sidebar-width, 0);
   right: 0;
   bottom: calc(28px + var(--safe-area-bottom));
   z-index: 0;
@@ -2966,6 +2970,7 @@
   pointer-events: none;
   opacity: 0;
   animation: ambientProvidersIn 0.7s cubic-bezier(0.2, 0, 0, 1) 0.2s forwards;
+  transition: left 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .ambientProvider {

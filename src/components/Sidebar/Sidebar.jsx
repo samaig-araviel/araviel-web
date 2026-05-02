@@ -257,6 +257,17 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Publish the sidebar's current rendered width as a CSS variable on
+  // the root so position: fixed siblings (e.g. the landing page's
+  // ambient provider strip) can offset their `left` by it and stop
+  // sliding under the open sidebar. Mobile renders the sidebar as a
+  // full-screen overlay, so it doesn't take any horizontal space —
+  // we publish 0 there.
+  useEffect(() => {
+    const width = isMobile ? '0px' : collapsed ? '48px' : '260px';
+    document.documentElement.style.setProperty('--sidebar-width', width);
+  }, [collapsed, isMobile]);
+
   // Global Cmd/Ctrl+K shortcut for search
   useEffect(() => {
     const handleKeyDown = (e) => {
