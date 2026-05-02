@@ -21,17 +21,21 @@
   flex-direction: column;
   align-items: stretch;
   text-align: center;
+  /* Match AuthModal's 90% scale so the onboarding screens read as a
+     single visually-consistent flow. */
+  transform: scale(0.9);
+  transform-origin: center;
   animation: panelIn 0.3s cubic-bezier(0.2, 0, 0, 1);
 }
 
 @keyframes panelIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(10px) scale(0.9);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(0.9);
   }
 }
 

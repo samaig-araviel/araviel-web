@@ -98,6 +98,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -112,6 +113,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const clearState = useCallback(() => {
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setDisplayName('');
     setShowPassword(false);
     setLocalError('');
@@ -194,6 +196,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
 
     if (activeTab === 'signup' && password.length < 6) {
       setLocalError('Password must be at least 6 characters.');
+      return;
+    }
+
+    if (activeTab === 'signup' && password !== confirmPassword) {
+      setLocalError("Passwords don't match — re-enter to confirm.");
       return;
     }
 
@@ -400,6 +407,26 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {!showForgotPassword && isSignUp && (
+            <div className={styles.fieldGroup}>
+              <label className={styles.label} htmlFor="auth-confirm-password">
+                Confirm password
+              </label>
+              <div className={styles.passwordWrapper}>
+                <input
+                  id="auth-confirm-password"
+                  className={styles.input}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
             </div>
           )}
 
