@@ -147,7 +147,6 @@ export default function VerifyAgeView() {
   const [monthIndex, setMonthIndex] = useState(today.getMonth());
   const [day, setDay] = useState(today.getDate());
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   const yearOptions = useMemo(
     () => Array.from({ length: 100 }, (_, i) => today.getFullYear() - i),
@@ -172,7 +171,6 @@ export default function VerifyAgeView() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-    setSuccessMessage('');
     dispatch(setAuthError(null));
 
     const age = calculateAge(year, monthIndex, day);
@@ -193,7 +191,32 @@ export default function VerifyAgeView() {
     );
 
     if (result.meta.requestStatus === 'fulfilled') {
-      setSuccessMessage('Account created. Check your email to confirm.');
+      // Supabase returned a session → email confirmation is disabled in
+      // this project, the user is already authenticated. Drop them
+      // straight into the app.
+      if (result.payload?.session) {
+        navigate(location.state?.from || '/', { replace: true });
+        return;
+      }
+      // No session → email confirmation is on. Hand off to a dedicated
+      // "check your email" screen so the user can't accidentally retry
+      // and burn through Supabase's email rate limit.
+      navigate('/signup/check-email', {
+        replace: true,
+        state: { email: pendingSignup.email },
+      });
+      return;
+    }
+
+    // Friendly retry message for the project-wide email rate limit. The
+    // signUp call did NOT create a user when this fires, so it's safe to
+    // try again with the same email later.
+    const raw = (result.payload || '').toString().toLowerCase();
+    if (raw.includes('rate limit') || raw.includes('over_email_send_rate_limit')) {
+      setError(
+        "We couldn't send the confirmation email right now — try again in a few minutes. " +
+          "Your details haven't been submitted yet."
+      );
     }
   };
 
@@ -239,13 +262,8 @@ export default function VerifyAgeView() {
           </div>
 
           {errorMessage && <div className={authStyles.error}>{errorMessage}</div>}
-          {successMessage && <div className={authStyles.success}>{successMessage}</div>}
 
-          <button
-            className={authStyles.submitBtn}
-            type="submit"
-            disabled={isLoading || Boolean(successMessage)}
-          >
+          <button className={authStyles.submitBtn} type="submit" disabled={isLoading}>
             {isLoading ? <span className={authStyles.spinner} aria-hidden="true" /> : 'Continue'}
           </button>
         </form>

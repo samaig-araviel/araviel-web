@@ -137,13 +137,40 @@ export const signUpWithEmail = createAsyncThunk(
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: metadata },
+        options: {
+          data: metadata,
+          // Send the user back to the app root after they click the
+          // confirmation link in the verification email.
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
       });
       if (error) return rejectWithValue(error.message);
       return {
         user: mapUser(data.user),
         session: mapSession(data.session),
       };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/** Resend the signup confirmation email for an unconfirmed account. Used by
+ *  the /signup/check-email screen so users can retry without re-entering
+ *  their credentials. */
+export const resendSignupEmail = createAsyncThunk(
+  'auth/resendSignupEmail',
+  async ({ email }, { rejectWithValue }) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
+      });
+      if (error) return rejectWithValue(error.message);
+      return null;
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -277,11 +304,17 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(signUpWithEmail.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.session = action.payload.session;
+        // Only flip the user into the authenticated state if Supabase
+        // actually returned a session. When email confirmation is required
+        // signUp returns a user record but no session — the user must
+        // verify the email before they have an authenticated session.
+        if (action.payload.session) {
+          state.user = action.payload.user;
+          state.session = action.payload.session;
+          resetGuestPromptCount();
+        }
         state.isLoading = false;
         state.error = null;
-        resetGuestPromptCount();
       })
       .addCase(signUpWithEmail.rejected, (state, action) => {
         state.isLoading = false;

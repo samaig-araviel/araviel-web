@@ -1,0 +1,94 @@
+/* CheckEmailView — full-page confirmation surface shown after a
+   successful email signup that requires the user to click a link
+   in their inbox. Visual language mirrors VerifyAgeView and
+   AuthModal so the three onboarding screens read as one flow. */
+
+.container {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px calc(32px + var(--safe-area-bottom));
+  background-color: var(--bg-primary);
+}
+
+.panel {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: center;
+  animation: panelIn 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.iconWrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+}
+
+.heading {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0 0 24px;
+}
+
+.email {
+  color: var(--text-primary);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.footer {
+  margin: 18px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.footerLink {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.footerLink:hover {
+  opacity: 0.85;
+}
