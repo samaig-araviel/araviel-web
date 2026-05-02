@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { supabase } from '../lib/supabase';
-import { initializeAuth, setAuth, clearAuth, updateBirthDate } from '../store/slices/authSlice';
+import { initializeAuth, setAuth, clearAuth, signOut, updateBirthDate } from '../store/slices/authSlice';
 import { resetChatState, setCreditBalance } from '../store/slices/chatSlice';
 import { resetProjectsState } from '../store/slices/projectsSlice';
 import {
@@ -15,6 +15,7 @@ import { fetchSubscription } from '../services/subscription';
 import { fetchGoogleBirthday } from '../services/googleBirthday';
 import { clearImageCache } from '../services/imageGeneration';
 import { setLoggerUser } from '../lib/logger';
+import { isAgeAllowed, MIN_AGE } from '../utils/age';
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -101,9 +102,36 @@ export default function useAuthListener() {
             if (provider === 'google' && providerToken && !user.birthDate) {
               fetchGoogleBirthday(providerToken)
                 .then((birthDate) => {
-                  if (birthDate) {
-                    dispatch(updateBirthDate({ birthDate }));
+                  if (!birthDate) return; // Falls through to manual entry.
+                  // Validate against MIN_AGE here so an under-13 Google
+                  // user is signed out immediately, before App.jsx's
+                  // gate has to react to the metadata write. The DB
+                  // sync trigger would also reject the update, but
+                  // checking client-side gives a clearer UX path.
+                  if (!isAgeAllowed(birthDate)) {
+                    // Stash the rejection so AuthModal can surface it
+                    // after the hard redirect — we don't have router
+                    // access here. sessionStorage clears at the end of
+                    // the browsing session, and AuthModal removes the
+                    // key once read so refreshing /login doesn't echo
+                    // the message indefinitely.
+                    if (typeof window !== 'undefined') {
+                      try {
+                        sessionStorage.setItem(
+                          'araviel-age-rejection',
+                          `You must be at least ${MIN_AGE} years old to use Araviel.`
+                        );
+                      } catch {
+                        // Quota / private mode → skip the message.
+                      }
+                    }
+                    dispatch(signOut());
+                    if (typeof window !== 'undefined') {
+                      window.location.assign('/login');
+                    }
+                    return;
                   }
+                  dispatch(updateBirthDate({ birthDate }));
                 })
                 .catch(() => {});
             }

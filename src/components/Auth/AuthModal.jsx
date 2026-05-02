@@ -131,11 +131,26 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     setActiveTab(initialTab);
   }, [isOpen, initialTab]);
 
-  // Surface any age-rejection message handed in via navigate().
+  // Surface any age-rejection message — either handed in via
+  // navigate() (App.jsx age gate) or stashed in sessionStorage by
+  // useAuthListener before a hard redirect (Google under-13 path).
   useEffect(() => {
     if (!isOpen) return;
     const rejection = location.state?.ageRejection;
-    if (rejection) setLocalError(rejection);
+    if (rejection) {
+      setLocalError(rejection);
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    try {
+      const stashed = sessionStorage.getItem('araviel-age-rejection');
+      if (stashed) {
+        setLocalError(stashed);
+        sessionStorage.removeItem('araviel-age-rejection');
+      }
+    } catch {
+      // sessionStorage unavailable → nothing to surface.
+    }
   }, [isOpen, location.state]);
 
   useEffect(() => {
