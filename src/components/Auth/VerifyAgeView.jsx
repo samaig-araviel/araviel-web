@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   signUpWithEmail,
+  updateBirthDate,
   selectAuthLoading,
   selectAuthError,
+  selectIsAuthenticated,
   setAuthError,
 } from '../../store/slices/authSlice';
 import authStyles from './AuthModal.module.css';
@@ -131,16 +133,25 @@ export default function VerifyAgeView() {
   const dispatch = useDispatch();
   const isLoading = useSelector(selectAuthLoading);
   const authError = useSelector(selectAuthError);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   const pendingSignup = location.state?.pendingSignup;
+  // Two operating modes:
+  //   - "signup":  user came from /signup with credentials in transit;
+  //                we'll call signUpWithEmail with the chosen DOB.
+  //   - "update":  user is already authenticated (e.g. signed in via
+  //                Google but has no birth_date in user_metadata); we'll
+  //                call updateBirthDate to attach the chosen DOB.
+  const mode = pendingSignup ? 'signup' : isAuthenticated ? 'update' : null;
 
-  // No credentials in transit means the user landed here directly (refresh,
-  // shared link, history). Bounce them back to /signup to start over.
+  // No credentials and no session means the user landed here directly
+  // (refresh, shared link, history). Bounce them back to /signup so the
+  // flow stays linear.
   useEffect(() => {
-    if (!pendingSignup) {
+    if (!mode) {
       navigate('/signup', { replace: true });
     }
-  }, [pendingSignup, navigate]);
+  }, [mode, navigate]);
 
   const today = useMemo(() => new Date(), []);
   const [year, setYear] = useState(today.getFullYear() - 18);
@@ -165,6 +176,10 @@ export default function VerifyAgeView() {
   }, [monthIndex, year, day]);
 
   const handleBack = () => {
+    if (mode === 'update') {
+      navigate('/', { replace: true });
+      return;
+    }
     navigate('/signup', { state: { from: location.state?.from } });
   };
 
@@ -180,6 +195,17 @@ export default function VerifyAgeView() {
     }
 
     const birthDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    if (mode === 'update') {
+      // Already-authenticated user (typically Google OAuth where the
+      // People API didn't return a complete DOB). Just persist the
+      // chosen date and drop them into the app.
+      const result = await dispatch(updateBirthDate({ birthDate }));
+      if (result.meta.requestStatus === 'fulfilled') {
+        navigate(location.state?.from || '/', { replace: true });
+      }
+      return;
+    }
 
     const result = await dispatch(
       signUpWithEmail({
@@ -220,7 +246,7 @@ export default function VerifyAgeView() {
     }
   };
 
-  if (!pendingSignup) return null;
+  if (!mode) return null;
 
   const errorMessage = error || authError;
 
