@@ -10,6 +10,7 @@ import {
   setAuthError,
 } from '../../store/slices/authSlice';
 import { getRememberMePreference, setRememberMePreference } from '../../lib/authStorage';
+import { getPasswordRuleViolations, formatPasswordError } from '../../utils/password';
 import styles from './AuthModal.module.css';
 
 const GoogleIcon = () => (
@@ -133,11 +134,17 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     setActiveTab(initialTab);
   }, [isOpen, initialTab]);
 
-  // Surface any age-rejection message — either handed in via
-  // navigate() (App.jsx age gate) or stashed in sessionStorage by
-  // useAuthListener before a hard redirect (Google under-13 path).
+  // Surface any inline message handed in via navigate() — either an
+  // age rejection from the App.jsx gate / useAuthListener (Google
+  // under-13 hard redirect) or a password rejection bounced back from
+  // VerifyAgeView when the server's policy is stricter than ours.
   useEffect(() => {
     if (!isOpen) return;
+    const passwordError = location.state?.passwordError;
+    if (passwordError) {
+      setLocalError(passwordError);
+      return;
+    }
     const rejection = location.state?.ageRejection;
     if (rejection) {
       setLocalError(rejection);
@@ -194,14 +201,16 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       return;
     }
 
-    if (activeTab === 'signup' && password.length < 6) {
-      setLocalError('Password must be at least 6 characters.');
-      return;
-    }
-
-    if (activeTab === 'signup' && password !== confirmPassword) {
-      setLocalError("Passwords don't match — re-enter to confirm.");
-      return;
+    if (activeTab === 'signup') {
+      const violations = getPasswordRuleViolations(password);
+      if (violations.length > 0) {
+        setLocalError(formatPasswordError(violations));
+        return;
+      }
+      if (password !== confirmPassword) {
+        setLocalError("Passwords don't match — re-enter to confirm.");
+        return;
+      }
     }
 
     if (activeTab === 'signin') {
@@ -353,7 +362,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
                   id="auth-password"
                   className={styles.input}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={isSignUp ? 'Min. 6 characters' : 'Your password'}
+                  placeholder={isSignUp ? 'At least 8 chars, mix of cases & a number' : 'Your password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete={isSignUp ? 'new-password' : 'current-password'}
