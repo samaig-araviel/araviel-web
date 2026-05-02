@@ -905,17 +905,6 @@ export default function Sidebar() {
         )}
 
         <div className={styles.footer}>
-          {!showFullContent && isAuthenticated && (
-            <span
-              className={`${styles.tierBadge} ${
-                userTier && userTier !== 'free' ? styles.tierBadgePaid : ''
-              }`}
-              title={`${userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan`}
-              aria-label={`${userTier} plan`}
-            >
-              {userTier.slice(0, 3)}
-            </span>
-          )}
           <div className={styles.userCard} ref={userMenuRef}>
             <button
               className={`${styles.userSection} ${userMenuOpen ? styles.userSectionOpen : ''}`}
