@@ -1,0 +1,141 @@
+/* VerifyAgeView — full-page age-verification step that the email signup
+   flow is routed through after the credentials form. Visual language
+   mirrors AuthModal so the two screens read as a single onboarding
+   surface. */
+
+.container {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px calc(32px + var(--safe-area-bottom));
+  background-color: var(--bg-primary);
+}
+
+.panel {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  animation: panelIn 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.heading {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0 0 24px;
+}
+
+.privacyLink {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.privacyLink:hover {
+  opacity: 0.85;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dobLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
+
+.wheels {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+/* Wheel picker — three columns side by side. The middle band of the
+   visible viewport is the selection; rows above and below fade so the
+   focus stays on the chosen value. */
+.wheel {
+  position: relative;
+  flex: 1;
+  height: 180px; /* 5 rows × 36px */
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.wheelScroll {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  position: relative;
+  z-index: 1;
+}
+
+.wheelScroll::-webkit-scrollbar {
+  display: none;
+}
+
+.wheelPad {
+  height: 72px; /* 2 × 36px so the first/last items can centre */
+}
+
+.wheelItem {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 15px;
+  color: var(--text-muted);
+  opacity: 0.4;
+  transition: opacity 0.15s ease, color 0.15s ease, font-weight 0.15s ease;
+  user-select: none;
+}
+
+.wheelItemSelected {
+  color: var(--text-primary);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.wheelHighlight {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% - 18px);
+  height: 36px;
+  border-radius: 10px;
+  background-color: var(--bg-button);
+  pointer-events: none;
+  z-index: 0;
+}

@@ -2839,14 +2839,32 @@ export default function MainContent() {
               <NewChatIcon />
             </button>
           ) : (
-            <button
-              type="button"
-              className={styles.signUpNavBtn}
-              onClick={() => navigate('/signup', { state: { from: location.pathname + location.search } })}
-              aria-label="Sign up or sign in"
-            >
-              <span className={styles.signUpNavBtnLabel}>Sign up</span>
-            </button>
+            <>
+              <button
+                type="button"
+                className={styles.signInNavBtn}
+                onClick={() =>
+                  navigate('/login', {
+                    state: { from: location.pathname + location.search },
+                  })
+                }
+                aria-label="Sign in"
+              >
+                <span className={styles.signInNavBtnLabel}>Sign in</span>
+              </button>
+              <button
+                type="button"
+                className={styles.signUpNavBtn}
+                onClick={() =>
+                  navigate('/signup', {
+                    state: { from: location.pathname + location.search },
+                  })
+                }
+                aria-label="Sign up"
+              >
+                <span className={styles.signUpNavBtnLabel}>Sign up</span>
+              </button>
+            </>
           )}
           {currentChatId && (
             <div className={styles.chatMenuWrapper} ref={chatMenuRef}>

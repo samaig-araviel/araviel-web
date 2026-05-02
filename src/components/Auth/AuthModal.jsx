@@ -1,10 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   signInWithGoogle,
   signInWithEmail,
-  signUpWithEmail,
   resetPassword,
   selectAuthLoading,
   selectAuthError,
@@ -92,6 +91,7 @@ const EyeIcon = ({ open }) => (
 export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const isLoading = useSelector(selectAuthLoading);
   const authError = useSelector(selectAuthError);
 
@@ -183,16 +183,19 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       return;
     }
 
-    const result = await dispatch(
-      signUpWithEmail({
-        email: email.trim(),
-        password,
-        displayName: displayName.trim() || undefined,
-      })
-    );
-    if (result.meta.requestStatus === 'fulfilled') {
-      setSuccessMessage('Account created. Check your email to confirm.');
-    }
+    // Defer the actual Supabase signup until after age verification so
+    // under-13 users never have an account created. Hand the credentials
+    // to /signup/verify-age via location.state — they live in memory only.
+    navigate('/signup/verify-age', {
+      state: {
+        pendingSignup: {
+          email: email.trim(),
+          password,
+          displayName: displayName.trim() || undefined,
+        },
+        from: location.state?.from,
+      },
+    });
   };
 
   const handleForgotPassword = () => {

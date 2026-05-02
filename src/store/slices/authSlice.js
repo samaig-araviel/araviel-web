@@ -16,6 +16,7 @@ function mapUser(supabaseUser) {
     avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
     fullName:
       supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.display_name || null,
+    birthDate: supabaseUser.user_metadata?.birth_date || null,
   };
 }
 
@@ -123,15 +124,20 @@ export const signInWithEmail = createAsyncThunk(
   }
 );
 
-/** Create a new account with email, password, and optional display name. */
+/** Create a new account with email, password, optional display name, and
+ *  date of birth (ISO yyyy-mm-dd). The DOB is stored in user_metadata so it
+ *  travels with the auth user record and is available client-side without a
+ *  separate profile fetch. */
 export const signUpWithEmail = createAsyncThunk(
   'auth/signUpWithEmail',
-  async ({ email, password, displayName }, { rejectWithValue }) => {
+  async ({ email, password, displayName, birthDate }, { rejectWithValue }) => {
     try {
+      const metadata = { display_name: displayName };
+      if (birthDate) metadata.birth_date = birthDate;
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { display_name: displayName } },
+        options: { data: metadata },
       });
       if (error) return rejectWithValue(error.message);
       return {
