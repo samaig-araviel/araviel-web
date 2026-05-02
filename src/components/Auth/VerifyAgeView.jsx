@@ -243,6 +243,25 @@ export default function VerifyAgeView() {
         "We couldn't send the confirmation email right now — try again in a few minutes. " +
           "Your details haven't been submitted yet."
       );
+      return;
+    }
+
+    // If Supabase's password policy is stricter than our client-side
+    // rules (or someone bypassed them), the server can still reject the
+    // signUp with a password error after the user has already filled
+    // in their DOB. Bounce them back to /signup with a friendly
+    // message instead of trapping them on this screen — the password
+    // is the thing they need to fix.
+    if (raw.includes('password')) {
+      navigate('/signup', {
+        replace: true,
+        state: {
+          ...location.state,
+          passwordError:
+            'Password must contain at least: 8 characters, 1 uppercase letter, ' +
+            '1 lowercase letter, 1 number.',
+        },
+      });
     }
   };
 
