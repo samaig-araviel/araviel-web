@@ -1,8 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { selectEffectiveTheme } from './store/slices/themeSlice';
-import { selectAuthLoading, selectAuthUser } from './store/slices/authSlice';
+import {
+  selectAuthLoading,
+  selectAuthUser,
+  selectIsAuthenticated,
+  signOut,
+} from './store/slices/authSlice';
+import { isAgeAllowed, calculateAge, MIN_AGE } from './utils/age';
 import { fetchSubscriptionThunk, setImageCredits } from './store/slices/subscriptionSlice';
 import { setCreditBalance } from './store/slices/chatSlice';
 import { subscribeToCreditPackChanges, fetchCreditBalance } from './services/credits';
@@ -18,6 +24,7 @@ import './App.css';
 export default function App() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Initialize auth listener — subscribes to Supabase auth state changes
   useAuthListener();
@@ -29,7 +36,48 @@ export default function App() {
   const effectiveTheme = useSelector(selectEffectiveTheme);
   const authLoading = useSelector(selectAuthLoading);
   const user = useSelector(selectAuthUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const unsubPackRef = useRef(null);
+
+  // Age gate: enforce the 13+ requirement on every authenticated session.
+  //   - missing birth_date → route to /signup/verify-age for manual entry
+  //   - birth_date present but under MIN_AGE → sign the user out and send
+  //     them back to /login with a rejection reason
+  // Skipped while inside the signup funnel (so the user can complete it)
+  // and while the auth slice is still resolving the initial session.
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated || !user) return;
+    if (location.pathname.startsWith('/signup')) return;
+
+    if (!user.birthDate) {
+      navigate('/signup/verify-age', {
+        replace: true,
+        state: { from: location.pathname + location.search },
+      });
+      return;
+    }
+    if (!isAgeAllowed(user.birthDate)) {
+      const age = calculateAge(user.birthDate);
+      dispatch(signOut());
+      navigate('/login', {
+        replace: true,
+        state: {
+          ageRejection: `You must be at least ${MIN_AGE} years old to use Araviel${
+            age != null ? ` (you entered ${age}).` : '.'
+          }`,
+        },
+      });
+    }
+  }, [
+    authLoading,
+    isAuthenticated,
+    user,
+    location.pathname,
+    location.search,
+    navigate,
+    dispatch,
+  ]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', effectiveTheme);

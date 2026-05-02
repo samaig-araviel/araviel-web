@@ -74,14 +74,24 @@ export const initializeAuth = createAsyncThunk(
   }
 );
 
-/** Redirect the user to Google OAuth. */
+/** Redirect the user to Google OAuth.
+ *
+ *  We ask for `user.birthday.read` in addition to the standard
+ *  identity scopes so the People API can return the user's date of
+ *  birth on the first sign-in. If they haven't set it on their Google
+ *  account, or only have a partial date, the auth listener falls back
+ *  to the manual /signup/verify-age step. */
 export const signInWithGoogle = createAsyncThunk(
   'auth/signInWithGoogle',
   async (_, { rejectWithValue }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: {
+          redirectTo: window.location.origin,
+          scopes:
+            'openid email profile https://www.googleapis.com/auth/user.birthday.read',
+        },
       });
       if (error) return rejectWithValue(error.message);
       // The browser will redirect — no meaningful return value.
@@ -171,6 +181,25 @@ export const resendSignupEmail = createAsyncThunk(
       });
       if (error) return rejectWithValue(error.message);
       return null;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/** Persist a user's date of birth (ISO yyyy-mm-dd) to user_metadata.
+ *  Used by VerifyAgeView's "update mode" for already-authenticated
+ *  users (e.g. Google sign-ins) and by the auth listener when it
+ *  successfully fetches a complete DOB from Google's People API. */
+export const updateBirthDate = createAsyncThunk(
+  'auth/updateBirthDate',
+  async ({ birthDate }, { rejectWithValue }) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: { birth_date: birthDate },
+      });
+      if (error) return rejectWithValue(error.message);
+      return { user: mapUser(data.user) };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -319,6 +348,14 @@ const authSlice = createSlice({
       .addCase(signUpWithEmail.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Sign-up failed';
+      });
+
+    // updateBirthDate
+    builder
+      .addCase(updateBirthDate.fulfilled, (state, action) => {
+        if (state.user && action.payload?.user) {
+          state.user = action.payload.user;
+        }
       });
 
     // signOut

@@ -131,6 +131,13 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     setActiveTab(initialTab);
   }, [isOpen, initialTab]);
 
+  // Surface any age-rejection message handed in via navigate().
+  useEffect(() => {
+    if (!isOpen) return;
+    const rejection = location.state?.ageRejection;
+    if (rejection) setLocalError(rejection);
+  }, [isOpen, location.state]);
+
   useEffect(() => {
     if (!isOpen) return undefined;
     const onKey = (event) => {
