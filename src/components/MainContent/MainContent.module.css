@@ -599,6 +599,50 @@
   height: 18px;
 }
 
+/* Upgrade CTA — sits to the left of the New Chat button when the user is on a
+   non-Pro plan. Shows "Upgrade" for free users, "Go Pro" for Lite users. */
+.upgradeNavBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.15s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow);
+}
+
+.upgradeNavBtn:hover {
+  opacity: 0.92;
+  box-shadow: var(--shadow-lg);
+}
+
+.upgradeNavBtn:active {
+  transform: scale(0.97);
+}
+
+.upgradeNavBtn:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 2px;
+}
+
+.upgradeNavBtn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.upgradeNavBtnLabel {
+  line-height: 1;
+}
+
 /* Guest sign-up CTA — replaces .newChatNavBtn in the top-right when not authenticated */
 .signUpNavBtn {
   display: inline-flex;

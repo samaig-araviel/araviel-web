@@ -14,6 +14,7 @@ import {
   isDowngrade,
   getProjectLimit,
   getNextTier,
+  getUpgradeCtaLabel,
 } from './subscription';
 
 describe('subscription config', () => {
@@ -228,6 +229,30 @@ describe('subscription config', () => {
 
     it('unknown tier returns null', () => {
       expect(getNextTier('nonexistent')).toBeNull();
+    });
+  });
+
+  describe('getUpgradeCtaLabel', () => {
+    it('shows "Upgrade" for free tier', () => {
+      expect(getUpgradeCtaLabel('free')).toBe('Upgrade');
+    });
+
+    it('shows "Go Pro" for lite tier', () => {
+      expect(getUpgradeCtaLabel('lite')).toBe('Go Pro');
+    });
+
+    it('returns null for pro tier (already top tier)', () => {
+      expect(getUpgradeCtaLabel('pro')).toBeNull();
+    });
+
+    it('defaults to "Upgrade" when tier is missing (newly-logged-in users)', () => {
+      expect(getUpgradeCtaLabel(undefined)).toBe('Upgrade');
+      expect(getUpgradeCtaLabel(null)).toBe('Upgrade');
+      expect(getUpgradeCtaLabel('')).toBe('Upgrade');
+    });
+
+    it('returns null for unknown tier ids', () => {
+      expect(getUpgradeCtaLabel('nonexistent')).toBeNull();
     });
   });
 });
