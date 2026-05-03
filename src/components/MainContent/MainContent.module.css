@@ -1534,9 +1534,14 @@
   padding: 6px;
   gap: 2px;
   animation: attachDropdownSlide 0.15s ease;
-  z-index: 100;
+  /* Stay above the top nav (z-index: 10) and other chrome in every stacking context */
+  z-index: 1000;
   min-width: 220px;
-  overflow: hidden;
+  /* Never grow into the top nav / off-screen — leave a buffer for nav + composer + safe area */
+  max-height: min(440px, calc(var(--app-height, 100vh) - 160px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 
 @keyframes attachDropdownSlide {
