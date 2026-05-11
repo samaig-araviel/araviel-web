@@ -66,7 +66,6 @@ import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import AravielChart from '../AravielChart/AravielChart';
 import TimelineBlock from '../TimelineBlock/TimelineBlock';
 import ComparisonBlock from '../ComparisonBlock/ComparisonBlock';
-import StepsBlock from '../StepsBlock/StepsBlock';
 import FileBlock from '../FileBlock/FileBlock';
 import ArtifactBlock from '../ArtifactBlock/ArtifactBlock';
 import WeatherCard from '../WeatherCard';
@@ -196,8 +195,6 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
         elements.push(<TimelineBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'comparison') {
         elements.push(<ComparisonBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
-      } else if (lang === 'steps') {
-        elements.push(<StepsBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'file') {
         elements.push(<FileBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'artifact' || lang === 'html-artifact') {
@@ -745,7 +742,6 @@ function extractCodeBlocksWithNames(text) {
       lang === 'mermaid' ||
       lang === 'timeline' ||
       lang === 'comparison' ||
-      lang === 'steps' ||
       lang === 'file' ||
       lang === 'artifact' ||
       lang === 'html-artifact'
@@ -2767,12 +2763,8 @@ function parseMessageToSections(content) {
         i++;
       }
       i++; // skip closing ```
-      // Skip special blocks (chart, mermaid, file, timeline, comparison, steps)
-      if (
-        !['chart', 'araviel-chart', 'mermaid', 'file', 'timeline', 'comparison', 'steps'].includes(
-          lang
-        )
-      ) {
+      // Skip special blocks (chart, mermaid, file, timeline, comparison)
+      if (!['chart', 'araviel-chart', 'mermaid', 'file', 'timeline', 'comparison'].includes(lang)) {
         sections.push({ type: 'code', text: codeLines.join('\n'), language: lang || undefined });
       }
       continue;
