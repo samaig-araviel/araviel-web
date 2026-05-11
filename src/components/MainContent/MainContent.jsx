@@ -142,6 +142,7 @@ import { saveSettings } from '../../services/settings';
 import { readBooleanSetting } from '../../lib/localSettings';
 import ModalityBar from '../ModalityBar/ModalityBar';
 import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
+import ResearchModeChip from './ResearchModeChip';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import {
@@ -3543,6 +3544,14 @@ export default function MainContent() {
                   >
                     <GlobeIcon />
                   </button>
+                  <ResearchModeChip
+                    disabled={isProcessing}
+                    onReopen={() => {
+                      setShowResearchModes(true);
+                      setShowAttachDropdown(false);
+                      setActiveDropdown(null);
+                    }}
+                  />
                 </div>
                 <div className={styles.rightActions}>
                   <ModelSelector />
