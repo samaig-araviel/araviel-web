@@ -3547,8 +3547,11 @@ export default function MainContent() {
                   <ResearchModeChip
                     disabled={isProcessing}
                     onReopen={() => {
+                      // The research panel is rendered inside the attach
+                      // dropdown, so we have to open both to deep-link into
+                      // it from outside the normal "+ → Research" path.
+                      setShowAttachDropdown(true);
                       setShowResearchModes(true);
-                      setShowAttachDropdown(false);
                       setActiveDropdown(null);
                     }}
                   />
