@@ -516,6 +516,26 @@
   opacity: 1;
   margin-top: 2px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.recentsContent::-webkit-scrollbar {
+  width: 4px;
+}
+
+.recentsContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.recentsContent::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+.recentsContent::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
 }
 
 /* Time groups */
@@ -1253,6 +1273,26 @@
   border-radius: 10px;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.projectPickerList::-webkit-scrollbar {
+  width: 4px;
+}
+
+.projectPickerList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.projectPickerList::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 3px;
+}
+
+.projectPickerList::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
 }
 
 .projectPickerItem {

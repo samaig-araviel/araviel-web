@@ -74,6 +74,7 @@ import { generateAndDownload } from '../../services/fileGenerator';
 import { dedupeCitations } from '../../utils/dedupeCitations';
 import styles from './MessageList.module.css';
 import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
+import { parseMarkdownTable } from './parseMarkdownTable';
 
 // Initialize mermaid with sensible defaults
 mermaid.initialize({
@@ -239,58 +240,29 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
       continue;
     }
 
-    // Markdown table: detect header row with pipes
-    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-      const tableRows = [];
-      let hasValidSeparator = false;
-      const startIdx = i;
-
-      // Collect all contiguous pipe-delimited lines
-      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-        tableRows.push(lines[i].trim());
-        i++;
-      }
-
-      // Validate: need at least 2 rows, and 2nd row should be separator (| --- | --- |)
-      if (tableRows.length >= 2) {
-        const separatorRow = tableRows[1];
-        hasValidSeparator = /^\|[\s:]*-{2,}[\s:]*\|/.test(separatorRow);
-      }
-
-      if (hasValidSeparator && tableRows.length >= 2) {
-        const parseCells = (row) =>
-          row
-            .slice(1, -1) // remove leading/trailing pipes
-            .split('|')
-            .map((cell) => cell.trim());
-
-        const headerCells = parseCells(tableRows[0]);
-        // Parse alignment from separator row
-        const alignCells = parseCells(tableRows[1]);
-        const alignments = alignCells.map((cell) => {
-          if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
-          if (cell.endsWith(':')) return 'right';
-          return 'left';
-        });
-        const bodyRows = tableRows.slice(2).map(parseCells);
-
+    // Markdown table — tolerant of blank-line gaps, single-dash separators,
+    // and rows with or without outer pipes. See parseMarkdownTable above.
+    if (line.includes('|')) {
+      const table = parseMarkdownTable(lines, i);
+      if (table) {
+        const { headers, rows, alignments } = table;
         elements.push(
           <div className={styles.tableWrapper} key={key++}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  {headerCells.map((cell, ci) => (
-                    <th key={ci} style={{ textAlign: alignments[ci] || 'left' }}>
+                  {headers.map((cell, ci) => (
+                    <th key={ci} style={{ textAlign: alignments[ci] }}>
                       {renderInline(cell)}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {bodyRows.map((row, ri) => (
+                {rows.map((row, ri) => (
                   <tr key={ri}>
-                    {headerCells.map((_, ci) => (
-                      <td key={ci} style={{ textAlign: alignments[ci] || 'left' }}>
+                    {headers.map((_, ci) => (
+                      <td key={ci} style={{ textAlign: alignments[ci] }}>
                         {renderInline(row[ci] || '')}
                       </td>
                     ))}
@@ -300,11 +272,9 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
             </table>
           </div>
         );
+        i = table.endIdx;
         continue;
       }
-
-      // Not a valid table — reset and let normal parsing handle it
-      i = startIdx;
     }
 
     // Horizontal rule
@@ -2779,27 +2749,13 @@ function parseMessageToSections(content) {
     }
 
     // Table
-    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-      const tableRows = [];
-      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-        tableRows.push(lines[i].trim());
-        i++;
-      }
-      if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
-        const parseCells = (row) =>
-          row
-            .slice(1, -1)
-            .split('|')
-            .map((c) => c.trim());
-        sections.push({
-          type: 'table',
-          headers: parseCells(tableRows[0]),
-          rows: tableRows.slice(2).map(parseCells),
-        });
+    if (line.includes('|')) {
+      const table = parseMarkdownTable(lines, i);
+      if (table) {
+        sections.push({ type: 'table', headers: table.headers, rows: table.rows });
+        i = table.endIdx;
         continue;
       }
-      // Not a valid table, fall through
-      i -= tableRows.length;
     }
 
     // Horizontal rule
@@ -2869,22 +2825,12 @@ function extractTablesFromContent(content) {
   let i = 0;
 
   while (i < lines.length) {
-    if (lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-      const tableRows = [];
-      const startIdx = i;
-      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-        tableRows.push(lines[i].trim());
-        i++;
-      }
-      if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
-        const parseCells = (row) =>
-          row
-            .slice(1, -1)
-            .split('|')
-            .map((c) => c.trim());
+    if (lines[i].includes('|')) {
+      const table = parseMarkdownTable(lines, i);
+      if (table) {
         // Look for a heading above the table
         let title = null;
-        for (let j = startIdx - 1; j >= Math.max(0, startIdx - 3); j--) {
+        for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
           const hMatch = lines[j].match(/^#{1,6}\s+(.+)/);
           if (hMatch) {
             title = hMatch[1];
@@ -2896,17 +2842,12 @@ function extractTablesFromContent(content) {
             break;
           }
         }
-        tables.push({
-          title,
-          headers: parseCells(tableRows[0]),
-          rows: tableRows.slice(2).map(parseCells),
-        });
+        tables.push({ title, headers: table.headers, rows: table.rows });
+        i = table.endIdx;
         continue;
       }
-      i = startIdx + 1;
-    } else {
-      i++;
     }
+    i++;
   }
   return tables;
 }
