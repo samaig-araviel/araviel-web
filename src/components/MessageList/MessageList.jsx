@@ -160,11 +160,19 @@ function extractVideoInfo(url) {
 // Set before renderMarkdown call, cleared after.
 let _activeCitations = null;
 
+// Code blocks longer than this collapse to a CodeOpener card that leads to the
+// side panel viewer. Shorter blocks render inline as usual.
+const CODE_VIEWER_MIN_LINES = 15;
+
 /**
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
+ *
+ * codeOpenerContext (optional): { longBlocks, onOpen } — when provided, code
+ * blocks whose body exceeds CODE_VIEWER_MIN_LINES render as a CodeOpener that
+ * opens the side-panel viewer focused on that block instead of inlining the code.
  */
-function renderMarkdown(text, isStreaming = false, citations = null) {
+function renderMarkdown(text, isStreaming = false, citations = null, codeOpenerContext = null) {
   _activeCitations = citations;
   if (!text) return null;
 
@@ -173,6 +181,7 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
   const images = [];
   let i = 0;
   let key = 0;
+  let longCodeBlockIdx = 0;
 
   while (i < lines.length) {
     const line = lines[i];
@@ -188,6 +197,24 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
       }
       i++; // skip closing ```
       const codeContent = codeLines.join('\n');
+      const pushInlineCode = () => {
+        const lineCount = codeContent.split('\n').length;
+        if (codeOpenerContext && lineCount > CODE_VIEWER_MIN_LINES) {
+          const idx = longCodeBlockIdx++;
+          const block = codeOpenerContext.longBlocks[idx];
+          if (block) {
+            elements.push(
+              <CodeOpener
+                key={key++}
+                block={block}
+                onOpen={() => codeOpenerContext.onOpen(codeOpenerContext.longBlocks, idx)}
+              />
+            );
+            return;
+          }
+        }
+        elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+      };
       if (lang === 'mermaid') {
         elements.push(<MermaidBlock key={key++} code={codeContent} />);
       } else if (lang === 'chart' || lang === 'araviel-chart') {
@@ -224,10 +251,10 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
         if (isChartSpec) {
           elements.push(<AravielChart key={key++} spec={codeContent} isStreaming={isStreaming} />);
         } else {
-          elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+          pushInlineCode();
         }
       } else {
-        elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+        pushInlineCode();
       }
       continue;
     }
@@ -778,8 +805,10 @@ function extractCodeBlocksWithNames(text) {
  * Code side panel — Claude-style right-side panel for viewing code in a file-like view.
  * Features a collapsible left sidebar with file tree navigation.
  */
-function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
-  const [activeIdx, setActiveIdx] = useState(0);
+function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChange }) {
+  const safeInitialIdx =
+    initialActiveIdx >= 0 && initialActiveIdx < codeBlocks.length ? initialActiveIdx : 0;
+  const [activeIdx, setActiveIdx] = useState(safeInitialIdx);
   const [copied, setCopied] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(codeBlocks.length > 1);
   const [panelWidth, setPanelWidth] = useState(null); // null = use CSS default
@@ -792,12 +821,12 @@ function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
 
   const activeBlock = codeBlocks[activeIdx];
 
-  // Reset active index when codeBlocks change
+  // Reset active index when the underlying file list or requested entry changes
   useEffect(() => {
-    setActiveIdx(0);
+    setActiveIdx(safeInitialIdx);
     setCopied(false);
     setSidebarOpen(codeBlocks.length > 1);
-  }, [codeBlocks]);
+  }, [codeBlocks, safeInitialIdx]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -994,6 +1023,33 @@ function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
       </div>
     </div>,
     document.body
+  );
+}
+
+/**
+ * Inline placeholder for a long code block. Sits where the code would have
+ * rendered and opens the side-panel viewer focused on this block.
+ */
+function CodeOpener({ block, onOpen }) {
+  const lineCount = block.code.split('\n').length;
+  const title = block.name || block.lang || 'Code';
+  const meta = `${block.lang ? block.lang.toUpperCase() + ' · ' : ''}${lineCount} lines`;
+
+  return (
+    <button className={styles.codeOpener} onClick={onOpen} type="button">
+      <span className={styles.codeOpenerLeft}>
+        <span className={styles.codeOpenerIcon}>
+          <CodeIcon />
+        </span>
+        <span className={styles.codeOpenerText}>
+          <span className={styles.codeOpenerTitle}>{title}</span>
+          <span className={styles.codeOpenerMeta}>{meta}</span>
+        </span>
+      </span>
+      <span className={styles.codeOpenerArrow}>
+        <MaximizeIcon />
+      </span>
+    </button>
   );
 }
 
@@ -5145,6 +5201,35 @@ function Message({
   const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
   const headerPillRef = useRef(null);
 
+  // Text fed to renderMarkdown. When the message also carries generated images,
+  // strip their markdown so the GeneratedImageBlock isn't duplicated.
+  const renderText = useMemo(() => {
+    if (!displayText) return '';
+    if (message.generatedImages && message.generatedImages.length > 0) {
+      return displayText.replace(/^!\[Generated image[^\]]*\]\([^)]+\)\s*$/gm, '').trim();
+    }
+    return displayText;
+  }, [displayText, message.generatedImages]);
+
+  // Blocks long enough to skip inline rendering and live only in the side panel.
+  // Computed once per message and shared by both the inline renderer (via
+  // codeOpenerContext) and the footer CodeCanvasButton — keeps order/indices
+  // aligned so opener clicks land on the correct file.
+  const longCodeBlocks = useMemo(() => {
+    if (!renderText) return [];
+    return extractCodeBlocksWithNames(renderText).filter(
+      (b) => b.code.split('\n').length > CODE_VIEWER_MIN_LINES
+    );
+  }, [renderText]);
+
+  const codeOpenerContext = useMemo(() => {
+    if (longCodeBlocks.length === 0 || !onOpenCodePanel) return null;
+    return {
+      longBlocks: longCodeBlocks,
+      onOpen: onOpenCodePanel,
+    };
+  }, [longCodeBlocks, onOpenCodePanel]);
+
   // Sub-conversation state
   const [subConversations, setSubConversations] = useState([]);
   const [activeSubConvId, setActiveSubConvId] = useState(null);
@@ -5650,14 +5735,10 @@ function Message({
         ) : (
           <div className={styles.markdownContent} ref={markdownContentRef}>
             {renderMarkdown(
-              // Strip image markdown when generatedImages already handles rendering,
-              // to prevent duplicate images (one from markdown, one from GeneratedImageBlock).
-              // Matches both "![Generated image](url)" and "![Generated image: prompt](url)".
-              message.generatedImages && message.generatedImages.length > 0
-                ? displayText.replace(/^!\[Generated image[^\]]*\]\([^)]+\)\s*$/gm, '').trim()
-                : displayText,
+              renderText,
               isStreaming,
-              message.citations || message.sources
+              message.citations || message.sources,
+              codeOpenerContext
             )}
             {isStreaming && <span className={styles.cursor} />}
           </div>
@@ -5678,20 +5759,15 @@ function Message({
         </div>
       )}
 
-      {/* Code panel button — shown below response when code blocks exist */}
-      {!isUser &&
-        !isStreaming &&
-        displayText &&
-        (() => {
-          const blocks = extractCodeBlocksWithNames(displayText);
-          if (blocks.length === 0) return null;
-          return (
-            <CodeCanvasButton
-              codeBlocks={blocks}
-              onClick={() => onOpenCodePanel && onOpenCodePanel(blocks)}
-            />
-          );
-        })()}
+      {/* Code panel button — shown below the response only when at least one
+          code block is long enough to live in the side panel. Short blocks stay
+          inline and don't appear here. */}
+      {!isUser && !isStreaming && longCodeBlocks.length > 0 && (
+        <CodeCanvasButton
+          codeBlocks={longCodeBlocks}
+          onClick={() => onOpenCodePanel && onOpenCodePanel(longCodeBlocks, 0)}
+        />
+      )}
 
       {/* Error card */}
       {!isUser && message.error && (
@@ -5906,8 +5982,9 @@ export default function MessageList({
   const userScrolledDuringStreamRef = useRef(false);
   const wasStreamingRef = useRef(false);
 
-  // Code side panel state (lifted up so it persists across messages)
-  const [codePanelBlocks, setCodePanelBlocks] = useState(null);
+  // Code side panel state (lifted up so it persists across messages).
+  // Shape: null when closed, { blocks, initialActiveIdx } when open.
+  const [codePanelState, setCodePanelState] = useState(null);
   // Sources panel state (lifted up so it renders as a third column)
   const [sourcesPanelCitations, setSourcesPanelCitations] = useState(null);
   const sourcesPanelRef = useRef(null);
@@ -5916,7 +5993,7 @@ export default function MessageList({
   // Close code panel and sub-conversation panel when switching chats
   useEffect(() => {
     if (prevChatIdRef.current !== currentChatId) {
-      setCodePanelBlocks(null);
+      setCodePanelState(null);
       setSubConvPanelOwnerId(null);
       setSourcesPanelCitations(null);
       if (onCodePanelToggle) onCodePanelToggle(false);
@@ -5928,15 +6005,15 @@ export default function MessageList({
   }, [currentChatId, onCodePanelToggle, onSubConvPanelToggle]);
 
   const handleOpenCodePanel = useCallback(
-    (blocks) => {
-      setCodePanelBlocks(blocks);
+    (blocks, initialActiveIdx = 0) => {
+      setCodePanelState({ blocks, initialActiveIdx });
       if (onCodePanelToggle) onCodePanelToggle(true);
     },
     [onCodePanelToggle]
   );
 
   const handleCloseCodePanel = useCallback(() => {
-    setCodePanelBlocks(null);
+    setCodePanelState(null);
     if (onCodePanelToggle) onCodePanelToggle(false);
     // Reset custom width CSS var
     document.documentElement.style.removeProperty('--code-panel-width');
@@ -6187,9 +6264,10 @@ export default function MessageList({
       </div>
 
       {/* Code side panel — Claude-style right panel */}
-      {codePanelBlocks && codePanelBlocks.length > 0 && (
+      {codePanelState && codePanelState.blocks.length > 0 && (
         <CodeSidePanel
-          codeBlocks={codePanelBlocks}
+          codeBlocks={codePanelState.blocks}
+          initialActiveIdx={codePanelState.initialActiveIdx}
           onClose={handleCloseCodePanel}
           onWidthChange={handleCodePanelWidthChange}
         />
