@@ -972,9 +972,17 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
   const activeLang = activeBlock.lang ? activeBlock.lang.toUpperCase() : 'CODE';
 
   // Mobile is full-screen (CSS-driven); skip inline sizing entirely there.
+  // maxWidth is set to 'none' so the JS-clamped width can grow past the CSS
+  // default cap (.codeSidePanel max-width: 680px) when the user drags wider —
+  // without this, the published --code-panel-width and the actual painted
+  // width drift apart and the chat reserves a phantom gap.
   const panelStyle =
     !viewport.isMobile && renderedWidth != null
-      ? { width: `${renderedWidth}px`, minWidth: `${PANEL_MIN_WIDTH}px` }
+      ? {
+          width: `${renderedWidth}px`,
+          maxWidth: 'none',
+          minWidth: `${PANEL_MIN_WIDTH}px`,
+        }
       : null;
 
   const panelClassName = `${styles.codeSidePanel}${
