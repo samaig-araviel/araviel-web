@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue } from '../../store/slices/chatSlice';
+import { selectSidebarCollapsed } from '../../store/slices/sidebarSlice';
 import { getProviderLogo } from '../getProviderLogo';
 import { PROVIDERS, MODELS, SPEED_TIERS, formatTokens } from '../../data/models';
 import {
@@ -805,19 +806,81 @@ function extractCodeBlocksWithNames(text) {
  * Code side panel — Claude-style right-side panel for viewing code in a file-like view.
  * Features a collapsible left sidebar with file tree navigation.
  */
+// Desktop sidebar widths, mirrored from Sidebar.jsx where --sidebar-width is
+// published. Kept in sync so the panel can reserve the right amount of room.
+const SIDEBAR_WIDTH_OPEN = 260;
+const SIDEBAR_WIDTH_COLLAPSED = 48;
+const MOBILE_BREAKPOINT = 768;
+const PANEL_MIN_WIDTH = 380;
+const PANEL_VIEWPORT_GAP = 12; // matches the panel's right inset (and the breathing room on the left)
+
 function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChange }) {
   const safeInitialIdx =
     initialActiveIdx >= 0 && initialActiveIdx < codeBlocks.length ? initialActiveIdx : 0;
   const [activeIdx, setActiveIdx] = useState(safeInitialIdx);
   const [copied, setCopied] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(codeBlocks.length > 1);
-  const [panelWidth, setPanelWidth] = useState(null); // null = use CSS default
+  // The width the user dragged the panel to. Null = render the CSS default.
+  // Stored separately from the clamped/rendered width so toggling the side nav
+  // shrinks the panel without losing the user's preferred expansion.
+  const [desiredWidth, setDesiredWidth] = useState(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1440,
+    isMobile: typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
+  }));
   const codeRef = useRef(null);
   const panelRef = useRef(null);
   const isDraggingRef = useRef(false);
+  const maxWidthRef = useRef(0);
 
-  const MIN_WIDTH = 380;
-  const MAX_WIDTH_PERCENT = 0.8;
+  const sidebarCollapsed = useSelector(selectSidebarCollapsed);
+
+  // Track the viewport so the max-width recomputes when the window resizes
+  // and the mobile breakpoint flips between full-screen and panel modes.
+  useEffect(() => {
+    const handleResize = () => {
+      setViewport({
+        width: window.innerWidth,
+        isMobile: window.innerWidth <= MOBILE_BREAKPOINT,
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Desktop: the panel's left edge can travel until just before the sidebar,
+  // leaving a small breathing room on both sides. Mobile is full-screen and
+  // not user-resizable, so the cap is the full viewport.
+  const sidebarWidth = viewport.isMobile
+    ? 0
+    : sidebarCollapsed
+    ? SIDEBAR_WIDTH_COLLAPSED
+    : SIDEBAR_WIDTH_OPEN;
+  const maxWidth = viewport.isMobile
+    ? viewport.width
+    : Math.max(PANEL_MIN_WIDTH, viewport.width - sidebarWidth - PANEL_VIEWPORT_GAP * 2);
+
+  // Keep a ref of the live max so the active mousemove handler clamps against
+  // the latest value even if the sidebar is toggled mid-drag.
+  useEffect(() => {
+    maxWidthRef.current = maxWidth;
+  }, [maxWidth]);
+
+  // Clamp the rendered width against the live cap. If the user dragged wider
+  // than the current cap allows (e.g. sidebar just re-opened), the panel
+  // visually contracts but their preferred width is preserved.
+  const renderedWidth =
+    desiredWidth == null ? null : Math.min(Math.max(PANEL_MIN_WIDTH, desiredWidth), maxWidth);
+
+  // Publish the rendered width so the chat layout reserves the right amount of
+  // room. Fires on drag and on sidebar-driven clamping alike, which keeps the
+  // chat margin in sync without a custom call site for each.
+  useEffect(() => {
+    if (renderedWidth != null && onWidthChange) {
+      onWidthChange(renderedWidth);
+    }
+  }, [renderedWidth, onWidthChange]);
 
   const activeBlock = codeBlocks[activeIdx];
 
@@ -851,27 +914,34 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
     }
   }, [activeBlock]);
 
-  // Drag-to-resize handler
+  // Drag-to-resize handler. The cap is read from maxWidthRef so a sidebar
+  // toggle mid-drag is honoured immediately.
   const handleResizeStart = useCallback(
     (e) => {
+      if (viewport.isMobile) return;
       e.preventDefault();
       isDraggingRef.current = true;
+      setIsResizing(true);
       const startX = e.clientX;
       const startWidth = panelRef.current
         ? panelRef.current.getBoundingClientRect().width
-        : MIN_WIDTH;
+        : PANEL_MIN_WIDTH;
 
       const handleMouseMove = (moveEvent) => {
         if (!isDraggingRef.current) return;
         const delta = startX - moveEvent.clientX;
-        const maxWidth = window.innerWidth * MAX_WIDTH_PERCENT;
-        const newWidth = Math.min(maxWidth, Math.max(MIN_WIDTH, startWidth + delta));
-        setPanelWidth(newWidth);
-        if (onWidthChange) onWidthChange(newWidth);
+        const newWidth = Math.min(
+          maxWidthRef.current,
+          Math.max(PANEL_MIN_WIDTH, startWidth + delta)
+        );
+        setDesiredWidth(newWidth);
+        // --code-panel-width is published from the renderedWidth effect, which
+        // covers both drag and sidebar-driven re-clamping in one place.
       };
 
       const handleMouseUp = () => {
         isDraggingRef.current = false;
+        setIsResizing(false);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = '';
@@ -883,7 +953,7 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     },
-    [onWidthChange]
+    [viewport.isMobile]
   );
 
   const handleCopy = useCallback(() => {
@@ -901,12 +971,18 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
     activeBlock.name || (activeBlock.lang ? activeBlock.lang : `Block ${activeIdx + 1}`);
   const activeLang = activeBlock.lang ? activeBlock.lang.toUpperCase() : 'CODE';
 
-  const panelStyle = panelWidth
-    ? { width: `${panelWidth}px`, maxWidth: '80vw', minWidth: `${MIN_WIDTH}px` }
-    : {};
+  // Mobile is full-screen (CSS-driven); skip inline sizing entirely there.
+  const panelStyle =
+    !viewport.isMobile && renderedWidth != null
+      ? { width: `${renderedWidth}px`, minWidth: `${PANEL_MIN_WIDTH}px` }
+      : null;
+
+  const panelClassName = `${styles.codeSidePanel}${
+    isResizing ? ` ${styles.codeSidePanelResizing}` : ''
+  }`;
 
   return createPortal(
-    <div className={styles.codeSidePanel} ref={panelRef} style={panelStyle}>
+    <div className={panelClassName} ref={panelRef} style={panelStyle || undefined}>
       {/* Resize handle on the left edge */}
       <div className={styles.codeSidePanelResizeHandle} onMouseDown={handleResizeStart}>
         <div className={styles.codeSidePanelResizeGrip}>

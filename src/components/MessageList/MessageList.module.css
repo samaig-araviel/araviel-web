@@ -6796,7 +6796,16 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 8px 40px rgba(0, 0, 0, 0.1),
     0 2px 12px rgba(0, 0, 0, 0.04);
   animation: codeSidePanelSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Matches Sidebar.module.css width transition so the two slide in sync
+     when the sidebar opens/collapses and the panel re-clamps. */
+  transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+}
+
+/* While the user is actively dragging the resize handle, suppress the smooth
+   width transition so the panel tracks the cursor 1:1. */
+.codeSidePanelResizing {
+  transition: none;
 }
 
 [data-theme='dark'] .codeSidePanel {
