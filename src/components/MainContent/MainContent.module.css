@@ -185,6 +185,9 @@
 .breadcrumbTitle {
   font-size: 13px;
   font-weight: 500;
+  /* Drop the natural font line-box padding so the text optically
+     centers within the breadcrumb button alongside the chevron icon. */
+  line-height: 1;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
