@@ -1490,7 +1490,7 @@
   padding: 6px;
   gap: 2px;
   animation: attachDropdownSlide 0.15s ease;
-  z-index: 100;
+  z-index: 1100;
   min-width: 220px;
   overflow: hidden;
 }
