@@ -2865,6 +2865,9 @@
   .attachDropdown {
     left: -8px;
     max-width: calc(100vw - 16px);
+    /* Smaller cap on mobile so the popup never reaches the top nav.
+       overflow-y on the dropdown already provides the scroll. */
+    max-height: min(320px, calc(var(--app-height, 100vh) - 200px));
   }
 
   .attachSubmenu {
