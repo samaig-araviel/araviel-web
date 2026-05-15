@@ -9,8 +9,10 @@
   transition: background-color 0.2s ease, margin-right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   min-height: 100%;
   position: relative;
-  /* Form a stacking context so the composer's high-z-index popovers
-     stay scoped here and can never paint over the mobile sidebar. */
+  /* Form a stacking context above the fixed mobile menu button (1001)
+     so composer popovers paint over it, but well below the sidebar
+     overlay (1080) / panel (1090) so the open sidebar still wins. */
+  z-index: 1050;
   isolation: isolate;
 }
 
