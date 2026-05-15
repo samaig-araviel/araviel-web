@@ -30,7 +30,7 @@
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.4);
-  z-index: 1060;
+  z-index: 1080;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.25s ease, visibility 0.25s ease;
@@ -56,7 +56,7 @@
   transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1), padding 0.24s cubic-bezier(0.4, 0, 0.2, 1),
     background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   position: relative;
-  z-index: 1070;
+  z-index: 1090;
   flex-shrink: 0;
 }
 

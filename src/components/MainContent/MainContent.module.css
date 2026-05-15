@@ -9,6 +9,9 @@
   transition: background-color 0.2s ease, margin-right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   min-height: 100%;
   position: relative;
+  /* Form a stacking context so the composer's high-z-index popovers
+     stay scoped here and can never paint over the mobile sidebar. */
+  isolation: isolate;
 }
 
 /* When there are messages, switch to column layout with input at bottom */
