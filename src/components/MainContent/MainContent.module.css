@@ -8,6 +8,8 @@
   background-color: var(--bg-primary);
   transition: background-color 0.2s ease, margin-right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   min-height: 100%;
+  max-height: 100%;
+  overflow: hidden;
   position: relative;
 }
 
@@ -2938,6 +2940,11 @@
   }
 
   .topNav {
+    /* Anchor to the visual viewport on mobile so the chat header doesn't
+       scroll out of view alongside iOS Safari's URL-bar collapse or any
+       internal layout shift. The sidebar overlays on mobile, so a
+       full-width fixed nav is the right reference. */
+    position: fixed;
     padding: var(--safe-area-top) 12px 0;
     height: calc(56px + var(--safe-area-top));
   }
