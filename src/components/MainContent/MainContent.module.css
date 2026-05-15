@@ -1393,10 +1393,11 @@
   flex-direction: column;
   align-items: center;
   position: relative;
-  /* Sit above the top nav (z-index: 10) so popovers anchored to the
-     composer (e.g. attach dropdown / mood submenu) render above it.
-     Modals and overlays still win — they live at z-index ≥ 1000. */
-  z-index: 20;
+  /* Sit above the top nav (z-index: 10) AND the mobile menu button
+     (z-index: 1001) so popovers anchored to the composer (attach
+     dropdown / mood submenu) render above them when they overlap on
+     small viewports. Stays below modals (z-index ≥ 2000). */
+  z-index: 1050;
 }
 
 /* When in chat mode, input sticks to bottom */
