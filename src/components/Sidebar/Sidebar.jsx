@@ -609,10 +609,18 @@ export default function Sidebar() {
         <div className={styles.header}>
           <div className={styles.logo}>
             {showFullContent ? (
-              <>
-                <div className={styles.logoIcon}>A</div>
+              <button
+                type="button"
+                className={styles.logoHomeBtn}
+                onClick={() => {
+                  navigate('/');
+                  if (isMobile) handleCloseSidebar();
+                }}
+                aria-label="Go to home"
+              >
+                <span className={styles.logoIcon}>A</span>
                 <span className={styles.logoText}>Araviel</span>
-              </>
+              </button>
             ) : (
               <button
                 className={styles.logoExpandBtn}
