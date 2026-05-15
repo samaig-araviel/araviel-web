@@ -2864,6 +2864,11 @@
 
   .attachDropdown {
     left: -8px;
+    max-width: calc(100vw - 16px);
+  }
+
+  .attachSubmenu {
+    min-width: 0;
   }
 
   .webSearchToggle {
