@@ -10,6 +10,7 @@ import {
   setAuthError,
 } from '../../store/slices/authSlice';
 import { getRememberMePreference, setRememberMePreference } from '../../lib/authStorage';
+import { getPasswordRuleViolations, formatPasswordError } from '../../utils/password';
 import styles from './AuthModal.module.css';
 
 const GoogleIcon = () => (
@@ -98,6 +99,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -112,6 +114,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
   const clearState = useCallback(() => {
     setEmail('');
     setPassword('');
+    setConfirmPassword('');
     setDisplayName('');
     setShowPassword(false);
     setLocalError('');
@@ -130,6 +133,34 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
     if (!isOpen) return undefined;
     setActiveTab(initialTab);
   }, [isOpen, initialTab]);
+
+  // Surface any inline message handed in via navigate() — either an
+  // age rejection from the App.jsx gate / useAuthListener (Google
+  // under-13 hard redirect) or a password rejection bounced back from
+  // VerifyAgeView when the server's policy is stricter than ours.
+  useEffect(() => {
+    if (!isOpen) return;
+    const passwordError = location.state?.passwordError;
+    if (passwordError) {
+      setLocalError(passwordError);
+      return;
+    }
+    const rejection = location.state?.ageRejection;
+    if (rejection) {
+      setLocalError(rejection);
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    try {
+      const stashed = sessionStorage.getItem('araviel-age-rejection');
+      if (stashed) {
+        setLocalError(stashed);
+        sessionStorage.removeItem('araviel-age-rejection');
+      }
+    } catch {
+      // sessionStorage unavailable → nothing to surface.
+    }
+  }, [isOpen, location.state]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -170,9 +201,16 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       return;
     }
 
-    if (activeTab === 'signup' && password.length < 6) {
-      setLocalError('Password must be at least 6 characters.');
-      return;
+    if (activeTab === 'signup') {
+      const violations = getPasswordRuleViolations(password);
+      if (violations.length > 0) {
+        setLocalError(formatPasswordError(violations));
+        return;
+      }
+      if (password !== confirmPassword) {
+        setLocalError("Passwords don't match — re-enter to confirm.");
+        return;
+      }
     }
 
     if (activeTab === 'signin') {
@@ -243,21 +281,17 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       role="dialog"
       aria-modal="true"
       aria-label={heading}
-      onClick={handleClose}
     >
       <button
         type="button"
         className={styles.backBtn}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleBackBtn();
-        }}
+        onClick={handleBackBtn}
       >
         <ArrowLeftIcon />
         <span>{backLabel}</span>
       </button>
 
-      <div className={styles.panel} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.panel}>
         <div className={styles.logoMark} aria-hidden="true">
           A
         </div>
@@ -328,7 +362,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
                   id="auth-password"
                   className={styles.input}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder={isSignUp ? 'Min. 6 characters' : 'Your password'}
+                  placeholder={isSignUp ? 'At least 8 chars, mix of cases & a number' : 'Your password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete={isSignUp ? 'new-password' : 'current-password'}
@@ -378,6 +412,26 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {!showForgotPassword && isSignUp && (
+            <div className={styles.fieldGroup}>
+              <label className={styles.label} htmlFor="auth-confirm-password">
+                Confirm password
+              </label>
+              <div className={styles.passwordWrapper}>
+                <input
+                  id="auth-confirm-password"
+                  className={styles.input}
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
             </div>
           )}
 

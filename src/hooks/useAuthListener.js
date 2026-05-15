@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { supabase } from '../lib/supabase';
-import { initializeAuth, setAuth, clearAuth } from '../store/slices/authSlice';
+import { initializeAuth, setAuth, clearAuth, signOut, updateBirthDate } from '../store/slices/authSlice';
 import { resetChatState, setCreditBalance } from '../store/slices/chatSlice';
 import { resetProjectsState } from '../store/slices/projectsSlice';
 import {
@@ -12,8 +12,10 @@ import {
 import { resetGuestPromptCount } from '../utils/guestSession';
 import { fetchCreditBalance } from '../services/credits';
 import { fetchSubscription } from '../services/subscription';
+import { fetchGoogleBirthday } from '../services/googleBirthday';
 import { clearImageCache } from '../services/imageGeneration';
 import { setLoggerUser } from '../lib/logger';
+import { isAgeAllowed, MIN_AGE } from '../utils/age';
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -28,6 +30,7 @@ function mapUser(supabaseUser) {
     avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
     fullName:
       supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.display_name || null,
+    birthDate: supabaseUser.user_metadata?.birth_date || null,
   };
 }
 
@@ -85,6 +88,54 @@ export default function useAuthListener() {
           // On real (non-anonymous) sign-in, sync tier/credits from backend
           if (event === 'SIGNED_IN' && user && !user.isAnonymous) {
             resetGuestPromptCount();
+
+            // Google sign-in only: try to lift the user's date of birth from
+            // Google's People API so we can skip the manual age step when
+            // the data is already there. The provider_token is only exposed
+            // on this initial SIGNED_IN event after the OAuth redirect — it
+            // isn't refreshed — so we have to capture it here. If the fetch
+            // returns null (no DOB on the Google account, partial date, or
+            // request failed), App.jsx's age gate will route the user to
+            // /signup/verify-age for manual entry.
+            const provider = session?.user?.app_metadata?.provider;
+            const providerToken = session?.provider_token;
+            if (provider === 'google' && providerToken && !user.birthDate) {
+              fetchGoogleBirthday(providerToken)
+                .then((birthDate) => {
+                  if (!birthDate) return; // Falls through to manual entry.
+                  // Validate against MIN_AGE here so an under-13 Google
+                  // user is signed out immediately, before App.jsx's
+                  // gate has to react to the metadata write. The DB
+                  // sync trigger would also reject the update, but
+                  // checking client-side gives a clearer UX path.
+                  if (!isAgeAllowed(birthDate)) {
+                    // Stash the rejection so AuthModal can surface it
+                    // after the hard redirect — we don't have router
+                    // access here. sessionStorage clears at the end of
+                    // the browsing session, and AuthModal removes the
+                    // key once read so refreshing /login doesn't echo
+                    // the message indefinitely.
+                    if (typeof window !== 'undefined') {
+                      try {
+                        sessionStorage.setItem(
+                          'araviel-age-rejection',
+                          `You must be at least ${MIN_AGE} years old to use Araviel.`
+                        );
+                      } catch {
+                        // Quota / private mode → skip the message.
+                      }
+                    }
+                    dispatch(signOut());
+                    if (typeof window !== 'undefined') {
+                      window.location.assign('/login');
+                    }
+                    return;
+                  }
+                  dispatch(updateBirthDate({ birthDate }));
+                })
+                .catch(() => {});
+            }
+
             fetchCreditBalance()
               .then((data) => {
                 if (data.balance) {

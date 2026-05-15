@@ -126,7 +126,7 @@ import {
   selectCurrentTier,
   setImageCredits,
 } from '../../store/slices/subscriptionSlice';
-import { getNextTier } from '../../config/subscription';
+import { getNextTier, getUpgradeCtaLabel } from '../../config/subscription';
 import { PROVIDERS, isImageGenerationModel } from '../../data/models';
 import { getProviderLogo } from '../getProviderLogo';
 import { compressImage, isAcceptedImageType } from '../../utils/imageCompression';
@@ -142,6 +142,7 @@ import { saveSettings } from '../../services/settings';
 import { readBooleanSetting } from '../../lib/localSettings';
 import ModalityBar from '../ModalityBar/ModalityBar';
 import BuyPacksModal from '../BuyPacksModal/BuyPacksModal';
+import ResearchModeChip from './ResearchModeChip';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import {
@@ -2830,14 +2831,32 @@ export default function MainContent() {
             </>
           )}
           {isAuthenticated ? (
-            <button
-              className={styles.newChatNavBtn}
-              onClick={handleNewChat}
-              title="New Chat"
-              aria-label="Start new chat"
-            >
-              <NewChatIcon />
-            </button>
+            <>
+              {(() => {
+                const upgradeLabel = getUpgradeCtaLabel(currentTier);
+                if (!upgradeLabel) return null;
+                return (
+                  <button
+                    type="button"
+                    className={styles.upgradeNavBtn}
+                    onClick={() => navigate('/plans')}
+                    title={`${upgradeLabel} your plan`}
+                    aria-label={`${upgradeLabel} your plan`}
+                  >
+                    <ZapIcon />
+                    <span className={styles.upgradeNavBtnLabel}>{upgradeLabel}</span>
+                  </button>
+                );
+              })()}
+              <button
+                className={styles.newChatNavBtn}
+                onClick={handleNewChat}
+                title="New Chat"
+                aria-label="Start new chat"
+              >
+                <NewChatIcon />
+              </button>
+            </>
           ) : (
             <>
               <button
@@ -3125,7 +3144,9 @@ export default function MainContent() {
           isStreaming={isStreaming}
           streamedText={streamedText}
           onRetry={handleRetry}
-          onSessionExpired={() => navigate('/login', { state: { from: location.pathname + location.search } })}
+          onSessionExpired={() =>
+            navigate('/login', { state: { from: location.pathname + location.search } })
+          }
           onAlternateModelRequest={handleAlternateModelRequest}
           onSubConvPanelToggle={setIsSubConvPanelOpen}
           onCodePanelToggle={setIsCodePanelOpen}
@@ -3523,6 +3544,17 @@ export default function MainContent() {
                   >
                     <GlobeIcon />
                   </button>
+                  <ResearchModeChip
+                    disabled={isProcessing}
+                    onReopen={() => {
+                      // The research panel is rendered inside the attach
+                      // dropdown, so we have to open both to deep-link into
+                      // it from outside the normal "+ → Research" path.
+                      setShowAttachDropdown(true);
+                      setShowResearchModes(true);
+                      setActiveDropdown(null);
+                    }}
+                  />
                 </div>
                 <div className={styles.rightActions}>
                   <ModelSelector />

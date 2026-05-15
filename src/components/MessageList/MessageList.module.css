@@ -6796,7 +6796,16 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.03), 0 8px 40px rgba(0, 0, 0, 0.1),
     0 2px 12px rgba(0, 0, 0, 0.04);
   animation: codeSidePanelSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Matches Sidebar.module.css width transition so the two slide in sync
+     when the sidebar opens/collapses and the panel re-clamps. */
+  transition: width 0.24s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+}
+
+/* While the user is actively dragging the resize handle, suppress the smooth
+   width transition so the panel tracks the cursor 1:1. */
+.codeSidePanelResizing {
+  transition: none;
 }
 
 [data-theme='dark'] .codeSidePanel {
@@ -6829,11 +6838,6 @@
   justify-content: center;
 }
 
-.codeSidePanelResizeHandle:hover .codeSidePanelResizeGrip,
-.codeSidePanelResizeHandle:active .codeSidePanelResizeGrip {
-  opacity: 1;
-}
-
 .codeSidePanelResizeGrip {
   display: flex;
   flex-direction: column;
@@ -6841,12 +6845,18 @@
   gap: 3px;
   padding: 8px 2px;
   border-radius: 6px;
-  opacity: 0;
+  opacity: 0.5;
   transition: opacity 0.2s ease, background-color 0.2s ease;
-  background-color: var(--bg-hover);
+  background-color: transparent;
 }
 
 .codeSidePanelResizeHandle:hover .codeSidePanelResizeGrip {
+  opacity: 1;
+  background-color: var(--bg-hover);
+}
+
+.codeSidePanelResizeHandle:active .codeSidePanelResizeGrip {
+  opacity: 1;
   background-color: var(--bg-active);
 }
 
@@ -7289,6 +7299,101 @@
 [data-theme='dark'] .codeSidePanelPre code :global(.hljs-punctuation),
 [data-theme='dark'] .codeSidePanelPre code :global(.hljs-operator) {
   color: #8b949e;
+}
+
+/* ===== Inline Code Opener =====
+   Rendered in the response bubble in place of long code blocks.
+   Visually a sibling of .canvasOpenBtn but spaced for inline rhythm. */
+.codeOpener {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease,
+    box-shadow 0.2s ease;
+  font: inherit;
+  text-align: left;
+}
+
+.codeOpener:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.codeOpener:active {
+  transform: scale(0.99);
+}
+
+.codeOpenerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.codeOpenerIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-active);
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.codeOpenerIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.codeOpenerText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.codeOpenerTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.codeOpenerMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.codeOpenerArrow {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  transition: color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.codeOpener:hover .codeOpenerArrow {
+  color: var(--text-secondary);
+}
+
+.codeOpenerArrow svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ===== Code Canvas Open Button ===== */

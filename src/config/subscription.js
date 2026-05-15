@@ -214,11 +214,7 @@ export const COMPARISON_FEATURES = [
 ];
 
 // Tier ordering for comparison (higher index = higher tier)
-export const TIER_ORDER = [
-  SubscriptionTier.Free,
-  SubscriptionTier.Lite,
-  SubscriptionTier.Pro,
-];
+export const TIER_ORDER = [SubscriptionTier.Free, SubscriptionTier.Lite, SubscriptionTier.Pro];
 
 export function isUpgrade(fromTier, toTier) {
   return TIER_ORDER.indexOf(toTier) > TIER_ORDER.indexOf(fromTier);
@@ -248,4 +244,19 @@ const NEXT_TIER_MAP = {
 
 export function getNextTier(tierId) {
   return NEXT_TIER_MAP[tierId] ?? null;
+}
+
+// CTA label for the top-nav upgrade button. Returns null when the user is
+// already on the highest tier and no upgrade is available.
+const UPGRADE_CTA_LABELS = {
+  [SubscriptionTier.Free]: 'Upgrade',
+  [SubscriptionTier.Lite]: 'Go Pro',
+  [SubscriptionTier.Pro]: null,
+};
+
+export function getUpgradeCtaLabel(tierId) {
+  // Treat unknown / missing tiers as Free so newly-logged-in users immediately
+  // see the Upgrade CTA before their subscription has been fetched.
+  if (!tierId) return UPGRADE_CTA_LABELS[SubscriptionTier.Free];
+  return UPGRADE_CTA_LABELS[tierId] ?? null;
 }

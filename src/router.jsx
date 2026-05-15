@@ -14,7 +14,7 @@ import SharedConversationView from './components/SharedConversationView';
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary';
 import NotFound from './components/ErrorBoundary/NotFound';
 import RouteShell from './components/RouteShell/RouteShell';
-import { AuthRoute, VerifyAgeView } from './components/Auth';
+import { AuthRoute, VerifyAgeView, CheckEmailView } from './components/Auth';
 import { WEB_APPLICATION_JSON_LD, ORGANIZATION_JSON_LD } from './lib/seo';
 
 const router = createBrowserRouter([
@@ -103,6 +103,22 @@ const router = createBrowserRouter([
             }}
           >
             <VerifyAgeView />
+          </RouteShell>
+        ),
+      },
+      {
+        path: 'signup/check-email',
+        element: (
+          <RouteShell
+            feature="signup-check-email"
+            seo={{
+              title: 'Check your email',
+              description:
+                'We sent a confirmation link to your email — click it to finish setting up your Araviel account.',
+              noindex: true,
+            }}
+          >
+            <CheckEmailView />
           </RouteShell>
         ),
       },

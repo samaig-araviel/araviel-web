@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue } from '../../store/slices/chatSlice';
+import { selectSidebarCollapsed } from '../../store/slices/sidebarSlice';
 import { getProviderLogo } from '../getProviderLogo';
 import { PROVIDERS, MODELS, SPEED_TIERS, formatTokens } from '../../data/models';
 import {
@@ -66,7 +67,6 @@ import ThinkingTimeline from '../ThinkingTimeline/ThinkingTimeline';
 import AravielChart from '../AravielChart/AravielChart';
 import TimelineBlock from '../TimelineBlock/TimelineBlock';
 import ComparisonBlock from '../ComparisonBlock/ComparisonBlock';
-import StepsBlock from '../StepsBlock/StepsBlock';
 import FileBlock from '../FileBlock/FileBlock';
 import ArtifactBlock from '../ArtifactBlock/ArtifactBlock';
 import WeatherCard from '../WeatherCard';
@@ -75,6 +75,7 @@ import { generateAndDownload } from '../../services/fileGenerator';
 import { dedupeCitations } from '../../utils/dedupeCitations';
 import styles from './MessageList.module.css';
 import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
+import { parseMarkdownTable } from './parseMarkdownTable';
 
 // Initialize mermaid with sensible defaults
 mermaid.initialize({
@@ -160,11 +161,19 @@ function extractVideoInfo(url) {
 // Set before renderMarkdown call, cleared after.
 let _activeCitations = null;
 
+// Code blocks longer than this collapse to a CodeOpener card that leads to the
+// side panel viewer. Shorter blocks render inline as usual.
+const CODE_VIEWER_MIN_LINES = 15;
+
 /**
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
+ *
+ * codeOpenerContext (optional): { longBlocks, onOpen } — when provided, code
+ * blocks whose body exceeds CODE_VIEWER_MIN_LINES render as a CodeOpener that
+ * opens the side-panel viewer focused on that block instead of inlining the code.
  */
-function renderMarkdown(text, isStreaming = false, citations = null) {
+function renderMarkdown(text, isStreaming = false, citations = null, codeOpenerContext = null) {
   _activeCitations = citations;
   if (!text) return null;
 
@@ -173,6 +182,7 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
   const images = [];
   let i = 0;
   let key = 0;
+  let longCodeBlockIdx = 0;
 
   while (i < lines.length) {
     const line = lines[i];
@@ -188,6 +198,24 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
       }
       i++; // skip closing ```
       const codeContent = codeLines.join('\n');
+      const pushInlineCode = () => {
+        const lineCount = codeContent.split('\n').length;
+        if (codeOpenerContext && lineCount > CODE_VIEWER_MIN_LINES) {
+          const idx = longCodeBlockIdx++;
+          const block = codeOpenerContext.longBlocks[idx];
+          if (block) {
+            elements.push(
+              <CodeOpener
+                key={key++}
+                block={block}
+                onOpen={() => codeOpenerContext.onOpen(codeOpenerContext.longBlocks, idx)}
+              />
+            );
+            return;
+          }
+        }
+        elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+      };
       if (lang === 'mermaid') {
         elements.push(<MermaidBlock key={key++} code={codeContent} />);
       } else if (lang === 'chart' || lang === 'araviel-chart') {
@@ -196,8 +224,6 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
         elements.push(<TimelineBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'comparison') {
         elements.push(<ComparisonBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
-      } else if (lang === 'steps') {
-        elements.push(<StepsBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'file') {
         elements.push(<FileBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'artifact' || lang === 'html-artifact') {
@@ -226,10 +252,10 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
         if (isChartSpec) {
           elements.push(<AravielChart key={key++} spec={codeContent} isStreaming={isStreaming} />);
         } else {
-          elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+          pushInlineCode();
         }
       } else {
-        elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
+        pushInlineCode();
       }
       continue;
     }
@@ -242,58 +268,29 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
       continue;
     }
 
-    // Markdown table: detect header row with pipes
-    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-      const tableRows = [];
-      let hasValidSeparator = false;
-      const startIdx = i;
-
-      // Collect all contiguous pipe-delimited lines
-      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-        tableRows.push(lines[i].trim());
-        i++;
-      }
-
-      // Validate: need at least 2 rows, and 2nd row should be separator (| --- | --- |)
-      if (tableRows.length >= 2) {
-        const separatorRow = tableRows[1];
-        hasValidSeparator = /^\|[\s:]*-{2,}[\s:]*\|/.test(separatorRow);
-      }
-
-      if (hasValidSeparator && tableRows.length >= 2) {
-        const parseCells = (row) =>
-          row
-            .slice(1, -1) // remove leading/trailing pipes
-            .split('|')
-            .map((cell) => cell.trim());
-
-        const headerCells = parseCells(tableRows[0]);
-        // Parse alignment from separator row
-        const alignCells = parseCells(tableRows[1]);
-        const alignments = alignCells.map((cell) => {
-          if (cell.startsWith(':') && cell.endsWith(':')) return 'center';
-          if (cell.endsWith(':')) return 'right';
-          return 'left';
-        });
-        const bodyRows = tableRows.slice(2).map(parseCells);
-
+    // Markdown table — tolerant of blank-line gaps, single-dash separators,
+    // and rows with or without outer pipes. See parseMarkdownTable above.
+    if (line.includes('|')) {
+      const table = parseMarkdownTable(lines, i);
+      if (table) {
+        const { headers, rows, alignments } = table;
         elements.push(
           <div className={styles.tableWrapper} key={key++}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  {headerCells.map((cell, ci) => (
-                    <th key={ci} style={{ textAlign: alignments[ci] || 'left' }}>
+                  {headers.map((cell, ci) => (
+                    <th key={ci} style={{ textAlign: alignments[ci] }}>
                       {renderInline(cell)}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {bodyRows.map((row, ri) => (
+                {rows.map((row, ri) => (
                   <tr key={ri}>
-                    {headerCells.map((_, ci) => (
-                      <td key={ci} style={{ textAlign: alignments[ci] || 'left' }}>
+                    {headers.map((_, ci) => (
+                      <td key={ci} style={{ textAlign: alignments[ci] }}>
                         {renderInline(row[ci] || '')}
                       </td>
                     ))}
@@ -303,11 +300,9 @@ function renderMarkdown(text, isStreaming = false, citations = null) {
             </table>
           </div>
         );
+        i = table.endIdx;
         continue;
       }
-
-      // Not a valid table — reset and let normal parsing handle it
-      i = startIdx;
     }
 
     // Horizontal rule
@@ -745,7 +740,6 @@ function extractCodeBlocksWithNames(text) {
       lang === 'mermaid' ||
       lang === 'timeline' ||
       lang === 'comparison' ||
-      lang === 'steps' ||
       lang === 'file' ||
       lang === 'artifact' ||
       lang === 'html-artifact'
@@ -812,26 +806,90 @@ function extractCodeBlocksWithNames(text) {
  * Code side panel — Claude-style right-side panel for viewing code in a file-like view.
  * Features a collapsible left sidebar with file tree navigation.
  */
-function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
-  const [activeIdx, setActiveIdx] = useState(0);
+// Desktop sidebar widths, mirrored from Sidebar.jsx where --sidebar-width is
+// published. Kept in sync so the panel can reserve the right amount of room.
+const SIDEBAR_WIDTH_OPEN = 260;
+const SIDEBAR_WIDTH_COLLAPSED = 48;
+const MOBILE_BREAKPOINT = 768;
+const PANEL_MIN_WIDTH = 380;
+const PANEL_VIEWPORT_GAP = 12; // matches the panel's right inset (and the breathing room on the left)
+
+function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChange }) {
+  const safeInitialIdx =
+    initialActiveIdx >= 0 && initialActiveIdx < codeBlocks.length ? initialActiveIdx : 0;
+  const [activeIdx, setActiveIdx] = useState(safeInitialIdx);
   const [copied, setCopied] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(codeBlocks.length > 1);
-  const [panelWidth, setPanelWidth] = useState(null); // null = use CSS default
+  // The width the user dragged the panel to. Null = render the CSS default.
+  // Stored separately from the clamped/rendered width so toggling the side nav
+  // shrinks the panel without losing the user's preferred expansion.
+  const [desiredWidth, setDesiredWidth] = useState(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1440,
+    isMobile: typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT,
+  }));
   const codeRef = useRef(null);
   const panelRef = useRef(null);
   const isDraggingRef = useRef(false);
+  const maxWidthRef = useRef(0);
 
-  const MIN_WIDTH = 380;
-  const MAX_WIDTH_PERCENT = 0.8;
+  const sidebarCollapsed = useSelector(selectSidebarCollapsed);
+
+  // Track the viewport so the max-width recomputes when the window resizes
+  // and the mobile breakpoint flips between full-screen and panel modes.
+  useEffect(() => {
+    const handleResize = () => {
+      setViewport({
+        width: window.innerWidth,
+        isMobile: window.innerWidth <= MOBILE_BREAKPOINT,
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Desktop: the panel's left edge can travel until just before the sidebar,
+  // leaving a small breathing room on both sides. Mobile is full-screen and
+  // not user-resizable, so the cap is the full viewport.
+  const sidebarWidth = viewport.isMobile
+    ? 0
+    : sidebarCollapsed
+    ? SIDEBAR_WIDTH_COLLAPSED
+    : SIDEBAR_WIDTH_OPEN;
+  const maxWidth = viewport.isMobile
+    ? viewport.width
+    : Math.max(PANEL_MIN_WIDTH, viewport.width - sidebarWidth - PANEL_VIEWPORT_GAP * 2);
+
+  // Keep a ref of the live max so the active mousemove handler clamps against
+  // the latest value even if the sidebar is toggled mid-drag.
+  useEffect(() => {
+    maxWidthRef.current = maxWidth;
+  }, [maxWidth]);
+
+  // Clamp the rendered width against the live cap. If the user dragged wider
+  // than the current cap allows (e.g. sidebar just re-opened), the panel
+  // visually contracts but their preferred width is preserved.
+  const renderedWidth =
+    desiredWidth == null ? null : Math.min(Math.max(PANEL_MIN_WIDTH, desiredWidth), maxWidth);
+
+  // Publish the rendered width so the chat layout reserves the right amount of
+  // room. Fires on drag and on sidebar-driven clamping alike, which keeps the
+  // chat margin in sync without a custom call site for each.
+  useEffect(() => {
+    if (renderedWidth != null && onWidthChange) {
+      onWidthChange(renderedWidth);
+    }
+  }, [renderedWidth, onWidthChange]);
 
   const activeBlock = codeBlocks[activeIdx];
 
-  // Reset active index when codeBlocks change
+  // Reset active index when the underlying file list or requested entry changes
   useEffect(() => {
-    setActiveIdx(0);
+    setActiveIdx(safeInitialIdx);
     setCopied(false);
     setSidebarOpen(codeBlocks.length > 1);
-  }, [codeBlocks]);
+  }, [codeBlocks, safeInitialIdx]);
 
   useEffect(() => {
     const handleEsc = (e) => {
@@ -856,27 +914,34 @@ function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
     }
   }, [activeBlock]);
 
-  // Drag-to-resize handler
+  // Drag-to-resize handler. The cap is read from maxWidthRef so a sidebar
+  // toggle mid-drag is honoured immediately.
   const handleResizeStart = useCallback(
     (e) => {
+      if (viewport.isMobile) return;
       e.preventDefault();
       isDraggingRef.current = true;
+      setIsResizing(true);
       const startX = e.clientX;
       const startWidth = panelRef.current
         ? panelRef.current.getBoundingClientRect().width
-        : MIN_WIDTH;
+        : PANEL_MIN_WIDTH;
 
       const handleMouseMove = (moveEvent) => {
         if (!isDraggingRef.current) return;
         const delta = startX - moveEvent.clientX;
-        const maxWidth = window.innerWidth * MAX_WIDTH_PERCENT;
-        const newWidth = Math.min(maxWidth, Math.max(MIN_WIDTH, startWidth + delta));
-        setPanelWidth(newWidth);
-        if (onWidthChange) onWidthChange(newWidth);
+        const newWidth = Math.min(
+          maxWidthRef.current,
+          Math.max(PANEL_MIN_WIDTH, startWidth + delta)
+        );
+        setDesiredWidth(newWidth);
+        // --code-panel-width is published from the renderedWidth effect, which
+        // covers both drag and sidebar-driven re-clamping in one place.
       };
 
       const handleMouseUp = () => {
         isDraggingRef.current = false;
+        setIsResizing(false);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = '';
@@ -888,7 +953,7 @@ function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     },
-    [onWidthChange]
+    [viewport.isMobile]
   );
 
   const handleCopy = useCallback(() => {
@@ -906,12 +971,26 @@ function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
     activeBlock.name || (activeBlock.lang ? activeBlock.lang : `Block ${activeIdx + 1}`);
   const activeLang = activeBlock.lang ? activeBlock.lang.toUpperCase() : 'CODE';
 
-  const panelStyle = panelWidth
-    ? { width: `${panelWidth}px`, maxWidth: '80vw', minWidth: `${MIN_WIDTH}px` }
-    : {};
+  // Mobile is full-screen (CSS-driven); skip inline sizing entirely there.
+  // maxWidth is set to 'none' so the JS-clamped width can grow past the CSS
+  // default cap (.codeSidePanel max-width: 680px) when the user drags wider —
+  // without this, the published --code-panel-width and the actual painted
+  // width drift apart and the chat reserves a phantom gap.
+  const panelStyle =
+    !viewport.isMobile && renderedWidth != null
+      ? {
+          width: `${renderedWidth}px`,
+          maxWidth: 'none',
+          minWidth: `${PANEL_MIN_WIDTH}px`,
+        }
+      : null;
+
+  const panelClassName = `${styles.codeSidePanel}${
+    isResizing ? ` ${styles.codeSidePanelResizing}` : ''
+  }`;
 
   return createPortal(
-    <div className={styles.codeSidePanel} ref={panelRef} style={panelStyle}>
+    <div className={panelClassName} ref={panelRef} style={panelStyle || undefined}>
       {/* Resize handle on the left edge */}
       <div className={styles.codeSidePanelResizeHandle} onMouseDown={handleResizeStart}>
         <div className={styles.codeSidePanelResizeGrip}>
@@ -1028,6 +1107,33 @@ function CodeSidePanel({ codeBlocks, onClose, onWidthChange }) {
       </div>
     </div>,
     document.body
+  );
+}
+
+/**
+ * Inline placeholder for a long code block. Sits where the code would have
+ * rendered and opens the side-panel viewer focused on this block.
+ */
+function CodeOpener({ block, onOpen }) {
+  const lineCount = block.code.split('\n').length;
+  const title = block.name || block.lang || 'Code';
+  const meta = `${block.lang ? block.lang.toUpperCase() + ' · ' : ''}${lineCount} lines`;
+
+  return (
+    <button className={styles.codeOpener} onClick={onOpen} type="button">
+      <span className={styles.codeOpenerLeft}>
+        <span className={styles.codeOpenerIcon}>
+          <CodeIcon />
+        </span>
+        <span className={styles.codeOpenerText}>
+          <span className={styles.codeOpenerTitle}>{title}</span>
+          <span className={styles.codeOpenerMeta}>{meta}</span>
+        </span>
+      </span>
+      <span className={styles.codeOpenerArrow}>
+        <MaximizeIcon />
+      </span>
+    </button>
   );
 }
 
@@ -2767,12 +2873,8 @@ function parseMessageToSections(content) {
         i++;
       }
       i++; // skip closing ```
-      // Skip special blocks (chart, mermaid, file, timeline, comparison, steps)
-      if (
-        !['chart', 'araviel-chart', 'mermaid', 'file', 'timeline', 'comparison', 'steps'].includes(
-          lang
-        )
-      ) {
+      // Skip special blocks (chart, mermaid, file, timeline, comparison)
+      if (!['chart', 'araviel-chart', 'mermaid', 'file', 'timeline', 'comparison'].includes(lang)) {
         sections.push({ type: 'code', text: codeLines.join('\n'), language: lang || undefined });
       }
       continue;
@@ -2787,27 +2889,13 @@ function parseMessageToSections(content) {
     }
 
     // Table
-    if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-      const tableRows = [];
-      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-        tableRows.push(lines[i].trim());
-        i++;
-      }
-      if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
-        const parseCells = (row) =>
-          row
-            .slice(1, -1)
-            .split('|')
-            .map((c) => c.trim());
-        sections.push({
-          type: 'table',
-          headers: parseCells(tableRows[0]),
-          rows: tableRows.slice(2).map(parseCells),
-        });
+    if (line.includes('|')) {
+      const table = parseMarkdownTable(lines, i);
+      if (table) {
+        sections.push({ type: 'table', headers: table.headers, rows: table.rows });
+        i = table.endIdx;
         continue;
       }
-      // Not a valid table, fall through
-      i -= tableRows.length;
     }
 
     // Horizontal rule
@@ -2877,22 +2965,12 @@ function extractTablesFromContent(content) {
   let i = 0;
 
   while (i < lines.length) {
-    if (lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-      const tableRows = [];
-      const startIdx = i;
-      while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
-        tableRows.push(lines[i].trim());
-        i++;
-      }
-      if (tableRows.length >= 2 && /^\|[\s:]*-{2,}/.test(tableRows[1])) {
-        const parseCells = (row) =>
-          row
-            .slice(1, -1)
-            .split('|')
-            .map((c) => c.trim());
+    if (lines[i].includes('|')) {
+      const table = parseMarkdownTable(lines, i);
+      if (table) {
         // Look for a heading above the table
         let title = null;
-        for (let j = startIdx - 1; j >= Math.max(0, startIdx - 3); j--) {
+        for (let j = i - 1; j >= Math.max(0, i - 3); j--) {
           const hMatch = lines[j].match(/^#{1,6}\s+(.+)/);
           if (hMatch) {
             title = hMatch[1];
@@ -2904,17 +2982,12 @@ function extractTablesFromContent(content) {
             break;
           }
         }
-        tables.push({
-          title,
-          headers: parseCells(tableRows[0]),
-          rows: tableRows.slice(2).map(parseCells),
-        });
+        tables.push({ title, headers: table.headers, rows: table.rows });
+        i = table.endIdx;
         continue;
       }
-      i = startIdx + 1;
-    } else {
-      i++;
     }
+    i++;
   }
   return tables;
 }
@@ -5212,6 +5285,35 @@ function Message({
   const hasAlternates = message.alternateModels && message.alternateModels.length > 0;
   const headerPillRef = useRef(null);
 
+  // Text fed to renderMarkdown. When the message also carries generated images,
+  // strip their markdown so the GeneratedImageBlock isn't duplicated.
+  const renderText = useMemo(() => {
+    if (!displayText) return '';
+    if (message.generatedImages && message.generatedImages.length > 0) {
+      return displayText.replace(/^!\[Generated image[^\]]*\]\([^)]+\)\s*$/gm, '').trim();
+    }
+    return displayText;
+  }, [displayText, message.generatedImages]);
+
+  // Blocks long enough to skip inline rendering and live only in the side panel.
+  // Computed once per message and shared by both the inline renderer (via
+  // codeOpenerContext) and the footer CodeCanvasButton — keeps order/indices
+  // aligned so opener clicks land on the correct file.
+  const longCodeBlocks = useMemo(() => {
+    if (!renderText) return [];
+    return extractCodeBlocksWithNames(renderText).filter(
+      (b) => b.code.split('\n').length > CODE_VIEWER_MIN_LINES
+    );
+  }, [renderText]);
+
+  const codeOpenerContext = useMemo(() => {
+    if (longCodeBlocks.length === 0 || !onOpenCodePanel) return null;
+    return {
+      longBlocks: longCodeBlocks,
+      onOpen: onOpenCodePanel,
+    };
+  }, [longCodeBlocks, onOpenCodePanel]);
+
   // Sub-conversation state
   const [subConversations, setSubConversations] = useState([]);
   const [activeSubConvId, setActiveSubConvId] = useState(null);
@@ -5717,14 +5819,10 @@ function Message({
         ) : (
           <div className={styles.markdownContent} ref={markdownContentRef}>
             {renderMarkdown(
-              // Strip image markdown when generatedImages already handles rendering,
-              // to prevent duplicate images (one from markdown, one from GeneratedImageBlock).
-              // Matches both "![Generated image](url)" and "![Generated image: prompt](url)".
-              message.generatedImages && message.generatedImages.length > 0
-                ? displayText.replace(/^!\[Generated image[^\]]*\]\([^)]+\)\s*$/gm, '').trim()
-                : displayText,
+              renderText,
               isStreaming,
-              message.citations || message.sources
+              message.citations || message.sources,
+              codeOpenerContext
             )}
             {isStreaming && <span className={styles.cursor} />}
           </div>
@@ -5745,20 +5843,15 @@ function Message({
         </div>
       )}
 
-      {/* Code panel button — shown below response when code blocks exist */}
-      {!isUser &&
-        !isStreaming &&
-        displayText &&
-        (() => {
-          const blocks = extractCodeBlocksWithNames(displayText);
-          if (blocks.length === 0) return null;
-          return (
-            <CodeCanvasButton
-              codeBlocks={blocks}
-              onClick={() => onOpenCodePanel && onOpenCodePanel(blocks)}
-            />
-          );
-        })()}
+      {/* Code panel button — shown below the response only when at least one
+          code block is long enough to live in the side panel. Short blocks stay
+          inline and don't appear here. */}
+      {!isUser && !isStreaming && longCodeBlocks.length > 0 && (
+        <CodeCanvasButton
+          codeBlocks={longCodeBlocks}
+          onClick={() => onOpenCodePanel && onOpenCodePanel(longCodeBlocks, 0)}
+        />
+      )}
 
       {/* Error card */}
       {!isUser && message.error && (
@@ -5973,8 +6066,9 @@ export default function MessageList({
   const userScrolledDuringStreamRef = useRef(false);
   const wasStreamingRef = useRef(false);
 
-  // Code side panel state (lifted up so it persists across messages)
-  const [codePanelBlocks, setCodePanelBlocks] = useState(null);
+  // Code side panel state (lifted up so it persists across messages).
+  // Shape: null when closed, { blocks, initialActiveIdx } when open.
+  const [codePanelState, setCodePanelState] = useState(null);
   // Sources panel state (lifted up so it renders as a third column)
   const [sourcesPanelCitations, setSourcesPanelCitations] = useState(null);
   const sourcesPanelRef = useRef(null);
@@ -5983,7 +6077,7 @@ export default function MessageList({
   // Close code panel and sub-conversation panel when switching chats
   useEffect(() => {
     if (prevChatIdRef.current !== currentChatId) {
-      setCodePanelBlocks(null);
+      setCodePanelState(null);
       setSubConvPanelOwnerId(null);
       setSourcesPanelCitations(null);
       if (onCodePanelToggle) onCodePanelToggle(false);
@@ -5995,15 +6089,15 @@ export default function MessageList({
   }, [currentChatId, onCodePanelToggle, onSubConvPanelToggle]);
 
   const handleOpenCodePanel = useCallback(
-    (blocks) => {
-      setCodePanelBlocks(blocks);
+    (blocks, initialActiveIdx = 0) => {
+      setCodePanelState({ blocks, initialActiveIdx });
       if (onCodePanelToggle) onCodePanelToggle(true);
     },
     [onCodePanelToggle]
   );
 
   const handleCloseCodePanel = useCallback(() => {
-    setCodePanelBlocks(null);
+    setCodePanelState(null);
     if (onCodePanelToggle) onCodePanelToggle(false);
     // Reset custom width CSS var
     document.documentElement.style.removeProperty('--code-panel-width');
@@ -6254,9 +6348,10 @@ export default function MessageList({
       </div>
 
       {/* Code side panel — Claude-style right panel */}
-      {codePanelBlocks && codePanelBlocks.length > 0 && (
+      {codePanelState && codePanelState.blocks.length > 0 && (
         <CodeSidePanel
-          codeBlocks={codePanelBlocks}
+          codeBlocks={codePanelState.blocks}
+          initialActiveIdx={codePanelState.initialActiveIdx}
           onClose={handleCloseCodePanel}
           onWidthChange={handleCodePanelWidthChange}
         />

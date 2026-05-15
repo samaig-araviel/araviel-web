@@ -74,14 +74,24 @@ export const initializeAuth = createAsyncThunk(
   }
 );
 
-/** Redirect the user to Google OAuth. */
+/** Redirect the user to Google OAuth.
+ *
+ *  We ask for `user.birthday.read` in addition to the standard
+ *  identity scopes so the People API can return the user's date of
+ *  birth on the first sign-in. If they haven't set it on their Google
+ *  account, or only have a partial date, the auth listener falls back
+ *  to the manual /signup/verify-age step. */
 export const signInWithGoogle = createAsyncThunk(
   'auth/signInWithGoogle',
   async (_, { rejectWithValue }) => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: window.location.origin },
+        options: {
+          redirectTo: window.location.origin,
+          scopes:
+            'openid email profile https://www.googleapis.com/auth/user.birthday.read',
+        },
       });
       if (error) return rejectWithValue(error.message);
       // The browser will redirect — no meaningful return value.
@@ -137,13 +147,59 @@ export const signUpWithEmail = createAsyncThunk(
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: metadata },
+        options: {
+          data: metadata,
+          // Send the user back to the app root after they click the
+          // confirmation link in the verification email.
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
       });
       if (error) return rejectWithValue(error.message);
       return {
         user: mapUser(data.user),
         session: mapSession(data.session),
       };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/** Resend the signup confirmation email for an unconfirmed account. Used by
+ *  the /signup/check-email screen so users can retry without re-entering
+ *  their credentials. */
+export const resendSignupEmail = createAsyncThunk(
+  'auth/resendSignupEmail',
+  async ({ email }, { rejectWithValue }) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+        },
+      });
+      if (error) return rejectWithValue(error.message);
+      return null;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/** Persist a user's date of birth (ISO yyyy-mm-dd) to user_metadata.
+ *  Used by VerifyAgeView's "update mode" for already-authenticated
+ *  users (e.g. Google sign-ins) and by the auth listener when it
+ *  successfully fetches a complete DOB from Google's People API. */
+export const updateBirthDate = createAsyncThunk(
+  'auth/updateBirthDate',
+  async ({ birthDate }, { rejectWithValue }) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        data: { birth_date: birthDate },
+      });
+      if (error) return rejectWithValue(error.message);
+      return { user: mapUser(data.user) };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -277,15 +333,29 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(signUpWithEmail.fulfilled, (state, action) => {
-        state.user = action.payload.user;
-        state.session = action.payload.session;
+        // Only flip the user into the authenticated state if Supabase
+        // actually returned a session. When email confirmation is required
+        // signUp returns a user record but no session — the user must
+        // verify the email before they have an authenticated session.
+        if (action.payload.session) {
+          state.user = action.payload.user;
+          state.session = action.payload.session;
+          resetGuestPromptCount();
+        }
         state.isLoading = false;
         state.error = null;
-        resetGuestPromptCount();
       })
       .addCase(signUpWithEmail.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Sign-up failed';
+      });
+
+    // updateBirthDate
+    builder
+      .addCase(updateBirthDate.fulfilled, (state, action) => {
+        if (state.user && action.payload?.user) {
+          state.user = action.payload.user;
+        }
       });
 
     // signOut

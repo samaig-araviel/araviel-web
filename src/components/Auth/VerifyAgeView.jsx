@@ -3,8 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   signUpWithEmail,
+  updateBirthDate,
   selectAuthLoading,
   selectAuthError,
+  selectIsAuthenticated,
   setAuthError,
 } from '../../store/slices/authSlice';
 import authStyles from './AuthModal.module.css';
@@ -131,23 +133,31 @@ export default function VerifyAgeView() {
   const dispatch = useDispatch();
   const isLoading = useSelector(selectAuthLoading);
   const authError = useSelector(selectAuthError);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
 
   const pendingSignup = location.state?.pendingSignup;
+  // Two operating modes:
+  //   - "signup":  user came from /signup with credentials in transit;
+  //                we'll call signUpWithEmail with the chosen DOB.
+  //   - "update":  user is already authenticated (e.g. signed in via
+  //                Google but has no birth_date in user_metadata); we'll
+  //                call updateBirthDate to attach the chosen DOB.
+  const mode = pendingSignup ? 'signup' : isAuthenticated ? 'update' : null;
 
-  // No credentials in transit means the user landed here directly (refresh,
-  // shared link, history). Bounce them back to /signup to start over.
+  // No credentials and no session means the user landed here directly
+  // (refresh, shared link, history). Bounce them back to /signup so the
+  // flow stays linear.
   useEffect(() => {
-    if (!pendingSignup) {
+    if (!mode) {
       navigate('/signup', { replace: true });
     }
-  }, [pendingSignup, navigate]);
+  }, [mode, navigate]);
 
   const today = useMemo(() => new Date(), []);
   const [year, setYear] = useState(today.getFullYear() - 18);
   const [monthIndex, setMonthIndex] = useState(today.getMonth());
   const [day, setDay] = useState(today.getDate());
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
 
   const yearOptions = useMemo(
     () => Array.from({ length: 100 }, (_, i) => today.getFullYear() - i),
@@ -166,13 +176,16 @@ export default function VerifyAgeView() {
   }, [monthIndex, year, day]);
 
   const handleBack = () => {
+    if (mode === 'update') {
+      navigate('/', { replace: true });
+      return;
+    }
     navigate('/signup', { state: { from: location.state?.from } });
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-    setSuccessMessage('');
     dispatch(setAuthError(null));
 
     const age = calculateAge(year, monthIndex, day);
@@ -182,6 +195,17 @@ export default function VerifyAgeView() {
     }
 
     const birthDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    if (mode === 'update') {
+      // Already-authenticated user (typically Google OAuth where the
+      // People API didn't return a complete DOB). Just persist the
+      // chosen date and drop them into the app.
+      const result = await dispatch(updateBirthDate({ birthDate }));
+      if (result.meta.requestStatus === 'fulfilled') {
+        navigate(location.state?.from || '/', { replace: true });
+      }
+      return;
+    }
 
     const result = await dispatch(
       signUpWithEmail({
@@ -193,11 +217,55 @@ export default function VerifyAgeView() {
     );
 
     if (result.meta.requestStatus === 'fulfilled') {
-      setSuccessMessage('Account created. Check your email to confirm.');
+      // Supabase returned a session → email confirmation is disabled in
+      // this project, the user is already authenticated. Drop them
+      // straight into the app.
+      if (result.payload?.session) {
+        navigate(location.state?.from || '/', { replace: true });
+        return;
+      }
+      // No session → email confirmation is on. Hand off to a dedicated
+      // "check your email" screen so the user can't accidentally retry
+      // and burn through Supabase's email rate limit.
+      navigate('/signup/check-email', {
+        replace: true,
+        state: { email: pendingSignup.email },
+      });
+      return;
+    }
+
+    // Friendly retry message for the project-wide email rate limit. The
+    // signUp call did NOT create a user when this fires, so it's safe to
+    // try again with the same email later.
+    const raw = (result.payload || '').toString().toLowerCase();
+    if (raw.includes('rate limit') || raw.includes('over_email_send_rate_limit')) {
+      setError(
+        "We couldn't send the confirmation email right now — try again in a few minutes. " +
+          "Your details haven't been submitted yet."
+      );
+      return;
+    }
+
+    // If Supabase's password policy is stricter than our client-side
+    // rules (or someone bypassed them), the server can still reject the
+    // signUp with a password error after the user has already filled
+    // in their DOB. Bounce them back to /signup with a friendly
+    // message instead of trapping them on this screen — the password
+    // is the thing they need to fix.
+    if (raw.includes('password')) {
+      navigate('/signup', {
+        replace: true,
+        state: {
+          ...location.state,
+          passwordError:
+            'Password must contain at least: 8 characters, 1 uppercase letter, ' +
+            '1 lowercase letter, 1 number.',
+        },
+      });
     }
   };
 
-  if (!pendingSignup) return null;
+  if (!mode) return null;
 
   const errorMessage = error || authError;
 
@@ -239,13 +307,8 @@ export default function VerifyAgeView() {
           </div>
 
           {errorMessage && <div className={authStyles.error}>{errorMessage}</div>}
-          {successMessage && <div className={authStyles.success}>{successMessage}</div>}
 
-          <button
-            className={authStyles.submitBtn}
-            type="submit"
-            disabled={isLoading || Boolean(successMessage)}
-          >
+          <button className={authStyles.submitBtn} type="submit" disabled={isLoading}>
             {isLoading ? <span className={authStyles.spinner} aria-hidden="true" /> : 'Continue'}
           </button>
         </form>
