@@ -4516,7 +4516,9 @@
     border-radius: 0;
     border: none;
     box-shadow: none;
-    z-index: 1101;
+    /* Match sourcesPanel: above composer (1050) and scroll buttons (1100),
+       below sidebar overlay (1180). */
+    z-index: 1150;
   }
 
   .subConvPanelFadeTop {
@@ -4524,7 +4526,7 @@
   }
 
   .subConvPanelHeader {
-    padding: 18px 16px 14px;
+    padding: 18px 16px 14px 52px;
   }
 
   .subConvMessages {
@@ -7507,6 +7509,15 @@
     max-width: none;
     min-width: 0;
     border-radius: 0;
+    /* Match sourcesPanel/subConvPanel: above composer (1050) and scroll
+       buttons (1100), below sidebar overlay (1180). */
+    z-index: 1150;
+  }
+
+  /* Leave room for the fixed hamburger button (36px @ left:16px) so the
+     code panel header isn't hidden behind it. */
+  .codeSidePanelHeader {
+    padding-left: 52px;
   }
 
   /* Touch devices can't drag-resize — hide the grip so its dots don't bleed
