@@ -3554,7 +3554,9 @@ function SubConversationPanel({
   const finalizedMessages = subConversation.messages;
   const showStreaming = isSending || (thinkingStatus && thinkingStatus !== 'idle');
 
-  return (
+  // Portal to body so the fixed panel escapes the MessageList scroll
+  // container (see SourcesSidePanel for the iOS-Safari rationale).
+  return createPortal(
     <>
       <div className={styles.subConvOverlay} onClick={onClose} />
       <div className={styles.subConvPanel} ref={panelRef}>
@@ -3723,7 +3725,8 @@ function SubConversationPanel({
           </form>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
@@ -5963,7 +5966,11 @@ function SourcesSidePanel({ citations, onClose, panelRef }) {
   // reflect unique sources.
   const uniqueCitations = useMemo(() => dedupeCitations(citations), [citations]);
 
-  return (
+  // Portal to document.body so the fixed panel escapes the MessageList
+  // scroll container — some browsers (notably iOS Safari) confine
+  // position: fixed descendants to their scrolling ancestor, which
+  // would let the composer (z-index 1050) paint over the panel.
+  return createPortal(
     <div className={styles.sourcesPanel} ref={panelRef}>
       <div className={styles.sourcesPanelHeader}>
         <span className={styles.sourcesPanelTitle}>Sources</span>
@@ -6027,7 +6034,8 @@ function SourcesSidePanel({ citations, onClose, panelRef }) {
           );
         })}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
