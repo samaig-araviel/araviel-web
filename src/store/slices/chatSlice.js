@@ -47,6 +47,17 @@ const initialState = {
   conversations: [],
   conversationsTotal: 0,
   conversationsLoading: false,
+  // Rolling-summary state for the active conversation. Mirrors the
+  // backend `history` object on the routing SSE event and the
+  // conversation GET response. Drives the HistoryNoticeBanner above
+  // the input box so the user knows older context has been summarized
+  // (or is about to be) and they may want to start a new conversation.
+  //
+  // Shape:
+  //   { summarized: boolean, approachingLimit: boolean,
+  //     summarizedMessageCount: number, recentMessageCount: number }
+  //   | null  // sub-conversations and pre-fetch state
+  historyState: null,
 };
 
 const chatSlice = createSlice({
@@ -134,6 +145,10 @@ const chatSlice = createSlice({
       state.quickPromptImageOverride = null;
       state.activeProjectId = null;
       state.importedContext = null;
+      state.historyState = null;
+    },
+    setHistoryState: (state, action) => {
+      state.historyState = action.payload ?? null;
     },
     setActiveProjectId: (state, action) => {
       state.activeProjectId = action.payload;
@@ -264,6 +279,7 @@ export const {
   appendConversations,
   setConversationsLoading,
   updateConversationTitle,
+  setHistoryState,
   resetChatState,
 } = chatSlice.actions;
 
@@ -291,5 +307,6 @@ export const selectConversations = (state) => state.chat.conversations;
 export const selectConversationsTotal = (state) => state.chat.conversationsTotal;
 export const selectConversationsLoading = (state) => state.chat.conversationsLoading;
 export const selectImportedContext = (state) => state.chat.importedContext;
+export const selectHistoryState = (state) => state.chat.historyState;
 
 export default chatSlice.reducer;

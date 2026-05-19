@@ -47,6 +47,7 @@ import {
   setCreditBalance,
   setSelectedModality,
   revertQuickPromptImageOverride,
+  setHistoryState,
 } from '../../store/slices/chatSlice';
 import { recordMessage } from '../../store/slices/analyticsSlice';
 import {
@@ -104,6 +105,7 @@ import {
 import ModelSelector from '../ModelSelector/ModelSelector';
 import MessageList from '../MessageList/MessageList';
 import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
+import HistoryNoticeBanner from './HistoryNoticeBanner';
 import {
   sendMessage,
   consumeSSEStream,
@@ -1099,18 +1101,26 @@ export default function MainContent() {
   useEffect(() => {
     if (!currentChatId) {
       setConversationTitle('');
+      // No active conversation → clear rolling-summary banner state so
+      // it doesn't carry over from the previous chat.
+      dispatch(setHistoryState(null));
       return;
     }
     let cancelled = false;
     fetchConversation(currentChatId)
       .then((conv) => {
-        if (!cancelled) setConversationTitle(conv.title || 'Untitled');
+        if (cancelled) return;
+        setConversationTitle(conv.title || 'Untitled');
+        // Seed banner state on page refresh — the routing event would
+        // otherwise be the only source, leaving the banner missing
+        // until the user sends the next message.
+        dispatch(setHistoryState(conv.history ?? null));
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [currentChatId]);
+  }, [currentChatId, dispatch]);
 
   // Fetch credit balance on mount and when modality switches to image (authenticated users only)
   useEffect(() => {
@@ -1563,6 +1573,12 @@ export default function MainContent() {
 
             if (type === 'routing') {
               const routingDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
+
+              // Rolling-summary state for the active conversation —
+              // drives the HistoryNoticeBanner above the input box.
+              // Null for sub-conversations and for any older backend
+              // that doesn't send the field.
+              dispatch(setHistoryState(data.history ?? null));
 
               // Save the conversationId from backend (may be newly created)
               if (data.conversationId) {
@@ -3168,6 +3184,7 @@ export default function MainContent() {
         )}
 
         <div className={styles.inputSection}>
+          <HistoryNoticeBanner />
           <form className={styles.inputContainer} onSubmit={handleSubmit}>
             <div className={styles.inputWrapper}>
               {attachedFiles.length > 0 && (
