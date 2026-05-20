@@ -20,7 +20,8 @@ import { ServiceError, NetworkError, errorFromResponse } from './errors';
 import { logger, generateRequestId } from './logger';
 
 const API_BASE =
-  import.meta.env.ARAVIEL_API_BASE || (import.meta.env.DEV ? '' : 'https://araviel-api.vercel.app');
+  import.meta.env.VITE_ARAVIEL_API_BASE ||
+  (import.meta.env.DEV ? '' : 'https://araviel-api.vercel.app');
 
 /**
  * Resolve the full URL for an API path. Relative paths are mounted under the
