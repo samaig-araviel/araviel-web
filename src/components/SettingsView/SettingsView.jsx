@@ -10,6 +10,7 @@ import {
   selectCancelAtPeriodEnd,
   selectPortalLoading,
   createPortalThunk,
+  setSubscriptionData,
 } from '../../store/slices/subscriptionSlice';
 import { getTierById } from '../../config/subscription';
 import {
@@ -285,7 +286,12 @@ export default function SettingsView() {
       setLoading(false);
       return;
     }
-    fetchSettings()
+    fetchSettings((subscription) => {
+      // /api/settings returns a subscription summary alongside the
+      // settings row — dispatch it so the global tier stays fresh even
+      // if the user opened the app directly on the settings page.
+      dispatch(setSubscriptionData(subscription));
+    })
       .then((s) => {
         const merged = { ...s };
         if (!merged.fullName && authUser?.fullName) {

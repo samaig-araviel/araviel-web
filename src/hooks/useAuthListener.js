@@ -14,8 +14,64 @@ import { fetchCreditBalance } from '../services/credits';
 import { fetchSubscription } from '../services/subscription';
 import { fetchGoogleBirthday } from '../services/googleBirthday';
 import { clearImageCache } from '../services/imageGeneration';
-import { setLoggerUser } from '../lib/logger';
+import { logger, setLoggerUser } from '../lib/logger';
 import { isAgeAllowed, MIN_AGE } from '../utils/age';
+
+// Single in-flight hydration so SIGNED_IN, INITIAL_SESSION, and
+// TOKEN_REFRESHED arriving close together don't fan out into duplicate
+// API calls.
+let hydrationInFlight = null;
+
+function hydrateUserState(dispatch) {
+  if (hydrationInFlight) return hydrationInFlight;
+
+  // Retry the subscription fetch a couple of times before giving up so a
+  // single transient 401/network blip can't pin the user at the default
+  // 'free' tier until they reload.
+  const fetchWithRetry = async (attempt = 0) => {
+    try {
+      const data = await fetchSubscription();
+      dispatch(setSubscriptionData(data));
+    } catch (err) {
+      if (attempt < 2) {
+        const delay = 500 * 2 ** attempt;
+        await new Promise((r) => setTimeout(r, delay));
+        return fetchWithRetry(attempt + 1);
+      }
+      logger.warn('subscription hydration failed', {
+        route: 'auth.hydrate',
+        reason: err?.message,
+      });
+    }
+  };
+
+  const creditsPromise = fetchCreditBalance()
+    .then((data) => {
+      if (data?.balance) {
+        dispatch(setCreditBalance(data.balance));
+        dispatch(
+          setImageCredits({
+            used: data.balance.monthly?.used ?? 0,
+            limit: data.balance.monthly?.total ?? 5,
+            remaining: data.balance.monthly?.remaining ?? 0,
+            packRemaining: data.balance.packs?.remaining ?? 0,
+            cycleResetsAt: data.balance.cycleResetsAt ?? null,
+          })
+        );
+      }
+    })
+    .catch((err) => {
+      logger.warn('credit balance hydration failed', {
+        route: 'auth.hydrate',
+        reason: err?.message,
+      });
+    });
+
+  hydrationInFlight = Promise.all([fetchWithRetry(), creditsPromise]).finally(() => {
+    hydrationInFlight = null;
+  });
+  return hydrationInFlight;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers: map Supabase objects to our app shapes
@@ -74,6 +130,7 @@ export default function useAuthListener() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       switch (event) {
+        case 'INITIAL_SESSION':
         case 'SIGNED_IN':
         case 'TOKEN_REFRESHED':
         case 'USER_UPDATED': {
@@ -85,9 +142,16 @@ export default function useAuthListener() {
               session: mapSession(session),
             })
           );
-          // On real (non-anonymous) sign-in, sync tier/credits from backend
-          if (event === 'SIGNED_IN' && user && !user.isAnonymous) {
-            resetGuestPromptCount();
+          // Hydrate tier/credits from backend on any auth event that
+          // produces a non-anonymous session. SIGNED_IN catches fresh
+          // logins; INITIAL_SESSION covers page reloads (Supabase
+          // restored the session from storage); TOKEN_REFRESHED covers
+          // long-lived sessions where a server-side tier change should
+          // become visible; USER_UPDATED covers metadata updates.
+          if (user && !user.isAnonymous) {
+            if (event === 'SIGNED_IN') {
+              resetGuestPromptCount();
+            }
 
             // Google sign-in only: try to lift the user's date of birth from
             // Google's People API so we can skip the manual age step when
@@ -99,7 +163,7 @@ export default function useAuthListener() {
             // /signup/verify-age for manual entry.
             const provider = session?.user?.app_metadata?.provider;
             const providerToken = session?.provider_token;
-            if (provider === 'google' && providerToken && !user.birthDate) {
+            if (event === 'SIGNED_IN' && provider === 'google' && providerToken && !user.birthDate) {
               fetchGoogleBirthday(providerToken)
                 .then((birthDate) => {
                   if (!birthDate) return; // Falls through to manual entry.
@@ -136,28 +200,7 @@ export default function useAuthListener() {
                 .catch(() => {});
             }
 
-            fetchCreditBalance()
-              .then((data) => {
-                if (data.balance) {
-                  dispatch(setCreditBalance(data.balance));
-                  dispatch(
-                    setImageCredits({
-                      used: data.balance.monthly?.used ?? 0,
-                      limit: data.balance.monthly?.total ?? 5,
-                      remaining: data.balance.monthly?.remaining ?? 0,
-                      packRemaining: data.balance.packs?.remaining ?? 0,
-                      cycleResetsAt: data.balance.cycleResetsAt ?? null,
-                    })
-                  );
-                }
-              })
-              .catch(() => {});
-            // Hydrate subscription state from server
-            fetchSubscription()
-              .then((data) => {
-                dispatch(setSubscriptionData(data));
-              })
-              .catch(() => {});
+            hydrateUserState(dispatch);
           }
           break;
         }

@@ -113,9 +113,13 @@ const toCamelCase = (settings) => {
 
 /**
  * Fetch user settings from the backend.
+ * Returns the settings object directly for backward compat. The response
+ * may also include a `subscription` summary (tier, status, periodEnd…) —
+ * exposed via the second arg as a callback so callers that care can react
+ * without changing the return shape.
  * Falls back to localStorage then defaults if backend is unavailable.
  */
-export async function fetchSettings() {
+export async function fetchSettings(onSubscription) {
   try {
     const headers = await getAuthHeaders();
     const res = await fetch(`${API_BASE}/api/settings`, { headers });
@@ -129,6 +133,9 @@ export async function fetchSettings() {
     const settings = { ...DEFAULT_SETTINGS, ...cleanSettings };
     // Cache to localStorage as fallback
     localStorage.setItem('araviel-settings', JSON.stringify(settings));
+    if (data.subscription && typeof onSubscription === 'function') {
+      onSubscription(data.subscription);
+    }
     return settings;
   } catch {
     // Fallback to localStorage
