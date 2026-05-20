@@ -5532,8 +5532,31 @@ function Message({
               costUsd: data.costUsd,
               latencyMs: data.latencyMs,
             };
+            // Authoritative final model — reaffirms identity already swapped
+            // on PROVIDER_RETRY, and corrects edge cases on fallback paths.
+            if (data.model && data.model.id) {
+              routingInfo = {
+                ...routingInfo,
+                modelName: data.model.name,
+                modelId: data.model.id,
+                provider: data.model.provider,
+              };
+            }
           } else if (type === 'error') {
-            if (data.code !== 'PROVIDER_RETRY') {
+            if (data.code === 'PROVIDER_RETRY') {
+              // Backup is now producing the response — drop primary's partial
+              // output and swap routingInfo so the finalized message records
+              // the model that actually responded.
+              accumulatedContent = '';
+              setSubConvStreamText('');
+              citationSources = null;
+              routingInfo = {
+                ...routingInfo,
+                modelName: data.toModel || routingInfo.modelName,
+                modelId: data.toModelId || routingInfo.modelId,
+                provider: data.toProvider || routingInfo.provider,
+              };
+            } else {
               accumulatedContent += `\n\n*Error: ${data.message}*`;
               setSubConvStreamText(accumulatedContent);
             }

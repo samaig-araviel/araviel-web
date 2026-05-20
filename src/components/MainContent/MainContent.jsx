@@ -1517,6 +1517,7 @@ export default function MainContent() {
       let receivedDone = false;
       let routeInfo = null;
       let assistantMessageId = null;
+      let currentAlternates = [];
 
       try {
         const webSearchParam =
@@ -1609,6 +1610,7 @@ export default function MainContent() {
                 score: m.score,
                 reasoning: m.reasoning,
               }));
+              currentAlternates = alternates;
 
               // Add empty assistant message
               assistantMessageId = data.messageId || `assistant-${Date.now()}`;
@@ -1751,9 +1753,28 @@ export default function MainContent() {
             } else if (type === 'done') {
               receivedDone = true;
               const totalDuration = ((Date.now() - routingStart) / 1000).toFixed(1);
+              // Authoritative final model from the backend. Reaffirms the
+              // identity already swapped on PROVIDER_RETRY, and corrects any
+              // edge case where a fallback path didn't emit one.
+              if (data.model && data.model.id) {
+                routeInfo = {
+                  modelId: data.model.id,
+                  modelName: data.model.name,
+                  provider: data.model.provider,
+                };
+              }
               if (assistantMsgAdded) {
                 dispatch(
                   updateLastMessage({
+                    ...(data.model && data.model.id
+                      ? {
+                          modelId: data.model.id,
+                          modelName: data.model.name,
+                          provider: data.model.provider,
+                          score: data.model.score,
+                          reasoning: data.model.reasoning,
+                        }
+                      : {}),
                     usage: data.usage,
                     costUsd: data.usage?.costUsd,
                     latencyMs: data.latencyMs,
@@ -1812,10 +1833,53 @@ export default function MainContent() {
               window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
             } else if (type === 'error') {
               if (data.code === 'PROVIDER_RETRY') {
-                // Non-fatal — show a brief notification but keep listening
+                // Backup is producing the authoritative response — abandon any
+                // partial primary output and swap the message identity over so
+                // the badge, analytics, and alternates list all reflect the
+                // backup that actually responded.
+                accumulatedContent = '';
+                accumulatedThinking = '';
+                accumulatedImages = null;
+                setStreamedText('');
+
                 if (assistantMsgAdded) {
+                  const prevPrimary = routeInfo;
+                  const demotedPrimary =
+                    prevPrimary && prevPrimary.modelId
+                      ? {
+                          modelId: prevPrimary.modelId,
+                          modelName: prevPrimary.modelName,
+                          provider: prevPrimary.provider,
+                        }
+                      : null;
+                  const filteredAlternates = (currentAlternates || []).filter(
+                    (m) => m.modelId !== data.toModelId
+                  );
+                  const nextAlternates = demotedPrimary
+                    ? [demotedPrimary, ...filteredAlternates]
+                    : filteredAlternates;
+
+                  currentAlternates = nextAlternates;
+                  routeInfo = {
+                    modelId: data.toModelId,
+                    modelName: data.toModel || 'Unknown',
+                    provider: data.toProvider,
+                  };
+
                   dispatch(
                     updateLastMessage({
+                      content: '',
+                      thinkingContent: '',
+                      citations: null,
+                      toolUse: null,
+                      webSearchUsed: false,
+                      modelId: data.toModelId,
+                      modelName: data.toModel || 'Unknown',
+                      provider: data.toProvider,
+                      score: data.toScore,
+                      reasoning: data.toReasoning || 'Selected after primary model failed',
+                      isManualSelection: false,
+                      alternateModels: nextAlternates,
                       providerRetry: {
                         fromModel: data.fromModel || 'Unknown',
                         toModel: data.toModel || 'Unknown',
