@@ -15,6 +15,7 @@ import {
   appendConversations,
   setConversationsLoading,
   selectCurrentChatId,
+  selectMessages,
 } from '../../store/slices/chatSlice';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
 import { selectAuthUser, selectIsAuthenticated, signOut } from '../../store/slices/authSlice';
@@ -48,7 +49,6 @@ import {
   EditIcon,
   ArchiveIcon,
   TrashIcon,
-  LinkIcon,
   SettingsIcon,
   ZapIcon,
   HelpCircleIcon,
@@ -59,6 +59,7 @@ import {
 } from '../Icons';
 import ProjectPickerModal from '../ProjectPickerModal';
 import SearchModal from '../SearchModal/SearchModal';
+import ShareModal from '../ShareModal/ShareModal';
 import styles from './Sidebar.module.css';
 
 function groupConversationsByTime(conversations) {
@@ -156,6 +157,7 @@ export default function Sidebar() {
   const conversationsTotal = useSelector(selectConversationsTotal);
   const conversationsLoading = useSelector(selectConversationsLoading);
   const currentChatId = useSelector(selectCurrentChatId);
+  const currentMessages = useSelector(selectMessages);
   const themeMode = useSelector(selectTheme);
   const projects = useSelector(selectProjects);
   const [isMobile, setIsMobile] = useState(false);
@@ -165,9 +167,8 @@ export default function Sidebar() {
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
-  const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
+  const [shareModalChatId, setShareModalChatId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userTier = useSelector(selectCurrentTier);
   const tierLoaded = useSelector(selectTierLoaded);
@@ -461,17 +462,7 @@ export default function Sidebar() {
 
   const handleShareLink = (chatId) => {
     closeMenu();
-    setShareLinkConfirm(chatId);
-  };
-
-  const confirmShareLink = () => {
-    const url = `${window.location.origin}/chat/${shareLinkConfirm}`;
-    navigator.clipboard?.writeText(url);
-    setLinkCopied(true);
-    setTimeout(() => {
-      setShareLinkConfirm(null);
-      setLinkCopied(false);
-    }, 1500);
+    setShareModalChatId(chatId);
   };
 
   const handleArchive = (chatId) => {
@@ -1103,28 +1094,16 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Share Link confirmation dialog */}
-      {shareLinkConfirm && (
-        <div className={styles.confirmOverlay} onClick={() => setShareLinkConfirm(null)}>
-          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.confirmIconShare}>
-              <LinkIcon />
-            </div>
-            <h3 className={styles.confirmTitle}>Share this conversation?</h3>
-            <p className={styles.confirmDesc}>
-              A shareable link will be copied to your clipboard. Anyone with this link will be able
-              to view the conversation.
-            </p>
-            <div className={styles.confirmActions}>
-              <button className={styles.confirmCancelBtn} onClick={() => setShareLinkConfirm(null)}>
-                Cancel
-              </button>
-              <button className={styles.confirmShareBtn} onClick={confirmShareLink}>
-                {linkCopied ? 'Copied!' : 'Copy link'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Share modal — matches the conversation top-nav share affordance. */}
+      {shareModalChatId && (
+        <ShareModal
+          conversationId={shareModalChatId}
+          conversationTitle={conversations.find((c) => c.id === shareModalChatId)?.title}
+          messages={shareModalChatId === currentChatId ? currentMessages : undefined}
+          onClose={() => setShareModalChatId(null)}
+          onSuccess={showSuccess}
+          onError={showError}
+        />
       )}
 
       {/* Delete confirmation dialog */}
