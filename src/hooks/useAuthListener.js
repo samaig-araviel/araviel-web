@@ -1,12 +1,20 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { supabase } from '../lib/supabase';
-import { initializeAuth, setAuth, clearAuth, signOut, updateBirthDate } from '../store/slices/authSlice';
+import {
+  initializeAuth,
+  setAuth,
+  clearAuth,
+  signOut,
+  updateBirthDate,
+} from '../store/slices/authSlice';
 import { resetChatState, setCreditBalance } from '../store/slices/chatSlice';
 import { resetProjectsState } from '../store/slices/projectsSlice';
 import {
   resetSubscriptionState,
   setSubscriptionData,
+  setSubscriptionLoading,
+  setSubscriptionFailed,
   setImageCredits,
 } from '../store/slices/subscriptionSlice';
 import { resetGuestPromptCount } from '../utils/guestSession';
@@ -21,23 +29,42 @@ import { isAgeAllowed, MIN_AGE } from '../utils/age';
 // TOKEN_REFRESHED arriving close together don't fan out into duplicate
 // API calls.
 let hydrationInFlight = null;
+// Wall-clock of the last successful subscription fetch. Used by the
+// visibility listener to decide whether to re-validate when the tab
+// regains focus.
+let lastHydratedAt = 0;
+
+// Up to 5 attempts with exponential backoff capped at 4s
+// (500, 1000, 2000, 4000, 4000) — total ~11s worth of retries.
+// Hydration is infrequent and important: a stale tier locks the user out
+// of paid features they've actually paid for, so we'd rather try a few
+// more times than give up after 1.5s.
+const SUBSCRIPTION_FETCH_MAX_ATTEMPTS = 5;
+const SUBSCRIPTION_FETCH_BACKOFF_CAP_MS = 4000;
 
 function hydrateUserState(dispatch) {
   if (hydrationInFlight) return hydrationInFlight;
 
-  // Retry the subscription fetch a couple of times before giving up so a
-  // single transient 401/network blip can't pin the user at the default
-  // 'free' tier until they reload.
+  dispatch(setSubscriptionLoading());
+
+  // Retry the subscription fetch several times before giving up. We never
+  // dispatch a fallback "free" tier on failure — the slice keeps the last
+  // known value so a transient API blip can't silently downgrade a paying
+  // user. The server-side endpoint is now strict (returns 5xx on real DB
+  // errors instead of returning tier="free"), so a 200 response really is
+  // authoritative and is safe to apply.
   const fetchWithRetry = async (attempt = 0) => {
     try {
       const data = await fetchSubscription();
       dispatch(setSubscriptionData(data));
+      lastHydratedAt = Date.now();
     } catch (err) {
-      if (attempt < 2) {
-        const delay = 500 * 2 ** attempt;
+      if (attempt < SUBSCRIPTION_FETCH_MAX_ATTEMPTS - 1) {
+        const delay = Math.min(500 * 2 ** attempt, SUBSCRIPTION_FETCH_BACKOFF_CAP_MS);
         await new Promise((r) => setTimeout(r, delay));
         return fetchWithRetry(attempt + 1);
       }
+      dispatch(setSubscriptionFailed());
       logger.warn('subscription hydration failed', {
         route: 'auth.hydrate',
         reason: err?.message,
@@ -71,6 +98,18 @@ function hydrateUserState(dispatch) {
     hydrationInFlight = null;
   });
   return hydrationInFlight;
+}
+
+/**
+ * Re-fetch the subscription if it hasn't been refreshed recently. Called
+ * when the tab regains visibility so a session left idle for a while
+ * picks up any tier changes (Stripe events, manual upgrades) without
+ * requiring a page reload.
+ */
+const STALE_AFTER_MS = 2 * 60 * 1000; // 2 minutes
+function refreshIfStale(dispatch) {
+  if (Date.now() - lastHydratedAt < STALE_AFTER_MS) return;
+  hydrateUserState(dispatch);
 }
 
 // ---------------------------------------------------------------------------
@@ -163,7 +202,12 @@ export default function useAuthListener() {
             // /signup/verify-age for manual entry.
             const provider = session?.user?.app_metadata?.provider;
             const providerToken = session?.provider_token;
-            if (event === 'SIGNED_IN' && provider === 'google' && providerToken && !user.birthDate) {
+            if (
+              event === 'SIGNED_IN' &&
+              provider === 'google' &&
+              providerToken &&
+              !user.birthDate
+            ) {
               fetchGoogleBirthday(providerToken)
                 .then((birthDate) => {
                   if (!birthDate) return; // Falls through to manual entry.
@@ -209,6 +253,7 @@ export default function useAuthListener() {
           setLoggerUser(null);
           resetGuestPromptCount();
           clearImageCache();
+          lastHydratedAt = 0;
 
           // 2. Clear user-specific localStorage
           USER_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
@@ -228,9 +273,33 @@ export default function useAuthListener() {
       }
     });
 
-    // 3. Cleanup on unmount
+    // 3. Refresh subscription when the tab regains visibility after being
+    //    hidden long enough to be considered stale. Catches the case
+    //    where the user upgraded in another tab / Stripe portal and came
+    //    back without a Supabase auth event firing.
+    const handleVisibilityChange = () => {
+      if (typeof document === 'undefined') return;
+      if (document.visibilityState !== 'visible') return;
+      // Read current auth state via the supabase client rather than the
+      // redux selector so we don't have to wire up a subscription —
+      // this is a one-shot check, not a derived view.
+      supabase.auth.getSession().then(({ data }) => {
+        const sUser = data?.session?.user;
+        if (sUser && !sUser.is_anonymous) {
+          refreshIfStale(dispatch);
+        }
+      });
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    // 4. Cleanup on unmount
     return () => {
       subscription.unsubscribe();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      }
     };
   }, [dispatch]);
 }

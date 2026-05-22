@@ -54,6 +54,12 @@ const initialState = {
   periodEnd: null,
   cancelAtPeriodEnd: false,
   subscriptionStatus: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+  // Sticky flag: true once we've successfully loaded the subscription
+  // from the server at least once this session. Stays true across later
+  // re-fetches (succeeded or failed) so the UI never falls back to the
+  // default "Free" label after we know the real tier. Reset only on
+  // sign-out via `resetSubscriptionState`.
+  tierLoaded: false,
   // Text credits (monthly + 3-hour window)
   textCredits: {
     monthlyUsed: 0,
@@ -97,6 +103,14 @@ const subscriptionSlice = createSlice({
     setImageCredits: (state, action) => {
       state.imageCredits = { ...state.imageCredits, ...action.payload };
     },
+    /** Mark a subscription fetch as in flight. */
+    setSubscriptionLoading: (state) => {
+      state.subscriptionStatus = 'loading';
+    },
+    /** Mark a subscription fetch as failed. */
+    setSubscriptionFailed: (state) => {
+      state.subscriptionStatus = 'failed';
+    },
     /** Bulk setter from API response — avoids multiple dispatches */
     setSubscriptionData: (state, action) => {
       const data = action.payload;
@@ -124,6 +138,7 @@ const subscriptionSlice = createSlice({
         };
       }
       state.subscriptionStatus = 'succeeded';
+      state.tierLoaded = true;
     },
     showUpgradeModal: (state, action) => {
       state.showUpgradeModal = true;
@@ -172,6 +187,7 @@ const subscriptionSlice = createSlice({
         state.cancelAtPeriodEnd = data.cancelAtPeriodEnd ?? false;
         state.isFirstMonth = data.firstMonth ?? false;
         state.subscriptionStatus = 'succeeded';
+        state.tierLoaded = true;
       })
       .addCase(fetchSubscriptionThunk.rejected, (state) => {
         state.subscriptionStatus = 'failed';
@@ -208,6 +224,8 @@ export const {
   setTextCredits,
   setImageCredits,
   setSubscriptionData,
+  setSubscriptionLoading,
+  setSubscriptionFailed,
   showUpgradeModal,
   hideUpgradeModal,
   initiateUpgrade,
@@ -221,6 +239,13 @@ export const selectIsFirstMonth = (state) => state.subscription.isFirstMonth;
 export const selectPeriodEnd = (state) => state.subscription.periodEnd;
 export const selectCancelAtPeriodEnd = (state) => state.subscription.cancelAtPeriodEnd;
 export const selectSubscriptionStatus = (state) => state.subscription.subscriptionStatus;
+/**
+ * True once we've successfully loaded the subscription from the server at
+ * least once this session. Components that render the tier as text should
+ * gate on this so they don't flash the default "Free" before the real tier
+ * arrives.
+ */
+export const selectTierLoaded = (state) => state.subscription.tierLoaded;
 export const selectTextCredits = (state) => state.subscription.textCredits;
 export const selectImageCredits = (state) => state.subscription.imageCredits;
 export const selectShowUpgradeModal = (state) => state.subscription.showUpgradeModal;
