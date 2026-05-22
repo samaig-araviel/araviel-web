@@ -342,37 +342,31 @@ const CLOUD_PROVIDERS = [
 
 // promptsData and quickPromptKeys imported from ../../utils/quickPromptsData
 
-// Timeline stage factory
-function createStages(status, modelName, isManualSelection, researchProgress) {
-  // Deep research uses a different stage set with live search activity
+// Timeline stage factory. The timeline only renders when the backend signals
+// `showThinking` (or a thinking/research event arrives mid-stream), so this
+// factory no longer emits a "Routing" stage — model selection is already
+// surfaced by the model pill at the response footer.
+function createStages(status, modelName, researchProgress) {
   if (researchProgress) {
     const rp = researchProgress;
     const stages = [
-      {
-        label: isManualSelection ? 'Using selected model...' : 'Routing to optimal model...',
-        status: 'complete',
-        showModel: false,
-      },
       {
         label: rp.statusLabel || 'Researching...',
         status: 'pending',
         showModel: true,
         isResearch: true,
       },
-      { label: 'Finishing up...', status: 'pending', showModel: false },
+      { label: 'Writing answer...', status: 'pending', showModel: false },
     ];
 
     if (status === 'researching') {
+      stages[0].status = 'active';
+    } else if (status === 'thinking' || status === 'writing') {
+      stages[0].status = 'complete';
       stages[1].status = 'active';
-    } else if (status === 'thinking') {
-      stages[1].status = 'complete';
-      stages[2].status = 'active';
-    } else if (status === 'writing') {
-      stages[1].status = 'complete';
-      stages[2].status = 'active';
     } else if (status === 'complete') {
+      stages[0].status = 'complete';
       stages[1].status = 'complete';
-      stages[2].status = 'complete';
     }
 
     return stages;
@@ -380,31 +374,21 @@ function createStages(status, modelName, isManualSelection, researchProgress) {
 
   const stages = [
     {
-      label: isManualSelection ? 'Using selected model...' : 'Routing to optimal model...',
-      status: 'pending',
-      showModel: false,
-    },
-    {
       label: modelName ? `Thinking with` : 'Thinking...',
       status: 'pending',
       showModel: true,
     },
-    { label: 'Finishing up...', status: 'pending', showModel: false },
+    { label: 'Writing answer...', status: 'pending', showModel: false },
   ];
 
-  if (status === 'routing') {
+  if (status === 'thinking') {
     stages[0].status = 'active';
-  } else if (status === 'thinking') {
-    stages[0].status = 'complete';
-    stages[1].status = 'active';
   } else if (status === 'writing') {
     stages[0].status = 'complete';
-    stages[1].status = 'complete';
-    stages[2].status = 'active';
+    stages[1].status = 'active';
   } else if (status === 'complete') {
     stages[0].status = 'complete';
     stages[1].status = 'complete';
-    stages[2].status = 'complete';
   }
 
   return stages;
@@ -1366,11 +1350,16 @@ export default function MainContent() {
   }, [currentChatId]);
 
   // Streaming / timeline state
-  const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | routing | researching | thinking | writing | complete
+  const [pipelineStatus, setPipelineStatus] = useState('idle'); // idle | researching | thinking | writing | complete
   const [researchProgress, setResearchProgress] = useState(null); // { status, sources, actions, statusLabel }
   const [routeResult, setRouteResult] = useState(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamedText, setStreamedText] = useState('');
+  // Gates the "Thinking" timeline. Stays false for quick prompts so the user
+  // sees the response stream in immediately; flipped on by the backend's
+  // `showThinking` flag, by the research flow, or as a safety net when a
+  // provider unexpectedly emits a thinking chunk.
+  const [showThinkingUI, setShowThinkingUI] = useState(false);
 
   // Stop-request state
   const [isManualRequest, setIsManualRequest] = useState(false);
@@ -1504,20 +1493,45 @@ export default function MainContent() {
       }
 
       dispatch(setIsProcessing(true));
-      setPipelineStatus('routing');
+      setPipelineStatus('idle');
       setRouteResult(null);
-      setIsStreaming(false);
+      // Flip `isStreaming` on at submit so the bubble enters its streaming
+      // affordance immediately. Until the first `delta` arrives, the bubble
+      // shows pulsing dots (see Message render) instead of streamed text.
+      setIsStreaming(true);
       setStreamedText('');
+      setShowThinkingUI(false);
+
+      // Drop a placeholder assistant bubble in immediately so the user's
+      // message isn't stranded during ADE latency. The bubble renders pulsing
+      // dots until the first token arrives; the `routing` SSE handler patches
+      // in the real model info (and `done` patches in the final usage).
+      const placeholderAssistantId = `pending-${Date.now()}`;
+      dispatch(
+        addMessage({
+          id: placeholderAssistantId,
+          role: 'assistant',
+          content: '',
+          timestamp: Date.now(),
+          isPlaceholder: true,
+        })
+      );
 
       const routingStart = Date.now();
-      let assistantMsgAdded = false;
+      // Placeholder bubble already dispatched above, so updates start working
+      // immediately — no need to wait for `routing` before patching content.
+      let assistantMsgAdded = true;
       let accumulatedContent = '';
       let accumulatedThinking = '';
       let accumulatedImages = null;
       let receivedDone = false;
       let routeInfo = null;
-      let assistantMessageId = null;
+      let assistantMessageId = placeholderAssistantId;
       let currentAlternates = [];
+      // Tracks whether this request earned a thinking panel — backend flag,
+      // research mode, or provider-emitted thinking. Drives `thinkingData`
+      // attachment on `done` so quick prompts don't acquire a panel on replay.
+      let thinkingPanelEarned = false;
 
       try {
         const webSearchParam =
@@ -1600,7 +1614,17 @@ export default function MainContent() {
                 modelName: data.model?.name,
                 provider: data.model?.provider,
               };
-              setPipelineStatus('thinking');
+
+              // Reveal the thinking timeline only when the backend says this
+              // prompt deserves it. Otherwise leave status `idle` so the
+              // placeholder bubble's pulsing dots stay until the first delta
+              // flips us to `writing`.
+              const willShowThinking = data.showThinking === true;
+              if (willShowThinking) {
+                thinkingPanelEarned = true;
+                setShowThinkingUI(true);
+                setPipelineStatus('thinking');
+              }
 
               // Build alternate models list from backupModels
               const alternates = (data.backupModels || []).map((m) => ({
@@ -1612,13 +1636,14 @@ export default function MainContent() {
               }));
               currentAlternates = alternates;
 
-              // Add empty assistant message
-              assistantMessageId = data.messageId || `assistant-${Date.now()}`;
-              const assistantMsg = {
+              // Patch the placeholder bubble in place with the real model
+              // info. We only attach `thinkingData` when the panel is meant
+              // to show — otherwise the historical `ThinkingBlock` would
+              // render for normal messages on later replays.
+              assistantMessageId = data.messageId || placeholderAssistantId;
+              const assistantPatch = {
                 id: assistantMessageId,
-                role: 'assistant',
-                content: '',
-                timestamp: Date.now(),
+                isPlaceholder: false,
                 modelId: data.model?.id,
                 modelName: data.model?.name || 'AI',
                 provider: data.model?.provider || 'anthropic',
@@ -1631,14 +1656,15 @@ export default function MainContent() {
                 providerHint: data.providerHint,
                 webSearchUsed: data.webSearchUsed || false,
                 webSearchAutoDetected: data.webSearchAutoDetected || false,
-                thinkingData: {
+              };
+              if (willShowThinking) {
+                assistantPatch.thinkingData = {
                   routingDuration,
                   thinkingDuration: '0.0',
                   totalDuration: routingDuration,
-                },
-              };
-              dispatch(addMessage(assistantMsg));
-              assistantMsgAdded = true;
+                };
+              }
+              dispatch(updateLastMessage(assistantPatch));
             } else if (type === 'research_status') {
               // Deep research progress — update the researching pipeline phase
               const statusMap = {
@@ -1659,6 +1685,10 @@ export default function MainContent() {
                 actions: data.actions || [],
                 statusLabel,
               });
+              // Research always shows the timeline — even if the backend's
+              // initial `routing` flag was somehow false for this request.
+              thinkingPanelEarned = true;
+              setShowThinkingUI(true);
               setPipelineStatus('researching');
               // Feed search actions into thinking content so they show in the timeline
               if (data.actions && data.actions.length > 0) {
@@ -1674,7 +1704,11 @@ export default function MainContent() {
                 }
               }
             } else if (type === 'thinking') {
-              // Transition to thinking phase (handles both normal and post-research flows)
+              // Transition to thinking phase (handles both normal and post-research flows).
+              // Also serves as a safety net: if the provider emits reasoning
+              // chunks when the backend didn't predict it, reveal the panel.
+              thinkingPanelEarned = true;
+              setShowThinkingUI(true);
               setPipelineStatus('thinking');
               accumulatedThinking += data.content || '';
               if (assistantMsgAdded) {
@@ -1779,11 +1813,19 @@ export default function MainContent() {
                     costUsd: data.usage?.costUsd,
                     latencyMs: data.latencyMs,
                     adeLatencyMs: data.adeLatencyMs,
-                    thinkingData: {
-                      routingDuration: ((data.adeLatencyMs || 0) / 1000).toFixed(1),
-                      thinkingDuration: '0.0',
-                      totalDuration,
-                    },
+                    // Only persist the thinking summary if this request
+                    // earned a panel — otherwise historical replays would
+                    // resurrect the timeline for prompts that streamed
+                    // straight through with no reasoning.
+                    ...(thinkingPanelEarned
+                      ? {
+                          thinkingData: {
+                            routingDuration: ((data.adeLatencyMs || 0) / 1000).toFixed(1),
+                            thinkingDuration: '0.0',
+                            totalDuration,
+                          },
+                        }
+                      : {}),
                   })
                 );
                 // Record analytics for this message
@@ -2020,6 +2062,7 @@ export default function MainContent() {
         setRouteResult(null);
         setStreamedText('');
         setResearchProgress(null);
+        setShowThinkingUI(false);
       }, 600);
     },
     [
@@ -2243,13 +2286,22 @@ export default function MainContent() {
       completeTimeoutRef.current = null;
     }
 
+    // If the user cancels before any tokens arrived, the placeholder
+    // assistant bubble has no content — drop it so the conversation doesn't
+    // end on an empty card. Once content has streamed in, we keep the partial.
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg && lastMsg.role === 'assistant' && !lastMsg.content) {
+      dispatch(removeLastAssistantMessage());
+    }
+
     setIsStreaming(false);
     setStreamedText('');
     setPipelineStatus('idle');
     setRouteResult(null);
     setIsManualRequest(false);
+    setShowThinkingUI(false);
     dispatch(setIsProcessing(false));
-  }, [dispatch]);
+  }, [dispatch, messages]);
 
   const handleModeClick = (newMode) => {
     if (activeDropdown === newMode) {
@@ -2327,6 +2379,7 @@ export default function MainContent() {
     setStreamedText('');
     setRouteResult(null);
     setIsManualRequest(false);
+    setShowThinkingUI(false);
     navigate('/');
   };
 
@@ -2642,15 +2695,12 @@ export default function MainContent() {
 
   const currentPromptData = activeDropdown ? promptsData[activeDropdown] : null;
 
-  // Build timeline stages
+  // Build timeline stages. Gated on `showThinkingUI` so quick prompts never
+  // build a stage array — `MessageList` skips the timeline wrapper when this
+  // is null, and the response streams straight into the assistant bubble.
   const timelineStages =
-    pipelineStatus !== 'idle'
-      ? createStages(
-          pipelineStatus,
-          routeResult ? routeResult.modelName : null,
-          isManualRequest,
-          researchProgress
-        )
+    showThinkingUI && pipelineStatus !== 'idle'
+      ? createStages(pipelineStatus, routeResult ? routeResult.modelName : null, researchProgress)
       : null;
 
   return (
@@ -3200,7 +3250,7 @@ export default function MainContent() {
       {hasMessages && (
         <MessageList
           messages={messages}
-          isProcessing={pipelineStatus !== 'idle'}
+          isProcessing={isProcessing}
           timelineStages={timelineStages}
           timelineFading={pipelineStatus === 'complete'}
           modelName={routeResult ? routeResult.modelName : null}
