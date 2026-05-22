@@ -6,6 +6,8 @@ import subscriptionReducer, {
   setTextCredits,
   setImageCredits,
   setSubscriptionData,
+  setSubscriptionLoading,
+  setSubscriptionFailed,
   showUpgradeModal,
   hideUpgradeModal,
   initiateUpgrade,
@@ -25,6 +27,7 @@ import subscriptionReducer, {
   selectCheckoutLoading,
   selectPortalLoading,
   selectSubscriptionError,
+  selectTierLoaded,
 } from './subscriptionSlice';
 
 describe('subscriptionSlice', () => {
@@ -45,6 +48,10 @@ describe('subscriptionSlice', () => {
 
     it('defaults to idle subscription status', () => {
       expect(defaultState.subscriptionStatus).toBe('idle');
+    });
+
+    it('defaults to tierLoaded false', () => {
+      expect(defaultState.tierLoaded).toBe(false);
     });
 
     it('has default text credits', () => {
@@ -143,12 +150,42 @@ describe('subscriptionSlice', () => {
     });
 
     it('handles partial data gracefully', () => {
-      const state = subscriptionReducer(
-        defaultState,
-        setSubscriptionData({ tier: 'pro' })
-      );
+      const state = subscriptionReducer(defaultState, setSubscriptionData({ tier: 'pro' }));
       expect(state.currentTier).toBe('pro');
       expect(state.billingCycle).toBe('monthly'); // unchanged
+    });
+
+    it('marks tierLoaded true after a successful fetch', () => {
+      const state = subscriptionReducer(defaultState, setSubscriptionData({ tier: 'pro' }));
+      expect(state.tierLoaded).toBe(true);
+    });
+
+    it('keeps tierLoaded true across a later failed fetch', () => {
+      let state = subscriptionReducer(defaultState, setSubscriptionData({ tier: 'pro' }));
+      state = subscriptionReducer(state, setSubscriptionFailed());
+      expect(state.tierLoaded).toBe(true);
+      expect(state.subscriptionStatus).toBe('failed');
+      expect(state.currentTier).toBe('pro');
+    });
+
+    it('keeps tierLoaded true while a re-fetch is loading', () => {
+      let state = subscriptionReducer(defaultState, setSubscriptionData({ tier: 'pro' }));
+      state = subscriptionReducer(state, setSubscriptionLoading());
+      expect(state.tierLoaded).toBe(true);
+      expect(state.subscriptionStatus).toBe('loading');
+      expect(state.currentTier).toBe('pro');
+    });
+  });
+
+  describe('setSubscriptionLoading / setSubscriptionFailed', () => {
+    it('setSubscriptionLoading flips status to loading', () => {
+      const state = subscriptionReducer(defaultState, setSubscriptionLoading());
+      expect(state.subscriptionStatus).toBe('loading');
+    });
+
+    it('setSubscriptionFailed flips status to failed', () => {
+      const state = subscriptionReducer(defaultState, setSubscriptionFailed());
+      expect(state.subscriptionStatus).toBe('failed');
     });
   });
 
@@ -193,6 +230,13 @@ describe('subscriptionSlice', () => {
       state = subscriptionReducer(state, resetSubscriptionState());
       expect(state.currentTier).toBe('free');
       expect(state.billingCycle).toBe('monthly');
+    });
+
+    it('clears tierLoaded on sign-out', () => {
+      let state = subscriptionReducer(defaultState, setSubscriptionData({ tier: 'pro' }));
+      expect(state.tierLoaded).toBe(true);
+      state = subscriptionReducer(state, resetSubscriptionState());
+      expect(state.tierLoaded).toBe(false);
     });
   });
 
@@ -276,6 +320,7 @@ describe('subscriptionSlice', () => {
         periodEnd: '2024-12-31',
         cancelAtPeriodEnd: false,
         subscriptionStatus: 'succeeded',
+        tierLoaded: true,
         textCredits: { monthlyUsed: 100, monthlyLimit: 4000 },
         imageCredits: { used: 10, limit: 150, remaining: 140 },
         showUpgradeModal: false,
@@ -294,12 +339,10 @@ describe('subscriptionSlice', () => {
     it('selectCancelAtPeriodEnd', () => expect(selectCancelAtPeriodEnd(rootState)).toBe(false));
     it('selectSubscriptionStatus', () =>
       expect(selectSubscriptionStatus(rootState)).toBe('succeeded'));
-    it('selectTextCredits', () =>
-      expect(selectTextCredits(rootState).monthlyLimit).toBe(4000));
-    it('selectImageCredits', () =>
-      expect(selectImageCredits(rootState).remaining).toBe(140));
-    it('selectShowUpgradeModal', () =>
-      expect(selectShowUpgradeModal(rootState)).toBe(false));
+    it('selectTierLoaded', () => expect(selectTierLoaded(rootState)).toBe(true));
+    it('selectTextCredits', () => expect(selectTextCredits(rootState).monthlyLimit).toBe(4000));
+    it('selectImageCredits', () => expect(selectImageCredits(rootState).remaining).toBe(140));
+    it('selectShowUpgradeModal', () => expect(selectShowUpgradeModal(rootState)).toBe(false));
     it('selectUpgradeContext', () => expect(selectUpgradeContext(rootState)).toBeNull());
     it('selectUpgradeLoading', () => expect(selectUpgradeLoading(rootState)).toBeNull());
     it('selectCheckoutLoading', () => expect(selectCheckoutLoading(rootState)).toBe(false));

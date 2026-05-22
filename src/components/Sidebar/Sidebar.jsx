@@ -26,7 +26,7 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
-import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
+import { selectCurrentTier, selectTierLoaded } from '../../store/slices/subscriptionSlice';
 import {
   PlusIcon,
   ChevronLeftIcon,
@@ -170,6 +170,7 @@ export default function Sidebar() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userTier = useSelector(selectCurrentTier);
+  const tierLoaded = useSelector(selectTierLoaded);
   const [searchOpen, setSearchOpen] = useState(false);
   const userMenuRef = useRef(null);
   const renameInputRef = useRef(null);
@@ -962,7 +963,9 @@ export default function Sidebar() {
                     </span>
                     <span className={styles.userPlan}>
                       {isAuthenticated
-                        ? `${userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan`
+                        ? tierLoaded
+                          ? `${userTier.charAt(0).toUpperCase() + userTier.slice(1)} plan`
+                          : 'Loading plan…'
                         : 'Sign in to save'}
                     </span>
                   </div>
