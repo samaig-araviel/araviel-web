@@ -1450,6 +1450,45 @@
   }
 }
 
+/* Pre-stream placeholder dots — shown inside the assistant bubble between
+   submit and first token so quick prompts still feel responsive without a
+   full thinking timeline. Pulses noticeably so it reads as "working". */
+.typingDots {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.typingDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  animation: typingPulse 1.2s ease-in-out infinite;
+}
+
+.typingDot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typingDot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingPulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.75);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* ===== Response Actions Bar ===== */
 .responseActions {
   display: flex;

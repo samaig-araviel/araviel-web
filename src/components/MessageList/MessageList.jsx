@@ -5850,7 +5850,14 @@ function Message({
               message.citations || message.sources,
               codeOpenerContext
             )}
-            {isStreaming && <span className={styles.cursor} />}
+            {isStreaming && !renderText && (
+              <span className={styles.typingDots} aria-label="Thinking">
+                <span className={styles.typingDot} />
+                <span className={styles.typingDot} />
+                <span className={styles.typingDot} />
+              </span>
+            )}
+            {isStreaming && renderText && <span className={styles.cursor} />}
           </div>
         )}
       </div>

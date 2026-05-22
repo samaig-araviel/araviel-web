@@ -9,13 +9,18 @@ import styles from './ThinkingTimeline.module.css';
 /**
  * Stage status: 'pending' | 'active' | 'complete'
  *
- * ThinkingTimeline shows a Claude-inspired dashed-line timeline:
- *  1. Routing to optimal model...
- *  2. Thinking with [Model Name]...
- *  3. Finishing up...
+ * ThinkingTimeline shows a Claude-inspired dashed-line timeline. The parent
+ * only mounts it for prompts that actually deserve a thinking panel (manual
+ * reasoning toggles, ADE-classified "demanding" complexity, deep research,
+ * or provider-emitted thinking chunks). Quick prompts skip the panel and
+ * stream straight into the assistant bubble.
+ *
+ * Two-stage flows:
+ *  - Normal thinking:  Thinking with [Model]...  →  Writing answer...
+ *  - Deep research:    Researching... (live)     →  Writing answer...
  *
  * Auto-expands during streaming, auto-collapses when fading/complete.
- * Streams thinking content inline under the Thinking stage.
+ * Streams thinking content inline under the active stage.
  */
 export default function ThinkingTimeline({ stages, modelName, provider, fading, thinkingContent }) {
   const effectiveTheme = useSelector(selectEffectiveTheme);
@@ -70,8 +75,12 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
   const allComplete = stages.every((s) => s.status === 'complete');
   const hasResearchStage = stages.some((s) => s.isResearch);
   const summaryLabel = allComplete
-    ? hasResearchStage ? `Researched for ${totalElapsed}s` : `Thought for ${totalElapsed}s`
-    : hasResearchStage ? `Researching for ${totalElapsed}s` : `Thinking for ${totalElapsed}s`;
+    ? hasResearchStage
+      ? `Researched for ${totalElapsed}s`
+      : `Thought for ${totalElapsed}s`
+    : hasResearchStage
+    ? `Researching for ${totalElapsed}s`
+    : `Thinking for ${totalElapsed}s`;
 
   return (
     <div className={`${styles.timeline} ${fading ? styles.fading : ''}`}>
@@ -161,13 +170,13 @@ export default function ThinkingTimeline({ stages, modelName, provider, fading, 
                   </div>
 
                   {/* Stream thinking/research content under the relevant stage */}
-                  {(isThinkingStage || stage.isResearch) && (isActive || isComplete) && thinkingContent && (
-                    <div className={styles.thinkingContentBlock}>
-                      <div className={styles.thinkingContentText}>
-                        {thinkingContent}
+                  {(isThinkingStage || stage.isResearch) &&
+                    (isActive || isComplete) &&
+                    thinkingContent && (
+                      <div className={styles.thinkingContentBlock}>
+                        <div className={styles.thinkingContentText}>{thinkingContent}</div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             );
