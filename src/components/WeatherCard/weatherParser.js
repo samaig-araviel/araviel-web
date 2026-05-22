@@ -287,6 +287,12 @@ function matchConditionKeywords(text) {
         'scattered clouds',
         'intermittent clouds',
         'intermittent sunshine',
+        'intervals of clouds',
+        'intervals of sunshine',
+        'clouds and sunshine',
+        'clouds and sun',
+        'sun and clouds',
+        'sunshine and clouds',
       ],
       label: 'Partly Cloudy',
     },
@@ -450,60 +456,184 @@ function extractPeriods(text) {
   return periods;
 }
 
+const DAY_NAMES = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+  'mon',
+  'tue',
+  'tues',
+  'wed',
+  'thu',
+  'thur',
+  'thurs',
+  'fri',
+  'sat',
+  'sun',
+];
+
+function stripListPrefix(s) {
+  return s
+    .replace(/\*\*/g, '')
+    .replace(/^\s+/, '')
+    .replace(/^(?:\d+\s*[.)\]]\s+|[\-*•◦▪–—]\s+)/, '')
+    .trim();
+}
+
+function matchesDayHeader(stripped) {
+  const lower = stripped.toLowerCase();
+  for (const day of DAY_NAMES) {
+    // day name followed by word boundary (space, comma, dash, colon, end)
+    if (new RegExp('^' + day + '\\b').test(lower)) {
+      return day;
+    }
+  }
+  return null;
+}
+
+function normalizeTempString(raw) {
+  if (!raw) return null;
+  const m = raw.match(/(-?\d+(?:\.\d+)?)\s*°?\s*([CF])/i);
+  if (!m) return null;
+  return `${m[1]}°${m[2].toUpperCase()}`;
+}
+
+/**
+ * Extract a multi-day forecast in any of these shapes:
+ *   - "Mon: 21°C / 11°C, Cloudy"                         (single-line compact)
+ *   - "**Friday**\n   - High: 80°F (26°C)\n   - Low: 64°F" (multi-line, bullet/numbered)
+ *   - "1. Friday — May 22, 2026\n   - Conditions: ...\n   - High: 80°F · Low: 64°F"
+ *
+ * Returns `{ forecast, consumed }` where `consumed` is the set of line
+ * indices that fed the extraction so the body-text renderer can skip them.
+ */
 function extractForecast(text) {
   const forecast = [];
+  const consumed = new Set();
   const lines = text.split('\n');
-  const dayNames = [
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday',
-    'mon',
-    'tue',
-    'wed',
-    'thu',
-    'fri',
-    'sat',
-    'sun',
-  ];
 
-  for (const line of lines) {
-    const stripped = line
-      .replace(/\*\*/g, '')
-      .replace(/^[\s\-*•]+/, '')
-      .trim();
-    const lower = stripped.toLowerCase();
-    if (!lower) continue;
+  let i = 0;
+  while (i < lines.length) {
+    const stripped = stripListPrefix(lines[i]);
+    if (!stripped) {
+      i++;
+      continue;
+    }
 
-    for (const day of dayNames) {
-      if (lower.startsWith(day) || lower.startsWith(`${day}:`)) {
-        const temps = extractAllTemperatures(stripped);
-        const condition = inferCondition(stripped);
-        const dayLabel = day.charAt(0).toUpperCase() + day.slice(1, 3);
+    const matchedDay = matchesDayHeader(stripped);
+    if (!matchedDay) {
+      i++;
+      continue;
+    }
 
-        if (temps.length >= 2) {
-          forecast.push({
-            day: dayLabel,
-            high: `${temps[0].value}°${temps[0].unit}`,
-            low: `${temps[1].value}°${temps[1].unit}`,
-            condition: condition || null,
-          });
-        } else if (temps.length === 1) {
-          forecast.push({
-            day: dayLabel,
-            high: `${temps[0].value}°${temps[0].unit}`,
-            low: null,
-            condition: condition || null,
-          });
-        }
+    // Collect this line + any continuation lines until next day header /
+    // blank-then-day / clearly-new section.
+    const blockLines = [stripped];
+    const blockIndices = [i];
+    let j = i + 1;
+    let blanksSeen = 0;
+    while (j < lines.length && j - i <= 8) {
+      const nextStripped = stripListPrefix(lines[j]);
+      if (!nextStripped) {
+        // Allow one blank line within a block; stop on second blank
+        blanksSeen++;
+        if (blanksSeen >= 2) break;
+        j++;
+        continue;
+      }
+      blanksSeen = 0;
+      if (matchesDayHeader(nextStripped)) break;
+      // Stop at clearly non-forecast continuation
+      if (
+        /^(summary|note|tip|recommendation|advisory|alert|warning|disclaimer|if you|i can|let me)/i.test(
+          nextStripped
+        )
+      ) {
         break;
+      }
+      blockLines.push(nextStripped);
+      blockIndices.push(j);
+      j++;
+    }
+
+    const blockText = blockLines.join(' ');
+
+    // Prefer explicit "High:" / "Low:" labels
+    let high = null;
+    let low = null;
+    const highMatch = blockText.match(
+      /\b(?:high|hi|max(?:imum)?)\s*[:\-—–]?\s*(-?\d+(?:\.\d+)?\s*°?\s*[CF])/i
+    );
+    const lowMatch = blockText.match(
+      /\b(?:low|lo|min(?:imum)?)\s*[:\-—–]?\s*(-?\d+(?:\.\d+)?\s*°?\s*[CF])/i
+    );
+    if (highMatch) high = normalizeTempString(highMatch[1]);
+    if (lowMatch) low = normalizeTempString(lowMatch[1]);
+
+    // Fallback: first two temps in the block — first is high, second is low.
+    // Skip parenthetical temps (e.g. the "(26°C)" alt unit beside "80°F").
+    if (!high || !low) {
+      const noParen = blockText.replace(/\([^)]*\)/g, ' ');
+      const temps = extractAllTemperatures(noParen);
+      if (!high && temps.length >= 1) high = `${temps[0].value}°${temps[0].unit}`;
+      if (!low && temps.length >= 2) low = `${temps[1].value}°${temps[1].unit}`;
+    }
+
+    // Condition: prefer a "Conditions:" line in the block, fall back to inference
+    let condition = null;
+    const conditionsLineMatch = blockText.match(/\bconditions?\s*[:\-—–]\s*([^\n.;|·]+)/i);
+    if (conditionsLineMatch) {
+      condition = inferCondition(conditionsLineMatch[1]);
+    }
+    if (!condition) {
+      // Don't use the day name itself as condition input (avoid matching "sun" → Sunny for "Sunday")
+      const blockMinusDay = blockText.replace(new RegExp('^' + matchedDay + '\\b', 'i'), '');
+      condition = inferCondition(blockMinusDay);
+    }
+
+    const dayLabel = matchedDay.charAt(0).toUpperCase() + matchedDay.slice(1, 3);
+
+    if (high) {
+      // De-dupe: same day name shouldn't appear twice
+      if (!forecast.find((f) => f.day === dayLabel)) {
+        forecast.push({
+          day: dayLabel,
+          high,
+          low: low || null,
+          condition: condition || null,
+        });
+        // Mark the lines we used so they're stripped from the body text
+        for (const idx of blockIndices) consumed.add(idx);
+      }
+    }
+
+    i = j;
+  }
+
+  // If we extracted a forecast, also consume the header line that introduces
+  // it (e.g. "4-day forecast", "Forecast:", "Weekly outlook") and a bare
+  // "Summary" header that immediately precedes it.
+  if (forecast.length > 0) {
+    const minConsumed = Math.min(...consumed);
+    for (let k = Math.max(0, minConsumed - 4); k < minConsumed; k++) {
+      const stripped = stripListPrefix(lines[k]).toLowerCase();
+      if (!stripped) continue;
+      const isForecastHeader =
+        /^(?:\d+[\-\s]?day\s+)?(?:weekly\s+|extended\s+|multi[\-\s]?day\s+|short[\-\s]?term\s+|long[\-\s]?term\s+)?(?:forecast|outlook)\b/i.test(
+          stripped
+        );
+      const isBareSummary = /^summary\s*[:\-]?\s*$/i.test(stripped);
+      if (isForecastHeader || isBareSummary) {
+        consumed.add(k);
       }
     }
   }
-  return forecast;
+
+  return { forecast, consumed };
 }
 
 function extractSource(text) {
@@ -525,9 +655,9 @@ function extractSource(text) {
  * Identify which lines are "consumed" by the weather card extraction
  * and return everything else as remaining text for markdown rendering.
  */
-function extractRemainingText(text, weatherData) {
+function extractRemainingText(text, weatherData, preConsumed) {
   const lines = text.split('\n');
-  const consumed = new Set();
+  const consumed = new Set(preConsumed || []);
   const lower = text.toLowerCase();
 
   // Mark header/intro line (first 1-2 lines with location/weather context)
@@ -644,6 +774,40 @@ function extractRemainingText(text, weatherData) {
       consumed.add(i);
       continue;
     }
+
+    // Short "label: value" lines whose value is already shown in the card hero.
+    // Matches things like "Sky: Sunny", "Temperature: 80°F", "High: 80°F · Low: 64°F",
+    // "Condition: Rain", "Currently: Clear".
+    const heroLabels = [
+      'sky',
+      'skies',
+      'condition',
+      'conditions',
+      'current condition',
+      'current conditions',
+      'temperature',
+      'temp',
+      'high',
+      'hi',
+      'low',
+      'lo',
+      'max',
+      'maximum',
+      'min',
+      'minimum',
+      'currently',
+      'now',
+      'present weather',
+      'outlook',
+    ];
+    if (stripped.length < 100) {
+      for (const label of heroLabels) {
+        if (new RegExp('^' + label + '\\s*[:\\-—–]').test(stripped)) {
+          consumed.add(i);
+          break;
+        }
+      }
+    }
   }
 
   // Collect remaining lines
@@ -667,7 +831,7 @@ export function extractWeatherData(text) {
   const temps = extractAllTemperatures(text);
   const mainCondition = inferCondition(text);
   const periods = extractPeriods(text);
-  const forecast = extractForecast(text);
+  const { forecast, consumed: forecastConsumed } = extractForecast(text);
   const source = extractSource(text);
 
   // Current temperature — first temperature in the text
@@ -739,8 +903,9 @@ export function extractWeatherData(text) {
     source,
   };
 
-  // Extract text not consumed by the card
-  weatherData.remainingText = extractRemainingText(text, weatherData);
+  // Extract text not consumed by the card (start with forecast-block indices
+  // so multi-line forecast entries don't leak into the body text below).
+  weatherData.remainingText = extractRemainingText(text, weatherData, forecastConsumed);
 
   return weatherData;
 }
