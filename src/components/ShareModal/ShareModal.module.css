@@ -6,7 +6,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  /* Must sit above MainContent's .container (z-index: 1050) and the mobile
+     menu button (z-index: 1001) so the modal isn't bled through by the
+     composer/greeting underneath. */
+  z-index: 2000;
   animation: overlayFadeIn 0.2s ease;
 }
 
