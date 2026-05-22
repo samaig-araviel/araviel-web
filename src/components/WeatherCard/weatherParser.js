@@ -191,25 +191,129 @@ function extractDate(text) {
   });
 }
 
-function inferCondition(text) {
+// Phrases like "chance of rain: 5%", "rain probability", "no rain", "rain: under 5%"
+// describe the *probability* of rain, not the current sky condition. We need
+// to strip these before scanning for condition keywords, otherwise a sunny day
+// with a low rain chance is misclassified as "Rain".
+function stripProbabilityContexts(text) {
+  return (
+    text
+      // "chance of rain / precipitation / showers / snow ... 5%"
+      .replace(
+        /\b(?:chance|probability|likelihood|odds|risk)\s+of\s+(?:rain|precipitation|showers?|snow|storms?|thunder(?:storms?)?)\b[^.\n]*/gi,
+        ' '
+      )
+      // "rain chance", "precipitation probability", "snow chance"
+      .replace(
+        /\b(?:rain|precipitation|snow|shower|thunderstorm)\s+(?:chance|probability)\b[^.\n]*/gi,
+        ' '
+      )
+      // "rain: under 5%", "snow: 10%", "showers: 0%"
+      .replace(
+        /\b(?:rain|snow|showers?|precipitation)\s*[:\-]\s*(?:under|less than|below|near|about|around|approximately|~)?\s*<?\s*\d+(?:\.\d+)?\s*%/gi,
+        ' '
+      )
+      // "X% rain", "5% chance of rain", "0% precipitation"
+      .replace(
+        /\b\d+(?:\.\d+)?\s*%\s*(?:chance of\s+)?(?:rain|precipitation|snow|showers?)\b/gi,
+        ' '
+      )
+      // "no rain", "no precipitation", "0 chance of rain"
+      .replace(/\bno\s+(?:rain|precipitation|showers?|snow|storms?)\b/gi, ' ')
+      // "dry — no rain"
+      .replace(
+        /\b(?:rain|precipitation|snow)\s+expected\s*[:\-]?\s*(?:no|none|0|low|minimal)\b/gi,
+        ' '
+      )
+  );
+}
+
+// Read explicit condition labels like "Sky: sunny intervals" / "Condition: Rain".
+// These take precedence over keyword scanning since they describe the sky directly.
+function extractExplicitCondition(text) {
+  const labels = [
+    'sky',
+    'skies',
+    'condition',
+    'conditions',
+    'current condition',
+    'current conditions',
+    'current weather',
+    'currently',
+    'now',
+    'present weather',
+    'present conditions',
+    'outlook',
+  ];
+  const lines = text.split('\n');
+  for (const raw of lines) {
+    const stripped = raw
+      .replace(/\*\*/g, '')
+      .replace(/^[\s\-*•]+/, '')
+      .trim();
+    if (!stripped) continue;
+    for (const label of labels) {
+      const re = new RegExp('^' + label + '\\s*[:\\-—–]\\s*(.+)', 'i');
+      const m = stripped.match(re);
+      if (m) {
+        const value = m[1].trim().replace(/[,.;]$/, '');
+        if (value.length > 0 && value.length < 120) return value;
+      }
+    }
+  }
+  return null;
+}
+
+function matchConditionKeywords(text) {
   const lower = text.toLowerCase();
+  // Order matters: more-specific phrases checked before generic ones, and
+  // partly-cloudy variants checked before bare "sunny" or "cloudy" so that
+  // "sunny intervals" maps to Partly Cloudy rather than Sunny.
   const conditions = [
     { keywords: ['thunderstorm', 'thunder', 'lightning'], label: 'Thunderstorm' },
     { keywords: ['heavy rain', 'downpour', 'torrential'], label: 'Heavy Rain' },
+    {
+      keywords: [
+        'sunny intervals',
+        'sunny spells',
+        'bright spells',
+        'bright intervals',
+        'partly cloudy',
+        'partly sunny',
+        'mostly sunny',
+        'some clouds',
+        'some sunshine',
+        'broken clouds',
+        'scattered clouds',
+        'intermittent clouds',
+        'intermittent sunshine',
+      ],
+      label: 'Partly Cloudy',
+    },
     { keywords: ['frequent showers'], label: 'Rain' },
     {
-      keywords: ['rain', 'rainy', 'raining', 'showers', 'drizzle', 'precipitation'],
+      keywords: ['raining', 'rainy', 'showers', 'drizzle', 'rain'],
       label: 'Rain',
     },
-    { keywords: ['snow', 'snowy', 'snowing', 'blizzard'], label: 'Snow' },
+    { keywords: ['snowing', 'snowy', 'snow', 'blizzard', 'flurries'], label: 'Snow' },
     { keywords: ['sleet', 'hail', 'freezing rain'], label: 'Sleet' },
     { keywords: ['fog', 'foggy', 'mist', 'misty', 'haze', 'hazy'], label: 'Fog' },
-    { keywords: ['partly cloudy', 'mostly sunny', 'some clouds'], label: 'Partly Cloudy' },
     {
-      keywords: ['cloudy', 'overcast', 'mostly cloudy', 'grey skies', 'gray skies'],
+      keywords: ['mostly cloudy', 'overcast', 'cloudy', 'grey skies', 'gray skies'],
       label: 'Cloudy',
     },
-    { keywords: ['sunny', 'clear', 'sunshine', 'bright', 'fine weather'], label: 'Sunny' },
+    {
+      keywords: [
+        'sunny',
+        'clear skies',
+        'clear',
+        'sunshine',
+        'bright',
+        'fine weather',
+        'fair weather',
+      ],
+      label: 'Sunny',
+    },
     { keywords: ['windy', 'gusty', 'breezy', 'strong winds'], label: 'Windy' },
   ];
   for (const { keywords, label } of conditions) {
@@ -218,6 +322,19 @@ function inferCondition(text) {
     }
   }
   return null;
+}
+
+function inferCondition(text) {
+  // 1. Prefer an explicit "Sky:" / "Condition:" / "Currently:" line if present.
+  const explicit = extractExplicitCondition(text);
+  if (explicit) {
+    const fromExplicit = matchConditionKeywords(explicit);
+    if (fromExplicit) return fromExplicit;
+  }
+
+  // 2. Fall back to scanning the whole text, but first strip out probability
+  //    contexts so "chance of rain: 5%" doesn't classify a sunny day as Rain.
+  return matchConditionKeywords(stripProbabilityContexts(text));
 }
 
 /**
