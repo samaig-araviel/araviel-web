@@ -1,0 +1,387 @@
+.shareOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlayFadeIn 0.2s ease;
+}
+
+@keyframes overlayFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.shareModal {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg), 0 16px 48px rgba(0, 0, 0, 0.12);
+  width: 100%;
+  max-width: 420px;
+  padding: 24px;
+  animation: modalSlideUp 0.25s ease;
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.shareModalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.shareModalHeader h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shareModalClose {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+
+.shareModalClose:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.shareModalClose svg {
+  width: 16px;
+  height: 16px;
+}
+
+.shareModalDesc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.shareModalPreview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.sharePreviewIcon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-hover), var(--bg-active));
+  border-radius: 10px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.sharePreviewIcon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sharePreviewInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sharePreviewTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sharePreviewUrl {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.shareModalActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.shareModalActionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shareActionBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.shareActionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.shareCopyBtn {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+}
+
+.shareCopyBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.shareCopyBtn.copied {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+}
+
+.shareCopyBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.shareSecondaryBtn {
+  background-color: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}
+
+.shareSecondaryBtn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.shareSecondaryBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.shareDangerBtn {
+  background-color: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  padding: 10px 14px;
+}
+
+.shareDangerBtn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
+.shareDangerBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.shareLoadingRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+}
+
+.shareSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--text-secondary);
+  border-radius: 50%;
+  animation: shareSpin 0.6s linear infinite;
+  display: inline-block;
+}
+
+@keyframes shareSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.shareError {
+  font-size: 13px;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.shareSnapshotMeta {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.shareMetaDot {
+  margin: 0 6px;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* Empty state — shown when the conversation has no active share yet. */
+.shareEmptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 28px 16px 8px;
+  text-align: center;
+}
+
+.shareEmptyIcon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--bg-hover), var(--bg-active));
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+.shareEmptyIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.shareEmptyText {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sharePrimaryBtn {
+  background-color: var(--bg-icon-button);
+  color: var(--text-icon-button);
+  padding: 10px 22px;
+}
+
+.sharePrimaryBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.sharePrimaryBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Contextual banner that surfaces when the conversation has new messages
+   since the last snapshot. Offers an inline "Update snapshot" action. */
+.shareStaleBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.shareStaleText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shareStaleText strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shareStaleText span {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.shareStaleAction {
+  padding: 8px 14px;
+  flex-shrink: 0;
+}
+
+/* Inline confirmation prompt for rotating the share link. Replaces the
+   default action row while active to keep decision load localised. */
+.shareRotateConfirm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+}
+
+.shareRotateText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.shareRotateText strong {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shareRotateText span {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.shareRotateConfirm .shareModalActionsGroup {
+  justify-content: flex-end;
+}

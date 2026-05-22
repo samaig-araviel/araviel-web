@@ -6,6 +6,7 @@ import {
   selectConversationsTotal,
   selectConversationsLoading,
   selectCurrentChatId,
+  selectMessages,
   setConversations,
   appendConversations,
   setConversationsLoading,
@@ -49,6 +50,7 @@ import {
 import { getProviderLogo } from '../getProviderLogo';
 import ImportConversationsModal from '../ImportConversationsModal';
 import ProjectPickerModal from '../ProjectPickerModal';
+import ShareModal from '../ShareModal/ShareModal';
 import styles from './ConversationsView.module.css';
 
 const TABS = [
@@ -96,9 +98,8 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive, s
   const [menuPosition, setMenuPosition] = useState({});
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
-  const [shareLinkConfirm, setShareLinkConfirm] = useState(null);
+  const [shareModalChatId, setShareModalChatId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [linkCopied, setLinkCopied] = useState(false);
   const menuRef = useRef(null);
   const menuBtnRef = useRef(null);
   const renameInputRef = useRef(null);
@@ -210,17 +211,7 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive, s
 
   const handleShareLink = (chatId) => {
     closeMenu();
-    setShareLinkConfirm(chatId);
-  };
-
-  const confirmShareLink = () => {
-    const url = `${window.location.origin}/chat/${shareLinkConfirm}`;
-    navigator.clipboard?.writeText(url);
-    setLinkCopied(true);
-    setTimeout(() => {
-      setShareLinkConfirm(null);
-      setLinkCopied(false);
-    }, 1500);
+    setShareModalChatId(chatId);
   };
 
   const handleArchive = (chatId) => {
@@ -259,11 +250,10 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive, s
     renamingId,
     renameValue,
     setRenameValue,
-    shareLinkConfirm,
-    setShareLinkConfirm,
+    shareModalChatId,
+    setShareModalChatId,
     deleteConfirm,
     setDeleteConfirm,
-    linkCopied,
     menuRef,
     menuBtnRef,
     renameInputRef,
@@ -272,7 +262,6 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive, s
     handleRenameSubmit,
     handleRenameKeyDown,
     handleShareLink,
-    confirmShareLink,
     handleArchive,
     handleDeleteRequest,
     confirmDelete,
@@ -300,6 +289,7 @@ export default function ConversationsView() {
   const conversationsTotal = useSelector(selectConversationsTotal);
   const conversationsLoading = useSelector(selectConversationsLoading);
   const currentChatId = useSelector(selectCurrentChatId);
+  const currentMessages = useSelector(selectMessages);
   const projects = useSelector(selectProjects);
 
   const isAuthenticated = useSelector(selectIsAuthenticated);
@@ -1605,31 +1595,16 @@ export default function ConversationsView() {
         </div>
       )}
 
-      {/* Share link confirmation */}
-      {menu.shareLinkConfirm && (
-        <div className={styles.confirmOverlay} onClick={() => menu.setShareLinkConfirm(null)}>
-          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.confirmIconShare}>
-              <LinkIcon />
-            </div>
-            <h3 className={styles.confirmTitle}>Share this conversation?</h3>
-            <p className={styles.confirmDesc}>
-              A shareable link will be copied to your clipboard. Anyone with this link will be able
-              to view the conversation.
-            </p>
-            <div className={styles.confirmActions}>
-              <button
-                className={styles.confirmCancelBtn}
-                onClick={() => menu.setShareLinkConfirm(null)}
-              >
-                Cancel
-              </button>
-              <button className={styles.confirmShareBtn} onClick={menu.confirmShareLink}>
-                {menu.linkCopied ? 'Copied!' : 'Copy link'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Share modal — matches the conversation top-nav share affordance. */}
+      {menu.shareModalChatId && (
+        <ShareModal
+          conversationId={menu.shareModalChatId}
+          conversationTitle={conversations.find((c) => c.id === menu.shareModalChatId)?.title}
+          messages={menu.shareModalChatId === currentChatId ? currentMessages : undefined}
+          onClose={() => menu.setShareModalChatId(null)}
+          onSuccess={showSuccess}
+          onError={showError}
+        />
       )}
 
       {/* Single item delete confirmation */}
