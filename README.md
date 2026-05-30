@@ -1,38 +1,38 @@
 # Araviel Web
 
-Web client for Araviel — one interface for every leading AI model, with the right model picked for each task automatically.
+The web client for Araviel — one interface for every leading AI model, with the right model picked for each task automatically.
+
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?logo=vite)](https://vitejs.dev/)
 
 ---
 
 ## Overview
 
-Araviel Web is the React frontend that talks to the **Araviel API**. Users send a message, the API routes it through **ADE** to the best model, and the response streams back in real time.
+Araviel Web is the React frontend that talks to the **Araviel API**. You send a message, the backend routes it through **ADE** to the best model, and the answer streams back in real time.
 
-Feature surface:
+Key features:
 
-- **Chat** — streamed responses with thinking, citations, and tool activity
+- **Chat** — streamed responses, with thinking and citations where supported
 - **Projects** — group related conversations with shared context
 - **Images** — generated image gallery
-- **Shares** — public read-only snapshots of conversations
-- **Search** — find prior conversations by content
+- **Shares** — public, read-only snapshots of conversations
 - **Subscriptions & credits** — plan management and usage tracking
-- **Settings** — theme, preferences, account
-- **Models** — browse the catalog of supported models
+- **Settings** — theme, preferences, and account
 
 ---
 
 ## Tech Stack
 
 - **React 18** + **React Router**
-- **Redux Toolkit** for state (auth, chat, projects, subscription, theme, …)
-- **Vite** for dev server and bundling
+- **Redux Toolkit** for state
+- **Vite** for the dev server and build
 - **Supabase** for auth and realtime data
-- **Recharts**, **Mermaid**, **highlight.js** for rich message rendering
 - **Vitest** + **Testing Library** for tests
 
 ---
 
-## Setup
+## Getting Started
 
 ### Prerequisites
 
@@ -49,7 +49,7 @@ npm install
 
 ### Environment
 
-Create a `.env` file with the variables needed to talk to the backend. Obtain the values from your team — never commit them.
+Create a `.env` file pointing at the backend and Supabase. Ask your team for the values — never commit them.
 
 ```env
 VITE_ARAVIEL_API_BASE=   # Base URL of the Araviel API
@@ -61,34 +61,15 @@ VITE_SITE_ORIGIN=        # Public origin used for share links and SEO
 ### Run
 
 ```bash
-npm run dev       # http://localhost:5173
+npm run dev       # start the dev server at http://localhost:5173
 npm run build     # production build
 npm run preview   # preview the production build
-npm run lint      # eslint
-npm test          # vitest
-```
-
----
-
-## Project Structure
-
-```
-src/
-├── components/     # Feature views (Chat, Projects, Images, Settings, ...)
-├── store/
-│   └── slices/     # Redux slices (auth, chat, projects, subscription, theme, ...)
-├── services/       # API clients (api, auth headers, credits, subscription, ...)
-├── hooks/          # Reusable React hooks
-├── lib/            # Utilities (SEO, formatting, parsing, ...)
-├── config/         # App configuration
-├── data/           # Static data
-├── router.jsx      # Route definitions
-├── App.jsx         # Root layout + auth gate
-└── main.jsx        # Entry point
+npm test          # run the test suite
+npm run lint      # lint
 ```
 
 ---
 
 ## Deployment
 
-Built for Vercel. Connect the repository and Vercel auto-detects Vite; set the `VITE_*` environment variables in the project dashboard and deploy. Any static host that serves the `dist/` folder with SPA fallback works too.
+Built for Vercel: connect the repository (Vite is auto-detected), set the `VITE_*` environment variables in the project dashboard, and deploy. Any static host that serves the `dist/` folder with SPA fallback works too.
