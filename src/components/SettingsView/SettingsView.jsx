@@ -1457,38 +1457,6 @@ export default function SettingsView() {
                   <div className={styles.fieldGroup}>
                     <div className={styles.toggleRow}>
                       <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Save conversation history</span>
-                        <span className={styles.toggleDesc}>
-                          Keep your conversations for future reference. Turning this off will not
-                          delete existing conversations.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.saveHistory}
-                        onChange={(v) => updateSetting('saveHistory', v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>AI data retention</span>
-                        <span className={styles.toggleDesc}>
-                          Allow Araviel to use your conversations to improve AI models. Turn this
-                          off to exclude your data.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.aiDataRetention}
-                        onChange={(v) => updateSetting('aiDataRetention', v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
                         <span className={styles.toggleLabel}>Location metadata</span>
                         <span className={styles.toggleDesc}>
                           Allow Araviel to use coarse location data (city/region) to improve
@@ -1525,29 +1493,6 @@ export default function SettingsView() {
                       link immediately.
                     </p>
                     <SharedChatsManager />
-                  </div>
-
-                  {/* Export data */}
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Export your data</label>
-                    <p className={styles.fieldLabelDesc}>
-                      Download a copy of your conversations and settings.
-                    </p>
-                    <button
-                      className={styles.outlineBtn}
-                      onClick={() => {
-                        const data = JSON.stringify(settings, null, 2);
-                        const blob = new Blob([data], { type: 'application/json' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'araviel-settings-export.json';
-                        a.click();
-                        URL.revokeObjectURL(url);
-                      }}
-                    >
-                      Export settings
-                    </button>
                   </div>
 
                   <div className={styles.dangerZone}>
