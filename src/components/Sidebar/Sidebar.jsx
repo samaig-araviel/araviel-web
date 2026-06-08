@@ -508,9 +508,12 @@ export default function Sidebar() {
         total: Math.max(0, conversationsTotal - 1),
       })
     );
-    // If the deleted chat is currently open, clear it
+    // If the deleted chat is currently open, clear it and pop the URL
+    // back to the new-chat root — otherwise the now-stale conversation
+    // id sticks in the address bar and a refresh would 404.
     if (currentChatId === chatId) {
       dispatch(createNewChat());
+      navigate('/');
     }
     // Persist to backend
     deleteConversation(chatId).catch(() => {
