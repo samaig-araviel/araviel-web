@@ -2479,6 +2479,11 @@
   opacity: 1;
 }
 
+.suggestionItem:disabled {
+  cursor: default;
+  pointer-events: none;
+}
+
 .suggestionItem svg {
   width: 13px;
   height: 13px;

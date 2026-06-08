@@ -4791,7 +4791,20 @@ function QuestionCard({ questions, onComplete, onDismiss }) {
 }
 
 function SuggestionsList({ suggestions, onSelect }) {
+  // Suggestions are sent immediately on click (the chips are full, complete
+  // prompts — populate-then-send would just add friction). Lock the list as
+  // soon as one fires so a fast double-tap can't queue the same chip twice.
+  // The list unmounts when the next response starts streaming, so this state
+  // is short-lived.
+  const [sent, setSent] = useState(false);
+
   if (!suggestions || suggestions.length === 0) return null;
+
+  const handleClick = (suggestion) => {
+    if (sent) return;
+    setSent(true);
+    onSelect(suggestion);
+  };
 
   return (
     <div className={styles.suggestionsList}>
@@ -4800,7 +4813,12 @@ function SuggestionsList({ suggestions, onSelect }) {
       </div>
       <div className={styles.suggestionsItems}>
         {suggestions.map((suggestion, idx) => (
-          <button key={idx} className={styles.suggestionItem} onClick={() => onSelect(suggestion)}>
+          <button
+            key={idx}
+            className={styles.suggestionItem}
+            onClick={() => handleClick(suggestion)}
+            disabled={sent}
+          >
             <span className={styles.suggestionText}>{suggestion}</span>
             <ArrowRightIcon />
           </button>
@@ -6232,10 +6250,11 @@ export default function MessageList({
 
   const handleFollowUpSelect = useCallback(
     (text) => {
-      dispatch(setInputValue(text));
-      if (focusInput) focusInput();
+      if (onSendMessage && text) {
+        onSendMessage(text, { addUserMessage: true });
+      }
     },
-    [dispatch, focusInput]
+    [onSendMessage]
   );
 
   const handleQuestionsSend = useCallback(
