@@ -231,14 +231,23 @@ The current temperature, humidity, and wind information would normally appear he
     expect(detectWeatherResponse(text)).toBe(false);
   });
 
-  it('suppresses the card when the response contains a markdown table', () => {
-    const text = `Maidstone hourly forecast for today:
+  it('renders the card for a real multi-day forecast table with cited sources', () => {
+    const text = `London Weather Forecast: 8 -- 11 June 2026
+Source: Met Office & AccuWeather
 
-| Time | Temp | Conditions | Rain | Wind |
-|:---:|:---:|:---:|:---:|:---:|
-| 18:00 | 16°C | Partly cloudy | 10% | WSW 10 |
-| 19:00 | 15°C | Patchy cloud | 10% | WSW 9 |`;
-    expect(detectWeatherResponse(text)).toBe(false);
+Daily Breakdown
+
+| DAY | HIGH | LOW | CONDITIONS |
+|:---|:---|:---|:---|
+| **Mon 8 Jun** | 19°C | 10°C | Rain, cloudy with heavier pulses |
+| **Tue 9 Jun** | 19°C | 10°C | Sunshine and showers, risk of thunder |
+| **Wed 10 Jun** | 19°C | 11°C | Sunshine and showers, possible hail |
+| **Thu 11 Jun** | 18°C | 13°C | Fine start, rain arriving later |
+
+Summary
+Today starts cloudy with intermittent rain in places, with more persistent rain
+and heavier pulses spreading east during the day, followed by brighter conditions.`;
+    expect(detectWeatherResponse(text)).toBe(true);
   });
 
   it('suppresses the card when the response contains Python template literals', () => {
