@@ -784,8 +784,11 @@ export default function WeatherCard({ weatherData, isDark, renderMarkdown }) {
           )}
 
           {hasForecast && (
-            <div className={styles.forecast}>
-              {forecast.slice(0, 7).map((f, i) => (
+            <div
+              className={styles.forecast}
+              style={{ '--forecast-cols': Math.min(7, forecast.length) }}
+            >
+              {forecast.map((f, i) => (
                 <ForecastDay key={`${f.day}-${i}`} item={f} index={i} />
               ))}
             </div>

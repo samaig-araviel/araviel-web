@@ -481,9 +481,11 @@
 
 .forecast {
   display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
-  gap: 2px;
+  /* Column count comes from --forecast-cols, set per-instance by JSX as
+     min(7, days). 4 days → 4 even columns spanning the row; 10 days →
+     row of 7 then a row of 3; 14 → two rows of 7. Fallback is 7. */
+  grid-template-columns: repeat(var(--forecast-cols, 7), minmax(0, 1fr));
+  gap: 8px 2px;
   padding-top: 14px;
   border-top: 1px solid var(--w-divider);
 }
