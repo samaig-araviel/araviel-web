@@ -76,10 +76,54 @@ const WEATHER_CONTEXT_PHRASES = [
   'degrees fahrenheit',
 ];
 
+// Hard suppressors — when any of these are present the card MUST NOT render
+// regardless of how many weather words appear in the response. The model is
+// either being honest that it doesn't have real data, or already presenting
+// structured data the card extractor would only mangle.
+const SUPPRESS_PHRASES = [
+  'illustrative',
+  'example only',
+  'not real-time',
+  'not real time',
+  'cannot access',
+  'cannot fetch',
+  "can't access",
+  "can't fetch",
+  "i can't access",
+  "i can't fetch",
+  "i don't have access",
+  'i do not have access',
+  'no real-time',
+  'no real time',
+  "here's how to get",
+  'here is how to get',
+  'you can run',
+  'you can use the',
+  'set this in your environment',
+];
+
+// Markdown table separator — e.g. "|:---:|:---:|" — signals the model is
+// rendering structured data. Stealing pieces of it for the card always
+// produces broken output.
+const MARKDOWN_TABLE_SEPARATOR = /\n\s*\|\s*:?-+:?\s*\|\s*:?-+:?\s*\|/;
+
+// Template-literal syntax (Python f-strings, JS template literals, env vars)
+// means the model is showing code, not data.
+const TEMPLATE_LITERAL = /\{[^}\n]*\}|\$\{[^}]*\}|f"[^"]*\{[^}]*\}/;
+
 export function detectWeatherResponse(text) {
   if (!text || text.length < 30) return false;
 
   const lower = text.toLowerCase();
+
+  // Fail-closed gates: any of these and the card stays hidden, the response
+  // renders as plain markdown. Better to show no card than a broken one.
+  for (const phrase of SUPPRESS_PHRASES) {
+    if (lower.includes(phrase)) return false;
+  }
+  if (MARKDOWN_TABLE_SEPARATOR.test(text)) return false;
+  if (TEMPLATE_LITERAL.test(text)) return false;
+
   let score = 0;
 
   // Temperature patterns — strong signal
