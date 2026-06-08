@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractWeatherData } from './weatherParser';
+import { detectWeatherResponse, extractWeatherData } from './weatherParser';
 
 describe('extractWeatherData — condition inference', () => {
   it('treats "Sky: sunny intervals" as Partly Cloudy even when rain chance is mentioned', () => {
@@ -213,5 +213,48 @@ Currently: 11°C, Sunny.
 - High: 83°F · Low: 60°F`;
     const data = extractWeatherData(text);
     expect(data.forecast[0].condition).toBe('Partly Cloudy');
+  });
+});
+
+describe('detectWeatherResponse — fail-closed gates', () => {
+  it('suppresses the card when the model labels its data as illustrative', () => {
+    const text = `Maidstone, Partly cloudy, 16°C, light wind.
+The example below is illustrative only and not real-time data.
+| 18:00 | 16 | Partly cloudy |`;
+    expect(detectWeatherResponse(text)).toBe(false);
+  });
+
+  it('suppresses the card when the model says it cannot fetch live weather', () => {
+    const text = `London current weather cannot be fetched from here in real time.
+Here is how to get current London weather using wttr.in or the Met Office API.
+The current temperature, humidity, and wind information would normally appear here.`;
+    expect(detectWeatherResponse(text)).toBe(false);
+  });
+
+  it('suppresses the card when the response contains a markdown table', () => {
+    const text = `Maidstone hourly forecast for today:
+
+| Time | Temp | Conditions | Rain | Wind |
+|:---:|:---:|:---:|:---:|:---:|
+| 18:00 | 16°C | Partly cloudy | 10% | WSW 10 |
+| 19:00 | 15°C | Patchy cloud | 10% | WSW 9 |`;
+    expect(detectWeatherResponse(text)).toBe(false);
+  });
+
+  it('suppresses the card when the response contains Python template literals', () => {
+    const text = `Here's how to fetch London weather:
+print(f"Feels like: {data['main']['feels_like']} °C")
+print(f"Wind: {data['wind']['speed']} m/s, temp 16°C, sunny")`;
+    expect(detectWeatherResponse(text)).toBe(false);
+  });
+
+  it('still renders the card for a clean live weather response', () => {
+    const text = `Current weather in London
+Temperature: 16°C
+Sky: light rain
+Feels like: 14°C
+Humidity: 78%
+Wind: 12 km/h NW`;
+    expect(detectWeatherResponse(text)).toBe(true);
   });
 });
