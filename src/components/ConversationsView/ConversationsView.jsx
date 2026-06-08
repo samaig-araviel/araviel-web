@@ -27,10 +27,10 @@ import {
   deleteImportedConversation,
   bulkDeleteImportedConversations,
   updateConversation,
-  deleteConversation,
   fetchProjects as fetchProjectsApi,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
+import useDeleteConversation from '../../hooks/useDeleteConversation';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import {
   SearchIcon,
@@ -93,7 +93,12 @@ function groupConversationsByTime(conversations) {
   return groups;
 }
 
-function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive, showError } = {}) {
+function useItemMenu(
+  conversations,
+  conversationsTotal,
+  dispatch,
+  { onArchive, deleteConversation } = {}
+) {
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [menuPosition, setMenuPosition] = useState({});
   const [renamingId, setRenamingId] = useState(null);
@@ -228,20 +233,8 @@ function useItemMenu(conversations, conversationsTotal, dispatch, { onArchive, s
 
   const confirmDelete = () => {
     const chatId = deleteConfirm;
-    const prevConversations = conversations;
-    const prevTotal = conversationsTotal;
-    dispatch(
-      setConversations({
-        conversations: conversations.filter((c) => c.id !== chatId),
-        total: Math.max(0, conversationsTotal - 1),
-      })
-    );
-    // Persist to backend
-    deleteConversation(chatId).catch(() => {
-      dispatch(setConversations({ conversations: prevConversations, total: prevTotal }));
-      if (showError) showError("Couldn't delete this conversation. Try again.");
-    });
     setDeleteConfirm(null);
+    if (deleteConversation) deleteConversation(chatId);
   };
 
   return {
@@ -355,9 +348,10 @@ export default function ConversationsView() {
     [conversations, conversationsTotal, dispatch, showError]
   );
 
+  const deleteConversation = useDeleteConversation();
   const menu = useItemMenu(conversations, conversationsTotal, dispatch, {
     onArchive: handleSingleArchive,
-    showError,
+    deleteConversation,
   });
 
   const importedProviders = useMemo(
@@ -688,20 +682,7 @@ export default function ConversationsView() {
   };
 
   const confirmBulkDelete = () => {
-    const prevConversations = conversations;
-    const prevTotal = conversationsTotal;
-    dispatch(
-      setConversations({
-        conversations: conversations.filter((c) => !selectedIds.has(c.id)),
-        total: Math.max(0, conversationsTotal - selectedIds.size),
-      })
-    );
-    selectedIds.forEach((id) => {
-      deleteConversation(id).catch(() => {
-        dispatch(setConversations({ conversations: prevConversations, total: prevTotal }));
-        showError("Couldn't delete some conversations. Try again.");
-      });
-    });
+    deleteConversation([...selectedIds]);
     setShowDeleteConfirm(false);
     exitSelectMode();
   };

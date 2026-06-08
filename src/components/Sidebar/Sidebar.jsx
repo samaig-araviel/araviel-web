@@ -22,9 +22,9 @@ import { selectAuthUser, selectIsAuthenticated, signOut } from '../../store/slic
 import {
   fetchConversations,
   updateConversation,
-  deleteConversation,
   fetchProjects as fetchProjectsApi,
 } from '../../services/api';
+import useDeleteConversation from '../../hooks/useDeleteConversation';
 import { useToast } from '../Toast/Toast';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import { selectCurrentTier, selectTierLoaded } from '../../store/slices/subscriptionSlice';
@@ -152,6 +152,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { showError, showSuccess } = useToast();
+  const deleteConversation = useDeleteConversation();
   const collapsed = useSelector(selectSidebarCollapsed);
   const conversations = useSelector(selectConversations);
   const conversationsTotal = useSelector(selectConversationsTotal);
@@ -499,29 +500,8 @@ export default function Sidebar() {
 
   const confirmDelete = () => {
     const chatId = deleteConfirm;
-    const prevConversations = conversations;
-    const prevTotal = conversationsTotal;
-    // Optimistic update
-    dispatch(
-      setConversations({
-        conversations: conversations.filter((c) => c.id !== chatId),
-        total: Math.max(0, conversationsTotal - 1),
-      })
-    );
-    // If the deleted chat is currently open, clear it and pop the URL
-    // back to the new-chat root — otherwise the now-stale conversation
-    // id sticks in the address bar and a refresh would 404.
-    if (currentChatId === chatId) {
-      dispatch(createNewChat());
-      navigate('/');
-    }
-    // Persist to backend
-    deleteConversation(chatId).catch(() => {
-      // Revert
-      dispatch(setConversations({ conversations: prevConversations, total: prevTotal }));
-      showError("Couldn't delete this conversation. Try again.");
-    });
     setDeleteConfirm(null);
+    deleteConversation(chatId);
   };
 
   const handleAddToProject = (chatId) => {
