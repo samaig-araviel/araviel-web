@@ -2676,9 +2676,6 @@ export default function MainContent() {
                 className={styles.confirmDeleteBtn}
                 onClick={() => {
                   setShowDeleteConfirm(false);
-                  // The shared hook handles optimistic Redux update, the
-                  // backend call, the navigate('/') for the now-deleted
-                  // open conversation, and on-failure revert + toast.
                   if (currentChatId) deleteConversation(currentChatId);
                 }}
               >
