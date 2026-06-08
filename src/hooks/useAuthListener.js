@@ -147,6 +147,9 @@ const USER_STORAGE_KEYS = [
   'araviel-settings',
   'araviel-user-id',
   'araviel-imported-context-providers',
+  'araviel-user-location',
+  'araviel-location-permission',
+  'araviel-location-asked',
 ];
 
 // ---------------------------------------------------------------------------

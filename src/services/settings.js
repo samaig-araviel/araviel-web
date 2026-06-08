@@ -133,6 +133,10 @@ export async function fetchSettings(onSubscription) {
     const settings = { ...DEFAULT_SETTINGS, ...cleanSettings };
     // Cache to localStorage as fallback
     localStorage.setItem('araviel-settings', JSON.stringify(settings));
+    // Notify same-tab consumers (e.g. useUserLocation, useAnswerFont) that the
+    // cached settings have changed — the native `storage` event only fires
+    // cross-tab, so without this they'd stay stale until the user manually saves.
+    window.dispatchEvent(new CustomEvent('araviel-settings-updated'));
     if (data.subscription && typeof onSubscription === 'function') {
       onSubscription(data.subscription);
     }
