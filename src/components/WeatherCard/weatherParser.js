@@ -102,11 +102,6 @@ const SUPPRESS_PHRASES = [
   'set this in your environment',
 ];
 
-// Markdown table separator — e.g. "|:---:|:---:|" — signals the model is
-// rendering structured data. Stealing pieces of it for the card always
-// produces broken output.
-const MARKDOWN_TABLE_SEPARATOR = /\n\s*\|\s*:?-+:?\s*\|\s*:?-+:?\s*\|/;
-
 // Template-literal syntax (Python f-strings, JS template literals, env vars)
 // means the model is showing code, not data.
 const TEMPLATE_LITERAL = /\{[^}\n]*\}|\$\{[^}]*\}|f"[^"]*\{[^}]*\}/;
@@ -118,10 +113,14 @@ export function detectWeatherResponse(text) {
 
   // Fail-closed gates: any of these and the card stays hidden, the response
   // renders as plain markdown. Better to show no card than a broken one.
+  //
+  // A markdown table is no longer a suppressor on its own — real multi-day
+  // forecasts often ship a `| DAY | HIGH | LOW | CONDITIONS |` table that
+  // the card's forecast extractor reads correctly. The phrase suppressors
+  // still catch the fabricated/illustrative cases we actually care about.
   for (const phrase of SUPPRESS_PHRASES) {
     if (lower.includes(phrase)) return false;
   }
-  if (MARKDOWN_TABLE_SEPARATOR.test(text)) return false;
   if (TEMPLATE_LITERAL.test(text)) return false;
 
   let score = 0;
