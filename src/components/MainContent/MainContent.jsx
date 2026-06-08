@@ -148,6 +148,7 @@ import {
 } from '../../utils/guestSession';
 import DynamicSubtitle from '../DynamicSubtitle/DynamicSubtitle';
 import useUserLocation from '../../hooks/useUserLocation';
+import useDeleteConversation from '../../hooks/useDeleteConversation';
 import styles from './MainContent.module.css';
 
 const getGreeting = () => {
@@ -578,6 +579,7 @@ export default function MainContent() {
   const isProcessing = useSelector(selectIsProcessing);
   const selectedModelId = useSelector(selectSelectedModelId);
   const currentChatId = useSelector(selectCurrentChatId);
+  const deleteConversation = useDeleteConversation();
   const webSearchEnabled = useSelector(selectWebSearchEnabled);
   const extendedThinking = useSelector(selectExtendedThinking);
   const deepResearch = useSelector(selectDeepResearch);
@@ -2674,7 +2676,10 @@ export default function MainContent() {
                 className={styles.confirmDeleteBtn}
                 onClick={() => {
                   setShowDeleteConfirm(false);
-                  handleNewChat();
+                  // The shared hook handles optimistic Redux update, the
+                  // backend call, the navigate('/') for the now-deleted
+                  // open conversation, and on-failure revert + toast.
+                  if (currentChatId) deleteConversation(currentChatId);
                 }}
               >
                 Delete

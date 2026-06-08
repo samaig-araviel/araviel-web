@@ -28,8 +28,8 @@ import {
   deleteProject as deleteProjectApi,
   fetchConversations,
   updateConversation,
-  deleteConversation,
 } from '../../services/api';
+import useDeleteConversation from '../../hooks/useDeleteConversation';
 import {
   SearchIcon,
   PlusIcon,
@@ -230,6 +230,8 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
   const [instructionsExpanded, setInstructionsExpanded] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [convMenuOpen, setConvMenuOpen] = useState(null);
+  const [convDeleteConfirm, setConvDeleteConfirm] = useState(null);
+  const deleteConversation = useDeleteConversation();
   const [showPlusMenu, setShowPlusMenu] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const textareaRef = useRef(null);
@@ -588,13 +590,7 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
                             onClick={(e) => {
                               e.stopPropagation();
                               setConvMenuOpen(null);
-                              if (
-                                window.confirm('Delete this conversation? This cannot be undone.')
-                              ) {
-                                deleteConversation(conv.id).then(() => {
-                                  setConversations((prev) => prev.filter((c) => c.id !== conv.id));
-                                });
-                              }
+                              setConvDeleteConfirm(conv);
                             }}
                           >
                             <TrashIcon />
@@ -1326,6 +1322,60 @@ export default function ProjectsView() {
               </button>
               <button className={styles.confirmDeleteBtn} onClick={handleDelete}>
                 Delete{deleteOption === 'everything' ? ' everything' : ' project'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete-conversation confirmation — mirrors the project delete
+          modal so the in-project UX is consistent with the project-level
+          one. Replaces a previous window.confirm() prompt. */}
+      {convDeleteConfirm && (
+        <div className={styles.modalOverlay} onClick={() => setConvDeleteConfirm(null)}>
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>
+              <TrashIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>
+              Delete &ldquo;{convDeleteConfirm.title || 'this conversation'}&rdquo;?
+            </h3>
+            <p className={styles.confirmDesc}>
+              This will permanently delete the conversation and all its messages. This action cannot
+              be undone.
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setConvDeleteConfirm(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={async () => {
+                  const convId = convDeleteConfirm.id;
+                  setConvDeleteConfirm(null);
+                  // Optimistically drop from the project-local list. The
+                  // shared hook owns the global Redux + backend round-trip
+                  // and, on failure, will restore the global list and toast.
+                  setConversations((prev) => prev.filter((c) => c.id !== convId));
+                  const ok = await deleteConversation(convId);
+                  if (!ok) {
+                    // Hook reverted the global state; sync the project
+                    // view back in so the row reappears here too.
+                    try {
+                      const data = await fetchConversations(100, 0, {
+                        projectId: project.id,
+                      });
+                      setConversations(data.conversations || []);
+                    } catch {
+                      // Silent — the toast from the hook already covers it.
+                    }
+                  }
+                }}
+              >
+                Delete
               </button>
             </div>
           </div>
