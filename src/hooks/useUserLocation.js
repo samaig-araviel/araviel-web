@@ -1,9 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { readBooleanSetting } from '../lib/localSettings';
 
 const STORAGE_KEY = 'araviel-user-location';
 const PERMISSION_KEY = 'araviel-location-permission';
 const ASKED_KEY = 'araviel-location-asked';
+const SETTINGS_UPDATE_EVENT = 'araviel-settings-updated';
 const WEATHER_STALE_MS = 30 * 60 * 1000; // 30 minutes
+
+// The user-facing "Location metadata" toggle (Settings > Data & privacy)
+// is the single source of truth for whether this hook is allowed to do
+// anything. Default OFF — the hook stays inert until the user explicitly
+// opts in, matching the privacy-by-default posture enforced server-side.
+const CONSENT_SETTING = 'locationMetadata';
+
+function hasConsent() {
+  return readBooleanSetting(CONSENT_SETTING, false);
+}
 
 /**
  * Map WMO weather codes to ADE Weather enum values.
@@ -28,9 +40,14 @@ function mapWeatherCode(code, tempC) {
  *
  * location: { latitude, longitude, city, region, country } | null
  * permission: 'granted' | 'denied' | 'prompt' | 'unavailable'
+ *
+ * The entire pipeline is gated on the `locationMetadata` privacy toggle.
+ * Without consent the hook never prompts, never reads cached coordinates,
+ * and never fires the reverse-geocode / weather network calls.
  */
 export default function useUserLocation() {
   const [location, setLocation] = useState(() => {
+    if (!hasConsent()) return null;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       return stored ? JSON.parse(stored) : null;
@@ -42,58 +59,6 @@ export default function useUserLocation() {
   const [permission, setPermission] = useState(() => {
     return localStorage.getItem(PERMISSION_KEY) || 'prompt';
   });
-
-  // Check permission state on mount and auto-request location at most once.
-  //
-  // We only auto-prompt the very first time the user lands on the app. After
-  // that, browsers keep `permission.state === 'prompt'` for "Just this time"
-  // grants, dismissals (X), and "Continue blocking" denials that don't persist
-  // — so re-firing getCurrentPosition() on every reload would re-show the OS
-  // prompt indefinitely. The ASKED_KEY flag marks "we've already had our one
-  // chance to ask"; the user can opt back in by calling clearLocation().
-  useEffect(() => {
-    if (!navigator.geolocation) {
-      setPermission('unavailable');
-      return;
-    }
-
-    const tryAutoRequest = (state) => {
-      if (state === 'granted') {
-        // Persistent grant — refresh data without re-prompting (the browser
-        // suppresses the UI when permission is already granted).
-        if (!localStorage.getItem(STORAGE_KEY)) requestLocationRef.current();
-        return;
-      }
-      if (state === 'denied') return;
-      if (localStorage.getItem(STORAGE_KEY)) return;
-      if (localStorage.getItem(ASKED_KEY) === 'true') return;
-      localStorage.setItem(ASKED_KEY, 'true');
-      requestLocationRef.current();
-    };
-
-    if (navigator.permissions) {
-      navigator.permissions
-        .query({ name: 'geolocation' })
-        .then((result) => {
-          setPermission(result.state);
-          localStorage.setItem(PERMISSION_KEY, result.state);
-
-          result.addEventListener('change', () => {
-            setPermission(result.state);
-            localStorage.setItem(PERMISSION_KEY, result.state);
-            if (result.state === 'denied') {
-              setLocation(null);
-              localStorage.removeItem(STORAGE_KEY);
-            }
-          });
-
-          tryAutoRequest(result.state);
-        })
-        .catch(() => tryAutoRequest('prompt'));
-    } else {
-      tryAutoRequest('prompt');
-    }
-  }, []);
 
   // Reverse geocode coordinates to get city/region/country
   const reverseGeocode = useCallback(async (latitude, longitude) => {
@@ -144,6 +109,10 @@ export default function useUserLocation() {
       setPermission('unavailable');
       return null;
     }
+    // Belt-and-braces: even if a caller invokes this directly, refuse
+    // when the user hasn't consented. Keeps the consent gate impossible
+    // to bypass from inside the app.
+    if (!hasConsent()) return null;
 
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
@@ -185,12 +154,109 @@ export default function useUserLocation() {
     });
   }, [reverseGeocode, fetchWeather]);
 
-  // Keep a ref so the mount effect can call requestLocation without it in deps
+  // Keep refs so effect handlers can call the latest versions without
+  // re-subscribing every render.
   const requestLocationRef = useRef(requestLocation);
   requestLocationRef.current = requestLocation;
 
+  const clearLocation = useCallback(() => {
+    setLocation(null);
+    setPermission('prompt');
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PERMISSION_KEY);
+    localStorage.removeItem(ASKED_KEY);
+  }, []);
+
+  const clearLocationRef = useRef(clearLocation);
+  clearLocationRef.current = clearLocation;
+
+  // Check permission state on mount and auto-request location at most once,
+  // but only when the user has explicitly opted in via Settings.
+  //
+  // We only auto-prompt the very first time the user lands on the app. After
+  // that, browsers keep `permission.state === 'prompt'` for "Just this time"
+  // grants, dismissals (X), and "Continue blocking" denials that don't persist
+  // — so re-firing getCurrentPosition() on every reload would re-show the OS
+  // prompt indefinitely. The ASKED_KEY flag marks "we've already had our one
+  // chance to ask"; the user can opt back in by calling clearLocation().
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setPermission('unavailable');
+      return;
+    }
+    if (!hasConsent()) return;
+
+    const tryAutoRequest = (state) => {
+      if (state === 'granted') {
+        // Persistent grant — refresh data without re-prompting (the browser
+        // suppresses the UI when permission is already granted).
+        if (!localStorage.getItem(STORAGE_KEY)) requestLocationRef.current();
+        return;
+      }
+      if (state === 'denied') return;
+      if (localStorage.getItem(STORAGE_KEY)) return;
+      if (localStorage.getItem(ASKED_KEY) === 'true') return;
+      localStorage.setItem(ASKED_KEY, 'true');
+      requestLocationRef.current();
+    };
+
+    if (navigator.permissions) {
+      navigator.permissions
+        .query({ name: 'geolocation' })
+        .then((result) => {
+          setPermission(result.state);
+          localStorage.setItem(PERMISSION_KEY, result.state);
+
+          result.addEventListener('change', () => {
+            setPermission(result.state);
+            localStorage.setItem(PERMISSION_KEY, result.state);
+            if (result.state === 'denied') {
+              setLocation(null);
+              localStorage.removeItem(STORAGE_KEY);
+            }
+          });
+
+          tryAutoRequest(result.state);
+        })
+        .catch(() => tryAutoRequest('prompt'));
+    } else {
+      tryAutoRequest('prompt');
+    }
+  }, []);
+
+  // React to consent changes:
+  //   • toggle OFF → wipe cached coordinates and permission state.
+  //   • toggle ON  → prompt for permission if we don't already have data.
+  //
+  // The `araviel-settings-updated` custom event covers same-tab saves; the
+  // native `storage` event covers cross-tab changes. Both end up at the same
+  // sync function so behaviour is identical regardless of origin.
+  useEffect(() => {
+    const sync = () => {
+      if (hasConsent()) {
+        if (!localStorage.getItem(STORAGE_KEY)) {
+          requestLocationRef.current();
+        }
+      } else {
+        clearLocationRef.current();
+      }
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === 'araviel-settings') sync();
+    };
+
+    window.addEventListener(SETTINGS_UPDATE_EVENT, sync);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(SETTINGS_UPDATE_EVENT, sync);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
   // Refresh weather if stale (every 30 min)
   useEffect(() => {
+    if (!hasConsent()) return;
     if (!location?.latitude || !location?.longitude) return;
     const age = Date.now() - (location.weatherTimestamp || 0);
     if (age < WEATHER_STALE_MS) return;
@@ -210,14 +276,6 @@ export default function useUserLocation() {
       }
     });
   }, [location?.latitude, location?.longitude, location?.weatherTimestamp, fetchWeather]);
-
-  const clearLocation = useCallback(() => {
-    setLocation(null);
-    setPermission('prompt');
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(PERMISSION_KEY);
-    localStorage.removeItem(ASKED_KEY);
-  }, []);
 
   return { location, permission, requestLocation, clearLocation };
 }
