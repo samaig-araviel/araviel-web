@@ -939,8 +939,11 @@
     font-size: 12.5px;
   }
 
+  /* On narrow phones, 7 cells × (high + low) crowds and the temperatures
+     collide. Drop the low so the high reads cleanly, matching the
+     iOS / Google Weather hourly-strip pattern. */
   .forecastLow {
-    font-size: 11px;
+    display: none;
   }
 
   .detailPill {
