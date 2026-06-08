@@ -214,6 +214,26 @@ Currently: 11°C, Sunny.
     const data = extractWeatherData(text);
     expect(data.forecast[0].condition).toBe('Partly Cloudy');
   });
+
+  it('keeps both weeks of a multi-week forecast — does not dedupe Mon 8 against Mon 15', () => {
+    const text = `London 12-day forecast:
+- Monday 8 Jun: High 61°F, Low 49°F, cloudy
+- Tuesday 9 Jun: High 64°F, Low 49°F, sunny
+- Wednesday 10 Jun: High 61°F, Low 49°F, showers
+- Thursday 11 Jun: High 61°F, Low 56°F, showers
+- Friday 12 Jun: High 71°F, Low 55°F, cloudy
+- Saturday 13 Jun: High 74°F, Low 61°F, sunny
+- Sunday 14 Jun: High 79°F, Low 63°F, sunny
+- Monday 15 Jun: High 75°F, Low 60°F, sunny
+- Tuesday 16 Jun: High 72°F, Low 58°F, partly cloudy
+- Wednesday 17 Jun: High 70°F, Low 56°F, showers
+- Thursday 18 Jun: High 68°F, Low 55°F, showers
+- Friday 19 Jun: High 72°F, Low 58°F, sunny`;
+    const data = extractWeatherData(text);
+    expect(data.forecast).toHaveLength(12);
+    expect(data.forecast[0]).toMatchObject({ day: 'Mon', date: '8' });
+    expect(data.forecast[7]).toMatchObject({ day: 'Mon', date: '15' });
+  });
 });
 
 describe('detectWeatherResponse — fail-closed gates', () => {

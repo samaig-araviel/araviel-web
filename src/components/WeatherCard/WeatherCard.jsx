@@ -637,12 +637,15 @@ function DetailPill({ iconKey, label, value }) {
   );
 }
 
-function ForecastDay({ item, index }) {
+function ForecastDay({ item, index, showDate }) {
   const theme = mapConditionToTheme(item.condition);
   const IconComp = ICON_MAP[theme.icon] || CloudIcon;
+  // For multi-week forecasts, append the date number so "MON" doesn't appear
+  // twice without context. Single-week strips keep the cleaner 3-letter label.
+  const label = showDate && item.date ? `${item.day} ${item.date}` : item.day;
   return (
     <div className={styles.forecastDay} style={{ animationDelay: `${0.08 * index + 0.15}s` }}>
-      <span className={styles.forecastDayName}>{item.day}</span>
+      <span className={styles.forecastDayName}>{label}</span>
       <span className={styles.forecastIcon}>
         <IconComp size={28} />
       </span>
@@ -789,7 +792,12 @@ export default function WeatherCard({ weatherData, isDark, renderMarkdown }) {
               style={{ '--forecast-cols': Math.min(7, forecast.length) }}
             >
               {forecast.map((f, i) => (
-                <ForecastDay key={`${f.day}-${i}`} item={f} index={i} />
+                <ForecastDay
+                  key={`${f.day}-${f.date ?? i}`}
+                  item={f}
+                  index={i}
+                  showDate={forecast.length > 7}
+                />
               ))}
             </div>
           )}

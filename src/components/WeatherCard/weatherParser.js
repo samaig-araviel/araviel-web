@@ -639,12 +639,19 @@ function extractForecast(text) {
     }
 
     const dayLabel = matchedDay.charAt(0).toUpperCase() + matchedDay.slice(1, 3);
+    // Capture the date number immediately after the day name (e.g. "Mon 8 Jun").
+    // Without this, a multi-week forecast (12-day, 14-day) collapses to seven
+    // entries because the second week's Mon dedupes against the first week's.
+    const dateMatch = stripped.match(new RegExp('^' + matchedDay + '\\s+(\\d+)', 'i'));
+    const date = dateMatch ? dateMatch[1] : null;
 
     if (high) {
-      // De-dupe: same day name shouldn't appear twice
-      if (!forecast.find((f) => f.day === dayLabel)) {
+      // De-dupe: same (day, date) shouldn't appear twice. Two different
+      // "Mon" entries are valid when their dates differ.
+      if (!forecast.find((f) => f.day === dayLabel && f.date === date)) {
         forecast.push({
           day: dayLabel,
+          date,
           high,
           low: low || null,
           condition: condition || null,
