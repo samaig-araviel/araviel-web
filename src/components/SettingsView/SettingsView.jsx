@@ -33,7 +33,8 @@ import {
   DEFAULT_SETTINGS,
 } from '../../services/settings';
 import { createPackCheckoutSession } from '../../services/subscription';
-import { listMyShares, revokeConversationShare } from '../../services/api';
+import { listMyShares, revokeConversationShare, deleteAllConversations } from '../../services/api';
+import { setConversations as setConversationsAction } from '../../store/slices/chatSlice';
 import { useToast } from '../Toast/Toast';
 import { logger } from '../../lib/logger';
 import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
@@ -43,6 +44,7 @@ import {
   ChevronLeftIcon,
   SunIcon,
   MoonIcon,
+  TrashIcon,
   MonitorIcon,
   UserIcon,
   SettingsIcon,
@@ -270,10 +272,13 @@ export default function SettingsView() {
   const avatarInputRef = useRef(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
-  // Credit balance state
   const [creditBalance, setCreditBalance] = useState(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
   const [creditsError, setCreditsError] = useState(null);
+
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
+  const { showError, showSuccess } = useToast();
 
   // Pack selection state
   const [selectedPack, setSelectedPack] = useState(null);
@@ -385,6 +390,27 @@ export default function SettingsView() {
 
   const handlePackSelect = (packType) => {
     setSelectedPack(packType);
+  };
+
+  const handleDeleteAllConversations = async () => {
+    if (deletingAll) return;
+    setDeletingAll(true);
+    try {
+      const { trashed } = await deleteAllConversations();
+      dispatch(setConversationsAction({ conversations: [], total: 0 }));
+      window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
+      showSuccess(
+        trashed > 0
+          ? `${trashed} conversation${trashed === 1 ? '' : 's'} moved to Recently deleted.`
+          : 'No conversations to delete.'
+      );
+      setShowDeleteAllConfirm(false);
+    } catch (err) {
+      logger.error('Delete all conversations failed', err, { route: 'settings.deleteAll' });
+      showError(err?.userMessage || "Couldn't delete your conversations. Try again.");
+    } finally {
+      setDeletingAll(false);
+    }
   };
 
   const handlePackContinue = async () => {
@@ -1485,10 +1511,17 @@ export default function SettingsView() {
                       <div className={styles.dangerInfo}>
                         <span className={styles.dangerLabel}>Delete all conversations</span>
                         <span className={styles.dangerDesc}>
-                          Permanently remove all conversation history. This cannot be undone.
+                          Move every conversation to Recently deleted. You have 15 days to restore
+                          them before they&rsquo;re permanently removed.
                         </span>
                       </div>
-                      <button className={styles.dangerBtn}>Delete all</button>
+                      <button
+                        className={styles.dangerBtn}
+                        onClick={() => setShowDeleteAllConfirm(true)}
+                        disabled={deletingAll}
+                      >
+                        {deletingAll ? 'Deleting…' : 'Delete all'}
+                      </button>
                     </div>
                     <div className={styles.dangerCard}>
                       <div className={styles.dangerInfo}>
@@ -1514,6 +1547,40 @@ export default function SettingsView() {
           onContinue={handlePackContinue}
           isLoading={packLoading}
         />
+      )}
+
+      {showDeleteAllConfirm && (
+        <div
+          className={styles.confirmOverlay}
+          onClick={() => (deletingAll ? null : setShowDeleteAllConfirm(false))}
+        >
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>
+              <TrashIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Delete all conversations?</h3>
+            <p className={styles.confirmDesc}>
+              Every conversation will move to <strong>Recently deleted</strong>. You have 15 days to
+              restore them before they&rsquo;re permanently removed.
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setShowDeleteAllConfirm(false)}
+                disabled={deletingAll}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={handleDeleteAllConversations}
+                disabled={deletingAll}
+              >
+                {deletingAll ? 'Deleting…' : 'Delete all'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
