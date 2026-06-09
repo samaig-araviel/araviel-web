@@ -57,6 +57,8 @@ import ProjectPickerModal from '../ProjectPickerModal';
 import ShareModal from '../ShareModal/ShareModal';
 import styles from './ConversationsView.module.css';
 
+const CONVERSATIONS_PAGE_SIZE = 15;
+
 const TABS = [
   { id: 'all', label: 'All' },
   { id: 'starred', label: 'Starred' },
@@ -283,12 +285,14 @@ function formatRelativeDeleted(iso) {
 
 function TrashList({
   conversations,
+  total = 0,
   loading,
   error,
   restoringId,
   onRestore,
   onPurgeRequest,
   onRetry,
+  onLoadMore,
   selectMode,
   selectedIds,
   onToggleSelect,
@@ -440,6 +444,23 @@ function TrashList({
           </li>
         );
       })}
+      {conversations.length < total && (
+        <li className={styles.trashLoadMoreWrapper}>
+          {loading ? (
+            <div className={styles.loadingMore}>
+              <div className={styles.loadingDots}>
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+          ) : (
+            <button type="button" className={styles.loadMoreBtn} onClick={onLoadMore}>
+              Load more conversations
+            </button>
+          )}
+        </li>
+      )}
     </ul>
   );
 }
@@ -473,6 +494,7 @@ export default function ConversationsView() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [trashedConversations, setTrashedConversations] = useState(null);
+  const [trashedTotal, setTrashedTotal] = useState(0);
   const [trashLoading, setTrashLoading] = useState(false);
   const [trashError, setTrashError] = useState(null);
   const [restoringId, setRestoringId] = useState(null);
@@ -619,21 +641,33 @@ export default function ConversationsView() {
     }
   }, [projects.length, dispatch, showError, isAuthenticated]);
 
-  const loadTrash = useCallback(() => {
-    if (!isAuthenticated) return;
-    setTrashLoading(true);
-    setTrashError(null);
-    fetchTrashedConversations()
-      .then((data) => setTrashedConversations(data.conversations || []))
-      .catch((err) =>
-        setTrashError(err?.userMessage || "Couldn't load recently deleted conversations.")
-      )
-      .finally(() => setTrashLoading(false));
-  }, [isAuthenticated]);
+  const loadTrash = useCallback(
+    (offset = 0) => {
+      if (!isAuthenticated) return;
+      setTrashLoading(true);
+      setTrashError(null);
+      fetchTrashedConversations(CONVERSATIONS_PAGE_SIZE, offset)
+        .then((data) => {
+          const rows = data.conversations || [];
+          setTrashedTotal(data.total ?? rows.length);
+          setTrashedConversations((prev) => (offset === 0 ? rows : [...(prev || []), ...rows]));
+        })
+        .catch((err) =>
+          setTrashError(err?.userMessage || "Couldn't load recently deleted conversations.")
+        )
+        .finally(() => setTrashLoading(false));
+    },
+    [isAuthenticated]
+  );
+
+  const handleLoadMoreTrash = useCallback(() => {
+    if (trashLoading) return;
+    loadTrash((trashedConversations || []).length);
+  }, [trashLoading, loadTrash, trashedConversations]);
 
   useEffect(() => {
     if (activeTab === 'trash' && trashedConversations === null) {
-      loadTrash();
+      loadTrash(0);
     }
   }, [activeTab, trashedConversations, loadTrash]);
 
@@ -644,6 +678,7 @@ export default function ConversationsView() {
       try {
         await restoreConversation(chatId);
         setTrashedConversations((prev) => (prev || []).filter((c) => c.id !== chatId));
+        setTrashedTotal((prev) => Math.max(0, prev - 1));
         window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
         showSuccess('Conversation restored');
       } catch (err) {
@@ -801,8 +836,6 @@ export default function ConversationsView() {
       showSuccess('Conversations removed from project.');
     }
   };
-
-  const CONVERSATIONS_PAGE_SIZE = 15;
 
   const loadConversations = useCallback(
     async (offset = 0) => {
@@ -962,10 +995,11 @@ export default function ConversationsView() {
     setTrashedConversations((prev) =>
       (prev || []).filter((c) => failures.includes(c.id) || !ids.includes(c.id))
     );
+    const restoredCount = ids.length - failures.length;
+    setTrashedTotal((prev) => Math.max(0, prev - restoredCount));
     setSelectedIds(new Set(failures));
     if (failures.length === 0) setSelectMode(false);
     window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
-    const restoredCount = ids.length - failures.length;
     if (restoredCount > 0) {
       showSuccess(`${restoredCount} conversation${restoredCount === 1 ? '' : 's'} restored.`);
     }
@@ -994,6 +1028,8 @@ export default function ConversationsView() {
       setTrashedConversations((prev) =>
         (prev || []).filter((c) => failures.includes(c.id) || !ids.includes(c.id))
       );
+      const purgedCount = ids.length - failures.length;
+      setTrashedTotal((prev) => Math.max(0, prev - purgedCount));
       setSelectedIds((prev) => {
         const next = new Set(prev);
         ids.forEach((id) => {
@@ -1002,7 +1038,6 @@ export default function ConversationsView() {
         return next;
       });
       setPurgeTargetIds(null);
-      const purgedCount = ids.length - failures.length;
       if (purgedCount > 0 && failures.length === 0) {
         setSelectMode(false);
       }
@@ -1572,12 +1607,14 @@ export default function ConversationsView() {
               {activeTab === 'trash' ? (
                 <TrashList
                   conversations={trashedConversations}
+                  total={trashedTotal}
                   loading={trashLoading}
                   error={trashError}
                   restoringId={restoringId}
                   onRestore={handleRestoreConversation}
                   onPurgeRequest={setPurgeTargetIds}
-                  onRetry={loadTrash}
+                  onRetry={() => loadTrash(0)}
+                  onLoadMore={handleLoadMoreTrash}
                   selectMode={selectMode}
                   selectedIds={selectedIds}
                   onToggleSelect={toggleSelect}

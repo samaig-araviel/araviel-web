@@ -216,8 +216,8 @@ export function deleteAllConversations() {
   });
 }
 
-export function fetchTrashedConversations() {
-  return apiFetch(`/api/conversations/trash`, {
+export function fetchTrashedConversations(limit = 15, offset = 0) {
+  return apiFetch(`/api/conversations/trash?limit=${limit}&offset=${offset}`, {
     errorContext: 'conversations.trash.list',
   });
 }

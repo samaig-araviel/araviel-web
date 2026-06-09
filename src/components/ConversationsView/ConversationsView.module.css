@@ -1656,3 +1656,10 @@
 .trashMenuItemDanger:hover {
   background-color: rgba(239, 68, 68, 0.08);
 }
+
+.trashLoadMoreWrapper {
+  list-style: none;
+  padding: 12px 0 0;
+  display: flex;
+  justify-content: center;
+}
