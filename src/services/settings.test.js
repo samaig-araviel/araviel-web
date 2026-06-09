@@ -23,7 +23,6 @@ describe('settings service', () => {
         'webSearchDefault',
         'imageQualityDefault',
         'enableFollowUps',
-        'enableAnalytics',
         'locationMetadata',
         'notifyNewFeatures',
         'notifyUsageLimits',
@@ -54,7 +53,6 @@ describe('settings service', () => {
       expect(DEFAULT_SETTINGS.sendWithEnter).toBe(true);
       expect(DEFAULT_SETTINGS.enableReasoning).toBe(false);
       expect(DEFAULT_SETTINGS.enableFollowUps).toBe(true);
-      expect(DEFAULT_SETTINGS.enableAnalytics).toBe(true);
       expect(DEFAULT_SETTINGS.locationMetadata).toBe(false);
       expect(DEFAULT_SETTINGS.notifyNewFeatures).toBe(true);
       expect(DEFAULT_SETTINGS.notifyUsageLimits).toBe(true);

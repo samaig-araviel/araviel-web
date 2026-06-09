@@ -28,6 +28,8 @@ import {
   bulkDeleteImportedConversations,
   updateConversation,
   fetchProjects as fetchProjectsApi,
+  fetchTrashedConversations,
+  restoreConversation,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import useDeleteConversation from '../../hooks/useDeleteConversation';
@@ -57,6 +59,7 @@ const TABS = [
   { id: 'all', label: 'All' },
   { id: 'starred', label: 'Starred' },
   { id: 'archived', label: 'Archived' },
+  { id: 'trash', label: 'Recently deleted' },
 ];
 
 function groupConversationsByTime(conversations) {
@@ -264,6 +267,95 @@ function useItemMenu(
 
 const IMPORTED_CONTEXT_KEY = 'araviel-imported-context-providers';
 
+function formatRelativeDeleted(iso) {
+  const ms = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function TrashList({ conversations, loading, error, restoringId, onRestore, onRetry }) {
+  if (loading && conversations === null) {
+    return (
+      <div className={styles.skeleton}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className={styles.skeletonItem}>
+            <div className={styles.skeletonContent}>
+              <div className={styles.skeletonTitle} style={{ width: `${45 + ((i * 11) % 30)}%` }} />
+              <div className={styles.skeletonSub} style={{ width: `${25 + ((i * 7) % 20)}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.empty}>
+        <div className={styles.emptyIcon}>
+          <TrashIcon />
+        </div>
+        <h3 className={styles.emptyTitle}>Couldn&rsquo;t load recently deleted</h3>
+        <p className={styles.emptyDesc}>{error}</p>
+        <button className={styles.emptyAction} onClick={onRetry}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  if (!conversations || conversations.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <div className={styles.emptyIcon}>
+          <TrashIcon />
+        </div>
+        <h3 className={styles.emptyTitle}>Nothing in the bin</h3>
+        <p className={styles.emptyDesc}>
+          Conversations you delete will appear here for 15 days before they&rsquo;re permanently
+          removed.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <ul className={styles.trashList}>
+      {conversations.map((conv) => {
+        const isRestoring = restoringId === conv.id;
+        const daysLeft = conv.daysRemaining ?? 0;
+        return (
+          <li key={conv.id} className={styles.trashRow}>
+            <div className={styles.trashMeta}>
+              <span className={styles.trashTitle}>{conv.title || 'Untitled conversation'}</span>
+              <span className={styles.trashSub}>
+                Deleted {formatRelativeDeleted(conv.deletedAt)} ·{' '}
+                <span className={styles.trashDaysLeft}>
+                  {daysLeft} day{daysLeft === 1 ? '' : 's'} left
+                </span>
+              </span>
+            </div>
+            <button
+              type="button"
+              className={styles.trashRestoreBtn}
+              onClick={() => onRestore(conv.id)}
+              disabled={isRestoring}
+            >
+              {isRestoring ? 'Restoring…' : 'Restore'}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function getImportedProviders(conversations) {
   const providerMap = new Map();
   for (const conv of conversations) {
@@ -292,6 +384,10 @@ export default function ConversationsView() {
   const [activeSection, setActiveSection] = useState('my-chats');
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [trashedConversations, setTrashedConversations] = useState(null);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [trashError, setTrashError] = useState(null);
+  const [restoringId, setRestoringId] = useState(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -424,7 +520,6 @@ export default function ConversationsView() {
     localStorage.setItem(IMPORTED_CONTEXT_KEY, JSON.stringify(contextProviders));
   }, [contextProviders]);
 
-  // Ensure projects are loaded (authenticated users only)
   useEffect(() => {
     if (isAuthenticated && projects.length === 0) {
       fetchProjectsApi()
@@ -432,6 +527,42 @@ export default function ConversationsView() {
         .catch(() => showError('Could not load projects.'));
     }
   }, [projects.length, dispatch, showError, isAuthenticated]);
+
+  const loadTrash = useCallback(() => {
+    if (!isAuthenticated) return;
+    setTrashLoading(true);
+    setTrashError(null);
+    fetchTrashedConversations()
+      .then((data) => setTrashedConversations(data.conversations || []))
+      .catch((err) =>
+        setTrashError(err?.userMessage || "Couldn't load recently deleted conversations.")
+      )
+      .finally(() => setTrashLoading(false));
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (activeTab === 'trash' && trashedConversations === null) {
+      loadTrash();
+    }
+  }, [activeTab, trashedConversations, loadTrash]);
+
+  const handleRestoreConversation = useCallback(
+    async (chatId) => {
+      if (restoringId) return;
+      setRestoringId(chatId);
+      try {
+        await restoreConversation(chatId);
+        setTrashedConversations((prev) => (prev || []).filter((c) => c.id !== chatId));
+        window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
+        showSuccess('Conversation restored');
+      } catch (err) {
+        showError(err?.userMessage || "Couldn't restore this conversation.");
+      } finally {
+        setRestoringId(null);
+      }
+    },
+    [restoringId, showError, showSuccess]
+  );
 
   const handleAddToProject = (chatId) => {
     menu.closeMenu();
@@ -1157,18 +1288,22 @@ export default function ConversationsView() {
                   </button>
                 ))}
               </div>
-              <button
-                className={`${styles.selectToggle} ${selectMode ? styles.selectToggleActive : ''}`}
-                onClick={() => {
-                  if (selectMode) {
-                    exitSelectMode();
-                  } else {
-                    setSelectMode(true);
-                  }
-                }}
-              >
-                {selectMode ? 'Cancel' : 'Select'}
-              </button>
+              {activeTab !== 'trash' && (
+                <button
+                  className={`${styles.selectToggle} ${
+                    selectMode ? styles.selectToggleActive : ''
+                  }`}
+                  onClick={() => {
+                    if (selectMode) {
+                      exitSelectMode();
+                    } else {
+                      setSelectMode(true);
+                    }
+                  }}
+                >
+                  {selectMode ? 'Cancel' : 'Select'}
+                </button>
+              )}
             </div>
 
             {/* Selection action bar */}
@@ -1234,9 +1369,17 @@ export default function ConversationsView() {
               </div>
             )}
 
-            {/* Conversation list */}
             <div className={styles.list} ref={listRef}>
-              {conversationsLoading && conversations.length === 0 ? (
+              {activeTab === 'trash' ? (
+                <TrashList
+                  conversations={trashedConversations}
+                  loading={trashLoading}
+                  error={trashError}
+                  restoringId={restoringId}
+                  onRestore={handleRestoreConversation}
+                  onRetry={loadTrash}
+                />
+              ) : conversationsLoading && conversations.length === 0 ? (
                 <div className={styles.skeleton}>
                   {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div key={i} className={styles.skeletonItem}>

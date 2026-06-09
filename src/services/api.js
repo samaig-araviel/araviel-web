@@ -209,6 +209,26 @@ export function deleteConversation(conversationId) {
   });
 }
 
+export function deleteAllConversations() {
+  return apiFetch(`/api/conversations?scope=all`, {
+    method: 'DELETE',
+    errorContext: 'conversations.deleteAll',
+  });
+}
+
+export function fetchTrashedConversations() {
+  return apiFetch(`/api/conversations/trash`, {
+    errorContext: 'conversations.trash.list',
+  });
+}
+
+export function restoreConversation(conversationId) {
+  return apiFetch(`/api/conversations/${conversationId}/restore`, {
+    method: 'POST',
+    errorContext: 'conversations.restore',
+  });
+}
+
 export function fetchConversation(conversationId) {
   return apiFetch(`/api/conversations/${conversationId}`, {
     errorContext: 'conversations.get',
