@@ -959,6 +959,22 @@ export default function ConversationsView() {
     [filteredConversations]
   );
 
+  const filteredImportedConversations = useMemo(() => {
+    return importedConversations.filter((chat) => {
+      if (activeImportProvider !== 'all' && chat.provider !== activeImportProvider) return false;
+      if (chat.isArchived) return false;
+      if (searchQuery.trim()) {
+        return chat.title?.toLowerCase().includes(searchQuery.toLowerCase());
+      }
+      return true;
+    });
+  }, [importedConversations, activeImportProvider, searchQuery]);
+
+  const groupedImportedConversations = useMemo(
+    () => groupConversationsByTime(filteredImportedConversations),
+    [filteredImportedConversations]
+  );
+
   const selectAll = () => {
     let source;
     if (activeSection === 'imported') {
@@ -1058,22 +1074,6 @@ export default function ConversationsView() {
   );
 
   // Imported conversations filtering
-  const filteredImportedConversations = useMemo(() => {
-    return importedConversations.filter((chat) => {
-      if (activeImportProvider !== 'all' && chat.provider !== activeImportProvider) return false;
-      if (chat.isArchived) return false;
-      if (searchQuery.trim()) {
-        return chat.title?.toLowerCase().includes(searchQuery.toLowerCase());
-      }
-      return true;
-    });
-  }, [importedConversations, activeImportProvider, searchQuery]);
-
-  const groupedImportedConversations = useMemo(
-    () => groupConversationsByTime(filteredImportedConversations),
-    [filteredImportedConversations]
-  );
-
   const handleImportedChatClick = async (chat) => {
     if (selectMode) {
       toggleSelect(chat.id);
