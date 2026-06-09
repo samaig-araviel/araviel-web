@@ -1,13 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setCurrentChat, setMessages } from '../store/slices/chatSlice';
 import { fetchConversationMessages } from '../services/api';
 import { getGeneratedImages } from '../services/imageGeneration';
 
-/**
- * Maps raw backend messages to the shape the frontend expects,
- * including restoring generatedImages from backend data, localStorage, or content markdown.
- */
 function mapMessages(rawMessages, storedImages) {
   return (rawMessages || []).map((msg) => {
     const base = {
@@ -21,16 +17,10 @@ function mapMessages(rawMessages, storedImages) {
       let generatedImages = msg.generatedImages || [];
 
       if (generatedImages.length === 0) {
-        // Primary: match by messageId (deterministic)
-        let matched = storedImages.filter(
-          (img) => img.messageId && img.messageId === msg.id
-        );
-        // Fallback: timestamp proximity
+        let matched = storedImages.filter((img) => img.messageId && img.messageId === msg.id);
         if (matched.length === 0) {
           const msgTime = new Date(msg.createdAt).getTime();
-          matched = storedImages.filter(
-            (img) => Math.abs(img.createdAt - msgTime) < 30000
-          );
+          matched = storedImages.filter((img) => Math.abs(img.createdAt - msgTime) < 30000);
         }
         if (matched.length > 0) {
           generatedImages = matched.map((img) => ({
@@ -43,7 +33,6 @@ function mapMessages(rawMessages, storedImages) {
         }
       }
 
-      // Last resort: extract images from message content markdown
       if (generatedImages.length === 0 && msg.content) {
         const imgRe = /!\[Generated image[^\]]*\]\(([^)]+)\)/g;
         let m;
@@ -92,28 +81,25 @@ function mapMessages(rawMessages, storedImages) {
   });
 }
 
-/**
- * Hook that provides a function to load a conversation by ID.
- * Sets currentChatId in Redux and fetches + maps messages from the API.
- */
 export default function useLoadConversation() {
   const dispatch = useDispatch();
+  const [notFound, setNotFound] = useState(false);
 
   const loadConversation = useCallback(
     async (chatId) => {
+      setNotFound(false);
       dispatch(setCurrentChat(chatId));
       dispatch(setMessages([]));
       try {
         const data = await fetchConversationMessages(chatId);
         const storedImages = getGeneratedImages();
-        const mapped = mapMessages(data.messages, storedImages);
-        dispatch(setMessages(mapped));
-      } catch {
-        // Fail silently — conversation will appear empty
+        dispatch(setMessages(mapMessages(data.messages, storedImages)));
+      } catch (err) {
+        if (err?.status === 404) setNotFound(true);
       }
     },
     [dispatch]
   );
 
-  return loadConversation;
+  return { loadConversation, notFound };
 }

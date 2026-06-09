@@ -1328,9 +1328,6 @@ export default function ProjectsView() {
         </div>
       )}
 
-      {/* Delete-conversation confirmation — mirrors the project delete
-          modal so the in-project UX is consistent with the project-level
-          one. Replaces a previous window.confirm() prompt. */}
       {convDeleteConfirm && (
         <div className={styles.modalOverlay} onClick={() => setConvDeleteConfirm(null)}>
           <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
@@ -1356,21 +1353,16 @@ export default function ProjectsView() {
                 onClick={async () => {
                   const convId = convDeleteConfirm.id;
                   setConvDeleteConfirm(null);
-                  // Optimistically drop from the project-local list. The
-                  // shared hook owns the global Redux + backend round-trip
-                  // and, on failure, will restore the global list and toast.
                   setConversations((prev) => prev.filter((c) => c.id !== convId));
                   const ok = await deleteConversation(convId);
                   if (!ok) {
-                    // Hook reverted the global state; sync the project
-                    // view back in so the row reappears here too.
                     try {
                       const data = await fetchConversations(100, 0, {
                         projectId: project.id,
                       });
                       setConversations(data.conversations || []);
                     } catch {
-                      // Silent — the toast from the hook already covers it.
+                      /* hook already toasted */
                     }
                   }
                 }}
