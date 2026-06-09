@@ -1471,22 +1471,6 @@ export default function SettingsView() {
                   </div>
 
                   <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Usage analytics</span>
-                        <span className={styles.toggleDesc}>
-                          Help improve Araviel by sharing anonymous usage data.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.enableAnalytics}
-                        onChange={(v) => updateSetting('enableAnalytics', v)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Shared chats */}
-                  <div className={styles.fieldGroup}>
                     <label className={styles.fieldLabel}>Shared chats</label>
                     <p className={styles.fieldLabelDesc}>
                       Links to conversations you&rsquo;ve shared publicly. Unsharing revokes the
