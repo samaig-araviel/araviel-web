@@ -216,8 +216,8 @@ export function deleteAllConversations() {
   });
 }
 
-export function fetchTrashedConversations() {
-  return apiFetch(`/api/conversations/trash`, {
+export function fetchTrashedConversations(limit = 15, offset = 0) {
+  return apiFetch(`/api/conversations/trash?limit=${limit}&offset=${offset}`, {
     errorContext: 'conversations.trash.list',
   });
 }
@@ -226,6 +226,13 @@ export function restoreConversation(conversationId) {
   return apiFetch(`/api/conversations/${conversationId}/restore`, {
     method: 'POST',
     errorContext: 'conversations.restore',
+  });
+}
+
+export function purgeConversation(conversationId) {
+  return apiFetch(`/api/conversations/${conversationId}/purge`, {
+    method: 'DELETE',
+    errorContext: 'conversations.purge',
   });
 }
 
