@@ -229,6 +229,13 @@ export function restoreConversation(conversationId) {
   });
 }
 
+export function purgeConversation(conversationId) {
+  return apiFetch(`/api/conversations/${conversationId}/purge`, {
+    method: 'DELETE',
+    errorContext: 'conversations.purge',
+  });
+}
+
 export function fetchConversation(conversationId) {
   return apiFetch(`/api/conversations/${conversationId}`, {
     errorContext: 'conversations.get',

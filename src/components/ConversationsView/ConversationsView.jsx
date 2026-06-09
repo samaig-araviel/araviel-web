@@ -30,6 +30,7 @@ import {
   fetchProjects as fetchProjectsApi,
   fetchTrashedConversations,
   restoreConversation,
+  purgeConversation,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import useDeleteConversation from '../../hooks/useDeleteConversation';
@@ -48,6 +49,7 @@ import {
   LinkIcon,
   ImportIcon,
   ProjectsIcon,
+  RefreshIcon,
 } from '../Icons';
 import { getProviderLogo } from '../getProviderLogo';
 import ImportConversationsModal from '../ImportConversationsModal';
@@ -279,7 +281,27 @@ function formatRelativeDeleted(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function TrashList({ conversations, loading, error, restoringId, onRestore, onRetry }) {
+function TrashList({
+  conversations,
+  loading,
+  error,
+  restoringId,
+  onRestore,
+  onPurgeRequest,
+  onRetry,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
+}) {
+  const [openMenuId, setOpenMenuId] = useState(null);
+
+  useEffect(() => {
+    if (!openMenuId) return;
+    const close = () => setOpenMenuId(null);
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [openMenuId]);
+
   if (loading && conversations === null) {
     return (
       <div className={styles.skeleton}>
@@ -329,9 +351,39 @@ function TrashList({ conversations, loading, error, restoringId, onRestore, onRe
     <ul className={styles.trashList}>
       {conversations.map((conv) => {
         const isRestoring = restoringId === conv.id;
+        const isSelected = selectMode && selectedIds?.has(conv.id);
         const daysLeft = conv.daysRemaining ?? 0;
+        const handleRowClick = () => {
+          if (selectMode) onToggleSelect(conv.id);
+        };
         return (
-          <li key={conv.id} className={styles.trashRow}>
+          <li
+            key={conv.id}
+            className={`${styles.trashRow} ${isSelected ? styles.trashRowSelected : ''} ${
+              selectMode ? styles.trashRowSelectMode : ''
+            }`}
+            onClick={handleRowClick}
+          >
+            {selectMode && (
+              <div className={styles.checkboxArea}>
+                <div className={`${styles.checkbox} ${isSelected ? styles.checkboxChecked : ''}`}>
+                  {isSelected && (
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            )}
             <div className={styles.trashMeta}>
               <span className={styles.trashTitle}>{conv.title || 'Untitled conversation'}</span>
               <span className={styles.trashSub}>
@@ -341,14 +393,50 @@ function TrashList({ conversations, loading, error, restoringId, onRestore, onRe
                 </span>
               </span>
             </div>
-            <button
-              type="button"
-              className={styles.trashRestoreBtn}
-              onClick={() => onRestore(conv.id)}
-              disabled={isRestoring}
-            >
-              {isRestoring ? 'Restoring…' : 'Restore'}
-            </button>
+            {!selectMode && (
+              <div className={styles.trashRowActions}>
+                <button
+                  type="button"
+                  className={styles.trashRestoreBtn}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRestore(conv.id);
+                  }}
+                  disabled={isRestoring}
+                >
+                  {isRestoring ? 'Restoring…' : 'Restore'}
+                </button>
+                <div className={styles.trashMenuWrapper}>
+                  <button
+                    type="button"
+                    className={styles.trashMenuBtn}
+                    aria-label="More actions"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenMenuId((prev) => (prev === conv.id ? null : conv.id));
+                    }}
+                  >
+                    <MoreVerticalIcon />
+                  </button>
+                  {openMenuId === conv.id && (
+                    <div className={styles.trashMenu} onMouseDown={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className={`${styles.trashMenuItem} ${styles.trashMenuItemDanger}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuId(null);
+                          onPurgeRequest([conv.id]);
+                        }}
+                      >
+                        <TrashIcon />
+                        <span>Delete permanently</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </li>
         );
       })}
@@ -391,6 +479,9 @@ export default function ConversationsView() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [purgeTargetIds, setPurgeTargetIds] = useState(null);
+  const [purging, setPurging] = useState(false);
+  const [bulkRestoring, setBulkRestoring] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importedConversations, setImportedConversations] = useState([]);
   const [importedLoading, setImportedLoading] = useState(false);
@@ -836,10 +927,100 @@ export default function ConversationsView() {
   );
 
   const selectAll = () => {
-    const source =
-      activeSection === 'imported' ? filteredImportedConversations : filteredConversations;
+    let source;
+    if (activeSection === 'imported') {
+      source = filteredImportedConversations;
+    } else if (activeTab === 'trash') {
+      source = trashedConversations || [];
+    } else {
+      source = filteredConversations;
+    }
     setSelectedIds(new Set(source.map((c) => c.id)));
   };
+
+  const selectableCount =
+    activeTab === 'trash'
+      ? (trashedConversations || []).length
+      : activeSection === 'imported'
+      ? filteredImportedConversations.length
+      : filteredConversations.length;
+
+  const handleBulkRestore = useCallback(async () => {
+    if (bulkRestoring) return;
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkRestoring(true);
+    const failures = [];
+    await Promise.all(
+      ids.map((id) =>
+        restoreConversation(id).catch(() => {
+          failures.push(id);
+        })
+      )
+    );
+    setBulkRestoring(false);
+    setTrashedConversations((prev) =>
+      (prev || []).filter((c) => failures.includes(c.id) || !ids.includes(c.id))
+    );
+    setSelectedIds(new Set(failures));
+    if (failures.length === 0) setSelectMode(false);
+    window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
+    const restoredCount = ids.length - failures.length;
+    if (restoredCount > 0) {
+      showSuccess(`${restoredCount} conversation${restoredCount === 1 ? '' : 's'} restored.`);
+    }
+    if (failures.length > 0) {
+      showError(
+        failures.length === ids.length
+          ? "Couldn't restore the selected conversations."
+          : `Couldn't restore ${failures.length} of ${ids.length}.`
+      );
+    }
+  }, [bulkRestoring, selectedIds, showError, showSuccess]);
+
+  const runPurge = useCallback(
+    async (ids) => {
+      if (purging || ids.length === 0) return;
+      setPurging(true);
+      const failures = [];
+      await Promise.all(
+        ids.map((id) =>
+          purgeConversation(id).catch(() => {
+            failures.push(id);
+          })
+        )
+      );
+      setPurging(false);
+      setTrashedConversations((prev) =>
+        (prev || []).filter((c) => failures.includes(c.id) || !ids.includes(c.id))
+      );
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => {
+          if (!failures.includes(id)) next.delete(id);
+        });
+        return next;
+      });
+      setPurgeTargetIds(null);
+      const purgedCount = ids.length - failures.length;
+      if (purgedCount > 0 && failures.length === 0) {
+        setSelectMode(false);
+      }
+      if (purgedCount > 0) {
+        showSuccess(
+          `${purgedCount} conversation${purgedCount === 1 ? '' : 's'} permanently deleted.`
+        );
+      }
+      if (failures.length > 0) {
+        showError(
+          failures.length === ids.length
+            ? "Couldn't permanently delete the selected conversations."
+            : `Couldn't delete ${failures.length} of ${ids.length}.`
+        );
+      }
+    },
+    [purging, showError, showSuccess]
+  );
 
   // Imported conversations filtering
   const filteredImportedConversations = useMemo(() => {
@@ -1288,76 +1469,94 @@ export default function ConversationsView() {
                   </button>
                 ))}
               </div>
-              {activeTab !== 'trash' && (
-                <button
-                  className={`${styles.selectToggle} ${
-                    selectMode ? styles.selectToggleActive : ''
-                  }`}
-                  onClick={() => {
-                    if (selectMode) {
-                      exitSelectMode();
-                    } else {
-                      setSelectMode(true);
-                    }
-                  }}
-                >
-                  {selectMode ? 'Cancel' : 'Select'}
-                </button>
-              )}
+              <button
+                className={`${styles.selectToggle} ${selectMode ? styles.selectToggleActive : ''}`}
+                onClick={() => {
+                  if (selectMode) {
+                    exitSelectMode();
+                  } else {
+                    setSelectMode(true);
+                  }
+                }}
+              >
+                {selectMode ? 'Cancel' : 'Select'}
+              </button>
             </div>
 
-            {/* Selection action bar */}
             {selectMode && (
               <div className={styles.selectionBar}>
                 <div className={styles.selectionLeft}>
                   <span className={styles.selectionCount}>{selectedIds.size} selected</span>
-                  {selectedIds.size < filteredConversations.length && (
+                  {selectedIds.size < selectableCount && (
                     <button className={styles.selectAllBtn} onClick={selectAll}>
                       Select all
                     </button>
                   )}
                 </div>
                 <div className={styles.selectionActions}>
-                  <button
-                    className={styles.selectionAction}
-                    onClick={() => hasSelection && handleBulkAddToProject()}
-                    disabled={!hasSelection}
-                    title="Add to project"
-                  >
-                    <ProjectsIcon />
-                  </button>
-                  <button
-                    className={styles.selectionAction}
-                    onClick={() => hasSelection && handleBulkRemoveFromProject()}
-                    disabled={!hasSelection}
-                    title="Remove from project"
-                  >
-                    <LinkIcon />
-                  </button>
-                  <button
-                    className={styles.selectionAction}
-                    onClick={() => hasSelection && toggleStar(selectedIds)}
-                    disabled={!hasSelection}
-                    title="Star"
-                  >
-                    <StarIcon />
-                  </button>
-                  <button
-                    className={styles.selectionAction}
-                    onClick={() => hasSelection && toggleArchive(selectedIds)}
-                    disabled={!hasSelection}
-                    title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
-                  >
-                    <ArchiveIcon />
-                  </button>
-                  <button
-                    className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
-                    onClick={() => hasSelection && handleBulkDelete()}
-                    disabled={!hasSelection}
-                    title="Delete"
-                  >
-                    <TrashIcon />
-                  </button>
+                  {activeTab === 'trash' ? (
+                    <>
+                      <button
+                        className={styles.selectionAction}
+                        onClick={() => hasSelection && handleBulkRestore()}
+                        disabled={!hasSelection || bulkRestoring}
+                        title="Restore"
+                      >
+                        <RefreshIcon />
+                      </button>
+                      <button
+                        className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                        onClick={() => hasSelection && setPurgeTargetIds([...selectedIds])}
+                        disabled={!hasSelection || purging}
+                        title="Delete permanently"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className={styles.selectionAction}
+                        onClick={() => hasSelection && handleBulkAddToProject()}
+                        disabled={!hasSelection}
+                        title="Add to project"
+                      >
+                        <ProjectsIcon />
+                      </button>
+                      <button
+                        className={styles.selectionAction}
+                        onClick={() => hasSelection && handleBulkRemoveFromProject()}
+                        disabled={!hasSelection}
+                        title="Remove from project"
+                      >
+                        <LinkIcon />
+                      </button>
+                      <button
+                        className={styles.selectionAction}
+                        onClick={() => hasSelection && toggleStar(selectedIds)}
+                        disabled={!hasSelection}
+                        title="Star"
+                      >
+                        <StarIcon />
+                      </button>
+                      <button
+                        className={styles.selectionAction}
+                        onClick={() => hasSelection && toggleArchive(selectedIds)}
+                        disabled={!hasSelection}
+                        title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
+                      >
+                        <ArchiveIcon />
+                      </button>
+                      <button
+                        className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                        onClick={() => hasSelection && handleBulkDelete()}
+                        disabled={!hasSelection}
+                        title="Delete"
+                      >
+                        <TrashIcon />
+                      </button>
+                    </>
+                  )}
                 </div>
                 <button
                   className={styles.selectionClose}
@@ -1377,7 +1576,11 @@ export default function ConversationsView() {
                   error={trashError}
                   restoringId={restoringId}
                   onRestore={handleRestoreConversation}
+                  onPurgeRequest={setPurgeTargetIds}
                   onRetry={loadTrash}
+                  selectMode={selectMode}
+                  selectedIds={selectedIds}
+                  onToggleSelect={toggleSelect}
                 />
               ) : conversationsLoading && conversations.length === 0 ? (
                 <div className={styles.skeleton}>
@@ -1683,6 +1886,44 @@ export default function ConversationsView() {
               <TrashIcon />
               <span>Delete</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {purgeTargetIds && purgeTargetIds.length > 0 && (
+        <div
+          className={styles.confirmOverlay}
+          onClick={() => (purging ? null : setPurgeTargetIds(null))}
+        >
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>
+              <TrashIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>
+              Permanently delete {purgeTargetIds.length} chat
+              {purgeTargetIds.length === 1 ? '' : 's'}?
+            </h3>
+            <p className={styles.confirmDesc}>
+              This skips the 15-day recovery window. The chat
+              {purgeTargetIds.length === 1 ? '' : 's'} and all messages will be removed immediately
+              and cannot be restored.
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setPurgeTargetIds(null)}
+                disabled={purging}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={() => runPurge(purgeTargetIds)}
+                disabled={purging}
+              >
+                {purging ? 'Deleting…' : 'Delete permanently'}
+              </button>
+            </div>
           </div>
         </div>
       )}
