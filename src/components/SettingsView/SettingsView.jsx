@@ -1407,21 +1407,6 @@ export default function SettingsView() {
                   <div className={styles.fieldGroup}>
                     <div className={styles.toggleRow}>
                       <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>New features & updates</span>
-                        <span className={styles.toggleDesc}>
-                          Get notified when new features or improvements are available.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.notifyNewFeatures}
-                        onChange={(v) => updateSetting('notifyNewFeatures', v)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
                         <span className={styles.toggleLabel}>Usage limit warnings</span>
                         <span className={styles.toggleDesc}>
                           Get alerted when you&apos;re approaching your credit or usage limits.
