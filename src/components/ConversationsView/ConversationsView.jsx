@@ -623,7 +623,7 @@ function SharedChatsTabPanel({
         <div className={styles.emptyIcon}>
           <ShareIcon />
         </div>
-        <h3 className={styles.emptyTitle}>Couldn&rsquo;t load shared chats</h3>
+        <h3 className={styles.emptyTitle}>Couldn&rsquo;t load shared conversations</h3>
         <p className={styles.emptyDesc}>{error}</p>
         <button type="button" className={styles.emptyAction} onClick={onRetry}>
           Try again
@@ -639,7 +639,7 @@ function SharedChatsTabPanel({
         <div className={styles.emptyIcon}>
           <ShareIcon />
         </div>
-        <h3 className={styles.emptyTitle}>No shared chats yet</h3>
+        <h3 className={styles.emptyTitle}>No shared conversations yet</h3>
         <p className={styles.emptyDesc}>
           When you share a conversation publicly, it&rsquo;ll appear here so you can manage every
           active link.
@@ -1511,7 +1511,7 @@ export default function ConversationsView() {
           menu.menuOpenId === chat.id ? styles.itemMenuBtnVisible : ''
         }`}
         onClick={(e) => menu.handleMenuToggle(e, chat.id)}
-        aria-label="Chat options"
+        aria-label="Conversation options"
       >
         <MoreVerticalIcon />
       </button>
@@ -1545,7 +1545,7 @@ export default function ConversationsView() {
             }}
           >
             <ArchiveIcon />
-            <span>{archivedIds.has(chat.id) ? 'Move to Chats' : 'Archive'}</span>
+            <span>{archivedIds.has(chat.id) ? 'Move to Conversations' : 'Archive'}</span>
           </button>
           {chat.projectId ? (
             <button
@@ -1670,7 +1670,7 @@ export default function ConversationsView() {
               e.stopPropagation();
               handleDeleteImported(chat.id);
             }}
-            aria-label="Delete imported chat"
+            aria-label="Delete imported conversation"
             title="Delete"
           >
             <TrashIcon />
@@ -1690,13 +1690,13 @@ export default function ConversationsView() {
       <div className={styles.page}>
         <div className={styles.inner}>
           <div className={styles.header}>
-            <h1 className={styles.title}>Chats</h1>
+            <h1 className={styles.title}>Conversations</h1>
           </div>
           <GuestGate
             icon={<ChatIcon />}
             title="Your conversations live here"
-            description="Sign in to save your chats, access conversation history, and pick up where you left off."
-            actionLabel="Sign in to view chats"
+            description="Sign in to save your conversations, access conversation history, and pick up where you left off."
+            actionLabel="Sign in to view conversations"
           />
         </div>
       </div>
@@ -1708,7 +1708,7 @@ export default function ConversationsView() {
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>
-          <h1 className={styles.title}>Chats</h1>
+          <h1 className={styles.title}>Conversations</h1>
           <div className={styles.headerActions}>
             <button className={styles.importBtn} onClick={() => setShowImportModal(true)}>
               <ImportIcon />
@@ -1722,7 +1722,7 @@ export default function ConversationsView() {
               }}
             >
               <PlusIcon />
-              <span>New chat</span>
+              <span>New conversation</span>
             </button>
           </div>
         </div>
@@ -1740,7 +1740,7 @@ export default function ConversationsView() {
             }}
           >
             <ChatIcon />
-            <span>My Chats</span>
+            <span>My Conversations</span>
           </button>
           <button
             className={`${styles.sectionTab} ${
@@ -1753,7 +1753,7 @@ export default function ConversationsView() {
             }}
           >
             <ImportIcon />
-            <span>Imported Chats</span>
+            <span>Imported Conversations</span>
           </button>
         </div>
 
@@ -1765,7 +1765,9 @@ export default function ConversationsView() {
           <input
             type="text"
             className={styles.searchInput}
-            placeholder={isImportedSection ? 'Search imported chats...' : 'Search your chats...'}
+            placeholder={
+              isImportedSection ? 'Search imported conversations...' : 'Search your conversations...'
+            }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -1886,7 +1888,7 @@ export default function ConversationsView() {
                         className={styles.selectionAction}
                         onClick={() => hasSelection && toggleArchive(selectedIds)}
                         disabled={!hasSelection}
-                        title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
+                        title={activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}
                       >
                         <ArchiveIcon />
                       </button>
@@ -1989,12 +1991,12 @@ export default function ConversationsView() {
                   </div>
                   <h3 className={styles.emptyTitle}>
                     {activeTab === 'starred'
-                      ? 'No starred chats'
+                      ? 'No starred conversations'
                       : activeTab === 'archived'
-                      ? 'No archived chats'
+                      ? 'No archived conversations'
                       : searchQuery
                       ? 'No results found'
-                      : 'No chats yet'}
+                      : 'No conversations yet'}
                   </h3>
                   <p className={styles.emptyDesc}>
                     {activeTab === 'starred'
@@ -2003,7 +2005,7 @@ export default function ConversationsView() {
                       ? 'Archived conversations will appear here.'
                       : searchQuery
                       ? 'Try a different search term.'
-                      : 'Start a new chat to begin a conversation.'}
+                      : 'Start a new conversation.'}
                   </p>
                   {!searchQuery && activeTab === 'all' && (
                     <button
@@ -2014,7 +2016,7 @@ export default function ConversationsView() {
                       }}
                     >
                       <PlusIcon />
-                      <span>New chat</span>
+                      <span>New conversation</span>
                     </button>
                   )}
                 </div>
@@ -2149,7 +2151,7 @@ export default function ConversationsView() {
                     className={styles.selectionAction}
                     onClick={() => hasSelection && toggleImportedArchive(selectedIds)}
                     disabled={!hasSelection}
-                    title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
+                    title={activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}
                   >
                     <ArchiveIcon />
                   </button>
@@ -2187,7 +2189,7 @@ export default function ConversationsView() {
                     <ImportIcon />
                   </div>
                   <h3 className={styles.emptyTitle}>
-                    {searchQuery ? 'No results found' : 'No imported chats yet'}
+                    {searchQuery ? 'No results found' : 'No imported conversations yet'}
                   </h3>
                   <p className={styles.emptyDesc}>
                     {searchQuery
@@ -2226,10 +2228,10 @@ export default function ConversationsView() {
               onClick={() =>
                 isImportedSection ? toggleImportedArchive(selectedIds) : toggleArchive(selectedIds)
               }
-              title={activeTab === 'archived' ? 'Move to Chats' : 'Archive'}
+              title={activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}
             >
               <ArchiveIcon />
-              <span>{activeTab === 'archived' ? 'Move to Chats' : 'Archive'}</span>
+              <span>{activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}</span>
             </button>
             <div className={styles.floatingDivider} />
             <button
@@ -2291,11 +2293,11 @@ export default function ConversationsView() {
               <TrashIcon />
             </div>
             <h3 className={styles.confirmTitle}>
-              Permanently delete {purgeTargetIds.length} chat
+              Permanently delete {purgeTargetIds.length} conversation
               {purgeTargetIds.length === 1 ? '' : 's'}?
             </h3>
             <p className={styles.confirmDesc}>
-              This skips the 15-day recovery window. The chat
+              This skips the 15-day recovery window. The conversation
               {purgeTargetIds.length === 1 ? '' : 's'} and all messages will be removed immediately
               and cannot be restored.
             </p>
@@ -2327,11 +2329,11 @@ export default function ConversationsView() {
               <TrashIcon />
             </div>
             <h3 className={styles.confirmTitle}>
-              Delete {selectedIds.size} chat{selectedIds.size > 1 ? 's' : ''}?
+              Delete {selectedIds.size} conversation{selectedIds.size > 1 ? 's' : ''}?
             </h3>
             <p className={styles.confirmDesc}>
-              This action is permanent and cannot be undone. All messages in the selected chat
-              {selectedIds.size > 1 ? 's' : ''} will be lost.
+              This action is permanent and cannot be undone. All messages in the selected
+              conversation{selectedIds.size > 1 ? 's' : ''} will be lost.
             </p>
             <div className={styles.confirmActions}>
               <button
@@ -2370,7 +2372,7 @@ export default function ConversationsView() {
             <div className={styles.confirmIcon}>
               <TrashIcon />
             </div>
-            <h3 className={styles.confirmTitle}>Delete this chat?</h3>
+            <h3 className={styles.confirmTitle}>Delete this conversation?</h3>
             <p className={styles.confirmDesc}>
               This action is permanent and cannot be undone. All messages in this conversation will
               be lost.
