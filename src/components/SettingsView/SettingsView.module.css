@@ -1322,140 +1322,133 @@
   opacity: 0.85;
 }
 
-/* ── Shared chats manager (Data & privacy section) ── */
+/* ── Shared chats stub (Data & privacy section) ── */
 
-.sharedChatsLoading {
+.sharedChatsStub {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 0 4px;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.sharedChatsSpinner {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid var(--border-color);
-  border-top-color: var(--text-primary);
-  animation: sharedChatsSpin 0.8s linear infinite;
-}
-
-@keyframes sharedChatsSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.sharedChatsError {
-  margin-top: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background-color: var(--bg-secondary);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color);
-  font-size: 13px;
-}
-
-.sharedChatsEmpty {
-  margin-top: 8px;
-  padding: 14px 16px;
-  border-radius: 10px;
-  border: 1px dashed var(--border-color);
-  color: var(--text-muted);
-  font-size: 13px;
-  text-align: center;
-}
-
-.sharedChatsList {
-  list-style: none;
-  margin: 10px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sharedChatsRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 14px;
-  padding: 12px 14px;
+  padding: 14px 16px;
+  margin-top: 4px;
+  background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  background-color: var(--bg-primary);
+  border-radius: 14px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.sharedChatsMeta {
+.sharedChatsStub:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+.sharedChatsStubIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.sharedChatsStubIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sharedChatsStubBody {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
   min-width: 0;
 }
 
-.sharedChatsTitle {
-  font-size: 13px;
+.sharedChatsStubTitle {
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 360px;
 }
 
-.sharedChatsSub {
-  font-size: 12px;
+.sharedChatsStubSub {
+  font-size: 12.5px;
   color: var(--text-muted);
+  line-height: 1.4;
 }
 
-.sharedChatsActions {
+.sharedChatsStubAction {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.sharedChatsViewLink {
-  padding: 6px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 12px;
+  gap: 4px;
+  padding: 8px 12px 8px 16px;
+  border-radius: 9px;
+  font-size: 12.5px;
   font-weight: 600;
-  text-decoration: none;
-  transition: all 0.15s ease;
-}
-
-.sharedChatsViewLink:hover {
-  background-color: var(--bg-hover);
   color: var(--text-primary);
-  border-color: var(--text-muted);
-}
-
-.sharedChatsUnshareBtn {
-  padding: 6px 12px;
-  border-radius: 8px;
+  background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
-.sharedChatsUnshareBtn:hover:not(:disabled) {
-  background-color: var(--bg-hover);
+.sharedChatsStubAction svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.sharedChatsStubAction:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+}
+
+.sharedChatsStubAction:hover:not(:disabled) svg {
   color: var(--text-primary);
+  transform: translateX(2px);
+}
+
+.sharedChatsStubAction:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sharedChatsStubRetry {
+  margin-top: 4px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.sharedChatsStubRetry:hover {
+  background-color: var(--bg-hover);
   border-color: var(--text-muted);
 }
 
-.sharedChatsUnshareBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+@media (max-width: 640px) {
+  .sharedChatsStub {
+    flex-wrap: wrap;
+  }
+
+  .sharedChatsStubAction {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* ── Usage limit threshold chips ── */

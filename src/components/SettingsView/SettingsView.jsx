@@ -33,8 +33,9 @@ import {
   DEFAULT_SETTINGS,
 } from '../../services/settings';
 import { createPackCheckoutSession } from '../../services/subscription';
-import { listMyShares, revokeConversationShare, deleteAllConversations } from '../../services/api';
+import { deleteAllConversations } from '../../services/api';
 import { setConversations as setConversationsAction } from '../../store/slices/chatSlice';
+import useSharedChats from '../../hooks/useSharedChats';
 import { useToast } from '../Toast/Toast';
 import { logger } from '../../lib/logger';
 import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
@@ -42,6 +43,7 @@ import { GuestGate } from '../GuestGate';
 import SubscriptionSummary from '../SubscriptionView/SubscriptionSummary';
 import {
   ChevronLeftIcon,
+  ChevronRightIcon,
   SunIcon,
   MoonIcon,
   TrashIcon,
@@ -50,6 +52,7 @@ import {
   SettingsIcon,
   EditIcon,
   GlobeIcon,
+  ShareIcon,
   ZapIcon,
 } from '../Icons';
 import styles from './SettingsView.module.css';
@@ -113,129 +116,66 @@ const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.userAgent
 const modKey = isMac ? '⌘' : 'Ctrl';
 
 /**
- * Manage the signed-in user's active share links. Mirrors Claude's
- * Settings > Privacy > Manage: a simple list of shared conversations with a
- * per-row "View" link (opens the public page) and "Unshare" button.
- *
- * Loading / empty / error states are rendered inline. The list is refetched
- * when the section mounts and after each successful unshare — no global state
- * needed.
+ * Compact entry point that summarises the user's active share links and
+ * routes them to `/shared` for the full management experience. The dedicated
+ * page is the source of truth — this stub only surfaces the count so the
+ * Data & privacy panel doesn't grow unbounded with every share.
  */
-function SharedChatsManager() {
-  const { showError, showSuccess } = useToast();
-  const [shares, setShares] = useState(null); // null = loading
-  const [loadError, setLoadError] = useState('');
-  const [revokingToken, setRevokingToken] = useState(null);
+function SharedChatsStub({ active }) {
+  const navigate = useNavigate();
+  const { shares, loading, error, refetch } = useSharedChats({ enabled: active });
+  const count = shares?.length ?? 0;
 
-  const loadShares = useCallback(async (signal) => {
-    try {
-      const data = await listMyShares();
-      if (signal?.aborted) return;
-      setShares(Array.isArray(data?.shares) ? data.shares : []);
-      setLoadError('');
-    } catch (err) {
-      if (signal?.aborted) return;
-      setShares([]);
-      setLoadError(err?.message || 'Failed to load shared chats');
-    }
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    loadShares(controller.signal);
-    return () => controller.abort();
-  }, [loadShares]);
-
-  const handleUnshare = useCallback(
-    async (share) => {
-      if (revokingToken) return;
-      setRevokingToken(share.shareToken);
-      try {
-        await revokeConversationShare(share.conversationId);
-        setShares((prev) => (prev || []).filter((s) => s.shareToken !== share.shareToken));
-        showSuccess('Conversation unshared');
-      } catch (err) {
-        showError(err?.message || 'Failed to unshare conversation');
-      } finally {
-        setRevokingToken(null);
-      }
-    },
-    [revokingToken, showError, showSuccess]
-  );
-
-  const formatDate = (iso) => {
-    try {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return '';
-      return d.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return '';
-    }
-  };
-
-  if (shares === null) {
-    return (
-      <div className={styles.sharedChatsLoading}>
-        <div className={styles.sharedChatsSpinner} />
-        <span>Loading shared chats…</span>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return <div className={styles.sharedChatsError}>{loadError}</div>;
-  }
-
-  if (shares.length === 0) {
-    return (
-      <div className={styles.sharedChatsEmpty}>You haven&rsquo;t shared any conversations yet.</div>
-    );
-  }
+  const handleManage = () => navigate('/shared');
 
   return (
-    <ul className={styles.sharedChatsList}>
-      {shares.map((share) => {
-        const url = `${window.location.origin}/share/${share.shareToken}`;
-        const isRevoking = revokingToken === share.shareToken;
-        return (
-          <li key={share.shareToken} className={styles.sharedChatsRow}>
-            <div className={styles.sharedChatsMeta}>
-              <span className={styles.sharedChatsTitle}>
-                {share.title || 'Untitled conversation'}
-              </span>
-              <span className={styles.sharedChatsSub}>
-                Shared {formatDate(share.createdAt)}
-                {typeof share.viewCount === 'number'
-                  ? ` · ${share.viewCount} view${share.viewCount === 1 ? '' : 's'}`
-                  : ''}
-              </span>
-            </div>
-            <div className={styles.sharedChatsActions}>
-              <a
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.sharedChatsViewLink}
-              >
-                View
-              </a>
-              <button
-                type="button"
-                className={styles.sharedChatsUnshareBtn}
-                onClick={() => handleUnshare(share)}
-                disabled={isRevoking}
-              >
-                {isRevoking ? 'Unsharing…' : 'Unshare'}
-              </button>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <div className={styles.sharedChatsStub}>
+      <div className={styles.sharedChatsStubIcon}>
+        <ShareIcon />
+      </div>
+      <div className={styles.sharedChatsStubBody}>
+        {shares === null && loading ? (
+          <>
+            <span className={styles.sharedChatsStubTitle}>Loading shared chats…</span>
+            <span className={styles.sharedChatsStubSub}>
+              Fetching the conversations you&rsquo;ve shared publicly.
+            </span>
+          </>
+        ) : error ? (
+          <>
+            <span className={styles.sharedChatsStubTitle}>Couldn&rsquo;t load shared chats</span>
+            <button type="button" className={styles.sharedChatsStubRetry} onClick={refetch}>
+              Try again
+            </button>
+          </>
+        ) : count === 0 ? (
+          <>
+            <span className={styles.sharedChatsStubTitle}>No shared chats yet</span>
+            <span className={styles.sharedChatsStubSub}>
+              When you share a conversation publicly, it&rsquo;ll appear here.
+            </span>
+          </>
+        ) : (
+          <>
+            <span className={styles.sharedChatsStubTitle}>
+              {count} conversation{count === 1 ? '' : 's'} shared publicly
+            </span>
+            <span className={styles.sharedChatsStubSub}>
+              View, copy, or revoke any active link from one place.
+            </span>
+          </>
+        )}
+      </div>
+      <button
+        type="button"
+        className={styles.sharedChatsStubAction}
+        onClick={handleManage}
+        disabled={!!error}
+      >
+        <span>Manage</span>
+        <ChevronRightIcon />
+      </button>
+    </div>
   );
 }
 
@@ -1484,10 +1424,10 @@ export default function SettingsView() {
                   <div className={styles.fieldGroup}>
                     <label className={styles.fieldLabel}>Shared chats</label>
                     <p className={styles.fieldLabelDesc}>
-                      Links to conversations you&rsquo;ve shared publicly. Unsharing revokes the
-                      link immediately.
+                      Links to conversations you&rsquo;ve shared publicly. Manage every active link
+                      from the Shared chats page.
                     </p>
-                    <SharedChatsManager />
+                    <SharedChatsStub active={activeSection === 'data'} />
                   </div>
 
                   <div className={styles.dangerZone}>
