@@ -8,8 +8,6 @@ import {
   selectPeriodEnd,
   selectCancelAtPeriodEnd,
   selectSubscriptionStatus,
-  selectTextCredits,
-  selectImageCredits,
   selectPortalLoading,
   fetchSubscriptionThunk,
   createPortalThunk,
@@ -26,19 +24,6 @@ function getStatusLabel(tier, cancelAtPeriodEnd) {
   return { label: 'Active', className: styles.statusActive };
 }
 
-function getCreditColor(remaining, limit) {
-  if (limit === 0) return styles.creditHealthy;
-  const ratio = remaining / limit;
-  if (ratio > 0.5) return styles.creditHealthy;
-  if (ratio > 0.2) return styles.creditLow;
-  return styles.creditCritical;
-}
-
-function getCreditPct(remaining, limit) {
-  if (limit === 0) return 0;
-  return Math.min(100, Math.round((remaining / limit) * 100));
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return null;
   return new Date(dateStr).toLocaleDateString(undefined, {
@@ -48,19 +33,14 @@ function formatDate(dateStr) {
   });
 }
 
-function formatTime(dateStr) {
-  if (!dateStr) return null;
-  return new Date(dateStr).toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
 /**
- * Plan overview + quick actions + credit usage — the shared body of the
- * standalone `/subscription` page and the `subscription` section inside
- * Settings. Keeps layout wrapping (headers, hero, page chrome) out of scope
- * so host components can place this in either a full-page or section context.
+ * Plan overview + quick actions — the shared body of the standalone
+ * `/subscription` page and the `subscription` section inside Settings.
+ * Keeps layout wrapping (headers, hero, page chrome) out of scope so host
+ * components can place this in either a full-page or section context.
+ *
+ * Detailed credit usage lives on the dedicated Usage & credits page,
+ * reachable via the "View detailed usage" quick action.
  *
  * Fetches subscription data on mount when the user is authenticated and no
  * load has happened yet. Subsequent mounts rely on the Redux cache.
@@ -85,8 +65,6 @@ export default function SubscriptionSummary({
   const periodEnd = useSelector(selectPeriodEnd);
   const cancelAtPeriodEnd = useSelector(selectCancelAtPeriodEnd);
   const subscriptionStatus = useSelector(selectSubscriptionStatus);
-  const textCredits = useSelector(selectTextCredits);
-  const imageCredits = useSelector(selectImageCredits);
   const portalLoading = useSelector(selectPortalLoading);
 
   useEffect(() => {
@@ -111,23 +89,6 @@ export default function SubscriptionSummary({
   const isPaid = !isFree;
   const status = getStatusLabel(currentTier, cancelAtPeriodEnd);
   const price = tierInfo ? getDisplayPrice(tierInfo, billingCycle) : 0;
-
-  // Text credits
-  const monthlyLimit = textCredits?.monthlyLimit || 0;
-  const monthlyUsed = textCredits?.monthlyUsed || 0;
-  const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
-
-  // 3-hour session window
-  const windowLimit = textCredits?.windowLimit || 0;
-  const windowUsed = textCredits?.windowUsed || 0;
-  const windowRemaining = Math.max(0, windowLimit - windowUsed);
-  const windowResetAt = textCredits?.windowResetAt;
-
-  // Image credits
-  const imgRemaining = imageCredits?.remaining || 0;
-  const imgLimit = imageCredits?.limit || 0;
-  const packRemaining = imageCredits?.packRemaining || 0;
-  const cycleResetsAt = imageCredits?.cycleResetsAt;
 
   const tierBadgeClass =
     currentTier === 'pro'
@@ -215,76 +176,6 @@ export default function SubscriptionSummary({
             <button className={styles.secondaryBtn} onClick={() => navigate(usageLinkTo)}>
               View detailed usage
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Credit usage ── */}
-      <h2 className={styles.sectionTitle}>Credit Usage</h2>
-      <div className={styles.creditsCard}>
-        <div className={styles.creditSections}>
-          {/* Text credits (monthly) */}
-          <div className={styles.creditSection}>
-            <div className={styles.creditHeader}>
-              <span className={styles.creditLabel}>Text credits</span>
-              <span className={styles.creditCount}>
-                {monthlyRemaining} / {monthlyLimit} remaining
-              </span>
-            </div>
-            <div className={styles.creditBar}>
-              <div
-                className={`${styles.creditFill} ${getCreditColor(monthlyRemaining, monthlyLimit)}`}
-                style={{ width: `${getCreditPct(monthlyRemaining, monthlyLimit)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* 3-hour session window */}
-          <div className={styles.creditSection}>
-            <div className={styles.creditHeader}>
-              <span className={styles.creditLabel}>Session window</span>
-              <span className={styles.creditCount}>
-                {windowRemaining} / {windowLimit} remaining
-              </span>
-            </div>
-            <div className={styles.creditBar}>
-              <div
-                className={`${styles.creditFill} ${getCreditColor(windowRemaining, windowLimit)}`}
-                style={{ width: `${getCreditPct(windowRemaining, windowLimit)}%` }}
-              />
-            </div>
-            {windowResetAt && (
-              <span className={styles.creditMeta}>Resets at {formatTime(windowResetAt)}</span>
-            )}
-          </div>
-
-          <div className={styles.creditDivider} />
-
-          {/* Image credits */}
-          <div className={styles.creditSection}>
-            <div className={styles.creditHeader}>
-              <span className={styles.creditLabel}>Image credits</span>
-              <span className={styles.creditCount}>
-                {imgRemaining} / {imgLimit} remaining
-              </span>
-            </div>
-            <div className={styles.creditBar}>
-              <div
-                className={`${styles.creditFill} ${getCreditColor(imgRemaining, imgLimit)}`}
-                style={{ width: `${getCreditPct(imgRemaining, imgLimit)}%` }}
-              />
-            </div>
-            {cycleResetsAt && (
-              <span className={styles.creditMeta}>Resets {formatDate(cycleResetsAt)}</span>
-            )}
-          </div>
-
-          {/* Pack credits */}
-          {packRemaining > 0 && (
-            <div className={styles.packCredits}>
-              <span>Credit pack balance</span>
-              <span className={styles.packCreditsValue}>{packRemaining} credits</span>
-            </div>
           )}
         </div>
       </div>
