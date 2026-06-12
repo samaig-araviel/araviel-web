@@ -713,21 +713,6 @@ export default function SettingsView() {
                       ))}
                     </div>
                   </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Send message with Enter</span>
-                        <span className={styles.toggleDesc}>
-                          Use Enter to send messages. When off, use {modKey}+Enter instead.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.sendWithEnter}
-                        onChange={(v) => updateSetting('sendWithEnter', v)}
-                      />
-                    </div>
-                  </div>
                 </section>
               )}
 
@@ -805,6 +790,21 @@ export default function SettingsView() {
                       <span className={styles.fieldHint}>
                         {settings.customInstructions.length} / 2,000 characters
                       </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.fieldGroup}>
+                    <div className={styles.toggleRow}>
+                      <div className={styles.toggleInfo}>
+                        <span className={styles.toggleLabel}>Send message with Enter</span>
+                        <span className={styles.toggleDesc}>
+                          Use Enter to send messages. When off, use {modKey}+Enter instead.
+                        </span>
+                      </div>
+                      <ToggleSwitch
+                        value={settings.sendWithEnter}
+                        onChange={(v) => updateSetting('sendWithEnter', v)}
+                      />
                     </div>
                   </div>
                 </section>
