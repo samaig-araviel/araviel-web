@@ -372,7 +372,6 @@
   background-color: var(--bg-active);
   color: var(--text-primary);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--text-primary);
 }
 
 .collapsed .nav {
@@ -399,7 +398,6 @@
 }
 
 .collapsed .navItem.active {
-  box-shadow: none;
   background-color: var(--bg-active);
 }
 
