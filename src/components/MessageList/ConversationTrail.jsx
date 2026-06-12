@@ -3,9 +3,10 @@ import styles from './ConversationTrail.module.css';
 
 const MIN_MARKERS_TO_SHOW = 3;
 const ACTIVE_ANCHOR_RATIO = 0.32;
-const AUTO_HIDE_DELAY_MS = 1500;
-const EDGE_HOVER_ZONE_PX = 96;
 const FLASH_DURATION_MS = 1100;
+const TOP_INSET_PX = 96;
+const BOTTOM_INSET_PX = 120;
+const RIGHT_INSET_PX = 18;
 
 function formatTime(value) {
   if (!value) return null;
@@ -43,9 +44,8 @@ export default function ConversationTrail({ messages, scrollContainerRef, hidden
   const [markers, setMarkers] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [hoveredIndex, setHoveredIndex] = useState(null);
-  const [visible, setVisible] = useState(false);
+  const [containerBounds, setContainerBounds] = useState(null);
 
-  const hideTimeoutRef = useRef(null);
   const rafRef = useRef(null);
   const flashTimeoutRef = useRef(null);
 
@@ -87,19 +87,34 @@ export default function ConversationTrail({ messages, scrollContainerRef, hidden
   useEffect(() => {
     if (!shouldRender) {
       setMarkers([]);
+      setContainerBounds(null);
       return undefined;
     }
     const container = scrollContainerRef.current;
     if (!container) return undefined;
 
+    const updateBounds = () => {
+      const rect = container.getBoundingClientRect();
+      setContainerBounds({ top: rect.top, bottom: rect.bottom, right: rect.right });
+    };
+
+    updateBounds();
     recomputeMarkers();
 
-    const resizeObserver = new ResizeObserver(() => recomputeMarkers());
+    const resizeObserver = new ResizeObserver(() => {
+      updateBounds();
+      recomputeMarkers();
+    });
     resizeObserver.observe(container);
-    const anchors = container.querySelectorAll('[data-trail-anchor="true"]');
-    anchors.forEach((node) => resizeObserver.observe(node));
+    container.querySelectorAll('[data-trail-anchor="true"]').forEach((node) => {
+      resizeObserver.observe(node);
+    });
 
-    return () => resizeObserver.disconnect();
+    window.addEventListener('resize', updateBounds);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateBounds);
+    };
   }, [shouldRender, recomputeMarkers, scrollContainerRef]);
 
   useEffect(() => {
@@ -134,40 +149,6 @@ export default function ConversationTrail({ messages, scrollContainerRef, hidden
     };
   }, [shouldRender, markers, scrollContainerRef]);
 
-  useEffect(() => {
-    if (!shouldRender) {
-      setVisible(false);
-      return undefined;
-    }
-    const container = scrollContainerRef.current;
-    if (!container) return undefined;
-
-    const reveal = () => {
-      setVisible(true);
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = setTimeout(() => setVisible(false), AUTO_HIDE_DELAY_MS);
-    };
-
-    const handleMouseMove = (event) => {
-      const rect = container.getBoundingClientRect();
-      const distanceFromRight = rect.right - event.clientX;
-      if (distanceFromRight >= 0 && distanceFromRight <= EDGE_HOVER_ZONE_PX) {
-        reveal();
-      }
-    };
-
-    container.addEventListener('scroll', reveal, { passive: true });
-    container.addEventListener('mousemove', handleMouseMove);
-    return () => {
-      container.removeEventListener('scroll', reveal);
-      container.removeEventListener('mousemove', handleMouseMove);
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-        hideTimeoutRef.current = null;
-      }
-    };
-  }, [shouldRender, scrollContainerRef]);
-
   useEffect(
     () => () => {
       if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current);
@@ -190,65 +171,58 @@ export default function ConversationTrail({ messages, scrollContainerRef, hidden
     [markers]
   );
 
-  const handleMarkerEnter = useCallback((index) => {
-    setHoveredIndex(index);
-    setVisible(true);
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-      hideTimeoutRef.current = null;
-    }
-  }, []);
+  if (!shouldRender || markers.length === 0 || !containerBounds) return null;
 
-  const handleMarkerLeave = useCallback(() => {
-    setHoveredIndex(null);
-    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    hideTimeoutRef.current = setTimeout(() => setVisible(false), AUTO_HIDE_DELAY_MS);
-  }, []);
-
-  if (!shouldRender || markers.length === 0) return null;
-
+  const railTop = containerBounds.top + TOP_INSET_PX;
+  const railHeight = Math.max(
+    0,
+    containerBounds.bottom - containerBounds.top - TOP_INSET_PX - BOTTOM_INSET_PX
+  );
+  const railRight = Math.max(
+    RIGHT_INSET_PX,
+    window.innerWidth - containerBounds.right + RIGHT_INSET_PX
+  );
   const progressPercent = markers.length <= 1 ? 0 : (markers[activeIndex]?.ratio ?? 0) * 100;
 
   return (
-    <div className={styles.trailViewport} aria-hidden={!visible}>
-      <nav
-        className={`${styles.trail} ${visible ? styles.trailVisible : ''}`}
-        aria-label="Conversation navigation"
-      >
-        <div className={styles.rail}>
-          <div className={styles.railLine} />
-          <div className={styles.railProgress} style={{ '--progress': `${progressPercent}%` }} />
-          {markers.map((marker, index) => {
-            const isActive = index === activeIndex;
-            const time = formatTime(marker.createdAt);
-            return (
-              <button
-                key={marker.id}
-                type="button"
-                className={`${styles.marker} ${isActive ? styles.markerActive : ''}`}
-                style={{ top: `${marker.ratio * 100}%` }}
-                onClick={() => handleJump(index)}
-                onMouseEnter={() => handleMarkerEnter(index)}
-                onMouseLeave={handleMarkerLeave}
-                onFocus={() => handleMarkerEnter(index)}
-                onBlur={handleMarkerLeave}
-                aria-label={`Jump to prompt ${index + 1}${
-                  marker.preview ? `: ${marker.preview.slice(0, 60)}` : ''
-                }`}
-                aria-current={isActive ? 'true' : undefined}
-              >
-                <span className={styles.markerStroke} />
-                {hoveredIndex === index && marker.preview && (
-                  <div className={styles.tooltip} role="tooltip">
-                    <span className={styles.tooltipPreview}>{marker.preview}</span>
-                    {time && <span className={styles.tooltipTime}>{time}</span>}
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-    </div>
+    <nav
+      className={styles.trail}
+      style={{ top: `${railTop}px`, height: `${railHeight}px`, right: `${railRight}px` }}
+      aria-label="Conversation navigation"
+    >
+      <div className={styles.rail}>
+        <div className={styles.railLine} />
+        <div className={styles.railProgress} style={{ '--progress': `${progressPercent}%` }} />
+        {markers.map((marker, index) => {
+          const isActive = index === activeIndex;
+          const time = formatTime(marker.createdAt);
+          return (
+            <button
+              key={marker.id}
+              type="button"
+              className={`${styles.marker} ${isActive ? styles.markerActive : ''}`}
+              style={{ top: `${marker.ratio * 100}%` }}
+              onClick={() => handleJump(index)}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              onFocus={() => setHoveredIndex(index)}
+              onBlur={() => setHoveredIndex(null)}
+              aria-label={`Jump to prompt ${index + 1}${
+                marker.preview ? `: ${marker.preview.slice(0, 60)}` : ''
+              }`}
+              aria-current={isActive ? 'true' : undefined}
+            >
+              <span className={styles.markerDot} />
+              {hoveredIndex === index && marker.preview && (
+                <div className={styles.tooltip} role="tooltip">
+                  <span className={styles.tooltipPreview}>{marker.preview}</span>
+                  {time && <span className={styles.tooltipTime}>{time}</span>}
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
