@@ -76,6 +76,7 @@ import { dedupeCitations } from '../../utils/dedupeCitations';
 import styles from './MessageList.module.css';
 import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
 import { parseMarkdownTable } from './parseMarkdownTable';
+import ConversationTrail from './ConversationTrail';
 
 // Initialize mermaid with sensible defaults
 mermaid.initialize({
@@ -6333,7 +6334,7 @@ export default function MessageList({
           }
 
           return (
-            <div key={msg.id || index}>
+            <div key={msg.id || index} data-trail-anchor={msg.role === 'user' ? 'true' : undefined}>
               {/* Insert timeline before the streaming assistant message */}
               {isLast && timelineBeforeLastMsg && isProcessing && timelineStages && (
                 <div className={styles.timelineWrapper}>
@@ -6390,6 +6391,12 @@ export default function MessageList({
 
         <div ref={bottomRef} className={styles.scrollAnchor} />
       </div>
+
+      <ConversationTrail
+        messages={messages}
+        scrollContainerRef={containerRef}
+        hidden={!!codePanelState || !!sourcesPanelCitations || !!subConvPanelOwnerId}
+      />
 
       {/* Scroll-to-bottom floating button */}
       <div className={styles.scrollToBottomAnchor}>
