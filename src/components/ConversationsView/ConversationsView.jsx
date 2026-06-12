@@ -34,6 +34,7 @@ import {
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
 import useDeleteConversation from '../../hooks/useDeleteConversation';
+import useSharedChats from '../../hooks/useSharedChats';
 import { selectProjects, setProjects } from '../../store/slices/projectsSlice';
 import {
   SearchIcon,
@@ -50,6 +51,9 @@ import {
   ImportIcon,
   ProjectsIcon,
   RefreshIcon,
+  ExternalLinkIcon,
+  EyeIcon,
+  ChevronRightIcon,
 } from '../Icons';
 import { getProviderLogo } from '../getProviderLogo';
 import ImportConversationsModal from '../ImportConversationsModal';
@@ -62,6 +66,7 @@ const CONVERSATIONS_PAGE_SIZE = 15;
 const TABS = [
   { id: 'all', label: 'All' },
   { id: 'starred', label: 'Starred' },
+  { id: 'shared', label: 'Shared' },
   { id: 'archived', label: 'Archived' },
   { id: 'trash', label: 'Recently deleted' },
 ];
@@ -475,6 +480,243 @@ function getImportedProviders(conversations) {
   return [...providerMap.entries()].map(([id, name]) => ({ id, name }));
 }
 
+function formatSharedDate(iso) {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return '';
+  }
+}
+
+function formatSharedViews(count) {
+  const n = typeof count === 'number' ? count : 0;
+  if (n < 1000) return `${n} view${n === 1 ? '' : 's'}`;
+  if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k views`;
+  return `${(n / 1_000_000).toFixed(1)}M views`;
+}
+
+function SharedChatRowMenu({ shareUrl, onOpenPublic, onCopy, onUnshare }) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+  const [position, setPosition] = useState({});
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const handleClick = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
+    };
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [open]);
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (!open) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setPosition(
+        spaceBelow < 170 ? { bottom: '100%', marginBottom: 6 } : { top: '100%', marginTop: 6 }
+      );
+    }
+    setOpen((v) => !v);
+  };
+
+  return (
+    <div className={styles.sharedRowMenuWrapper} ref={wrapperRef}>
+      <button
+        type="button"
+        className={styles.sharedRowMenuBtn}
+        onClick={handleToggle}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Share actions"
+      >
+        <MoreVerticalIcon />
+      </button>
+      {open && (
+        <div className={styles.sharedRowMenu} style={position} role="menu">
+          <a
+            className={styles.sharedRowMenuItem}
+            href={shareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            role="menuitem"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              onOpenPublic?.();
+            }}
+          >
+            <ExternalLinkIcon />
+            <span>Open public link</span>
+          </a>
+          <button
+            type="button"
+            className={styles.sharedRowMenuItem}
+            role="menuitem"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              onCopy();
+            }}
+          >
+            <LinkIcon />
+            <span>Copy link</span>
+          </button>
+          <div className={styles.sharedRowMenuDivider} />
+          <button
+            type="button"
+            className={`${styles.sharedRowMenuItem} ${styles.sharedRowMenuItemDanger}`}
+            role="menuitem"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              onUnshare();
+            }}
+          >
+            <TrashIcon />
+            <span>Unshare</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SharedChatsTabPanel({
+  shares,
+  loading,
+  error,
+  searchQuery,
+  busyConversationId,
+  onRetry,
+  onRowClick,
+  onCopy,
+  onUnshare,
+  onManageAll,
+}) {
+  if (shares === null && loading) {
+    return (
+      <div className={styles.skeleton}>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className={styles.skeletonItem}>
+            <div className={styles.skeletonContent}>
+              <div className={styles.skeletonTitle} style={{ width: `${45 + ((i * 11) % 30)}%` }} />
+              <div className={styles.skeletonSub} style={{ width: `${25 + ((i * 7) % 20)}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.empty}>
+        <div className={styles.emptyIcon}>
+          <ShareIcon />
+        </div>
+        <h3 className={styles.emptyTitle}>Couldn&rsquo;t load shared chats</h3>
+        <p className={styles.emptyDesc}>{error}</p>
+        <button type="button" className={styles.emptyAction} onClick={onRetry}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const list = shares || [];
+  if (list.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <div className={styles.emptyIcon}>
+          <ShareIcon />
+        </div>
+        <h3 className={styles.emptyTitle}>No shared chats yet</h3>
+        <p className={styles.emptyDesc}>
+          When you share a conversation publicly, it&rsquo;ll appear here so you can manage every
+          active link.
+        </p>
+      </div>
+    );
+  }
+
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = q
+    ? list.filter((s) => (s.title || 'Untitled conversation').toLowerCase().includes(q))
+    : list;
+
+  if (filtered.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <div className={styles.emptyIcon}>
+          <SearchIcon />
+        </div>
+        <h3 className={styles.emptyTitle}>No matches</h3>
+        <p className={styles.emptyDesc}>Try a different search term.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <ul className={styles.sharedList}>
+        {filtered.map((share) => {
+          const url = `${window.location.origin}/share/${share.shareToken}`;
+          const isBusy = busyConversationId === share.conversationId;
+          return (
+            <li
+              key={share.shareToken}
+              className={`${styles.sharedRow} ${isBusy ? styles.sharedRowBusy : ''}`}
+              onClick={() => onRowClick(share.conversationId)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onRowClick(share.conversationId);
+                }
+              }}
+            >
+              <div className={styles.sharedRowMeta}>
+                <span className={styles.sharedRowTitle}>
+                  {share.title || 'Untitled conversation'}
+                </span>
+                <span className={styles.sharedRowSub}>
+                  <span>Shared {formatSharedDate(share.createdAt)}</span>
+                  <span className={styles.sharedRowDot}>•</span>
+                  <span className={styles.sharedRowViews}>
+                    <EyeIcon />
+                    {formatSharedViews(share.viewCount)}
+                  </span>
+                </span>
+              </div>
+              <SharedChatRowMenu
+                shareUrl={url}
+                onCopy={() => onCopy(share.shareToken)}
+                onUnshare={() => onUnshare(share)}
+              />
+            </li>
+          );
+        })}
+      </ul>
+      <button type="button" className={styles.sharedManageAllBtn} onClick={onManageAll}>
+        <span>Manage on Shared chats page</span>
+        <ChevronRightIcon />
+      </button>
+    </>
+  );
+}
+
 export default function ConversationsView() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -516,6 +758,18 @@ export default function ConversationsView() {
       return {};
     }
   });
+
+  // Shared chats are only fetched once the user opens the "Shared" tab — keep
+  // hydrated afterwards so the tab badge can stay live while they move around.
+  const [sharedFetchEnabled, setSharedFetchEnabled] = useState(false);
+  useEffect(() => {
+    if (activeTab === 'shared' && !sharedFetchEnabled) setSharedFetchEnabled(true);
+  }, [activeTab, sharedFetchEnabled]);
+  const sharedChats = useSharedChats({
+    enabled: isAuthenticated && sharedFetchEnabled,
+  });
+  const [sharedUnshareTarget, setSharedUnshareTarget] = useState(null);
+  const [sharedBusyConversationId, setSharedBusyConversationId] = useState(null);
 
   const listRef = useRef(null);
 
@@ -689,6 +943,39 @@ export default function ConversationsView() {
     },
     [restoringId, showError, showSuccess]
   );
+
+  const handleSharedCopy = useCallback(
+    async (shareToken) => {
+      try {
+        await navigator.clipboard.writeText(`${window.location.origin}/share/${shareToken}`);
+        showSuccess('Link copied to clipboard');
+      } catch {
+        showError('Could not copy link');
+      }
+    },
+    [showError, showSuccess]
+  );
+
+  const handleSharedRowClick = useCallback(
+    (conversationId) => {
+      dispatch(setImportedContext(null));
+      navigate(`/conversations/${conversationId}`);
+    },
+    [dispatch, navigate]
+  );
+
+  const confirmSharedUnshare = useCallback(async () => {
+    if (!sharedUnshareTarget) return;
+    setSharedBusyConversationId(sharedUnshareTarget.conversationId);
+    const result = await sharedChats.unshare(sharedUnshareTarget.conversationId);
+    setSharedBusyConversationId(null);
+    setSharedUnshareTarget(null);
+    if (result.ok) {
+      showSuccess('Conversation unshared');
+    } else {
+      showError(result.error || 'Could not unshare conversation');
+    }
+  }, [sharedChats, sharedUnshareTarget, showError, showSuccess]);
 
   const handleAddToProject = (chatId) => {
     menu.closeMenu();
@@ -1501,21 +1788,28 @@ export default function ConversationsView() {
                     {tab.id === 'archived' && archivedIds.size > 0 && (
                       <span className={styles.tabBadge}>{archivedIds.size}</span>
                     )}
+                    {tab.id === 'shared' && sharedChats.shares && sharedChats.shares.length > 0 && (
+                      <span className={styles.tabBadge}>{sharedChats.shares.length}</span>
+                    )}
                   </button>
                 ))}
               </div>
-              <button
-                className={`${styles.selectToggle} ${selectMode ? styles.selectToggleActive : ''}`}
-                onClick={() => {
-                  if (selectMode) {
-                    exitSelectMode();
-                  } else {
-                    setSelectMode(true);
-                  }
-                }}
-              >
-                {selectMode ? 'Cancel' : 'Select'}
-              </button>
+              {activeTab !== 'shared' && (
+                <button
+                  className={`${styles.selectToggle} ${
+                    selectMode ? styles.selectToggleActive : ''
+                  }`}
+                  onClick={() => {
+                    if (selectMode) {
+                      exitSelectMode();
+                    } else {
+                      setSelectMode(true);
+                    }
+                  }}
+                >
+                  {selectMode ? 'Cancel' : 'Select'}
+                </button>
+              )}
             </div>
 
             {selectMode && (
@@ -1618,6 +1912,19 @@ export default function ConversationsView() {
                   selectMode={selectMode}
                   selectedIds={selectedIds}
                   onToggleSelect={toggleSelect}
+                />
+              ) : activeTab === 'shared' ? (
+                <SharedChatsTabPanel
+                  shares={sharedChats.shares}
+                  loading={sharedChats.loading}
+                  error={sharedChats.error}
+                  searchQuery={searchQuery}
+                  busyConversationId={sharedBusyConversationId}
+                  onRetry={sharedChats.refetch}
+                  onRowClick={handleSharedRowClick}
+                  onCopy={handleSharedCopy}
+                  onUnshare={setSharedUnshareTarget}
+                  onManageAll={() => navigate('/shared')}
                 />
               ) : conversationsLoading && conversations.length === 0 ? (
                 <div className={styles.skeleton}>
@@ -1923,6 +2230,40 @@ export default function ConversationsView() {
               <TrashIcon />
               <span>Delete</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {sharedUnshareTarget && (
+        <div
+          className={styles.confirmOverlay}
+          onClick={() => (sharedBusyConversationId ? null : setSharedUnshareTarget(null))}
+        >
+          <div className={styles.confirmDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.confirmIcon}>
+              <TrashIcon />
+            </div>
+            <h3 className={styles.confirmTitle}>Unshare this conversation?</h3>
+            <p className={styles.confirmDesc}>
+              The public link will stop working immediately. The conversation itself stays in your
+              history.
+            </p>
+            <div className={styles.confirmActions}>
+              <button
+                className={styles.confirmCancelBtn}
+                onClick={() => setSharedUnshareTarget(null)}
+                disabled={!!sharedBusyConversationId}
+              >
+                Cancel
+              </button>
+              <button
+                className={styles.confirmDeleteBtn}
+                onClick={confirmSharedUnshare}
+                disabled={!!sharedBusyConversationId}
+              >
+                {sharedBusyConversationId ? 'Unsharing…' : 'Unshare'}
+              </button>
+            </div>
           </div>
         </div>
       )}

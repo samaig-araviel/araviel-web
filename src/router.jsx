@@ -11,6 +11,7 @@ import SettingsView from './components/SettingsView';
 import PricingView from './components/PricingView/PricingView';
 import SubscriptionView from './components/SubscriptionView/SubscriptionView';
 import SharedConversationView from './components/SharedConversationView';
+import SharedView from './components/SharedView';
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary';
 import NotFound from './components/ErrorBoundary/NotFound';
 import RouteShell from './components/RouteShell/RouteShell';
@@ -143,6 +144,14 @@ const router = createBrowserRouter([
         element: (
           <RouteShell feature="chat" seo={{ title: 'Chat', noindex: true }}>
             <ConversationRoute />
+          </RouteShell>
+        ),
+      },
+      {
+        path: 'shared',
+        element: (
+          <RouteShell feature="shared" seo={{ title: 'Shared chats', noindex: true }}>
+            <SharedView />
           </RouteShell>
         ),
       },

@@ -1663,3 +1663,224 @@
   display: flex;
   justify-content: center;
 }
+
+/* ── Shared chats tab ── */
+.sharedList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sharedRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease,
+    opacity 0.2s ease;
+  position: relative;
+}
+
+.sharedRow:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--text-muted);
+}
+
+.sharedRow:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 2px;
+}
+
+.sharedRow:active {
+  transform: scale(0.997);
+}
+
+.sharedRowBusy {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.sharedRowMeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sharedRowTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sharedRowSub {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sharedRowDot {
+  font-size: 8px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.sharedRowViews {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sharedRowViews svg {
+  width: 12px;
+  height: 12px;
+}
+
+.sharedRowMenuWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sharedRowMenuBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sharedRowMenuBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sharedRowMenuBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sharedRowMenu {
+  position: absolute;
+  right: 0;
+  z-index: 20;
+  min-width: 190px;
+  padding: 6px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  animation: sharedMenuFadeIn 0.15s ease;
+}
+
+@keyframes sharedMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sharedRowMenuItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.sharedRowMenuItem svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.sharedRowMenuItem:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sharedRowMenuDivider {
+  height: 1px;
+  margin: 4px 2px;
+  background-color: var(--border-color);
+}
+
+.sharedRowMenuItemDanger {
+  color: #ef4444;
+}
+
+.sharedRowMenuItemDanger:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+}
+
+.sharedManageAllBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 16px auto 0;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.sharedManageAllBtn svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.sharedManageAllBtn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+  transform: translateY(-1px);
+}
+
+.sharedManageAllBtn:hover svg {
+  color: var(--text-primary);
+  transform: translateX(2px);
+}
