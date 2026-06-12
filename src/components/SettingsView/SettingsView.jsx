@@ -117,16 +117,16 @@ const modKey = isMac ? '⌘' : 'Ctrl';
 
 /**
  * Compact entry point that summarises the user's active share links and
- * routes them to `/shared` for the full management experience. The dedicated
- * page is the source of truth — this stub only surfaces the count so the
- * Data & privacy panel doesn't grow unbounded with every share.
+ * routes them to the Shared tab inside Conversations for the full management
+ * experience. That tab is the source of truth — this stub only surfaces the
+ * count so the Data & privacy panel doesn't grow unbounded with every share.
  */
 function SharedChatsStub({ active }) {
   const navigate = useNavigate();
   const { shares, loading, error, refetch } = useSharedChats({ enabled: active });
   const count = shares?.length ?? 0;
 
-  const handleManage = () => navigate('/shared');
+  const handleManage = () => navigate('/conversations?tab=shared');
 
   return (
     <div className={styles.sharedChatsStub}>
@@ -1425,7 +1425,7 @@ export default function SettingsView() {
                     <label className={styles.fieldLabel}>Shared chats</label>
                     <p className={styles.fieldLabelDesc}>
                       Links to conversations you&rsquo;ve shared publicly. Manage every active link
-                      from the Shared chats page.
+                      from the Shared tab in Conversations.
                     </p>
                     <SharedChatsStub active={activeSection === 'data'} />
                   </div>

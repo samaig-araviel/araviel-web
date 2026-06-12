@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import App from './App';
 import MainContent from './components/MainContent';
 import ConversationsView from './components/ConversationsView';
@@ -11,7 +11,6 @@ import SettingsView from './components/SettingsView';
 import PricingView from './components/PricingView/PricingView';
 import SubscriptionView from './components/SubscriptionView/SubscriptionView';
 import SharedConversationView from './components/SharedConversationView';
-import SharedView from './components/SharedView';
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary';
 import NotFound from './components/ErrorBoundary/NotFound';
 import RouteShell from './components/RouteShell/RouteShell';
@@ -147,13 +146,13 @@ const router = createBrowserRouter([
           </RouteShell>
         ),
       },
+      // Legacy: the dedicated Shared chats page was folded into the
+      // Conversations view as its `?tab=shared` filter. Keep the old URL
+      // alive as a redirect so any pre-existing bookmarks still land in the
+      // right place.
       {
         path: 'shared',
-        element: (
-          <RouteShell feature="shared" seo={{ title: 'Shared chats', noindex: true }}>
-            <SharedView />
-          </RouteShell>
-        ),
+        element: <Navigate to="/conversations?tab=shared" replace />,
       },
       {
         path: 'projects',

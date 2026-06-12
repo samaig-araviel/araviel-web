@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   selectConversations,
   selectConversationsTotal,
@@ -53,7 +53,6 @@ import {
   RefreshIcon,
   ExternalLinkIcon,
   EyeIcon,
-  ChevronRightIcon,
 } from '../Icons';
 import { getProviderLogo } from '../getProviderLogo';
 import ImportConversationsModal from '../ImportConversationsModal';
@@ -602,7 +601,6 @@ function SharedChatsTabPanel({
   onRowClick,
   onCopy,
   onUnshare,
-  onManageAll,
 }) {
   if (shares === null && loading) {
     return (
@@ -709,17 +707,16 @@ function SharedChatsTabPanel({
           );
         })}
       </ul>
-      <button type="button" className={styles.sharedManageAllBtn} onClick={onManageAll}>
-        <span>Manage on Shared chats page</span>
-        <ChevronRightIcon />
-      </button>
     </>
   );
 }
 
+const VALID_TABS = new Set(TABS.map((t) => t.id));
+
 export default function ConversationsView() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { showError, showSuccess } = useToast();
   const conversations = useSelector(selectConversations);
   const conversationsTotal = useSelector(selectConversationsTotal);
@@ -733,7 +730,24 @@ export default function ConversationsView() {
 
   // Section: 'my-chats' or 'imported'
   const [activeSection, setActiveSection] = useState('my-chats');
-  const [activeTab, setActiveTab] = useState('all');
+  // Active tab mirrors the `?tab=` query param so other surfaces (e.g.
+  // Settings → Data Controls) can deep-link straight to a specific tab.
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam && VALID_TABS.has(tabParam) ? tabParam : 'all';
+  const setActiveTab = useCallback(
+    (next) => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          if (next === 'all') params.delete('tab');
+          else params.set('tab', next);
+          return params;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [trashedConversations, setTrashedConversations] = useState(null);
   const [trashedTotal, setTrashedTotal] = useState(0);
@@ -1924,7 +1938,6 @@ export default function ConversationsView() {
                   onRowClick={handleSharedRowClick}
                   onCopy={handleSharedCopy}
                   onUnshare={setSharedUnshareTarget}
-                  onManageAll={() => navigate('/shared')}
                 />
               ) : conversationsLoading && conversations.length === 0 ? (
                 <div className={styles.skeleton}>
