@@ -1,121 +1,53 @@
-import { useMemo, useId, useState } from 'react';
-import DOMPurify from 'dompurify';
+import { useMemo } from 'react';
+import { EyeIcon, MaximizeIcon } from '../Icons';
 import styles from './ArtifactBlock.module.css';
 
-/**
- * ArtifactBlock — renders model-generated HTML+CSS safely via DOMPurify.
- *
- * All JavaScript is stripped. Only safe HTML elements and CSS are rendered.
- * CSS is scoped to a unique wrapper class to prevent style leakage.
- *
- * Expects `spec` to be a raw HTML string (with optional <style> tags).
- */
+const TITLE_REGEX = /<title[^>]*>([\s\S]*?)<\/title>/i;
+const H1_REGEX = /<h1[^>]*>([\s\S]*?)<\/h1>/i;
+const TAG_STRIP_REGEX = /<[^>]+>/g;
 
-const ALLOWED_TAGS = [
-  'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption', 'colgroup', 'col',
-  'ul', 'ol', 'li', 'dl', 'dt', 'dd',
-  'strong', 'em', 'b', 'i', 'u', 'br', 'hr', 'wbr',
-  'img', 'svg', 'path', 'circle', 'rect', 'ellipse', 'text', 'tspan',
-  'g', 'line', 'polygon', 'polyline', 'defs', 'clippath', 'use',
-  'lineargradient', 'radialgradient', 'stop',
-  'style', 'section', 'header', 'footer', 'nav', 'main', 'article',
-  'aside', 'figure', 'figcaption', 'details', 'summary',
-  'sup', 'sub', 'abbr', 'small', 'mark', 'del', 'ins', 'blockquote',
-  'pre', 'code', 'a',
-];
+function parseArtifactTitle(html) {
+  const titleMatch = html.match(TITLE_REGEX);
+  if (titleMatch) {
+    const decoded = titleMatch[1].trim();
+    if (decoded) return decoded.slice(0, 80);
+  }
+  const h1Match = html.match(H1_REGEX);
+  if (h1Match) {
+    const stripped = h1Match[1].replace(TAG_STRIP_REGEX, '').trim();
+    if (stripped) return stripped.slice(0, 80);
+  }
+  return null;
+}
 
-const ALLOWED_ATTR = [
-  'class', 'style', 'id', 'colspan', 'rowspan', 'alt', 'title',
-  'href', 'target', 'rel',
-  // SVG attributes
-  'viewBox', 'viewbox', 'd', 'fill', 'stroke', 'stroke-width', 'stroke-linecap',
-  'stroke-linejoin', 'stroke-dasharray', 'stroke-dashoffset',
-  'cx', 'cy', 'r', 'rx', 'ry', 'x', 'y', 'x1', 'y1', 'x2', 'y2',
-  'width', 'height', 'transform', 'xmlns', 'xmlns:xlink',
-  'font-size', 'text-anchor', 'dominant-baseline', 'alignment-baseline',
-  'points', 'opacity', 'fill-opacity', 'stroke-opacity',
-  'offset', 'stop-color', 'stop-opacity', 'gradientUnits', 'gradientTransform',
-  'clip-path', 'clip-rule', 'fill-rule',
-  'preserveAspectRatio', 'xlink:href',
-  // Table attributes
-  'scope', 'span',
-];
+export default function ArtifactBlock({ spec, isStreaming = false, onOpen }) {
+  const meta = useMemo(() => {
+    if (!spec || typeof spec !== 'string') return null;
+    const trimmed = spec.trim();
+    if (!trimmed) return null;
+    return {
+      title: parseArtifactTitle(trimmed) || 'Visual',
+      lineCount: trimmed.split('\n').length,
+    };
+  }, [spec]);
 
-const FORBID_TAGS = [
-  'script', 'iframe', 'object', 'embed', 'form', 'input',
-  'textarea', 'button', 'select', 'option', 'link', 'meta',
-  'base', 'applet', 'frame', 'frameset', 'layer',
-];
+  const interactive = typeof onOpen === 'function';
 
-/**
- * Scope all CSS selectors in <style> blocks to a wrapper class.
- * This prevents artifact styles from leaking to the parent page.
- */
-function scopeCSS(html, scopeClass) {
-  return html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (match, cssContent) => {
-    const scoped = cssContent.replace(
-      /([^{}@/][^{]*)\{/g,
-      (ruleMatch, selector) => {
-        const scopedSelectors = selector
-          .split(',')
-          .map((s) => {
-            const trimmed = s.trim();
-            if (!trimmed) return s;
-            if (trimmed.startsWith('@')) return s;
-            if (trimmed === ':root' || trimmed === 'html' || trimmed === 'body') {
-              return ` .${scopeClass}`;
-            }
-            if (trimmed === '*') return ` .${scopeClass} *`;
-            return ` .${scopeClass} ${trimmed}`;
-          })
-          .join(',');
-        return `${scopedSelectors}{`;
-      }
+  if (!interactive && isStreaming) {
+    return (
+      <div className={styles.opener} data-state="streaming" aria-busy="true">
+        <span className={styles.icon}>
+          <span className={styles.spinner} />
+        </span>
+        <span className={styles.text}>
+          <span className={styles.title}>{meta?.title || 'Building visual'}</span>
+          <span className={styles.meta}>HTML · streaming</span>
+        </span>
+      </div>
     );
-    return `<style>${scoped}</style>`;
-  });
-}
+  }
 
-function sanitizeHTML(html, scopeClass) {
-  const scoped = scopeCSS(html, scopeClass);
-  return DOMPurify.sanitize(scoped, {
-    ALLOWED_TAGS,
-    ALLOWED_ATTR,
-    ALLOW_DATA_ATTR: false,
-    ADD_TAGS: ['style'],
-    FORBID_TAGS,
-    FORBID_ATTR: [
-      'onerror', 'onload', 'onclick', 'ondblclick', 'onmousedown',
-      'onmouseup', 'onmouseover', 'onmousemove', 'onmouseout',
-      'onfocus', 'onblur', 'onsubmit', 'onchange', 'onkeydown',
-      'onkeyup', 'onkeypress', 'oncontextmenu',
-    ],
-    ADD_URI_SAFE_ATTR: ['href'],
-  });
-}
-
-export default function ArtifactBlock({ spec, isStreaming = false }) {
-  const uniqueId = useId().replace(/:/g, '');
-  const scopeClass = `artifact-scope-${uniqueId}`;
-  const [showSource, setShowSource] = useState(false);
-
-  const sanitized = useMemo(() => {
-    if (!spec || typeof spec !== 'string' || spec.trim().length === 0) return null;
-    return sanitizeHTML(spec.trim(), scopeClass);
-  }, [spec, scopeClass]);
-
-  if (!sanitized) {
-    if (isStreaming) {
-      return (
-        <div className={styles.root}>
-          <div className={styles.placeholder}>
-            <div className={styles.placeholderPulse} />
-            <span className={styles.placeholderText}>Building visual...</span>
-          </div>
-        </div>
-      );
-    }
+  if (!meta) {
     return (
       <div className={styles.error}>
         <span>Could not render visual content</span>
@@ -123,29 +55,26 @@ export default function ArtifactBlock({ spec, isStreaming = false }) {
     );
   }
 
+  const metaLabel = `HTML · ${meta.lineCount} ${meta.lineCount === 1 ? 'line' : 'lines'} · Visual`;
+
   return (
-    <div className={styles.root}>
-      {showSource ? (
-        <div className={styles.sourceView}>
-          <pre className={styles.sourceCode}>{spec}</pre>
-        </div>
-      ) : (
-        <div
-          className={`${styles.artifactContent} ${scopeClass}`}
-          dangerouslySetInnerHTML={{ __html: sanitized }}
-        />
-      )}
-      <div className={styles.footer}>
-        <button
-          className={styles.sourceToggle}
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowSource(!showSource);
-          }}
-        >
-          {showSource ? 'Show visual' : 'View source'}
-        </button>
-      </div>
-    </div>
+    <button
+      type="button"
+      className={styles.opener}
+      onClick={interactive ? onOpen : undefined}
+      disabled={!interactive}
+      aria-label={`Open ${meta.title} in canvas`}
+    >
+      <span className={styles.icon}>
+        <EyeIcon />
+      </span>
+      <span className={styles.text}>
+        <span className={styles.title}>{meta.title}</span>
+        <span className={styles.meta}>{metaLabel}</span>
+      </span>
+      <span className={styles.arrow}>
+        <MaximizeIcon />
+      </span>
+    </button>
   );
 }
