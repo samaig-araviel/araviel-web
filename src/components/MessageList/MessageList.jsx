@@ -44,6 +44,7 @@ import {
   InfoIcon,
   MaximizeIcon,
   CodeIcon,
+  EyeIcon,
   EditIcon,
   StarIcon,
   FlagIcon,
@@ -170,11 +171,12 @@ const CODE_VIEWER_MIN_LINES = 15;
  * Render basic markdown to React elements.
  * Handles: code blocks, inline code, bold, italic, horizontal rules, lists, images, links, paragraphs.
  *
- * codeOpenerContext (optional): { longBlocks, onOpen } — when provided, code
- * blocks whose body exceeds CODE_VIEWER_MIN_LINES render as a CodeOpener that
- * opens the side-panel viewer focused on that block instead of inlining the code.
+ * panelOpenerContext (optional): { panelBlocks, onOpen } — when provided, long
+ * code blocks and HTML artifacts collapse to opener cards that open the
+ * canvas-style side panel focused on that block. The opener indices must align
+ * with the document-order extraction performed by extractPanelBlocks.
  */
-function renderMarkdown(text, isStreaming = false, citations = null, codeOpenerContext = null) {
+function renderMarkdown(text, isStreaming = false, citations = null, panelOpenerContext = null) {
   _activeCitations = citations;
   if (!text) return null;
 
@@ -183,7 +185,24 @@ function renderMarkdown(text, isStreaming = false, citations = null, codeOpenerC
   const images = [];
   let i = 0;
   let key = 0;
-  let longCodeBlockIdx = 0;
+  let panelBlockIdx = 0;
+
+  const tryEmitPanelOpener = (lang, codeContent) => {
+    if (!panelOpenerContext) return false;
+    const block = panelOpenerContext.panelBlocks[panelBlockIdx];
+    if (!block) return false;
+    const idx = panelBlockIdx;
+    panelBlockIdx++;
+    const onOpen = () => panelOpenerContext.onOpen(panelOpenerContext.panelBlocks, idx);
+    if (block.type === 'artifact') {
+      elements.push(
+        <ArtifactBlock key={key++} spec={codeContent} isStreaming={isStreaming} onOpen={onOpen} />
+      );
+    } else {
+      elements.push(<CodeOpener key={key++} block={block} onOpen={onOpen} />);
+    }
+    return true;
+  };
 
   while (i < lines.length) {
     const line = lines[i];
@@ -201,20 +220,7 @@ function renderMarkdown(text, isStreaming = false, citations = null, codeOpenerC
       const codeContent = codeLines.join('\n');
       const pushInlineCode = () => {
         const lineCount = codeContent.split('\n').length;
-        if (codeOpenerContext && lineCount > CODE_VIEWER_MIN_LINES) {
-          const idx = longCodeBlockIdx++;
-          const block = codeOpenerContext.longBlocks[idx];
-          if (block) {
-            elements.push(
-              <CodeOpener
-                key={key++}
-                block={block}
-                onOpen={() => codeOpenerContext.onOpen(codeOpenerContext.longBlocks, idx)}
-              />
-            );
-            return;
-          }
-        }
+        if (lineCount > CODE_VIEWER_MIN_LINES && tryEmitPanelOpener(lang, codeContent)) return;
         elements.push(<CodeBlock key={key++} lang={lang} code={codeContent} />);
       };
       if (lang === 'mermaid') {
@@ -228,7 +234,9 @@ function renderMarkdown(text, isStreaming = false, citations = null, codeOpenerC
       } else if (lang === 'file') {
         elements.push(<FileBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'artifact' || lang === 'html-artifact') {
-        elements.push(<ArtifactBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
+        if (!tryEmitPanelOpener(lang, codeContent)) {
+          elements.push(<ArtifactBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
+        }
       } else if (lang === 'json' || lang === '') {
         // Auto-detect chart specs in json/untagged code blocks
         let isChartSpec = false;
@@ -724,81 +732,107 @@ function extractCodeBlockName(code, lang) {
   return null;
 }
 
+const PANEL_SKIP_LANGS = new Set([
+  'chart',
+  'araviel-chart',
+  'mermaid',
+  'timeline',
+  'comparison',
+  'file',
+]);
+
+const CHART_TYPES = new Set([
+  'line',
+  'area',
+  'bar',
+  'candlestick',
+  'pie',
+  'donut',
+  'composed',
+  'scatter',
+]);
+
+const ARTIFACT_TITLE_REGEX = /<title[^>]*>([\s\S]*?)<\/title>/i;
+const ARTIFACT_H1_REGEX = /<h1[^>]*>([\s\S]*?)<\/h1>/i;
+const ARTIFACT_TAG_STRIP_REGEX = /<[^>]+>/g;
+
+function parseArtifactName(html) {
+  const titleMatch = html.match(ARTIFACT_TITLE_REGEX);
+  if (titleMatch) {
+    const decoded = titleMatch[1].trim();
+    if (decoded) return decoded.slice(0, 80);
+  }
+  const h1Match = html.match(ARTIFACT_H1_REGEX);
+  if (h1Match) {
+    const stripped = h1Match[1].replace(ARTIFACT_TAG_STRIP_REGEX, '').trim();
+    if (stripped) return stripped.slice(0, 80);
+  }
+  return null;
+}
+
+function extractContextName(textBefore) {
+  const headingMatch = textBefore.match(
+    /(?:^|\n)#{1,4}\s+(?:\d+\.\s+)?(?:\*\*)?([^\n*#]+?)(?:\*\*)?(?:\s*\([^)]*\))?\s*$/
+  );
+  if (headingMatch) return headingMatch[1].trim();
+
+  const boldMatch = textBefore.match(/\*\*([^*]+)\*\*(?:\s*\([^)]*\))?\s*$/);
+  if (boldMatch) {
+    const label = boldMatch[1].trim();
+    if (label.includes('/')) {
+      const parts = label.split('/');
+      return parts[parts.length - 1].replace(/\.\w+$/, '');
+    }
+    return label;
+  }
+  return null;
+}
+
+function looksLikeChartSpec(code) {
+  try {
+    const parsed = JSON.parse(code);
+    return parsed && CHART_TYPES.has(parsed.type) && Array.isArray(parsed.data);
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Extract code blocks from message text with smart naming.
- * Also captures markdown heading context above each code block.
+ * Extract blocks that belong in the canvas-style side panel.
+ * Returns code blocks longer than CODE_VIEWER_MIN_LINES and every HTML artifact,
+ * tagged with `type` and preserved in document order so opener indices in
+ * renderMarkdown align with this list.
  */
-function extractCodeBlocksWithNames(text) {
+function extractPanelBlocks(text) {
   const codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
   const blocks = [];
   let m;
   while ((m = codeBlockRegex.exec(text)) !== null) {
     const lang = m[1] || '';
     const code = m[2];
-    if (
-      lang === 'chart' ||
-      lang === 'araviel-chart' ||
-      lang === 'mermaid' ||
-      lang === 'timeline' ||
-      lang === 'comparison' ||
-      lang === 'file' ||
-      lang === 'artifact' ||
-      lang === 'html-artifact'
-    )
+
+    if (lang === 'artifact' || lang === 'html-artifact') {
+      blocks.push({
+        type: 'artifact',
+        lang: 'html',
+        code,
+        name: parseArtifactName(code) || 'Visual',
+      });
       continue;
-    if (lang === 'json' || lang === '') {
-      try {
-        const parsed = JSON.parse(code);
-        const chartTypes = [
-          'line',
-          'area',
-          'bar',
-          'candlestick',
-          'pie',
-          'donut',
-          'composed',
-          'scatter',
-        ];
-        if (parsed && chartTypes.includes(parsed.type) && Array.isArray(parsed.data)) continue;
-      } catch {
-        /* not chart spec */
-      }
     }
 
-    // Look for markdown heading or bold label before this code block
-    const textBefore = text.slice(0, m.index);
-    let contextName = null;
+    if (PANEL_SKIP_LANGS.has(lang)) continue;
+    if ((lang === 'json' || lang === '') && looksLikeChartSpec(code)) continue;
+    if (code.split('\n').length <= CODE_VIEWER_MIN_LINES) continue;
 
-    // Check for heading like "### Controller (src/controllers/userController.js)"
-    const headingMatch = textBefore.match(
-      /(?:^|\n)#{1,4}\s+(?:\d+\.\s+)?(?:\*\*)?([^\n*#]+?)(?:\*\*)?(?:\s*\([^)]*\))?\s*$/
-    );
-    if (headingMatch) {
-      contextName = headingMatch[1].trim();
-    }
-
-    // Check for bold label like "**Controller** (src/...)" or "**src/controllers/userController.js**"
-    if (!contextName) {
-      const boldMatch = textBefore.match(/\*\*([^*]+)\*\*(?:\s*\([^)]*\))?\s*$/);
-      if (boldMatch) {
-        const label = boldMatch[1].trim();
-        // If it's a file path, use the filename
-        if (label.includes('/')) {
-          const parts = label.split('/');
-          contextName = parts[parts.length - 1].replace(/\.\w+$/, '');
-        } else {
-          contextName = label;
-        }
-      }
-    }
-
-    // Extract name from code content
     const codeName = extractCodeBlockName(code, lang);
-
-    // Build the display name with priority: code-extracted > context > fallback
-    const name = codeName || contextName || null;
-
-    blocks.push({ lang, code, name });
+    const contextName = codeName ? null : extractContextName(text.slice(0, m.index));
+    blocks.push({
+      type: 'code',
+      lang,
+      code,
+      name: codeName || contextName || null,
+    });
   }
   return blocks;
 }
@@ -815,12 +849,38 @@ const MOBILE_BREAKPOINT = 768;
 const PANEL_MIN_WIDTH = 380;
 const PANEL_VIEWPORT_GAP = 12; // matches the panel's right inset (and the breathing room on the left)
 
+const defaultViewModeForBlock = (block) => (block?.type === 'artifact' ? 'visual' : 'source');
+
+function BrowserFrameIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <circle cx="6.4" cy="6.6" r="0.6" fill="currentColor" />
+      <circle cx="8.6" cy="6.6" r="0.6" fill="currentColor" />
+      <circle cx="10.8" cy="6.6" r="0.6" fill="currentColor" />
+    </svg>
+  );
+}
+
 function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChange }) {
   const safeInitialIdx =
     initialActiveIdx >= 0 && initialActiveIdx < codeBlocks.length ? initialActiveIdx : 0;
   const [activeIdx, setActiveIdx] = useState(safeInitialIdx);
   const [copied, setCopied] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(codeBlocks.length > 1);
+  const [viewMode, setViewMode] = useState(() =>
+    defaultViewModeForBlock(codeBlocks[safeInitialIdx])
+  );
   // The width the user dragged the panel to. Null = render the CSS default.
   // Stored separately from the clamped/rendered width so toggling the side nav
   // shrinks the panel without losing the user's preferred expansion.
@@ -884,12 +944,16 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
   }, [renderedWidth, onWidthChange]);
 
   const activeBlock = codeBlocks[activeIdx];
+  const isArtifact = activeBlock?.type === 'artifact';
+  const renderedViewMode = isArtifact ? viewMode : 'source';
+  const showVisual = isArtifact && renderedViewMode === 'visual';
 
   // Reset active index when the underlying file list or requested entry changes
   useEffect(() => {
     setActiveIdx(safeInitialIdx);
     setCopied(false);
     setSidebarOpen(codeBlocks.length > 1);
+    setViewMode(defaultViewModeForBlock(codeBlocks[safeInitialIdx]));
   }, [codeBlocks, safeInitialIdx]);
 
   useEffect(() => {
@@ -901,19 +965,18 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
   }, [onClose]);
 
   useEffect(() => {
-    if (codeRef.current && activeBlock) {
-      try {
-        const langId = activeBlock.lang ? activeBlock.lang.toLowerCase() : null;
-        const result =
-          langId && hljs.getLanguage(langId)
-            ? hljs.highlight(activeBlock.code, { language: langId })
-            : hljs.highlightAuto(activeBlock.code);
-        codeRef.current.innerHTML = result.value;
-      } catch {
-        codeRef.current.textContent = activeBlock.code;
-      }
+    if (!codeRef.current || !activeBlock || renderedViewMode !== 'source') return;
+    try {
+      const langId = activeBlock.lang ? activeBlock.lang.toLowerCase() : null;
+      const result =
+        langId && hljs.getLanguage(langId)
+          ? hljs.highlight(activeBlock.code, { language: langId })
+          : hljs.highlightAuto(activeBlock.code);
+      codeRef.current.innerHTML = result.value;
+    } catch {
+      codeRef.current.textContent = activeBlock.code;
     }
-  }, [activeBlock]);
+  }, [activeBlock, renderedViewMode]);
 
   // Drag-to-resize handler. The cap is read from maxWidthRef so a sidebar
   // toggle mid-drag is honoured immediately.
@@ -1018,6 +1081,7 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
               const blockLang = block.lang ? block.lang.toUpperCase() : 'CODE';
               const blockLines = block.code.split('\n').length;
               const isActive = idx === activeIdx;
+              const blockIsArtifact = block.type === 'artifact';
 
               return (
                 <button
@@ -1032,7 +1096,7 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
                   title={blockName}
                 >
                   <div className={styles.codeSidePanelFileIcon}>
-                    <CodeIcon />
+                    {blockIsArtifact ? <BrowserFrameIcon /> : <CodeIcon />}
                   </div>
                   <div className={styles.codeSidePanelFileInfo}>
                     <span className={styles.codeSidePanelFileName}>{blockName}</span>
@@ -1067,6 +1131,36 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
               <span className={styles.codeSidePanelLangBadge}>{activeLang}</span>
             </div>
             <div className={styles.codeSidePanelHeaderActions}>
+              {isArtifact && (
+                <div className={styles.viewToggle} role="tablist" aria-label="View mode">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={renderedViewMode === 'visual'}
+                    className={`${styles.viewToggleBtn} ${
+                      renderedViewMode === 'visual' ? styles.viewToggleBtnActive : ''
+                    }`}
+                    onClick={() => setViewMode('visual')}
+                    title="Preview"
+                    aria-label="Show visual preview"
+                  >
+                    <EyeIcon />
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={renderedViewMode === 'source'}
+                    className={`${styles.viewToggleBtn} ${
+                      renderedViewMode === 'source' ? styles.viewToggleBtnActive : ''
+                    }`}
+                    onClick={() => setViewMode('source')}
+                    title="Source"
+                    aria-label="Show source code"
+                  >
+                    <CodeIcon />
+                  </button>
+                </div>
+              )}
               <button
                 className={`${styles.codeSidePanelCopyBtn} ${
                   copied ? styles.codeSidePanelCopied : ''
@@ -1083,21 +1177,35 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
             </div>
           </div>
 
-          {/* Code area with line numbers */}
-          <div className={styles.codeSidePanelCodeArea}>
-            <div className={styles.codeSidePanelLineNumbers}>
-              {activeBlock.code.split('\n').map((_, idx) => (
-                <span key={idx}>{idx + 1}</span>
-              ))}
+          {showVisual ? (
+            <div className={styles.artifactViewArea}>
+              <iframe
+                key={`${activeIdx}-visual`}
+                className={styles.artifactIframe}
+                srcDoc={activeBlock.code}
+                sandbox=""
+                title={activeName}
+                loading="lazy"
+              />
             </div>
-            <pre className={styles.codeSidePanelPre}>
-              <code ref={codeRef}>{activeBlock.code}</code>
-            </pre>
-          </div>
+          ) : (
+            <div className={styles.codeSidePanelCodeArea}>
+              <div className={styles.codeSidePanelLineNumbers}>
+                {activeBlock.code.split('\n').map((_, idx) => (
+                  <span key={idx}>{idx + 1}</span>
+                ))}
+              </div>
+              <pre className={styles.codeSidePanelPre}>
+                <code ref={codeRef}>{activeBlock.code}</code>
+              </pre>
+            </div>
+          )}
 
           {/* Footer info */}
           <div className={styles.codeSidePanelFooter}>
-            <span>{lineCount} lines</span>
+            <span>
+              {showVisual ? 'Visual preview' : `${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`}
+            </span>
             {codeBlocks.length > 1 && (
               <span>
                 {activeIdx + 1} of {codeBlocks.length} files
@@ -1132,46 +1240,6 @@ function CodeOpener({ block, onOpen }) {
         </span>
       </span>
       <span className={styles.codeOpenerArrow}>
-        <MaximizeIcon />
-      </span>
-    </button>
-  );
-}
-
-/**
- * Button shown below response content that opens the code side panel.
- */
-function CodeCanvasButton({ codeBlocks, onClick }) {
-  if (!codeBlocks || codeBlocks.length === 0) return null;
-
-  const totalLines = codeBlocks.reduce((sum, b) => sum + b.code.split('\n').length, 0);
-
-  // For single block, show the name; for multiple, list first few names
-  let title;
-  let meta;
-  if (codeBlocks.length === 1) {
-    title = codeBlocks[0].name || codeBlocks[0].lang || 'Code';
-    meta = `${
-      codeBlocks[0].lang ? codeBlocks[0].lang.toUpperCase() + ' · ' : ''
-    }${totalLines} lines`;
-  } else {
-    const names = codeBlocks.slice(0, 3).map((b) => b.name || b.lang || 'Code');
-    title = names.join(', ') + (codeBlocks.length > 3 ? ` +${codeBlocks.length - 3}` : '');
-    meta = `${codeBlocks.length} files · ${totalLines} lines`;
-  }
-
-  return (
-    <button className={styles.canvasOpenBtn} onClick={onClick}>
-      <div className={styles.canvasOpenBtnLeft}>
-        <span className={styles.canvasOpenBtnIcon}>
-          <CodeIcon />
-        </span>
-        <div className={styles.canvasOpenBtnText}>
-          <span className={styles.canvasOpenBtnTitle}>{title}</span>
-          <span className={styles.canvasOpenBtnMeta}>{meta}</span>
-        </div>
-      </div>
-      <span className={styles.canvasOpenBtnArrow}>
         <MaximizeIcon />
       </span>
     </button>
@@ -5317,24 +5385,20 @@ function Message({
     return displayText;
   }, [displayText, message.generatedImages]);
 
-  // Blocks long enough to skip inline rendering and live only in the side panel.
-  // Computed once per message and shared by both the inline renderer (via
-  // codeOpenerContext) and the footer CodeCanvasButton — keeps order/indices
-  // aligned so opener clicks land on the correct file.
-  const longCodeBlocks = useMemo(() => {
+  // Long code blocks and HTML artifacts that live in the canvas side panel.
+  // Extracted in document order so opener indices align with renderMarkdown.
+  const panelBlocks = useMemo(() => {
     if (!renderText) return [];
-    return extractCodeBlocksWithNames(renderText).filter(
-      (b) => b.code.split('\n').length > CODE_VIEWER_MIN_LINES
-    );
+    return extractPanelBlocks(renderText);
   }, [renderText]);
 
-  const codeOpenerContext = useMemo(() => {
-    if (longCodeBlocks.length === 0 || !onOpenCodePanel) return null;
+  const panelOpenerContext = useMemo(() => {
+    if (panelBlocks.length === 0 || !onOpenCodePanel) return null;
     return {
-      longBlocks: longCodeBlocks,
+      panelBlocks,
       onOpen: onOpenCodePanel,
     };
-  }, [longCodeBlocks, onOpenCodePanel]);
+  }, [panelBlocks, onOpenCodePanel]);
 
   // Sub-conversation state
   const [subConversations, setSubConversations] = useState([]);
@@ -5867,7 +5931,7 @@ function Message({
               renderText,
               isStreaming,
               message.citations || message.sources,
-              codeOpenerContext
+              panelOpenerContext
             )}
             {isStreaming && !renderText && (
               <span className={styles.typingDots} aria-label="Thinking">
@@ -5893,16 +5957,6 @@ function Message({
             />
           ))}
         </div>
-      )}
-
-      {/* Code panel button — shown below the response only when at least one
-          code block is long enough to live in the side panel. Short blocks stay
-          inline and don't appear here. */}
-      {!isUser && !isStreaming && longCodeBlocks.length > 0 && (
-        <CodeCanvasButton
-          codeBlocks={longCodeBlocks}
-          onClick={() => onOpenCodePanel && onOpenCodePanel(longCodeBlocks, 0)}
-        />
       )}
 
       {/* Error card */}
