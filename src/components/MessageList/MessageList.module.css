@@ -6850,7 +6850,10 @@
   width: 50vw;
   max-width: 680px;
   min-width: 380px;
-  z-index: 100;
+  /* Above the composer (1050) and message-list scroll buttons (1100)
+     so the panel paints over them once it overlays the chat. Stays
+     below the sidebar overlay (1180). Matches sourcesPanel/subConvPanel. */
+  z-index: 1150;
   background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 16px;

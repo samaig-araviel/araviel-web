@@ -27,10 +27,13 @@
 }
 
 /* When code side panel is open, make room on the right.
-   Uses --code-panel-width CSS var when user drags to resize, otherwise defaults. */
+   Uses --code-panel-width CSS var when user drags to resize, otherwise defaults.
+   The transition duration is driven by --code-panel-margin-duration so the
+   CodeSidePanel can suppress the chase animation during drag and keep the
+   chat margin locked to the cursor without a 350ms lag. */
 .main.codePanelOpen {
   margin-right: var(--code-panel-width, min(50vw, 700px));
-  transition: margin-right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: margin-right var(--code-panel-margin-duration, 0.35s) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* When sources panel is open, make room on the right (panel width + spacing) */
