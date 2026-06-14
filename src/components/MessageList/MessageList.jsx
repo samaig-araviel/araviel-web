@@ -233,7 +233,7 @@ function renderMarkdown(text, isStreaming = false, citations = null, panelOpener
         elements.push(<ComparisonBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
       } else if (lang === 'file') {
         elements.push(<FileBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
-      } else if (lang === 'artifact' || lang === 'html-artifact') {
+      } else if (isArtifactCandidate(lang, codeContent)) {
         if (!tryEmitPanelOpener(lang, codeContent)) {
           elements.push(<ArtifactBlock key={key++} spec={codeContent} isStreaming={isStreaming} />);
         }
@@ -770,6 +770,22 @@ function parseArtifactName(html) {
   return null;
 }
 
+const HTML_DOCTYPE_REGEX = /<!doctype\s+html/i;
+const HTML_OPEN_TAG_REGEX = /<html[\s>]/i;
+const HTML_CLOSE_TAG_REGEX = /<\/html\s*>/i;
+
+function isLikelyHtmlDocument(code) {
+  if (!code) return false;
+  if (HTML_DOCTYPE_REGEX.test(code)) return true;
+  return HTML_OPEN_TAG_REGEX.test(code) && HTML_CLOSE_TAG_REGEX.test(code);
+}
+
+function isArtifactCandidate(lang, code) {
+  if (lang === 'artifact' || lang === 'html-artifact') return true;
+  if (lang === 'html') return isLikelyHtmlDocument(code);
+  return false;
+}
+
 function extractContextName(textBefore) {
   const headingMatch = textBefore.match(
     /(?:^|\n)#{1,4}\s+(?:\d+\.\s+)?(?:\*\*)?([^\n*#]+?)(?:\*\*)?(?:\s*\([^)]*\))?\s*$/
@@ -811,7 +827,7 @@ function extractPanelBlocks(text) {
     const lang = m[1] || '';
     const code = m[2];
 
-    if (lang === 'artifact' || lang === 'html-artifact') {
+    if (isArtifactCandidate(lang, code)) {
       blocks.push({
         type: 'artifact',
         lang: 'html',
