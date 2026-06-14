@@ -977,6 +977,22 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
     setViewMode(defaultViewModeForBlock(codeBlocks[safeInitialIdx]));
   }, [codeBlocks, safeInitialIdx]);
 
+  // Suppress the chat margin's 0.35s ease while the user is dragging the
+  // resize handle. The panel itself snaps via the .codeSidePanelResizing class;
+  // pinning the chat margin to 0s on the same tick keeps the two edges locked
+  // together instead of letting the chat chase the panel 350ms behind.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isResizing) {
+      root.style.setProperty('--code-panel-margin-duration', '0s');
+    } else {
+      root.style.removeProperty('--code-panel-margin-duration');
+    }
+    return () => {
+      root.style.removeProperty('--code-panel-margin-duration');
+    };
+  }, [isResizing]);
+
   useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === 'Escape') onClose();
