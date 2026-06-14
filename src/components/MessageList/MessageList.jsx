@@ -894,6 +894,7 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
   }));
   const codeRef = useRef(null);
   const panelRef = useRef(null);
+  const iframeRef = useRef(null);
   const isDraggingRef = useRef(false);
   const maxWidthRef = useRef(0);
 
@@ -1028,6 +1029,15 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
         ? panelRef.current.getBoundingClientRect().width
         : PANEL_MIN_WIDTH;
 
+      // The artifact iframe owns its own document and would otherwise capture
+      // mousemove/mouseup the moment the cursor enters its area — which
+      // happens immediately when the user drags rightward to shrink. Disable
+      // pointer events for the lifetime of the drag so events pass through to
+      // the document handlers below, then restore them on mouseup.
+      const iframe = iframeRef.current;
+      const previousIframePointerEvents = iframe ? iframe.style.pointerEvents : null;
+      if (iframe) iframe.style.pointerEvents = 'none';
+
       const handleMouseMove = (moveEvent) => {
         if (!isDraggingRef.current) return;
         const delta = startX - moveEvent.clientX;
@@ -1036,8 +1046,6 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
           Math.max(PANEL_MIN_WIDTH, startWidth + delta)
         );
         setDesiredWidth(newWidth);
-        // --code-panel-width is published from the renderedWidth effect, which
-        // covers both drag and sidebar-driven re-clamping in one place.
       };
 
       const handleMouseUp = () => {
@@ -1047,6 +1055,7 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
         document.removeEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+        if (iframe) iframe.style.pointerEvents = previousIframePointerEvents ?? '';
       };
 
       document.body.style.cursor = 'col-resize';
@@ -1093,12 +1102,14 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
   return createPortal(
     <div className={panelClassName} ref={panelRef} style={panelStyle || undefined}>
       {/* Resize handle on the left edge */}
-      <div className={styles.codeSidePanelResizeHandle} onMouseDown={handleResizeStart}>
-        <div className={styles.codeSidePanelResizeGrip}>
-          <span />
-          <span />
-          <span />
-        </div>
+      <div
+        className={styles.codeSidePanelResizeHandle}
+        onMouseDown={handleResizeStart}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize panel"
+      >
+        <div className={styles.codeSidePanelResizeGrip} />
       </div>
 
       <div className={styles.codeSidePanelLayout}>
@@ -1218,6 +1229,7 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
             <div className={styles.artifactViewArea}>
               <iframe
                 key={`${activeIdx}-visual`}
+                ref={iframeRef}
                 className={styles.artifactIframe}
                 srcDoc={activeBlock.code}
                 sandbox=""
