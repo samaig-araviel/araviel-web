@@ -847,6 +847,8 @@ const SIDEBAR_WIDTH_OPEN = 260;
 const SIDEBAR_WIDTH_COLLAPSED = 48;
 const MOBILE_BREAKPOINT = 768;
 const PANEL_MIN_WIDTH = 380;
+const PANEL_DEFAULT_MAX_WIDTH = 680; // mirrors .codeSidePanel max-width in the stylesheet
+const CHAT_MIN_WIDTH = 520; // floor for the chat column once the panel starts to overlay
 const PANEL_VIEWPORT_GAP = 12; // matches the panel's right inset (and the breathing room on the left)
 
 const defaultViewModeForBlock = (block) => (block?.type === 'artifact' ? 'visual' : 'source');
@@ -934,14 +936,33 @@ function CodeSidePanel({ codeBlocks, initialActiveIdx = 0, onClose, onWidthChang
   const renderedWidth =
     desiredWidth == null ? null : Math.min(Math.max(PANEL_MIN_WIDTH, desiredWidth), maxWidth);
 
-  // Publish the rendered width so the chat layout reserves the right amount of
-  // room. Fires on drag and on sidebar-driven clamping alike, which keeps the
-  // chat margin in sync without a custom call site for each.
+  // JS mirror of the .codeSidePanel CSS default (width: 50vw; max: 680; min: 380).
+  // Used to compute the chat reservation before the user drags, so the floor
+  // applies at the default size too.
+  const cssDefaultPanelWidth = Math.max(
+    PANEL_MIN_WIDTH,
+    Math.min(PANEL_DEFAULT_MAX_WIDTH, viewport.width * 0.5)
+  );
+  const paintedPanelWidth = renderedWidth ?? cssDefaultPanelWidth;
+
+  // Cap the space reserved for the panel in the chat layout so the chat column
+  // never shrinks below CHAT_MIN_WIDTH. Once the painted panel exceeds this cap
+  // it overlays the chat instead of squeezing it further. Mobile reserves
+  // nothing — the panel is full-screen via CSS.
+  const reservedSpaceCap = viewport.isMobile
+    ? 0
+    : Math.max(0, viewport.width - sidebarWidth - CHAT_MIN_WIDTH - PANEL_VIEWPORT_GAP * 2);
+  const reservedWidth = viewport.isMobile ? 0 : Math.min(paintedPanelWidth, reservedSpaceCap);
+
+  // Publish the reserved width so the chat layout reserves the right amount of
+  // room. Decoupled from the painted panel width so dragging past the threshold
+  // overlays the chat instead of crushing it. Fires on drag, sidebar toggle,
+  // viewport resize, and mobile-breakpoint flip alike.
   useEffect(() => {
-    if (renderedWidth != null && onWidthChange) {
-      onWidthChange(renderedWidth);
+    if (onWidthChange) {
+      onWidthChange(reservedWidth);
     }
-  }, [renderedWidth, onWidthChange]);
+  }, [reservedWidth, onWidthChange]);
 
   const activeBlock = codeBlocks[activeIdx];
   const isArtifact = activeBlock?.type === 'artifact';
