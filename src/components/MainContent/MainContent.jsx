@@ -2002,11 +2002,13 @@ export default function MainContent() {
    * Retry handler.
    */
   const handleRetry = useCallback(
-    async (userPrompt) => {
+    async (userPrompt, userImages) => {
       if (isProcessing) return;
       dispatch(removeLastAssistantMessage());
 
       await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const images = Array.isArray(userImages) && userImages.length > 0 ? userImages : undefined;
 
       await runSSEPipeline(userPrompt, {
         selectedModelId: selectedModelId || undefined,
@@ -2014,6 +2016,8 @@ export default function MainContent() {
         addUserMessage: false,
         webSearch: webSearchEnabled,
         imageQuality: imageQuality || undefined,
+        images,
+        conversationHasImages: images ? true : undefined,
       });
     },
     [
@@ -2031,16 +2035,20 @@ export default function MainContent() {
    * Alternate model request handler.
    */
   const handleAlternateModelRequest = useCallback(
-    async (userPrompt, alternateModel) => {
+    async (userPrompt, alternateModel, userImages) => {
       if (isProcessing) return;
 
       await new Promise((resolve) => setTimeout(resolve, 150));
+
+      const images = Array.isArray(userImages) && userImages.length > 0 ? userImages : undefined;
 
       await runSSEPipeline(userPrompt, {
         selectedModelId: alternateModel.modelId,
         conversationId: currentChatId || undefined,
         addUserMessage: false,
         imageQuality: imageQuality || undefined,
+        images,
+        conversationHasImages: images ? true : undefined,
       });
     },
     [isProcessing, currentChatId, runSSEPipeline, imageQuality]
