@@ -124,6 +124,7 @@ import { getNextTier, getUpgradeCtaLabel } from '../../config/subscription';
 import { PROVIDERS, isImageGenerationModel } from '../../data/models';
 import { getProviderLogo } from '../getProviderLogo';
 import { compressImage, isAcceptedImageType } from '../../utils/imageCompression';
+import { takePendingAttachments } from '../../utils/pendingAttachments';
 import {
   canGenerateImage,
   recordGeneration,
@@ -1675,7 +1676,7 @@ export default function MainContent() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const prompt = inputValue.trim();
-    if (!prompt || isProcessing) return;
+    if ((!prompt && attachedFiles.length === 0) || isProcessing) return;
 
     // Determine if this prompt will generate an image
     const willGenerateImage =
@@ -1802,27 +1803,32 @@ export default function MainContent() {
     dispatch(revertQuickPromptImageOverride());
   };
 
-  // Auto-submit when navigating from another view (e.g. Image Gallery quick prompt).
-  // Uses a ref guard to guarantee this fires exactly once, even with StrictMode.
-  const autoSubmitFiredRef = useRef(null);
+  // Auto-submit when navigating from another view (e.g. Image Gallery quick
+  // prompt, Project workspace). Picks up any handed-off attachments from the
+  // pending-attachments cache so a file uploaded in another view travels with
+  // the message. The fired flag is reset when pendingAutoSubmit goes false so
+  // the next cycle can fire, while still guarding against StrictMode double-runs.
+  const autoSubmitFiredRef = useRef(false);
   useEffect(() => {
-    if (!pendingAutoSubmit || !inputValue.trim() || isProcessing) return;
-    // Guard: skip if we already fired for this exact prompt
-    const prompt = inputValue.trim();
-    if (autoSubmitFiredRef.current === prompt) return;
-    autoSubmitFiredRef.current = prompt;
-    const modality = pendingModality || undefined;
+    if (!pendingAutoSubmit) {
+      autoSubmitFiredRef.current = false;
+      return;
+    }
+    if (isProcessing || autoSubmitFiredRef.current) return;
 
-    // Sync ModalityBar when coming from image gallery
+    const prompt = inputValue.trim();
+    const handedOffFiles = takePendingAttachments();
+    if (!prompt && handedOffFiles.length === 0) return;
+    autoSubmitFiredRef.current = true;
+
+    const modality = pendingModality || undefined;
     if (modality === 'image') {
       dispatch(setSelectedModality('image'));
     }
 
-    // Check image generation limits before auto-submitting
     const willGenImage =
       modality === 'image' || (selectedModelId && isImageGenerationModel(selectedModelId));
 
-    // Guest image limit — bounce to /signup, not "Upgrade to Pro"
     if (!isAuthenticated && willGenImage && hasReachedGuestImageLimit()) {
       dispatch(setPendingAutoSubmit(false));
       dispatch(setPendingModality(null));
@@ -1830,7 +1836,6 @@ export default function MainContent() {
       return;
     }
 
-    // Authenticated user image rate limit: if balance has loaded and is zero, show modal
     if (
       isAuthenticated &&
       willGenImage &&
@@ -1849,13 +1854,31 @@ export default function MainContent() {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
-    runSSEPipeline(prompt, {
-      selectedModelId: selectedModelId || undefined,
-      addUserMessage: true,
-      webSearch: webSearchEnabled,
-      modality,
-      imageQuality: willGenImage ? imageQuality : undefined,
-    });
+
+    (async () => {
+      let compressedImages = [];
+      const imageFiles = handedOffFiles.filter(isAcceptedImageType);
+      if (imageFiles.length > 0) {
+        try {
+          compressedImages = await Promise.all(imageFiles.map((f) => compressImage(f)));
+        } catch (err) {
+          logger.warn('Image compression failed', {
+            route: 'chat.auto-submit',
+            error: err?.message,
+          });
+          compressedImages = [];
+        }
+      }
+      runSSEPipeline(prompt, {
+        selectedModelId: selectedModelId || undefined,
+        addUserMessage: true,
+        webSearch: webSearchEnabled,
+        modality,
+        imageQuality: willGenImage ? imageQuality : undefined,
+        conversationHasImages: compressedImages.length > 0 || undefined,
+        images: compressedImages.length > 0 ? compressedImages : undefined,
+      });
+    })();
   }, [pendingAutoSubmit]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /**
@@ -3273,8 +3296,10 @@ export default function MainContent() {
                   ) : (
                     <button
                       type="submit"
-                      className={`${styles.submitBtn} ${inputValue.trim() ? styles.active : ''}`}
-                      disabled={!inputValue.trim()}
+                      className={`${styles.submitBtn} ${
+                        inputValue.trim() || attachedFiles.length > 0 ? styles.active : ''
+                      }`}
+                      disabled={!inputValue.trim() && attachedFiles.length === 0}
                       aria-label="Send message"
                     >
                       <SendIcon />

@@ -21,6 +21,7 @@ import {
   setPendingAutoSubmit,
   setActiveProjectId,
 } from '../../store/slices/chatSlice';
+import { setPendingAttachments } from '../../utils/pendingAttachments';
 import {
   fetchProjects,
   createProject as createProjectApi,
@@ -288,8 +289,8 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
   const handleSendMessage = (e) => {
     e.preventDefault();
     const text = chatInput.trim();
-    if (!text) return;
-    // Navigate to MainContent with the message ready to send
+    if (!text && attachedFiles.length === 0) return;
+    setPendingAttachments(attachedFiles);
     dispatch(createNewChat());
     dispatch(setActiveProjectId(project.id));
     dispatch(setInputValue(text));
@@ -504,9 +505,9 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
                     <button
                       type="submit"
                       className={`${styles.wsChatSend} ${
-                        chatInput.trim() ? styles.wsChatSendActive : ''
+                        chatInput.trim() || attachedFiles.length > 0 ? styles.wsChatSendActive : ''
                       }`}
-                      disabled={!chatInput.trim()}
+                      disabled={!chatInput.trim() && attachedFiles.length === 0}
                       aria-label="Send message"
                     >
                       <SendIcon />
