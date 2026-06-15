@@ -1100,13 +1100,16 @@ export default function MainContent() {
       // dots until the first token arrives; the `routing` SSE handler patches
       // in the real model info (and `done` patches in the final usage).
       const placeholderAssistantId = `pending-${Date.now()}`;
+      const placeholderCreatedAt = Date.now();
       dispatch(
         addMessage({
           id: placeholderAssistantId,
           role: 'assistant',
           content: '',
-          timestamp: Date.now(),
+          timestamp: placeholderCreatedAt,
           isPlaceholder: true,
+          ...(options.modality === 'image' ? { requestedModality: 'image' } : {}),
+          generationStartedAt: placeholderCreatedAt,
         })
       );
 
