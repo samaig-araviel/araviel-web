@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectEffectiveTheme } from '../../store/slices/themeSlice';
-import { setInputValue } from '../../store/slices/chatSlice';
+import { setInputValue, dismissMessageError } from '../../store/slices/chatSlice';
 import { selectSidebarCollapsed } from '../../store/slices/sidebarSlice';
 import { getProviderLogo } from '../getProviderLogo';
 import { PROVIDERS, MODELS, SPEED_TIERS, formatTokens } from '../../data/models';
@@ -2732,7 +2732,15 @@ function WebSearchBadgeWithSources({ isAutoDetected, citations }) {
 /**
  * Error card displayed inline below messages.
  */
-function ErrorCard({ error, onRetry, onSessionExpired, userPrompt, userImages }) {
+function ErrorCard({
+  error,
+  onRetry,
+  onSessionExpired,
+  userPrompt,
+  userImages,
+  isHistorical = false,
+  onDismiss,
+}) {
   if (!error) return null;
 
   const isFatal = error.code !== 'PROVIDER_RETRY';
@@ -2753,6 +2761,37 @@ function ErrorCard({ error, onRetry, onSessionExpired, userPrompt, userImages })
 
   const friendly = getFriendlyError(error);
   const hasRetryablePrompt = !!(userPrompt || (userImages && userImages.length > 0));
+  const canRetry = !!onRetry && hasRetryablePrompt && !isAuthExpired;
+
+  if (isHistorical) {
+    return (
+      <div className={styles.errorPill}>
+        <span className={styles.errorPillText}>
+          {isAuthExpired ? 'Session expired.' : friendly.title}
+        </span>
+        {canRetry && (
+          <button
+            type="button"
+            className={styles.errorPillAction}
+            onClick={() => onRetry(userPrompt, userImages)}
+          >
+            Try again
+          </button>
+        )}
+        {onDismiss && (
+          <button
+            type="button"
+            className={styles.errorPillDismiss}
+            onClick={onDismiss}
+            aria-label="Dismiss error"
+            title="Dismiss"
+          >
+            <CloseIcon />
+          </button>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={styles.errorCard}>
@@ -2770,18 +2809,33 @@ function ErrorCard({ error, onRetry, onSessionExpired, userPrompt, userImages })
         )}
         {friendly.code && <span className={styles.errorCardCode}>Error code: {friendly.code}</span>}
       </div>
-      {isAuthExpired && onSessionExpired ? (
-        <button className={styles.errorRetryBtn} onClick={onSessionExpired}>
-          Log in
-        </button>
-      ) : (
-        onRetry &&
-        hasRetryablePrompt && (
-          <button className={styles.errorRetryBtn} onClick={() => onRetry(userPrompt, userImages)}>
-            Try again
+      <div className={styles.errorCardActions}>
+        {isAuthExpired && onSessionExpired ? (
+          <button className={styles.errorRetryBtn} onClick={onSessionExpired}>
+            Log in
           </button>
-        )
-      )}
+        ) : (
+          canRetry && (
+            <button
+              className={styles.errorRetryBtn}
+              onClick={() => onRetry(userPrompt, userImages)}
+            >
+              Try again
+            </button>
+          )
+        )}
+        {onDismiss && !isAuthExpired && (
+          <button
+            type="button"
+            className={styles.errorCardDismiss}
+            onClick={onDismiss}
+            aria-label="Dismiss error"
+            title="Dismiss"
+          >
+            <CloseIcon />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -5440,6 +5494,8 @@ function Message({
   onAlternateModelRequest,
   userPrompt,
   userImages,
+  isHistoricalError = false,
+  onDismissError,
   onSubConvPanelToggle,
   subConvPanelOwnerId,
   onSetSubConvPanelOwner,
@@ -6054,6 +6110,8 @@ function Message({
           onSessionExpired={onSessionExpired}
           userPrompt={userPrompt}
           userImages={userImages}
+          isHistorical={isHistoricalError}
+          onDismiss={onDismissError ? () => onDismissError(message.id) : undefined}
         />
       )}
 
@@ -6482,6 +6540,8 @@ export default function MessageList({
             }
           }
 
+          const isHistoricalError = !!msg.error && !isLast;
+
           return (
             <div key={msg.id || index} data-trail-anchor={msg.role === 'user' ? 'true' : undefined}>
               {/* Insert timeline before the streaming assistant message */}
@@ -6510,6 +6570,8 @@ export default function MessageList({
                 onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}
                 userImages={userImages}
+                isHistoricalError={isHistoricalError}
+                onDismissError={readOnly ? undefined : (id) => dispatch(dismissMessageError(id))}
                 onSubConvPanelToggle={onSubConvPanelToggle}
                 subConvPanelOwnerId={subConvPanelOwnerId}
                 onSetSubConvPanelOwner={setSubConvPanelOwnerId}

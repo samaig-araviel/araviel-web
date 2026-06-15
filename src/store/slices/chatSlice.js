@@ -113,6 +113,13 @@ const chatSlice = createSlice({
         Object.assign(last, action.payload);
       }
     },
+    dismissMessageError: (state, action) => {
+      const id = action.payload;
+      const target = state.messages.find((m) => m.id === id);
+      if (target) {
+        target.error = null;
+      }
+    },
     setIsProcessing: (state, action) => {
       state.isProcessing = action.payload;
     },
@@ -245,6 +252,7 @@ export const {
   setAutoStrategy,
   addMessage,
   updateLastMessage,
+  dismissMessageError,
   setIsProcessing,
   clearMessages,
   setCurrentChat,
