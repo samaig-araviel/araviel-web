@@ -125,6 +125,9 @@ import { PROVIDERS, isImageGenerationModel } from '../../data/models';
 import { getProviderLogo } from '../getProviderLogo';
 import { compressImage, isAcceptedImageType } from '../../utils/imageCompression';
 import { takePendingAttachments } from '../../utils/pendingAttachments';
+import useFileDrop from '../../hooks/useFileDrop';
+import usePasteImages from '../../hooks/usePasteImages';
+import DropOverlay from '../DropOverlay';
 import {
   canGenerateImage,
   recordGeneration,
@@ -659,6 +662,7 @@ export default function MainContent() {
   const chatMenuRef = useRef(null);
   const textareaRef = useRef(null);
   const fileInputRef = useRef(null);
+  const dropTargetRef = useRef(null);
   const cameraInputRef = useRef(null);
 
   // Derive conversationProject from Redux conversations (single source of truth)
@@ -2090,30 +2094,41 @@ export default function MainContent() {
     return colors[ext] || '#6b7280';
   };
 
+  const handleAttachFiles = useCallback(
+    (incomingFiles) => {
+      if (!incomingFiles || incomingFiles.length === 0) return;
+      const remainingSlots = maxAttachments - attachedFiles.length;
+      if (remainingSlots <= 0) {
+        setShowLimitToast(true);
+        return;
+      }
+      const filesToAdd = incomingFiles.slice(0, remainingSlots);
+      if (filesToAdd.length < incomingFiles.length) {
+        setShowLimitToast(true);
+      }
+      const newFiles = filesToAdd.map((file) => ({
+        id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        file,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
+      }));
+      setAttachedFiles((prev) => [...prev, ...newFiles]);
+    },
+    [attachedFiles.length, maxAttachments]
+  );
+
   const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const remainingSlots = maxAttachments - attachedFiles.length;
-    if (remainingSlots <= 0) {
-      setShowLimitToast(true);
-      if (e.target) e.target.value = '';
-      return;
-    }
-    const filesToAdd = files.slice(0, remainingSlots);
-    if (filesToAdd.length < files.length) {
-      setShowLimitToast(true);
-    }
-    const newFiles = filesToAdd.map((file) => ({
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      file,
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
-    }));
-    setAttachedFiles((prev) => [...prev, ...newFiles]);
+    handleAttachFiles(Array.from(e.target.files || []));
     if (e.target) e.target.value = '';
   };
+
+  const { isDragging } = useFileDrop(dropTargetRef, {
+    onFiles: handleAttachFiles,
+    enabled: !isProcessing,
+  });
+  usePasteImages({ onFiles: handleAttachFiles, enabled: !isProcessing });
 
   const handleRemoveFile = (fileId) => {
     setAttachedFiles((prev) => {
@@ -2316,12 +2331,14 @@ export default function MainContent() {
 
   return (
     <main
+      ref={dropTargetRef}
       className={`${styles.main} ${hasMessages ? styles.hasMessages : ''} ${
         isSubConvPanelOpen ? styles.subConvPanelOpen : ''
       } ${isCodePanelOpen ? styles.codePanelOpen : ''} ${
         isSourcesPanelOpen ? styles.sourcesPanelOpen : ''
       }`}
     >
+      <DropOverlay visible={isDragging} />
       {/* Top nav bar */}
       <div className={styles.topNav}>
         {/* Breadcrumb — title + project context */}

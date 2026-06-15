@@ -6,6 +6,7 @@
   background: var(--bg-primary);
   scrollbar-width: none;
   -ms-overflow-style: none;
+  position: relative;
 }
 
 .galleryPage::-webkit-scrollbar {

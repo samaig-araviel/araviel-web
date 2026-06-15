@@ -22,6 +22,9 @@ import {
   setActiveProjectId,
 } from '../../store/slices/chatSlice';
 import { setPendingAttachments } from '../../utils/pendingAttachments';
+import useFileDrop from '../../hooks/useFileDrop';
+import usePasteImages from '../../hooks/usePasteImages';
+import DropOverlay from '../DropOverlay';
 import {
   fetchProjects,
   createProject as createProjectApi,
@@ -298,6 +301,18 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
     navigate('/');
   };
 
+  const handleAttachFiles = useCallback((incoming) => {
+    if (!incoming || incoming.length === 0) return;
+    setAttachedFiles((prev) => [...prev, ...incoming]);
+  }, []);
+
+  const dropTargetRef = useRef(null);
+  const { isDragging } = useFileDrop(dropTargetRef, {
+    onFiles: handleAttachFiles,
+    enabled: true,
+  });
+  usePasteImages({ onFiles: handleAttachFiles, enabled: true });
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -318,7 +333,8 @@ function ProjectWorkspace({ project, onBack, onEdit, onDelete, onToggleStar, onT
 
   return (
     <>
-      <div className={styles.workspacePage}>
+      <div className={styles.workspacePage} ref={dropTargetRef}>
+        <DropOverlay visible={isDragging} />
         {/* Back nav */}
         <div className={styles.workspaceTopBar}>
           <button className={styles.detailBack} onClick={onBack}>
