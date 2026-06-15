@@ -20,6 +20,7 @@ import {
 import { useToast } from '../Toast/Toast';
 import { logger } from '../../lib/logger';
 import { readBooleanSetting } from '../../lib/localSettings';
+import { getFriendlyError } from '../../lib/chatErrorMessages';
 import {
   CopyIcon,
   CheckIcon,
@@ -2731,7 +2732,7 @@ function WebSearchBadgeWithSources({ isAutoDetected, citations }) {
 /**
  * Error card displayed inline below messages.
  */
-function ErrorCard({ error, onRetry, onSessionExpired, userPrompt }) {
+function ErrorCard({ error, onRetry, onSessionExpired, userPrompt, userImages }) {
   if (!error) return null;
 
   const isFatal = error.code !== 'PROVIDER_RETRY';
@@ -2750,14 +2751,14 @@ function ErrorCard({ error, onRetry, onSessionExpired, userPrompt }) {
     );
   }
 
+  const friendly = getFriendlyError(error);
+  const hasRetryablePrompt = !!(userPrompt || (userImages && userImages.length > 0));
+
   return (
     <div className={styles.errorCard}>
       <div className={styles.errorCardContent}>
-        <span className={styles.errorCardMessage}>
-          {isAuthExpired
-            ? 'Your session has expired. Please log in to continue.'
-            : error.message || 'Something went wrong'}
-        </span>
+        <span className={styles.errorCardMessage}>{friendly.title}</span>
+        {friendly.hint && <span className={styles.errorCardHint}>{friendly.hint}</span>}
         {error.suggestedPlatforms && error.suggestedPlatforms.length > 0 && (
           <div className={styles.errorSuggestedPlatforms}>
             {error.suggestedPlatforms.map((platform, idx) => (
@@ -2767,6 +2768,7 @@ function ErrorCard({ error, onRetry, onSessionExpired, userPrompt }) {
             ))}
           </div>
         )}
+        {friendly.code && <span className={styles.errorCardCode}>Error code: {friendly.code}</span>}
       </div>
       {isAuthExpired && onSessionExpired ? (
         <button className={styles.errorRetryBtn} onClick={onSessionExpired}>
@@ -2774,8 +2776,8 @@ function ErrorCard({ error, onRetry, onSessionExpired, userPrompt }) {
         </button>
       ) : (
         onRetry &&
-        userPrompt && (
-          <button className={styles.errorRetryBtn} onClick={() => onRetry(userPrompt)}>
+        hasRetryablePrompt && (
+          <button className={styles.errorRetryBtn} onClick={() => onRetry(userPrompt, userImages)}>
             Try again
           </button>
         )
@@ -4234,6 +4236,7 @@ function ResponseActions({
   isDark,
   onRetry,
   userPrompt,
+  userImages,
   onSelectAlternate,
   assistantIndex,
   conversationId,
@@ -4276,9 +4279,9 @@ function ResponseActions({
 
   const handleRetryClick = useCallback(() => {
     if (onRetry && userPrompt) {
-      onRetry(userPrompt);
+      onRetry(userPrompt, userImages);
     }
-  }, [onRetry, userPrompt]);
+  }, [onRetry, userPrompt, userImages]);
 
   const [feedbackPanel, setFeedbackPanel] = useState(null); // 'like' | 'dislike' | null
   const [feedbackDetails, setFeedbackDetails] = useState([]);
@@ -5302,8 +5305,8 @@ function UserPrompt({ content, images, onEdit, createdAt, onRetry }) {
   }, [content, onEdit]);
 
   const handleRetry = useCallback(() => {
-    if (onRetry) onRetry(content);
-  }, [content, onRetry]);
+    if (onRetry) onRetry(content, imageList);
+  }, [content, imageList, onRetry]);
 
   // Format time as HH:MM
   const timeStr = useMemo(() => {
@@ -5436,6 +5439,7 @@ function Message({
   onSessionExpired,
   onAlternateModelRequest,
   userPrompt,
+  userImages,
   onSubConvPanelToggle,
   subConvPanelOwnerId,
   onSetSubConvPanelOwner,
@@ -5955,7 +5959,7 @@ function Message({
             const alt = pendingAlternate;
             setPendingAlternate(null);
             if (onAlternateModelRequest && userPrompt) {
-              onAlternateModelRequest(userPrompt, alt);
+              onAlternateModelRequest(userPrompt, alt, userImages);
             }
           }}
           onCancel={() => setPendingAlternate(null)}
@@ -6049,6 +6053,7 @@ function Message({
           onRetry={onRetry}
           onSessionExpired={onSessionExpired}
           userPrompt={userPrompt}
+          userImages={userImages}
         />
       )}
 
@@ -6061,7 +6066,7 @@ function Message({
                   onRetry('Continue from where you left off. Do not repeat what was already said.')
               : null
           }
-          onRetry={onRetry && userPrompt ? () => onRetry(userPrompt) : null}
+          onRetry={onRetry && userPrompt ? () => onRetry(userPrompt, userImages) : null}
         />
       )}
 
@@ -6076,6 +6081,7 @@ function Message({
           isDark={isDark}
           onRetry={onRetry}
           userPrompt={userPrompt}
+          userImages={userImages}
           onSelectAlternate={(alt) => setPendingAlternate(alt)}
           assistantIndex={assistantIndex}
           conversationId={currentChatId}
@@ -6461,10 +6467,16 @@ export default function MessageList({
 
           // Find the user prompt that preceded this assistant message
           let userPrompt = null;
+          let userImages = null;
           if (msg.role === 'assistant') {
             for (let j = index - 1; j >= 0; j--) {
               if (messages[j].role === 'user') {
                 userPrompt = messages[j].content;
+                const attachedImages = messages[j].images || messages[j].attachments;
+                userImages =
+                  Array.isArray(attachedImages) && attachedImages.length > 0
+                    ? attachedImages
+                    : null;
                 break;
               }
             }
@@ -6497,6 +6509,7 @@ export default function MessageList({
                 onSessionExpired={onSessionExpired}
                 onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}
+                userImages={userImages}
                 onSubConvPanelToggle={onSubConvPanelToggle}
                 subConvPanelOwnerId={subConvPanelOwnerId}
                 onSetSubConvPanelOwner={setSubConvPanelOwnerId}
