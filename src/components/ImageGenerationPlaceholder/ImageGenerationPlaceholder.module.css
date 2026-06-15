@@ -1,0 +1,111 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.statusRow {
+  min-height: 20px;
+}
+
+.statusLabel {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  color: var(--text-secondary);
+  animation: statusFadeIn 0.22s ease-out;
+}
+
+.card {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  background-color: var(--bg-hover, rgba(0, 0, 0, 0.04));
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-theme='dark'] .card {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(
+    circle 1.5px at center,
+    rgba(0, 0, 0, 0.18) 100%,
+    transparent 100%
+  );
+  background-size: 18px 18px;
+  background-repeat: repeat;
+  mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent 100%);
+  animation: dotDrift 14s linear infinite, dotBreathe 2.8s ease-in-out infinite;
+  will-change: background-position, opacity;
+}
+
+[data-theme='dark'] .dots {
+  background-image: radial-gradient(
+    circle 1.5px at center,
+    rgba(255, 255, 255, 0.13) 100%,
+    transparent 100%
+  );
+}
+
+.card[data-paused='true'] .dots {
+  animation-play-state: paused;
+}
+
+@keyframes dotDrift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 18px 18px;
+  }
+}
+
+@keyframes dotBreathe {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes statusFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dots {
+    animation: none;
+    opacity: 0.85;
+  }
+  .statusLabel {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .wrapper {
+    max-width: 100%;
+  }
+  .statusLabel {
+    font-size: 12.5px;
+  }
+}
