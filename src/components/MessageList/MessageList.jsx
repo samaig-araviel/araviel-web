@@ -5273,6 +5273,18 @@ function UserPrompt({ content, images, onEdit, createdAt, onRetry }) {
     return images;
   }, [images]);
 
+  const imageGridLayoutClass = useMemo(() => {
+    if (!imageList) return '';
+    const n = imageList.length;
+    if (n === 1) return styles.userPromptImagesGrid1;
+    if (n === 2) return styles.userPromptImagesGrid2;
+    if (n === 3) return styles.userPromptImagesGrid3;
+    if (n === 4) return styles.userPromptImagesGrid4;
+    return styles.userPromptImagesGridMany;
+  }, [imageList]);
+
+  const isSingleImage = imageList?.length === 1;
+
   useEffect(() => {
     const lineCount = (content || '').split('\n').length;
     setIsLong(lineCount > LINE_LIMIT);
@@ -5312,11 +5324,17 @@ function UserPrompt({ content, images, onEdit, createdAt, onRetry }) {
     <div className={styles.userPromptWrapper}>
       <div className={styles.userPromptCard}>
         {imageList && (
-          <div className={styles.userPromptImages}>
+          <div
+            className={`${styles.userPromptImages} ${imageGridLayoutClass} ${
+              content ? '' : styles.userPromptImagesNoText
+            }`}
+          >
             {imageList.map((img, idx) => (
               <button
                 key={idx}
-                className={styles.userPromptImageThumb}
+                className={
+                  isSingleImage ? styles.userPromptImageSingle : styles.userPromptImageTile
+                }
                 onClick={() => setLightboxIdx(idx)}
                 aria-label={img.fileName || `Attached image ${idx + 1}`}
               >
