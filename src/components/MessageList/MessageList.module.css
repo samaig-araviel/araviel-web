@@ -6771,6 +6771,13 @@
   color: var(--text-secondary);
 }
 
+.errorCardActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .errorRetryBtn {
   padding: 6px 14px;
   border-radius: 8px;
@@ -6782,11 +6789,109 @@
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .errorRetryBtn:hover {
   background-color: var(--bg-button-hover);
+}
+
+.errorCardDismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #8b5c4e;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.errorCardDismiss:hover {
+  opacity: 1;
+  background-color: rgba(139, 92, 78, 0.08);
+}
+
+[data-theme='dark'] .errorCardDismiss {
+  color: #c9a097;
+}
+
+[data-theme='dark'] .errorCardDismiss:hover {
+  background-color: rgba(201, 160, 151, 0.1);
+}
+
+.errorCardDismiss svg {
+  width: 14px;
+  height: 14px;
+}
+
+.errorPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 10px 6px 12px;
+  border-radius: 999px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  animation: messageFadeIn 0.3s ease;
+  max-width: 100%;
+}
+
+.errorPillText {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.errorPillAction {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.errorPillAction:hover {
+  background-color: var(--bg-hover);
+}
+
+.errorPillDismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.errorPillDismiss:hover {
+  opacity: 1;
+  background-color: var(--bg-hover);
+}
+
+.errorPillDismiss svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* ===== Stream Timeout Notice ===== */

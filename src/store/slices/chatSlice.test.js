@@ -12,6 +12,7 @@ import chatReducer, {
   setAutoStrategy,
   addMessage,
   updateLastMessage,
+  dismissMessageError,
   setIsProcessing,
   clearMessages,
   setCurrentChat,
@@ -221,6 +222,29 @@ describe('chatSlice', () => {
     it('updateLastMessage does nothing on empty messages', () => {
       const state = chatReducer(defaultState, updateLastMessage({ content: 'test' }));
       expect(state.messages).toHaveLength(0);
+    });
+
+    it('dismissMessageError clears the error on the matching message only', () => {
+      let state = chatReducer(
+        defaultState,
+        addMessage({ id: 'a', role: 'assistant', content: '', error: { message: 'boom' } })
+      );
+      state = chatReducer(
+        state,
+        addMessage({ id: 'b', role: 'assistant', content: '', error: { message: 'bang' } })
+      );
+      state = chatReducer(state, dismissMessageError('a'));
+      expect(state.messages[0].error).toBeNull();
+      expect(state.messages[1].error).toEqual({ message: 'bang' });
+    });
+
+    it('dismissMessageError is a no-op for an unknown id', () => {
+      let state = chatReducer(
+        defaultState,
+        addMessage({ id: 'a', role: 'assistant', content: '', error: { message: 'boom' } })
+      );
+      state = chatReducer(state, dismissMessageError('z'));
+      expect(state.messages[0].error).toEqual({ message: 'boom' });
     });
 
     it('clearMessages empties the messages array', () => {
