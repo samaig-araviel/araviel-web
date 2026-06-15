@@ -78,32 +78,119 @@
 }
 
 .userPromptImages {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  gap: 4px;
   margin-bottom: 10px;
 }
 
-.userPromptImageThumb {
-  all: unset;
-  cursor: pointer;
-  width: 120px;
-  height: 120px;
-  border-radius: 8px;
-  overflow: hidden;
-  flex-shrink: 0;
+.userPromptImagesNoText {
+  margin-bottom: 0;
 }
 
-.userPromptImageThumb img {
+.userPromptImagesGrid1 {
+  max-width: 360px;
+  grid-template-columns: 1fr;
+}
+
+.userPromptImagesGrid2 {
+  width: 360px;
+  max-width: 100%;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.userPromptImagesGrid3 {
+  width: 360px;
+  max-width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.userPromptImagesGrid4 {
+  width: 360px;
+  max-width: 100%;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.userPromptImagesGridMany {
+  width: 360px;
+  max-width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.userPromptImageTile {
+  all: unset;
+  cursor: pointer;
+  display: block;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='dark'] .userPromptImageTile {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.userPromptImageTile img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.15s ease;
+  transition: transform 0.2s ease;
 }
 
-.userPromptImageThumb:hover img {
-  transform: scale(1.04);
+.userPromptImageTile:hover img {
+  transform: scale(1.05);
+}
+
+.userPromptImageTile:focus-visible {
+  outline: 2px solid var(--accent, #4a90e2);
+  outline-offset: 2px;
+}
+
+.userPromptImageSingle {
+  all: unset;
+  cursor: pointer;
+  display: inline-block;
+  border-radius: 12px;
+  overflow: hidden;
+  line-height: 0;
+  max-width: 100%;
+}
+
+.userPromptImageSingle img {
+  display: block;
+  max-width: 360px;
+  max-height: 360px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.userPromptImageSingle:hover img {
+  transform: scale(1.02);
+}
+
+.userPromptImageSingle:focus-visible {
+  outline: 2px solid var(--accent, #4a90e2);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .userPromptImagesGrid1,
+  .userPromptImagesGrid2,
+  .userPromptImagesGrid3,
+  .userPromptImagesGrid4,
+  .userPromptImagesGridMany {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .userPromptImageSingle img {
+    max-width: 100%;
+    max-height: 320px;
+  }
 }
 
 .imageLightbox {
