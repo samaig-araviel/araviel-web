@@ -47,6 +47,10 @@ import {
 import ModelSelector from '../ModelSelector/ModelSelector';
 import styles from './ImageGalleryView.module.css';
 import MarkdownTextarea from '../MarkdownTextarea/MarkdownTextarea';
+import useFileDrop from '../../hooks/useFileDrop';
+import usePasteImages from '../../hooks/usePasteImages';
+import DropOverlay from '../DropOverlay';
+import { setPendingAttachments } from '../../utils/pendingAttachments';
 
 const PAGE_SIZE = 9;
 
@@ -359,6 +363,28 @@ export default function ImageGalleryView() {
     }
   };
 
+  const handleDroppedFiles = useCallback(
+    (incoming) => {
+      if (!incoming || incoming.length === 0) return;
+      setShowAttachMenu(false);
+      setPendingAttachments(incoming);
+      const text = promptInput.trim();
+      setPromptInput('');
+      dispatch(createNewChat());
+      dispatch(setInputValue(text));
+      dispatch(setPendingAutoSubmit(true));
+      navigate('/');
+    },
+    [promptInput, dispatch, navigate]
+  );
+
+  const dropTargetRef = useRef(null);
+  const { isDragging } = useFileDrop(dropTargetRef, {
+    onFiles: handleDroppedFiles,
+    enabled: true,
+  });
+  usePasteImages({ onFiles: handleDroppedFiles, enabled: true });
+
   const handleQuickPromptClick = (item) => {
     // Allow guests to preview the prompt — gate happens on submit
     setPromptInput(item.prompt);
@@ -383,7 +409,8 @@ export default function ImageGalleryView() {
   const remaining = filteredImages.length - displayedCount;
 
   return (
-    <div className={styles.galleryPage}>
+    <div className={styles.galleryPage} ref={dropTargetRef}>
+      <DropOverlay visible={isDragging} label="Drop image to attach" />
       <div className={styles.galleryInner}>
         {/* Hero */}
         <div className={styles.heroSection}>
@@ -802,7 +829,6 @@ export default function ImageGalleryView() {
           />,
           document.body
         )}
-
     </div>
   );
 }
