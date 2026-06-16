@@ -1609,12 +1609,6 @@
   letter-spacing: 0.01em;
 }
 
-.mermaidHeaderActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .mermaidToggleCode {
   font-size: 11.5px;
   font-weight: 550;
