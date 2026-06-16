@@ -41,6 +41,7 @@ import {
   FileDownIcon,
   FileTextIcon,
   ChevronDownIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   MessageCircleIcon,
   SendIcon,
@@ -1674,7 +1675,11 @@ function parseImageDimensions(size) {
   return { width, height };
 }
 
-function GeneratedImageBlock({ imageData, allImages, imageIndex }) {
+function imageIdentity(img) {
+  return img?.id ?? img?.url ?? null;
+}
+
+function GeneratedImageBlock({ imageData, allImages }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const { downloading, handleDownload } = useImageDownload();
 
@@ -1683,6 +1688,18 @@ function GeneratedImageBlock({ imageData, allImages, imageIndex }) {
     if (!dims) return undefined;
     return { aspectRatio: `${dims.width} / ${dims.height}` };
   }, [imageData?.size]);
+
+  const lightboxImages = useMemo(
+    () => (Array.isArray(allImages) && allImages.length > 0 ? allImages : [imageData]),
+    [allImages, imageData]
+  );
+
+  const initialIndex = useMemo(() => {
+    const target = imageIdentity(imageData);
+    if (target === null) return 0;
+    const idx = lightboxImages.findIndex((img) => imageIdentity(img) === target);
+    return idx >= 0 ? idx : 0;
+  }, [lightboxImages, imageData]);
 
   if (!imageData || !imageData.url) return null;
 
@@ -1735,8 +1752,8 @@ function GeneratedImageBlock({ imageData, allImages, imageIndex }) {
       {lightboxOpen &&
         createPortal(
           <GeneratedImageLightbox
-            images={allImages || [imageData]}
-            initialIndex={imageIndex || 0}
+            images={lightboxImages}
+            initialIndex={initialIndex}
             onClose={() => setLightboxOpen(false)}
           />,
           document.body
@@ -1840,6 +1857,30 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
 
           <div className={styles.genLightboxStage}>
             <div className={styles.genLightboxBody}>
+              {images.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.genLightboxNav} ${styles.genLightboxNavPrev}`}
+                    onClick={() => setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev))}
+                    disabled={activeIndex === 0}
+                    aria-label="Previous image"
+                  >
+                    <ChevronLeftIcon />
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.genLightboxNav} ${styles.genLightboxNavNext}`}
+                    onClick={() =>
+                      setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : prev))
+                    }
+                    disabled={activeIndex === images.length - 1}
+                    aria-label="Next image"
+                  >
+                    <ChevronRightIcon />
+                  </button>
+                </>
+              )}
               <img
                 key={activeIndex}
                 src={activeImage.url}
@@ -5528,6 +5569,7 @@ function Message({
   onAlternateModelRequest,
   userPrompt,
   userImages,
+  conversationImages,
   isHistoricalError = false,
   onDismissError,
   onSubConvPanelToggle,
@@ -6138,8 +6180,11 @@ function Message({
             <GeneratedImageBlock
               key={img.id || idx}
               imageData={img}
-              allImages={message.generatedImages}
-              imageIndex={idx}
+              allImages={
+                conversationImages && conversationImages.length > 0
+                  ? conversationImages
+                  : message.generatedImages
+              }
             />
           ))}
         </div>
@@ -6526,6 +6571,17 @@ export default function MessageList({
     setShouldPulse(false);
   }, []);
 
+  const conversationImages = useMemo(() => {
+    const flat = [];
+    for (const msg of messages) {
+      if (msg.role !== 'assistant') continue;
+      const imgs = msg.generatedImages;
+      if (!Array.isArray(imgs) || imgs.length === 0) continue;
+      for (const img of imgs) flat.push(img);
+    }
+    return flat;
+  }, [messages]);
+
   if (messages.length === 0 && !isProcessing) return null;
 
   const lastMsg = messages[messages.length - 1];
@@ -6613,6 +6669,7 @@ export default function MessageList({
                 onAlternateModelRequest={onAlternateModelRequest}
                 userPrompt={userPrompt}
                 userImages={userImages}
+                conversationImages={conversationImages}
                 isHistoricalError={isHistoricalError}
                 onDismissError={readOnly ? undefined : (id) => dispatch(dismissMessageError(id))}
                 onSubConvPanelToggle={onSubConvPanelToggle}
