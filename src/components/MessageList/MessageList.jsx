@@ -1681,10 +1681,7 @@ function GeneratedImageBlock({ imageData, allImages, imageIndex }) {
   const frameStyle = useMemo(() => {
     const dims = parseImageDimensions(imageData?.size);
     if (!dims) return undefined;
-    return {
-      aspectRatio: `${dims.width} / ${dims.height}`,
-      width: `min(100%, calc(75vh * ${dims.width} / ${dims.height}))`,
-    };
+    return { aspectRatio: `${dims.width} / ${dims.height}` };
   }, [imageData?.size]);
 
   if (!imageData || !imageData.url) return null;
@@ -1850,18 +1847,24 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
               className={styles.genLightboxImg}
             />
           </div>
-        </div>
 
-        <div className={styles.genLightboxFooter}>
-          {activeImage.prompt && <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>}
-          <div className={styles.genLightboxMeta}>
-            {activeImage.size && <span>{activeImage.size}</span>}
-            {images.length > 1 && (
-              <span>
-                {activeIndex + 1} of {images.length}
-              </span>
-            )}
-          </div>
+          {(activeImage.prompt || activeImage.size || images.length > 1) && (
+            <aside className={styles.genLightboxSidePanel}>
+              {activeImage.prompt && (
+                <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>
+              )}
+              {(activeImage.size || images.length > 1) && (
+                <div className={styles.genLightboxMeta}>
+                  {activeImage.size && <span>{activeImage.size}</span>}
+                  {images.length > 1 && (
+                    <span>
+                      {activeIndex + 1} of {images.length}
+                    </span>
+                  )}
+                </div>
+              )}
+            </aside>
+          )}
         </div>
       </div>
     </div>
