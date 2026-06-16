@@ -25,6 +25,7 @@ import {
   reportSubConversation,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
+import DiagramExportMenu from '../DiagramExportMenu';
 import { logger } from '../../lib/logger';
 import { readBooleanSetting } from '../../lib/localSettings';
 import { getFriendlyError } from '../../lib/chatErrorMessages';
@@ -619,6 +620,7 @@ function CodeBlock({ lang, code }) {
  */
 function MermaidBlock({ code }) {
   const containerRef = useRef(null);
+  const svgRef = useRef('');
   const [svgContent, setSvgContent] = useState('');
   const [error, setError] = useState(null);
   const [showCode, setShowCode] = useState(false);
@@ -637,12 +639,14 @@ function MermaidBlock({ code }) {
         });
         const { svg } = await mermaid.render(idRef.current, code.trim());
         if (!cancelled) {
+          svgRef.current = svg;
           setSvgContent(svg);
           setError(null);
         }
       } catch (err) {
         if (!cancelled) {
           setError(err.message || 'Failed to render diagram');
+          svgRef.current = '';
           setSvgContent('');
         }
       }
@@ -653,6 +657,8 @@ function MermaidBlock({ code }) {
     };
   }, [code, effectiveTheme]);
 
+  const getSvgForExport = useCallback(() => svgRef.current, []);
+
   if (error) {
     return <CodeBlock lang="mermaid" code={code} />;
   }
@@ -661,9 +667,12 @@ function MermaidBlock({ code }) {
     <div className={styles.mermaidBlock}>
       <div className={styles.mermaidHeader}>
         <span className={styles.mermaidLabel}>Diagram</span>
-        <button className={styles.mermaidToggleCode} onClick={() => setShowCode(!showCode)}>
-          {showCode ? 'Preview' : 'Code'}
-        </button>
+        <div className={styles.mermaidHeaderActions}>
+          <DiagramExportMenu svgGetter={getSvgForExport} disabled={!svgContent || showCode} />
+          <button className={styles.mermaidToggleCode} onClick={() => setShowCode(!showCode)}>
+            {showCode ? 'Preview' : 'Code'}
+          </button>
+        </div>
       </div>
       {showCode ? (
         <CodeBlock lang="mermaid" code={code} />
