@@ -3,10 +3,10 @@ import useDiagramExport from '../../hooks/useDiagramExport';
 import { DownloadIcon } from '../Icons';
 import styles from './DiagramExportMenu.module.css';
 
-export default function DiagramExportMenu({ svgGetter, disabled = false }) {
+export default function DiagramExportMenu({ code, displayTheme, disabled = false }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
-  const { exportPng, exportPdf, isExporting } = useDiagramExport(svgGetter);
+  const { exportPng, exportPdf, isExporting } = useDiagramExport({ code, displayTheme });
 
   useEffect(() => {
     if (!open) return undefined;
