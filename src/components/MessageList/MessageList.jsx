@@ -1838,33 +1838,34 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
             </div>
           )}
 
-          {/* Main image area */}
-          <div className={styles.genLightboxBody}>
-            <img
-              key={activeIndex}
-              src={activeImage.url}
-              alt={activeImage.prompt || activeImage.model || 'Generated image'}
-              className={styles.genLightboxImg}
-            />
-          </div>
+          <div className={styles.genLightboxStage}>
+            <div className={styles.genLightboxBody}>
+              <img
+                key={activeIndex}
+                src={activeImage.url}
+                alt={activeImage.prompt || activeImage.model || 'Generated image'}
+                className={styles.genLightboxImg}
+              />
+            </div>
 
-          {(activeImage.prompt || activeImage.size || images.length > 1) && (
-            <aside className={styles.genLightboxSidePanel}>
-              {activeImage.prompt && (
-                <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>
-              )}
-              {(activeImage.size || images.length > 1) && (
-                <div className={styles.genLightboxMeta}>
-                  {activeImage.size && <span>{activeImage.size}</span>}
-                  {images.length > 1 && (
-                    <span>
-                      {activeIndex + 1} of {images.length}
-                    </span>
-                  )}
-                </div>
-              )}
-            </aside>
-          )}
+            {(activeImage.prompt || activeImage.size || images.length > 1) && (
+              <aside className={styles.genLightboxSidePanel}>
+                {activeImage.prompt && (
+                  <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>
+                )}
+                {(activeImage.size || images.length > 1) && (
+                  <div className={styles.genLightboxMeta}>
+                    {activeImage.size && <span>{activeImage.size}</span>}
+                    {images.length > 1 && (
+                      <span>
+                        {activeIndex + 1} of {images.length}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </aside>
+            )}
+          </div>
         </div>
       </div>
     </div>
