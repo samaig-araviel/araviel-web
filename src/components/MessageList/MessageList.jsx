@@ -1664,16 +1664,39 @@ function useImageDownload() {
   return { downloading, handleDownload };
 }
 
+function parseImageDimensions(size) {
+  if (!size || typeof size !== 'string') return null;
+  const match = size.match(/^\s*(\d+)\s*[xX×]\s*(\d+)\s*$/);
+  if (!match) return null;
+  const width = Number.parseInt(match[1], 10);
+  const height = Number.parseInt(match[2], 10);
+  if (!width || !height) return null;
+  return { width, height };
+}
+
 function GeneratedImageBlock({ imageData, allImages, imageIndex }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const { downloading, handleDownload } = useImageDownload();
+
+  const frameStyle = useMemo(() => {
+    const dims = parseImageDimensions(imageData?.size);
+    if (!dims) return undefined;
+    return {
+      aspectRatio: `${dims.width} / ${dims.height}`,
+      width: `min(100%, calc(75vh * ${dims.width} / ${dims.height}))`,
+    };
+  }, [imageData?.size]);
 
   if (!imageData || !imageData.url) return null;
 
   return (
     <>
       <div className={styles.generatedImageBlock}>
-        <div className={styles.generatedImageFrame} onClick={() => setLightboxOpen(true)}>
+        <div
+          className={styles.generatedImageFrame}
+          style={frameStyle}
+          onClick={() => setLightboxOpen(true)}
+        >
           <img
             src={imageData.url}
             alt={imageData.prompt || imageData.model || 'Generated image'}
