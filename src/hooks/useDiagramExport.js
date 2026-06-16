@@ -9,6 +9,30 @@ const PDF_PAGE_MARGIN_PT = 40;
 const FALLBACK_DIAGRAM_WIDTH = 800;
 const FALLBACK_DIAGRAM_HEIGHT = 600;
 
+const EXPORT_MERMAID_CONFIG = {
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  flowchart: { htmlLabels: false, useMaxWidth: false },
+  sequence: { useMaxWidth: false },
+  classDiagram: { useMaxWidth: false },
+  stateDiagram: { useMaxWidth: false },
+  er: { useMaxWidth: false },
+  pie: { useMaxWidth: false },
+  journey: { useMaxWidth: false },
+  gantt: { useMaxWidth: false },
+  mindmap: { useMaxWidth: false },
+  quadrantChart: { useMaxWidth: false },
+};
+
+const DISPLAY_MERMAID_CONFIG = {
+  startOnLoad: false,
+  theme: 'default',
+  securityLevel: 'loose',
+  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+};
+
 export function buildExportFilename(extension, now = new Date()) {
   const pad = (n) => String(n).padStart(2, '0');
   const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(
@@ -38,12 +62,35 @@ export function readSvgDimensions(svgElement) {
   return { width: FALLBACK_DIAGRAM_WIDTH, height: FALLBACK_DIAGRAM_HEIGHT };
 }
 
-async function rasterizeSvg(svgString) {
+async function renderExportSafeSvg(code, displayTheme) {
+  const mermaidModule = await import('mermaid');
+  const mermaid = mermaidModule.default ?? mermaidModule;
+  mermaid.initialize(EXPORT_MERMAID_CONFIG);
+  const renderId = `mermaid-export-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  try {
+    const { svg } = await mermaid.render(renderId, code.trim());
+    return svg;
+  } finally {
+    mermaid.initialize({
+      ...DISPLAY_MERMAID_CONFIG,
+      theme: displayTheme === 'dark' ? 'dark' : 'default',
+    });
+  }
+}
+
+async function rasterizeSvgString(svgString) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(svgString, 'image/svg+xml');
   const svg = doc.documentElement;
-  if (!svg || svg.nodeName === 'parsererror') {
+  if (!svg || svg.nodeName === 'parsererror' || svg.nodeName.toLowerCase() !== 'svg') {
     throw new Error('Could not parse diagram SVG');
+  }
+
+  if (!svg.getAttribute('xmlns')) {
+    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  }
+  if (!svg.getAttribute('xmlns:xlink')) {
+    svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
   }
 
   const { width, height } = readSvgDimensions(svg);
@@ -51,28 +98,23 @@ async function rasterizeSvg(svgString) {
   svg.setAttribute('height', String(height));
 
   const serialized = new XMLSerializer().serializeToString(svg);
-  const svgBlob = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });
-  const objectUrl = URL.createObjectURL(svgBlob);
+  const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`;
 
-  try {
-    const image = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error('Failed to load diagram image'));
-      img.src = objectUrl;
-    });
+  const image = await new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Failed to load diagram image'));
+    img.src = dataUri;
+  });
 
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(width * EXPORT_PIXEL_SCALE);
-    canvas.height = Math.round(height * EXPORT_PIXEL_SCALE);
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-    return { canvas, width, height };
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(width * EXPORT_PIXEL_SCALE);
+  canvas.height = Math.round(height * EXPORT_PIXEL_SCALE);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return { canvas, width, height };
 }
 
 async function canvasToPngBlob(canvas) {
@@ -103,43 +145,38 @@ function fitToPage(width, height) {
   return { width: Math.round(width * scale), height: Math.round(height * scale) };
 }
 
-function readSvgString(svgGetter) {
-  if (typeof svgGetter === 'function') return svgGetter();
-  if (typeof svgGetter === 'string') return svgGetter;
-  return null;
-}
-
-export default function useDiagramExport(svgGetter) {
+export default function useDiagramExport({ code, displayTheme }) {
   const [isExporting, setIsExporting] = useState(false);
   const { showError } = useToast();
 
   const exportPng = useCallback(async () => {
-    const svgString = readSvgString(svgGetter);
-    if (!svgString) {
+    if (!code) {
       showError('No diagram to export yet.');
       return;
     }
     setIsExporting(true);
     try {
-      const { canvas } = await rasterizeSvg(svgString);
+      const svgString = await renderExportSafeSvg(code, displayTheme);
+      const { canvas } = await rasterizeSvgString(svgString);
       const blob = await canvasToPngBlob(canvas);
       saveAs(blob, buildExportFilename('png'));
-    } catch {
+    } catch (err) {
+      console.error('Diagram PNG export failed', err);
       showError('Could not export PNG. Please try again.');
     } finally {
       setIsExporting(false);
     }
-  }, [svgGetter, showError]);
+  }, [code, displayTheme, showError]);
 
   const exportPdf = useCallback(async () => {
-    const svgString = readSvgString(svgGetter);
-    if (!svgString) {
+    if (!code) {
       showError('No diagram to export yet.');
       return;
     }
     setIsExporting(true);
     try {
-      const { canvas, width, height } = await rasterizeSvg(svgString);
+      const svgString = await renderExportSafeSvg(code, displayTheme);
+      const { canvas, width, height } = await rasterizeSvgString(svgString);
       const dataUri = canvas.toDataURL('image/png');
       const pdfMake = await getPdfMake();
       const fitted = fitToPage(width, height);
@@ -172,16 +209,17 @@ export default function useDiagramExport(svgGetter) {
             saveAs(blob, buildExportFilename('pdf'));
             resolve();
           });
-        } catch (err) {
-          reject(err);
+        } catch (innerErr) {
+          reject(innerErr);
         }
       });
-    } catch {
+    } catch (err) {
+      console.error('Diagram PDF export failed', err);
       showError('Could not export PDF. Please try again.');
     } finally {
       setIsExporting(false);
     }
-  }, [svgGetter, showError]);
+  }, [code, displayTheme, showError]);
 
   return { exportPng, exportPdf, isExporting };
 }

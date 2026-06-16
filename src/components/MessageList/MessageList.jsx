@@ -620,7 +620,6 @@ function CodeBlock({ lang, code }) {
  */
 function MermaidBlock({ code }) {
   const containerRef = useRef(null);
-  const svgRef = useRef('');
   const [svgContent, setSvgContent] = useState('');
   const [error, setError] = useState(null);
   const [showCode, setShowCode] = useState(false);
@@ -639,14 +638,12 @@ function MermaidBlock({ code }) {
         });
         const { svg } = await mermaid.render(idRef.current, code.trim());
         if (!cancelled) {
-          svgRef.current = svg;
           setSvgContent(svg);
           setError(null);
         }
       } catch (err) {
         if (!cancelled) {
           setError(err.message || 'Failed to render diagram');
-          svgRef.current = '';
           setSvgContent('');
         }
       }
@@ -657,8 +654,6 @@ function MermaidBlock({ code }) {
     };
   }, [code, effectiveTheme]);
 
-  const getSvgForExport = useCallback(() => svgRef.current, []);
-
   if (error) {
     return <CodeBlock lang="mermaid" code={code} />;
   }
@@ -668,7 +663,11 @@ function MermaidBlock({ code }) {
       <div className={styles.mermaidHeader}>
         <span className={styles.mermaidLabel}>Diagram</span>
         <div className={styles.mermaidHeaderActions}>
-          <DiagramExportMenu svgGetter={getSvgForExport} disabled={!svgContent || showCode} />
+          <DiagramExportMenu
+            code={code}
+            displayTheme={effectiveTheme}
+            disabled={!svgContent || showCode}
+          />
           <button className={styles.mermaidToggleCode} onClick={() => setShowCode(!showCode)}>
             {showCode ? 'Preview' : 'Code'}
           </button>
