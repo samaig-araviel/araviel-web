@@ -25,7 +25,6 @@ import {
   reportSubConversation,
 } from '../../services/api';
 import { useToast } from '../Toast/Toast';
-import DiagramExportMenu from '../DiagramExportMenu';
 import { logger } from '../../lib/logger';
 import { readBooleanSetting } from '../../lib/localSettings';
 import { getFriendlyError } from '../../lib/chatErrorMessages';
@@ -662,16 +661,9 @@ function MermaidBlock({ code }) {
     <div className={styles.mermaidBlock}>
       <div className={styles.mermaidHeader}>
         <span className={styles.mermaidLabel}>Diagram</span>
-        <div className={styles.mermaidHeaderActions}>
-          <DiagramExportMenu
-            code={code}
-            displayTheme={effectiveTheme}
-            disabled={!svgContent || showCode}
-          />
-          <button className={styles.mermaidToggleCode} onClick={() => setShowCode(!showCode)}>
-            {showCode ? 'Preview' : 'Code'}
-          </button>
-        </div>
+        <button className={styles.mermaidToggleCode} onClick={() => setShowCode(!showCode)}>
+          {showCode ? 'Preview' : 'Code'}
+        </button>
       </div>
       {showCode ? (
         <CodeBlock lang="mermaid" code={code} />
