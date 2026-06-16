@@ -1355,6 +1355,7 @@ export default function MainContent() {
                     model: data.model || routeInfo?.modelName,
                     provider: data.provider || routeInfo?.provider,
                     id: imgEntry.id,
+                    size: data.size,
                   },
                 ];
                 dispatch(updateLastMessage({ generatedImages: newImages }));
