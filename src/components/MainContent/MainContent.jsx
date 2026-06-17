@@ -17,7 +17,6 @@ import {
   addMessage,
   setIsProcessing,
   updateLastMessage,
-  createNewChat,
   setCurrentChat,
   removeLastAssistantMessage,
   setWebSearchEnabled,
@@ -58,7 +57,6 @@ import {
   ChartIcon,
   SparkleIcon,
   BookIcon,
-  NewChatIcon,
   PlusIcon,
   CameraIcon,
   FilePlusIcon,
@@ -1978,30 +1976,6 @@ export default function MainContent() {
     }
   };
 
-  const handleNewChat = () => {
-    requestIdRef.current++;
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    if (completeTimeoutRef.current) {
-      clearTimeout(completeTimeoutRef.current);
-      completeTimeoutRef.current = null;
-    }
-
-    dispatch(createNewChat());
-    dispatch(setInputValue(''));
-    clearAttachedFiles();
-    setActiveDropdown(null);
-    setPipelineStatus('idle');
-    setIsStreaming(false);
-    setStreamedText('');
-    setRouteResult(null);
-    setIsManualRequest(false);
-    setShowThinkingUI(false);
-    navigate('/');
-  };
-
   /**
    * Retry handler.
    */
@@ -2602,14 +2576,6 @@ export default function MainContent() {
                   </button>
                 );
               })()}
-              <button
-                className={styles.newChatNavBtn}
-                onClick={handleNewChat}
-                title="New Chat"
-                aria-label="Start new chat"
-              >
-                <NewChatIcon />
-              </button>
             </>
           ) : (
             <>
