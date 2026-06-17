@@ -2555,6 +2555,7 @@ export default function MainContent() {
                 aria-label="Share conversation"
               >
                 <ShareIcon />
+                <span className={styles.shareBtnLabel}>Share</span>
               </button>
             </>
           )}
