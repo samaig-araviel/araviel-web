@@ -1339,6 +1339,7 @@
     border-radius: 0 16px 16px 0;
     border-left: none;
     transform: translateX(-100%);
+    visibility: hidden;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
   }
 
@@ -1348,12 +1349,14 @@
 
   .sidebar:not(.collapsed) {
     transform: translateX(0);
+    visibility: visible;
   }
 
   .sidebar.collapsed {
     width: min(85vw, 320px);
     padding: 16px 12px;
     transform: translateX(-100%);
+    visibility: hidden;
   }
 
   /* Hide the in-header collapse chevron on mobile (mobile uses mobileCloseBtn) */
