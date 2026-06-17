@@ -252,13 +252,19 @@ export default function Sidebar() {
   }, [loadConversations, isAuthenticated]);
 
   useEffect(() => {
+    let wasMobile = window.innerWidth <= 768;
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const nowMobile = window.innerWidth <= 768;
+      setIsMobile(nowMobile);
+      if (nowMobile && !wasMobile) {
+        dispatch(setCollapsed(true));
+      }
+      wasMobile = nowMobile;
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [dispatch]);
 
   // Publish the sidebar's current rendered width as a CSS variable on
   // the root so position: fixed siblings (e.g. the landing page's

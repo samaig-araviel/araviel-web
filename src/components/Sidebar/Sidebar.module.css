@@ -1333,7 +1333,7 @@
     top: 0;
     left: 0;
     height: var(--app-height);
-    width: 300px;
+    width: min(85vw, 320px);
     margin: 0;
     padding: calc(16px + var(--safe-area-top)) 12px calc(16px + var(--safe-area-bottom));
     border-radius: 0 16px 16px 0;
@@ -1351,7 +1351,7 @@
   }
 
   .sidebar.collapsed {
-    width: 300px;
+    width: min(85vw, 320px);
     padding: 16px 12px;
     transform: translateX(-100%);
   }
