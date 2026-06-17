@@ -2,23 +2,33 @@
 .mobileMenuBtn {
   display: none;
   position: fixed;
-  top: calc(16px + var(--safe-area-top));
+  top: calc(10px + var(--safe-area-top));
   left: calc(16px + var(--safe-area-left));
   z-index: 1001;
   width: 36px;
   height: 36px;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-button);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: none;
   border-radius: 10px;
-  color: var(--text-secondary);
-  transition: background-color 0.15s ease, color 0.15s ease;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .mobileMenuBtn:hover {
-  background-color: var(--bg-button-hover);
+  background-color: var(--bg-hover);
   color: var(--text-primary);
+}
+
+.mobileMenuBtn:active {
+  transform: scale(0.95);
+}
+
+.mobileMenuBtn svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Overlay for mobile */
