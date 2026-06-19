@@ -11,17 +11,12 @@ import {
   MODELS,
   PROVIDERS,
   PROVIDER_ORDER,
-  ACCESS_TIERS,
   getModelsForTier,
   getModelsByProvider,
+  getFeaturedModelsForTier,
 } from '../../data/models';
 import { ChevronDownIcon, ChevronLeftIcon, CheckIcon, ChevronRightIcon } from '../Icons';
 import styles from './ModelSelector.module.css';
-
-// Featured models per tier — one per major provider
-const FEATURED_MODEL_IDS_PRO = ['claude-opus-4-6', 'gpt-5.2', 'gemini-2.5-pro'];
-
-const FEATURED_MODEL_IDS_FREE = ['claude-haiku-4-5-20251001', 'gpt-5-mini', 'gemini-2.5-flash'];
 
 // Routing strategies shown as top-level options
 const ROUTING_OPTIONS = [
@@ -54,9 +49,7 @@ export default function ModelSelector({ imageOnly = false }) {
 
   const featuredModels = useMemo(() => {
     if (imageOnly) return tierModels.slice(0, 3);
-    const featuredIds =
-      userTier === ACCESS_TIERS.pro ? FEATURED_MODEL_IDS_PRO : FEATURED_MODEL_IDS_FREE;
-    return featuredIds.map((id) => tierModels.find((m) => m.id === id)).filter(Boolean);
+    return getFeaturedModelsForTier(userTier, tierModels);
   }, [imageOnly, tierModels, userTier]);
 
   const activeProviders = PROVIDER_ORDER.filter((pid) => tierModelsByProvider[pid]?.length > 0);
