@@ -53,11 +53,6 @@ export const MODEL_PRESENTATION = {
     bestFor: ['Real-time responses', 'High-volume tasks', 'Cost-efficient work'],
     badge: 'Fastest',
   },
-  'claude-3-5-haiku-20241022': {
-    tagline: 'Budget Claude for simple tasks and classification',
-    bestFor: ['Classification', 'Extraction', 'Cost-sensitive workloads'],
-    badge: 'Legacy',
-  },
   'gpt-5.4': {
     tagline: "OpenAI's most capable frontier model",
     bestFor: ['Coding', 'Reasoning', 'Math', 'Long-context analysis'],

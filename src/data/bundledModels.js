@@ -3,8 +3,8 @@
  * Do NOT edit by hand — run `npm run sync-models` to refresh.
  *
  * Source:  https://araviel-api.vercel.app/api/models/catalog
- * Synced:  2026-06-19T01:57:29.698Z
- * Models:  60
+ * Synced:  2026-06-19T11:38:01.501Z
+ * Models:  59
  */
 export const BUNDLED_MODELS = [
   {
@@ -209,35 +209,6 @@ export const BUNDLED_MODELS = [
     },
     accessTier: 'free',
     creditCost: 4,
-  },
-  {
-    id: 'claude-3-5-haiku-20241022',
-    name: 'Claude Haiku 3.5',
-    provider: 'anthropic',
-    description:
-      'Budget Claude for simple tasks and high-volume classification. 200K context, 8K output.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.8,
-      outputPerM: 4,
-    },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 8192,
-    },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
-    },
-    accessTier: 'free',
-    creditCost: 2,
   },
   {
     id: 'gpt-5.5',
@@ -767,7 +738,7 @@ export const BUNDLED_MODELS = [
       'OpenAI flagship image generation. Near-perfect multilingual text rendering, complex compositions, reasoning-driven outputs. Supports transparent backgrounds and arbitrary sizes.',
     speedTier: 'powerful',
     pricing: {
-      inputPerM: 5,
+      inputPerM: 8,
       outputPerM: 30,
     },
     context: {
@@ -967,8 +938,8 @@ export const BUNDLED_MODELS = [
       'Latest Gemini flagship. Best reasoning and coding from Google. 1M context window.',
     speedTier: 'powerful',
     pricing: {
-      inputPerM: 1.25,
-      outputPerM: 10,
+      inputPerM: 2,
+      outputPerM: 12,
     },
     context: {
       inputTokens: 1000000,
@@ -1735,4 +1706,4 @@ export const BUNDLED_MODELS = [
   },
 ];
 
-export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T01:57:29.698Z';
+export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T11:38:01.501Z';
