@@ -81,3 +81,12 @@ export function getUpgradeModels(currentTier) {
 }
 
 export const getProOnlyModels = () => getUpgradeModels(ACCESS_TIERS.free);
+
+const FEATURED_PROVIDERS = ['anthropic', 'openai', 'google'];
+
+export function getFeaturedModelsForTier(tier, fromList) {
+  const source = fromList ?? getModelsForTier(tier);
+  return FEATURED_PROVIDERS.map((providerId) =>
+    source.find((m) => m.provider === providerId)
+  ).filter(Boolean);
+}
