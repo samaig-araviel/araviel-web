@@ -288,4 +288,34 @@ export const MODEL_PRESENTATION = {
     bestFor: ['Noise removal', 'Voice isolation', 'Audio processing'],
     badge: 'Audio',
   },
+  'gpt-5.5': {
+    tagline: "OpenAI's newest frontier model",
+    bestFor: ['Coding', 'Reasoning', 'Math', 'Agentic tasks'],
+    badge: 'New',
+  },
+  'gpt-5.5-pro': {
+    tagline: 'Maximum compute for the hardest problems',
+    bestFor: ['Research', 'Deep reasoning', 'Frontier problems'],
+    badge: 'Max Power',
+  },
+  'gpt-5.4-mini': {
+    tagline: 'Mid-tier reasoning in the GPT-5.4 family',
+    bestFor: ['Cost-efficient reasoning', 'Structured tasks', 'Quick responses'],
+    badge: null,
+  },
+  'gpt-5.4-nano': {
+    tagline: 'Fastest, cheapest reasoning in the 5.4 family',
+    bestFor: ['Summarization', 'Classification', 'High-throughput pipelines'],
+    badge: 'Most Affordable',
+  },
+  'gemini-3.5-flash': {
+    tagline: "Google's newest Flash workhorse",
+    bestFor: ['Fast responses', 'Multimodal tasks', 'Reasoning'],
+    badge: 'New',
+  },
+  'gemini-3.1-flash-lite': {
+    tagline: 'Frontier-class Gemini at budget tier',
+    bestFor: ['High-volume pipelines', 'Cost optimization', 'Quick reasoning'],
+    badge: null,
+  },
 };

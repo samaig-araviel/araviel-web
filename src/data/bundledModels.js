@@ -3,8 +3,8 @@
  * Do NOT edit by hand — run `npm run sync-models` to refresh.
  *
  * Source:  https://araviel-api.vercel.app/api/models/catalog
- * Synced:  2026-06-19T00:15:18.929Z
- * Models:  54
+ * Synced:  2026-06-19T01:29:02.238Z
+ * Models:  60
  */
 export const BUNDLED_MODELS = [
   {
@@ -240,6 +240,64 @@ export const BUNDLED_MODELS = [
     creditCost: 2,
   },
   {
+    id: 'gpt-5.5',
+    name: 'GPT-5.5',
+    provider: 'openai',
+    description:
+      'OpenAI new-generation flagship. Successor to GPT-5.4. Five-level reasoning effort, native Computer Use, 1M+ context.',
+    speedTier: 'powerful',
+    pricing: {
+      inputPerM: 5,
+      outputPerM: 30,
+    },
+    context: {
+      inputTokens: 1000000,
+      outputTokens: 128000,
+    },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: false,
+      webSearch: true,
+      functionCalling: true,
+      streaming: true,
+      imageGeneration: true,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'lite',
+    creditCost: 15,
+  },
+  {
+    id: 'gpt-5.5-pro',
+    name: 'GPT-5.5 Pro',
+    provider: 'openai',
+    description:
+      'Premium GPT-5.5 with more compute for the hardest problems. Responses API only; streaming not supported — routed through background polling.',
+    speedTier: 'powerful',
+    pricing: {
+      inputPerM: 30,
+      outputPerM: 180,
+    },
+    context: {
+      inputTokens: 1050000,
+      outputTokens: 128000,
+    },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: false,
+      webSearch: true,
+      functionCalling: true,
+      streaming: false,
+      imageGeneration: true,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'pro',
+    creditCost: 60,
+  },
+  {
     id: 'gpt-5.4',
     name: 'GPT-5.4',
     provider: 'openai',
@@ -296,6 +354,64 @@ export const BUNDLED_MODELS = [
     },
     accessTier: 'pro',
     creditCost: 60,
+  },
+  {
+    id: 'gpt-5.4-mini',
+    name: 'GPT-5.4 Mini',
+    provider: 'openai',
+    description:
+      'Fast, cost-efficient reasoning in the GPT-5.4 family. Mid-tier between gpt-5-mini and gpt-5.4.',
+    speedTier: 'balanced',
+    pricing: {
+      inputPerM: 0.75,
+      outputPerM: 4.5,
+    },
+    context: {
+      inputTokens: 400000,
+      outputTokens: 128000,
+    },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: false,
+      webSearch: true,
+      functionCalling: true,
+      streaming: true,
+      imageGeneration: false,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'free',
+    creditCost: 3,
+  },
+  {
+    id: 'gpt-5.4-nano',
+    name: 'GPT-5.4 Nano',
+    provider: 'openai',
+    description:
+      'Fastest, cheapest reasoning in the GPT-5.4 family. Summarisation, classification, extraction.',
+    speedTier: 'fast',
+    pricing: {
+      inputPerM: 0.2,
+      outputPerM: 1.25,
+    },
+    context: {
+      inputTokens: 400000,
+      outputTokens: 128000,
+    },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: false,
+      webSearch: false,
+      functionCalling: true,
+      streaming: true,
+      imageGeneration: true,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'lite',
+    creditCost: 1,
   },
   {
     id: 'gpt-5.2',
@@ -815,6 +931,35 @@ export const BUNDLED_MODELS = [
     creditCost: 20,
   },
   {
+    id: 'gemini-3.5-flash',
+    name: 'Gemini 3.5 Flash',
+    provider: 'google',
+    description:
+      'Google new-generation Flash workhorse. Thinking with minimal-to-high effort, native image generation. 1M context.',
+    speedTier: 'fast',
+    pricing: {
+      inputPerM: 1.5,
+      outputPerM: 9,
+    },
+    context: {
+      inputTokens: 1000000,
+      outputTokens: 65536,
+    },
+    capabilities: {
+      vision: true,
+      audio: true,
+      extendedThinking: true,
+      webSearch: true,
+      functionCalling: true,
+      streaming: true,
+      imageGeneration: true,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'lite',
+    creditCost: 5,
+  },
+  {
     id: 'gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro Preview',
     provider: 'google',
@@ -928,6 +1073,35 @@ export const BUNDLED_MODELS = [
     },
     accessTier: 'free',
     creditCost: 2,
+  },
+  {
+    id: 'gemini-3.1-flash-lite',
+    name: 'Gemini 3.1 Flash-Lite',
+    provider: 'google',
+    description:
+      'Frontier-class Gemini at budget tier. Thinking with minimal-to-high effort. Best for high-volume, latency-sensitive tasks.',
+    speedTier: 'fast',
+    pricing: {
+      inputPerM: 0.25,
+      outputPerM: 1.5,
+    },
+    context: {
+      inputTokens: 1000000,
+      outputTokens: 65536,
+    },
+    capabilities: {
+      vision: true,
+      audio: true,
+      extendedThinking: true,
+      webSearch: false,
+      functionCalling: true,
+      streaming: true,
+      imageGeneration: false,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'free',
+    creditCost: 1,
   },
   {
     id: 'gemini-2.5-flash-lite',
@@ -1561,4 +1735,4 @@ export const BUNDLED_MODELS = [
   },
 ];
 
-export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T00:15:18.929Z';
+export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T01:29:02.238Z';
