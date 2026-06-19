@@ -3,10 +3,39 @@
  * Do NOT edit by hand — run `npm run sync-models` to refresh.
  *
  * Source:  https://araviel-api.vercel.app/api/models/catalog
- * Synced:  2026-06-18T23:51:37.451Z
+ * Synced:  2026-06-19T00:15:18.929Z
  * Models:  54
  */
 export const BUNDLED_MODELS = [
+  {
+    id: 'claude-opus-4-8',
+    name: 'Claude Opus 4.8',
+    provider: 'anthropic',
+    description:
+      'Anthropic top-of-stack Opus. Adaptive thinking, agentic coding, high-res vision. Successor to Opus 4.7.',
+    speedTier: 'powerful',
+    pricing: {
+      inputPerM: 5,
+      outputPerM: 25,
+    },
+    context: {
+      inputTokens: 1000000,
+      outputTokens: 128000,
+    },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: true,
+      webSearch: true,
+      functionCalling: true,
+      streaming: true,
+      imageGeneration: false,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'pro',
+    creditCost: 22,
+  },
   {
     id: 'claude-opus-4-7',
     name: 'Claude Opus 4.7',
@@ -1530,35 +1559,6 @@ export const BUNDLED_MODELS = [
     accessTier: 'lite',
     creditCost: 2,
   },
-  {
-    id: 'claude-opus-4-8',
-    name: 'Claude Opus 4.8',
-    provider: 'anthropic',
-    description:
-      'Anthropic top-of-stack Opus. Adaptive thinking, agentic coding, high-res vision. Successor to Opus 4.7.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 5,
-      outputPerM: 25,
-    },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 128000,
-    },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
-    },
-    accessTier: 'pro',
-    creditCost: 22,
-  },
 ];
 
-export const BUNDLED_MODELS_SYNCED_AT = '2026-06-18T23:51:37.451Z';
+export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T00:15:18.929Z';
