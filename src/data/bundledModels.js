@@ -3,7 +3,7 @@
  * Do NOT edit by hand — run `npm run sync-models` to refresh.
  *
  * Source:  https://araviel-api.vercel.app/api/models/catalog
- * Synced:  2026-06-19T01:29:02.238Z
+ * Synced:  2026-06-19T01:57:29.698Z
  * Models:  60
  */
 export const BUNDLED_MODELS = [
@@ -1053,8 +1053,8 @@ export const BUNDLED_MODELS = [
       'Fast workhorse with thinking and native image generation. 1M context. Great balance of speed and quality.',
     speedTier: 'fast',
     pricing: {
-      inputPerM: 0.075,
-      outputPerM: 0.3,
+      inputPerM: 0.3,
+      outputPerM: 2.5,
     },
     context: {
       inputTokens: 1000000,
@@ -1111,8 +1111,8 @@ export const BUNDLED_MODELS = [
       'Ultra-fast, cost-efficient Gemini. 1M context. Best for high-volume, latency-sensitive tasks.',
     speedTier: 'fast',
     pricing: {
-      inputPerM: 0.025,
-      outputPerM: 0.15,
+      inputPerM: 0.1,
+      outputPerM: 0.4,
     },
     context: {
       inputTokens: 1000000,
@@ -1735,4 +1735,4 @@ export const BUNDLED_MODELS = [
   },
 ];
 
-export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T01:29:02.238Z';
+export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T01:57:29.698Z';
