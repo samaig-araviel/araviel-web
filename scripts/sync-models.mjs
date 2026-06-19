@@ -28,7 +28,7 @@ import { dirname, join } from 'node:path';
 
 const FETCH_TIMEOUT_MS = 15_000;
 
-const DEFAULT_CATALOG_URL = 'https://api.araviel.ai/api/models/catalog';
+const DEFAULT_CATALOG_URL = 'https://araviel-api.vercel.app/api/models/catalog';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

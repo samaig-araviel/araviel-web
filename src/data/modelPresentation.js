@@ -8,6 +8,16 @@
  * fall back to empty defaults at render time.
  */
 export const MODEL_PRESENTATION = {
+  'claude-opus-4-8': {
+    tagline: "Anthropic's latest Opus — adaptive thinking and agentic coding at the frontier",
+    bestFor: [
+      'Agentic coding',
+      'Complex reasoning',
+      'Long-horizon autonomy',
+      'Vision & document analysis',
+    ],
+    badge: 'New',
+  },
   'claude-opus-4-7': {
     tagline: 'Most capable Claude with step-change agentic coding and high-res vision',
     bestFor: [
