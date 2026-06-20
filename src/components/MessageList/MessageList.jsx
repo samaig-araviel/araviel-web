@@ -1858,28 +1858,15 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
           <div className={styles.genLightboxStage}>
             <div className={styles.genLightboxBody}>
               {images.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    className={`${styles.genLightboxNav} ${styles.genLightboxNavPrev}`}
-                    onClick={() => setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev))}
-                    disabled={activeIndex === 0}
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeftIcon />
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.genLightboxNav} ${styles.genLightboxNavNext}`}
-                    onClick={() =>
-                      setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : prev))
-                    }
-                    disabled={activeIndex === images.length - 1}
-                    aria-label="Next image"
-                  >
-                    <ChevronRightIcon />
-                  </button>
-                </>
+                <button
+                  type="button"
+                  className={`${styles.genLightboxNav} ${styles.genLightboxNavPrev}`}
+                  onClick={() => setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev))}
+                  disabled={activeIndex === 0}
+                  aria-label="Previous image"
+                >
+                  <ChevronLeftIcon />
+                </button>
               )}
               <img
                 key={activeIndex}
@@ -1887,12 +1874,27 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
                 alt={activeImage.prompt || activeImage.model || 'Generated image'}
                 className={styles.genLightboxImg}
               />
+              {images.length > 1 && (
+                <button
+                  type="button"
+                  className={`${styles.genLightboxNav} ${styles.genLightboxNavNext}`}
+                  onClick={() =>
+                    setActiveIndex((prev) => (prev < images.length - 1 ? prev + 1 : prev))
+                  }
+                  disabled={activeIndex === images.length - 1}
+                  aria-label="Next image"
+                >
+                  <ChevronRightIcon />
+                </button>
+              )}
             </div>
 
             {(activeImage.prompt || activeImage.size || images.length > 1) && (
               <aside className={styles.genLightboxSidePanel}>
                 {activeImage.prompt && (
-                  <p className={styles.genLightboxPrompt}>{activeImage.prompt}</p>
+                  <div className={styles.genLightboxPrompt}>
+                    {renderMarkdown(activeImage.prompt)}
+                  </div>
                 )}
                 {(activeImage.size || images.length > 1) && (
                   <div className={styles.genLightboxMeta}>
