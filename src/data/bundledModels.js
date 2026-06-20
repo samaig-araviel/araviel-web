@@ -3,8 +3,8 @@
  * Do NOT edit by hand — run `npm run sync-models` to refresh.
  *
  * Source:  https://araviel-api.vercel.app/api/models/catalog
- * Synced:  2026-06-19T11:38:01.501Z
- * Models:  59
+ * Synced:  2026-06-19T16:18:01.567Z
+ * Models:  60
  */
 export const BUNDLED_MODELS = [
   {
@@ -1104,6 +1104,35 @@ export const BUNDLED_MODELS = [
     creditCost: 1,
   },
   {
+    id: 'gemini-3.1-flash-image',
+    name: 'Nano Banana 2',
+    provider: 'google',
+    description:
+      'GA image generation from Gemini 3.1. Up to 4K resolution, advanced text rendering, grounding with Google Search for images, mix up to 14 reference images.',
+    speedTier: 'powerful',
+    pricing: {
+      inputPerM: 0.5,
+      outputPerM: 60,
+    },
+    context: {
+      inputTokens: 32000,
+      outputTokens: 8192,
+    },
+    capabilities: {
+      vision: true,
+      audio: false,
+      extendedThinking: false,
+      webSearch: true,
+      functionCalling: false,
+      streaming: false,
+      imageGeneration: true,
+      tts: false,
+      stt: false,
+    },
+    accessTier: 'pro',
+    creditCost: 8,
+  },
+  {
     id: 'gemini-3.1-flash-image-preview',
     name: 'Nano Banana 2',
     provider: 'google',
@@ -1706,4 +1735,4 @@ export const BUNDLED_MODELS = [
   },
 ];
 
-export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T11:38:01.501Z';
+export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T16:18:01.567Z';

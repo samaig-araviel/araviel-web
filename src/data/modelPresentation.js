@@ -178,6 +178,12 @@ export const MODEL_PRESENTATION = {
     bestFor: ['High-volume pipelines', 'Cost optimization', 'Simple tasks'],
     badge: null,
   },
+  'gemini-3.1-flash-image': {
+    tagline:
+      'GA image generation — 4K resolution, advanced text rendering, grounding with Google Search',
+    bestFor: ['Image generation', 'Marketing assets', 'Infographics', 'Multi-image composition'],
+    badge: 'New',
+  },
   'gemini-3.1-flash-image-preview': {
     tagline: 'High-efficiency image generation and editing',
     bestFor: ['Image generation', 'Image editing'],
