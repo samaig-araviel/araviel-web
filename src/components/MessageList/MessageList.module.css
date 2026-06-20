@@ -1552,10 +1552,37 @@
 .genLightboxPrompt em {
   color: rgba(255, 255, 255, 0.85);
 }
+/* Override the chat's boxy .blockquote (flex card with bg + rounded
+   corners) — in the side panel we want simple quoted text with a thin
+   left rule, not a callout card. */
 .genLightboxPrompt blockquote {
-  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  display: block;
+  background: transparent;
+  border-radius: 0;
+  margin: 0 0 10px 0;
   padding: 2px 0 2px 12px;
-  color: rgba(255, 255, 255, 0.7);
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: inherit;
+  line-height: inherit;
+  gap: 0;
+}
+.genLightboxPrompt blockquote :global([class*='blockquoteIcon']) {
+  display: none;
+}
+.genLightboxPrompt blockquote :global([class*='blockquoteContent']) {
+  flex: none;
+  min-width: 0;
+  display: block;
+}
+.genLightboxPrompt blockquote p {
+  margin: 0 0 6px;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.genLightboxPrompt blockquote p:last-child {
+  margin-bottom: 0;
 }
 .genLightboxPrompt code {
   background: rgba(255, 255, 255, 0.08);
