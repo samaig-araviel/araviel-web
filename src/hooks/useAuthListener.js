@@ -175,7 +175,11 @@ export default function useAuthListener() {
         case 'INITIAL_SESSION':
         case 'SIGNED_IN':
         case 'TOKEN_REFRESHED':
-        case 'USER_UPDATED': {
+        case 'USER_UPDATED':
+        // PASSWORD_RECOVERY fires when the user lands on /reset-password
+        // from a reset email — Supabase hydrates a recovery session and
+        // we need it in Redux so ResetPasswordView can render its form.
+        case 'PASSWORD_RECOVERY': {
           const user = mapUser(session?.user);
           setLoggerUser(user?.id || null);
           dispatch(
