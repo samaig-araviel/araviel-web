@@ -1406,19 +1406,17 @@
 }
 
 .genLightboxBody {
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 24px;
   min-width: 0;
   min-height: 0;
   flex-shrink: 1;
 }
 
 .genLightboxNav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -1447,7 +1445,7 @@
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
   opacity: 1;
-  transform: translateY(-50%) scale(1.06);
+  transform: scale(1.06);
 }
 
 .genLightboxNav:focus-visible {
@@ -1459,18 +1457,12 @@
   opacity: 0.25;
   cursor: default;
   pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.genLightboxNavPrev {
-  left: 12px;
-}
-
-.genLightboxNavNext {
-  right: 12px;
 }
 
 @media (max-width: 640px) {
+  .genLightboxBody {
+    gap: 14px;
+  }
   .genLightboxNav {
     width: 38px;
     height: 38px;
@@ -1478,12 +1470,6 @@
   .genLightboxNav svg {
     width: 18px;
     height: 18px;
-  }
-  .genLightboxNavPrev {
-    left: 8px;
-  }
-  .genLightboxNavNext {
-    right: 8px;
   }
 }
 
@@ -1537,9 +1523,61 @@
   font-size: 13.5px;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.78);
-  margin: 0;
-  white-space: pre-wrap;
   word-break: break-word;
+}
+
+.genLightboxPrompt > * {
+  margin: 0 0 10px;
+}
+.genLightboxPrompt > *:last-child {
+  margin-bottom: 0;
+}
+.genLightboxPrompt h1,
+.genLightboxPrompt h2,
+.genLightboxPrompt h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  margin-top: 14px;
+}
+.genLightboxPrompt h1:first-child,
+.genLightboxPrompt h2:first-child,
+.genLightboxPrompt h3:first-child {
+  margin-top: 0;
+}
+.genLightboxPrompt strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+.genLightboxPrompt em {
+  color: rgba(255, 255, 255, 0.85);
+}
+.genLightboxPrompt blockquote {
+  border-left: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 2px 0 2px 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+.genLightboxPrompt code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.genLightboxPrompt ul,
+.genLightboxPrompt ol {
+  padding-left: 20px;
+}
+.genLightboxPrompt li {
+  margin: 2px 0;
+}
+.genLightboxPrompt a {
+  color: rgba(160, 195, 255, 0.95);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.genLightboxPrompt a:hover {
+  color: rgba(190, 215, 255, 1);
 }
 
 .genLightboxMeta {
