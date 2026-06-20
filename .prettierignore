@@ -5,3 +5,4 @@ build
 .git
 public
 coverage
+src/data/bundledModels.js

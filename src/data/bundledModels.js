@@ -3,1736 +3,1690 @@
  * Do NOT edit by hand — run `npm run sync-models` to refresh.
  *
  * Source:  https://araviel-api.vercel.app/api/models/catalog
- * Synced:  2026-06-19T16:18:01.567Z
+ * Synced:  2026-06-20T07:30:42.756Z
  * Models:  60
  */
 export const BUNDLED_MODELS = [
   {
-    id: 'claude-opus-4-8',
-    name: 'Claude Opus 4.8',
-    provider: 'anthropic',
-    description:
-      'Anthropic top-of-stack Opus. Adaptive thinking, agentic coding, high-res vision. Successor to Opus 4.7.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 5,
-      outputPerM: 25,
+    "id": "claude-opus-4-8",
+    "name": "Claude Opus 4.8",
+    "provider": "anthropic",
+    "description": "Anthropic top-of-stack Opus. Adaptive thinking, agentic coding, high-res vision. Successor to Opus 4.7.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 5,
+      "outputPerM": 25
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 22,
+    "accessTier": "pro",
+    "creditCost": 22
   },
   {
-    id: 'claude-opus-4-7',
-    name: 'Claude Opus 4.7',
-    provider: 'anthropic',
-    description:
-      'Most capable Claude. Agentic coding, adaptive thinking, high-res vision (2576px), task budgets, file-system memory. 1M context, 128K output. Released April 2026.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 5,
-      outputPerM: 25,
+    "id": "claude-opus-4-7",
+    "name": "Claude Opus 4.7",
+    "provider": "anthropic",
+    "description": "Most capable Claude. Agentic coding, adaptive thinking, high-res vision (2576px), task budgets, file-system memory. 1M context, 128K output. Released April 2026.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 5,
+      "outputPerM": 25
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 22,
+    "accessTier": "pro",
+    "creditCost": 22
   },
   {
-    id: 'claude-opus-4-6',
-    name: 'Claude Opus 4.6',
-    provider: 'anthropic',
-    description:
-      'Most intelligent Claude. Agent teams, adaptive thinking, compaction. 200K context (1M beta). 128K max output. Released Feb 2026.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 5,
-      outputPerM: 25,
+    "id": "claude-opus-4-6",
+    "name": "Claude Opus 4.6",
+    "provider": "anthropic",
+    "description": "Most intelligent Claude. Agent teams, adaptive thinking, compaction. 200K context (1M beta). 128K max output. Released Feb 2026.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 5,
+      "outputPerM": 25
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 22,
+    "accessTier": "pro",
+    "creditCost": 22
   },
   {
-    id: 'claude-opus-4-5-20251101',
-    name: 'Claude Opus 4.5',
-    provider: 'anthropic',
-    description:
-      'Previous flagship. 80.9% SWE-bench. State-of-the-art coding, reasoning, agentic. 200K context, 64K output.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 5,
-      outputPerM: 25,
+    "id": "claude-opus-4-5-20251101",
+    "name": "Claude Opus 4.5",
+    "provider": "anthropic",
+    "description": "Previous flagship. 80.9% SWE-bench. State-of-the-art coding, reasoning, agentic. 200K context, 64K output.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 5,
+      "outputPerM": 25
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 64000,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 64000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 22,
+    "accessTier": "pro",
+    "creditCost": 22
   },
   {
-    id: 'claude-sonnet-4-6',
-    name: 'Claude Sonnet 4.6',
-    provider: 'anthropic',
-    description:
-      'Best speed/intelligence balance. Near-Opus at 1/5 cost. 79.6% SWE-bench. 200K context (1M beta), 64K output. Feb 2026.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 3,
-      outputPerM: 15,
+    "id": "claude-sonnet-4-6",
+    "name": "Claude Sonnet 4.6",
+    "provider": "anthropic",
+    "description": "Best speed/intelligence balance. Near-Opus at 1/5 cost. 79.6% SWE-bench. 200K context (1M beta), 64K output. Feb 2026.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 3,
+      "outputPerM": 15
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 64000,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 64000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 14,
+    "accessTier": "lite",
+    "creditCost": 14
   },
   {
-    id: 'claude-sonnet-4-5-20250929',
-    name: 'Claude Sonnet 4.5',
-    provider: 'anthropic',
-    description:
-      'Best coding model with industry-leading agent capabilities. Ideal balance of intelligence, speed, cost. 200K context, 64K output.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 3,
-      outputPerM: 15,
+    "id": "claude-sonnet-4-5-20250929",
+    "name": "Claude Sonnet 4.5",
+    "provider": "anthropic",
+    "description": "Best coding model with industry-leading agent capabilities. Ideal balance of intelligence, speed, cost. 200K context, 64K output.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 3,
+      "outputPerM": 15
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 64000,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 64000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 14,
+    "accessTier": "lite",
+    "creditCost": 14
   },
   {
-    id: 'claude-haiku-4-5-20251001',
-    name: 'Claude Haiku 4.5',
-    provider: 'anthropic',
-    description:
-      'Fastest Claude with near-frontier intelligence. High-volume quick tasks. 200K context, 64K output.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 1,
-      outputPerM: 5,
+    "id": "claude-haiku-4-5-20251001",
+    "name": "Claude Haiku 4.5",
+    "provider": "anthropic",
+    "description": "Fastest Claude with near-frontier intelligence. High-volume quick tasks. 200K context, 64K output.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 1,
+      "outputPerM": 5
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 64000,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 64000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 4,
+    "accessTier": "free",
+    "creditCost": 4
   },
   {
-    id: 'gpt-5.5',
-    name: 'GPT-5.5',
-    provider: 'openai',
-    description:
-      'OpenAI new-generation flagship. Successor to GPT-5.4. Five-level reasoning effort, native Computer Use, 1M+ context.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 5,
-      outputPerM: 30,
+    "id": "gpt-5.5",
+    "name": "GPT-5.5",
+    "provider": "openai",
+    "description": "OpenAI new-generation flagship. Successor to GPT-5.4. Five-level reasoning effort, native Computer Use, 1M+ context.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 5,
+      "outputPerM": 30
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 15,
+    "accessTier": "lite",
+    "creditCost": 15
   },
   {
-    id: 'gpt-5.5-pro',
-    name: 'GPT-5.5 Pro',
-    provider: 'openai',
-    description:
-      'Premium GPT-5.5 with more compute for the hardest problems. Responses API only; streaming not supported — routed through background polling.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 30,
-      outputPerM: 180,
+    "id": "gpt-5.5-pro",
+    "name": "GPT-5.5 Pro",
+    "provider": "openai",
+    "description": "Premium GPT-5.5 with more compute for the hardest problems. Responses API only; streaming not supported — routed through background polling.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 30,
+      "outputPerM": 180
     },
-    context: {
-      inputTokens: 1050000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 1050000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 60,
+    "accessTier": "pro",
+    "creditCost": 60
   },
   {
-    id: 'gpt-5.4',
-    name: 'GPT-5.4',
-    provider: 'openai',
-    description:
-      'OpenAI most capable and efficient frontier model for professional work. Five-level reasoning effort, native Computer Use, 1M+ context.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 2.5,
-      outputPerM: 15,
+    "id": "gpt-5.4",
+    "name": "GPT-5.4",
+    "provider": "openai",
+    "description": "OpenAI most capable and efficient frontier model for professional work. Five-level reasoning effort, native Computer Use, 1M+ context.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 2.5,
+      "outputPerM": 15
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 12,
+    "accessTier": "lite",
+    "creditCost": 12
   },
   {
-    id: 'gpt-5.4-pro',
-    name: 'GPT-5.4 Pro',
-    provider: 'openai',
-    description:
-      'Premium GPT-5.4 with more compute. Smarter, more precise responses for tough problems. 1.05M context. Responses API only; long requests may use background mode.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 30,
-      outputPerM: 180,
+    "id": "gpt-5.4-pro",
+    "name": "GPT-5.4 Pro",
+    "provider": "openai",
+    "description": "Premium GPT-5.4 with more compute. Smarter, more precise responses for tough problems. 1.05M context. Responses API only; long requests may use background mode.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 30,
+      "outputPerM": 180
     },
-    context: {
-      inputTokens: 1050000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 1050000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 60,
+    "accessTier": "pro",
+    "creditCost": 60
   },
   {
-    id: 'gpt-5.4-mini',
-    name: 'GPT-5.4 Mini',
-    provider: 'openai',
-    description:
-      'Fast, cost-efficient reasoning in the GPT-5.4 family. Mid-tier between gpt-5-mini and gpt-5.4.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 0.75,
-      outputPerM: 4.5,
+    "id": "gpt-5.4-mini",
+    "name": "GPT-5.4 Mini",
+    "provider": "openai",
+    "description": "Fast, cost-efficient reasoning in the GPT-5.4 family. Mid-tier between gpt-5-mini and gpt-5.4.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 0.75,
+      "outputPerM": 4.5
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 3,
+    "accessTier": "free",
+    "creditCost": 3
   },
   {
-    id: 'gpt-5.4-nano',
-    name: 'GPT-5.4 Nano',
-    provider: 'openai',
-    description:
-      'Fastest, cheapest reasoning in the GPT-5.4 family. Summarisation, classification, extraction.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.2,
-      outputPerM: 1.25,
+    "id": "gpt-5.4-nano",
+    "name": "GPT-5.4 Nano",
+    "provider": "openai",
+    "description": "Fastest, cheapest reasoning in the GPT-5.4 family. Summarisation, classification, extraction.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.2,
+      "outputPerM": 1.25
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 1,
+    "accessTier": "lite",
+    "creditCost": 1
   },
   {
-    id: 'gpt-5.2',
-    name: 'GPT-5.2',
-    provider: 'openai',
-    description:
-      'OpenAI flagship for coding and agentic tasks. Configurable reasoning effort. 400K context, 128K output.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1.75,
-      outputPerM: 14,
+    "id": "gpt-5.2",
+    "name": "GPT-5.2",
+    "provider": "openai",
+    "description": "OpenAI flagship for coding and agentic tasks. Configurable reasoning effort. 400K context, 128K output.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1.75,
+      "outputPerM": 14
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 10,
+    "accessTier": "lite",
+    "creditCost": 10
   },
   {
-    id: 'gpt-5.2-pro',
-    name: 'GPT-5.2 Pro',
-    provider: 'openai',
-    description:
-      'Premium GPT-5.2 with more compute. Smarter, more precise responses. For research and cutting-edge work. 400K context.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 21,
-      outputPerM: 168,
+    "id": "gpt-5.2-pro",
+    "name": "GPT-5.2 Pro",
+    "provider": "openai",
+    "description": "Premium GPT-5.2 with more compute. Smarter, more precise responses. For research and cutting-edge work. 400K context.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 21,
+      "outputPerM": 168
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 50,
+    "accessTier": "pro",
+    "creditCost": 50
   },
   {
-    id: 'gpt-5',
-    name: 'GPT-5',
-    provider: 'openai',
-    description:
-      'Previous intelligent reasoning model. Configurable reasoning effort. 400K context, 128K output.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1.25,
-      outputPerM: 10,
+    "id": "gpt-5",
+    "name": "GPT-5",
+    "provider": "openai",
+    "description": "Previous intelligent reasoning model. Configurable reasoning effort. 400K context, 128K output.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1.25,
+      "outputPerM": 10
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 8,
+    "accessTier": "lite",
+    "creditCost": 8
   },
   {
-    id: 'gpt-5-mini',
-    name: 'GPT-5 Mini',
-    provider: 'openai',
-    description: 'Fast, cost-efficient reasoning. Great balance of power and cost. 400K context.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 0.25,
-      outputPerM: 2,
+    "id": "gpt-5-mini",
+    "name": "GPT-5 Mini",
+    "provider": "openai",
+    "description": "Fast, cost-efficient reasoning. Great balance of power and cost. 400K context.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 0.25,
+      "outputPerM": 2
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'gpt-5-nano',
-    name: 'GPT-5 Nano',
-    provider: 'openai',
-    description:
-      'Fastest, cheapest reasoning model. Summarization, classification, extraction. 400K context.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.05,
-      outputPerM: 0.4,
+    "id": "gpt-5-nano",
+    "name": "GPT-5 Nano",
+    "provider": "openai",
+    "description": "Fastest, cheapest reasoning model. Summarization, classification, extraction. 400K context.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.05,
+      "outputPerM": 0.4
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 1,
+    "accessTier": "lite",
+    "creditCost": 1
   },
   {
-    id: 'gpt-4.1',
-    name: 'GPT-4.1',
-    provider: 'openai',
-    description:
-      'Strong coding and instruction-following. 1M context window. Great for large codebases and long documents.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 2,
-      outputPerM: 8,
+    "id": "gpt-4.1",
+    "name": "GPT-4.1",
+    "provider": "openai",
+    "description": "Strong coding and instruction-following. 1M context window. Great for large codebases and long documents.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 2,
+      "outputPerM": 8
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 32768,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 32768
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 8,
+    "accessTier": "lite",
+    "creditCost": 8
   },
   {
-    id: 'gpt-4.1-mini',
-    name: 'GPT-4.1 Mini',
-    provider: 'openai',
-    description:
-      'Fast, affordable with 1M context. Balanced performance for everyday tasks and coding.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 0.4,
-      outputPerM: 1.6,
+    "id": "gpt-4.1-mini",
+    "name": "GPT-4.1 Mini",
+    "provider": "openai",
+    "description": "Fast, affordable with 1M context. Balanced performance for everyday tasks and coding.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 0.4,
+      "outputPerM": 1.6
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 32768,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 32768
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'gpt-4o',
-    name: 'GPT-4o',
-    provider: 'openai',
-    description:
-      'Multimodal powerhouse with vision, audio, and native image generation. Fast and versatile. 128K context.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 2.5,
-      outputPerM: 10,
+    "id": "gpt-4o",
+    "name": "GPT-4o",
+    "provider": "openai",
+    "description": "Multimodal powerhouse with vision, audio, and native image generation. Fast and versatile. 128K context.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 2.5,
+      "outputPerM": 10
     },
-    context: {
-      inputTokens: 128000,
-      outputTokens: 16384,
+    "context": {
+      "inputTokens": 128000,
+      "outputTokens": 16384
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 8,
+    "accessTier": "lite",
+    "creditCost": 8
   },
   {
-    id: 'gpt-4o-mini',
-    name: 'GPT-4o Mini',
-    provider: 'openai',
-    description:
-      'Affordable multimodal model with native image generation. Fast for everyday tasks. 128K context.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.15,
-      outputPerM: 0.6,
+    "id": "gpt-4o-mini",
+    "name": "GPT-4o Mini",
+    "provider": "openai",
+    "description": "Affordable multimodal model with native image generation. Fast for everyday tasks. 128K context.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.15,
+      "outputPerM": 0.6
     },
-    context: {
-      inputTokens: 128000,
-      outputTokens: 16384,
+    "context": {
+      "inputTokens": 128000,
+      "outputTokens": 16384
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 1,
+    "accessTier": "free",
+    "creditCost": 1
   },
   {
-    id: 'gpt-5.3-codex',
-    name: 'GPT-5.3 Codex',
-    provider: 'openai',
-    description:
-      'OpenAI most advanced agentic coding model. Frontier software engineering with broader reasoning. Supports low, medium, high, and xhigh reasoning effort. 400K context.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1.75,
-      outputPerM: 14,
+    "id": "gpt-5.3-codex",
+    "name": "GPT-5.3 Codex",
+    "provider": "openai",
+    "description": "OpenAI most advanced agentic coding model. Frontier software engineering with broader reasoning. Supports low, medium, high, and xhigh reasoning effort. 400K context.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1.75,
+      "outputPerM": 14
     },
-    context: {
-      inputTokens: 400000,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 400000,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 30,
+    "accessTier": "pro",
+    "creditCost": 30
   },
   {
-    id: 'o3-deep-research',
-    name: 'o3 Deep Research',
-    provider: 'openai',
-    description:
-      'Premium deep research model. Browses the web, synthesizes comprehensive reports. 200K context.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 10,
-      outputPerM: 40,
+    "id": "o3-deep-research",
+    "name": "o3 Deep Research",
+    "provider": "openai",
+    "description": "Premium deep research model. Browses the web, synthesizes comprehensive reports. 200K context.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 10,
+      "outputPerM": 40
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 100000,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 100000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: false,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": false,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 50,
+    "accessTier": "pro",
+    "creditCost": 50
   },
   {
-    id: 'o4-mini-deep-research',
-    name: 'o4-mini Deep Research',
-    provider: 'openai',
-    description: 'Efficient deep research model. Web browsing and report synthesis at lower cost.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1.1,
-      outputPerM: 4.4,
+    "id": "o4-mini-deep-research",
+    "name": "o4-mini Deep Research",
+    "provider": "openai",
+    "description": "Efficient deep research model. Web browsing and report synthesis at lower cost.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1.1,
+      "outputPerM": 4.4
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 100000,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 100000
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: false,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": false,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 15,
+    "accessTier": "lite",
+    "creditCost": 15
   },
   {
-    id: 'gpt-image-2',
-    name: 'GPT Image 2',
-    provider: 'openai',
-    description:
-      'OpenAI flagship image generation. Near-perfect multilingual text rendering, complex compositions, reasoning-driven outputs. Supports transparent backgrounds and arbitrary sizes.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 8,
-      outputPerM: 30,
+    "id": "gpt-image-2",
+    "name": "GPT Image 2",
+    "provider": "openai",
+    "description": "OpenAI flagship image generation. Near-perfect multilingual text rendering, complex compositions, reasoning-driven outputs. Supports transparent backgrounds and arbitrary sizes.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 8,
+      "outputPerM": 30
     },
-    context: {
-      inputTokens: 32000,
-      outputTokens: 4096,
+    "context": {
+      "inputTokens": 32000,
+      "outputTokens": 4096
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 10,
+    "accessTier": "lite",
+    "creditCost": 10
   },
   {
-    id: 'gpt-image-1.5',
-    name: 'GPT Image 1.5',
-    provider: 'openai',
-    description:
-      'Premium image generation model. Best quality from OpenAI. Photorealistic and artistic styles.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 5,
-      outputPerM: 40,
+    "id": "gpt-image-1.5",
+    "name": "GPT Image 1.5",
+    "provider": "openai",
+    "description": "Premium image generation model. Best quality from OpenAI. Photorealistic and artistic styles.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 5,
+      "outputPerM": 40
     },
-    context: {
-      inputTokens: 32000,
-      outputTokens: 4096,
+    "context": {
+      "inputTokens": 32000,
+      "outputTokens": 4096
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 8,
+    "accessTier": "lite",
+    "creditCost": 8
   },
   {
-    id: 'gpt-image-1-mini',
-    name: 'GPT Image 1 Mini',
-    provider: 'openai',
-    description: 'Fast affordable image generation. Good quality at lower cost.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1.675,
-      outputPerM: 6.675,
+    "id": "gpt-image-1-mini",
+    "name": "GPT Image 1 Mini",
+    "provider": "openai",
+    "description": "Fast affordable image generation. Good quality at lower cost.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1.675,
+      "outputPerM": 6.675
     },
-    context: {
-      inputTokens: 32000,
-      outputTokens: 4096,
+    "context": {
+      "inputTokens": 32000,
+      "outputTokens": 4096
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 4,
+    "accessTier": "free",
+    "creditCost": 4
   },
   {
-    id: 'gpt-4o-mini-tts',
-    name: 'GPT-4o Mini TTS',
-    provider: 'openai',
-    description: 'Text-to-speech with natural voice output. Multiple voices and styles.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 0.6,
-      outputPerM: 2.4,
+    "id": "gpt-4o-mini-tts",
+    "name": "GPT-4o Mini TTS",
+    "provider": "openai",
+    "description": "Text-to-speech with natural voice output. Multiple voices and styles.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 0.6,
+      "outputPerM": 2.4
     },
-    context: {
-      inputTokens: 16000,
-      outputTokens: 8000,
+    "context": {
+      "inputTokens": 16000,
+      "outputTokens": 8000
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: true,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": true,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 3,
+    "accessTier": "lite",
+    "creditCost": 3
   },
   {
-    id: 'gpt-4o-mini-transcribe',
-    name: 'GPT-4o Mini Transcribe',
-    provider: 'openai',
-    description:
-      'Speech-to-text transcription. Fast and accurate audio transcription with language detection.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.3,
-      outputPerM: 1.2,
+    "id": "gpt-4o-mini-transcribe",
+    "name": "GPT-4o Mini Transcribe",
+    "provider": "openai",
+    "description": "Speech-to-text transcription. Fast and accurate audio transcription with language detection.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.3,
+      "outputPerM": 1.2
     },
-    context: {
-      inputTokens: 128000,
-      outputTokens: 16384,
+    "context": {
+      "inputTokens": 128000,
+      "outputTokens": 16384
     },
-    capabilities: {
-      vision: false,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: true,
+    "capabilities": {
+      "vision": false,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": true
     },
-    accessTier: 'lite',
-    creditCost: 2,
+    "accessTier": "lite",
+    "creditCost": 2
   },
   {
-    id: 'gpt-realtime',
-    name: 'GPT Realtime',
-    provider: 'openai',
-    description: 'Realtime audio-to-audio model. Voice conversations with low latency.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 40,
-      outputPerM: 80,
+    "id": "gpt-realtime",
+    "name": "GPT Realtime",
+    "provider": "openai",
+    "description": "Realtime audio-to-audio model. Voice conversations with low latency.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 40,
+      "outputPerM": 80
     },
-    context: {
-      inputTokens: 128000,
-      outputTokens: 16384,
+    "context": {
+      "inputTokens": 128000,
+      "outputTokens": 16384
     },
-    capabilities: {
-      vision: false,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: true,
-      stt: true,
+    "capabilities": {
+      "vision": false,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": true,
+      "stt": true
     },
-    accessTier: 'pro',
-    creditCost: 20,
+    "accessTier": "pro",
+    "creditCost": 20
   },
   {
-    id: 'gemini-3.5-flash',
-    name: 'Gemini 3.5 Flash',
-    provider: 'google',
-    description:
-      'Google new-generation Flash workhorse. Thinking with minimal-to-high effort, native image generation. 1M context.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 1.5,
-      outputPerM: 9,
+    "id": "gemini-3.5-flash",
+    "name": "Gemini 3.5 Flash",
+    "provider": "google",
+    "description": "Google new-generation Flash workhorse. Thinking with minimal-to-high effort, native image generation. 1M context.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 1.5,
+      "outputPerM": 9
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 5,
+    "accessTier": "lite",
+    "creditCost": 5
   },
   {
-    id: 'gemini-3.1-pro-preview',
-    name: 'Gemini 3.1 Pro Preview',
-    provider: 'google',
-    description:
-      'Latest Gemini flagship. Best reasoning and coding from Google. 1M context window.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 2,
-      outputPerM: 12,
+    "id": "gemini-3.1-pro-preview",
+    "name": "Gemini 3.1 Pro Preview",
+    "provider": "google",
+    "description": "Latest Gemini flagship. Best reasoning and coding from Google. 1M context window.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 2,
+      "outputPerM": 12
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 20,
+    "accessTier": "pro",
+    "creditCost": 20
   },
   {
-    id: 'gemini-3-flash-preview',
-    name: 'Gemini 3 Flash Preview',
-    provider: 'google',
-    description: 'Fast next-gen Gemini model. Low latency with strong performance. 1M context.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 0.15,
-      outputPerM: 0.6,
+    "id": "gemini-3-flash-preview",
+    "name": "Gemini 3 Flash Preview",
+    "provider": "google",
+    "description": "Fast next-gen Gemini model. Low latency with strong performance. 1M context.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 0.15,
+      "outputPerM": 0.6
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 5,
+    "accessTier": "lite",
+    "creditCost": 5
   },
   {
-    id: 'gemini-2.5-pro',
-    name: 'Gemini 2.5 Pro',
-    provider: 'google',
-    description:
-      'Flagship Gemini model with extended thinking. Excellent at reasoning, coding, and analysis. 1M context.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 1.25,
-      outputPerM: 10,
+    "id": "gemini-2.5-pro",
+    "name": "Gemini 2.5 Pro",
+    "provider": "google",
+    "description": "Flagship Gemini model with extended thinking. Excellent at reasoning, coding, and analysis. 1M context.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 1.25,
+      "outputPerM": 10
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 12,
+    "accessTier": "lite",
+    "creditCost": 12
   },
   {
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
-    provider: 'google',
-    description:
-      'Fast workhorse with thinking and native image generation. 1M context. Great balance of speed and quality.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.3,
-      outputPerM: 2.5,
+    "id": "gemini-2.5-flash",
+    "name": "Gemini 2.5 Flash",
+    "provider": "google",
+    "description": "Fast workhorse with thinking and native image generation. 1M context. Great balance of speed and quality.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.3,
+      "outputPerM": 2.5
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'gemini-3.1-flash-lite',
-    name: 'Gemini 3.1 Flash-Lite',
-    provider: 'google',
-    description:
-      'Frontier-class Gemini at budget tier. Thinking with minimal-to-high effort. Best for high-volume, latency-sensitive tasks.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.25,
-      outputPerM: 1.5,
+    "id": "gemini-3.1-flash-lite",
+    "name": "Gemini 3.1 Flash-Lite",
+    "provider": "google",
+    "description": "Frontier-class Gemini at budget tier. Thinking with minimal-to-high effort. Best for high-volume, latency-sensitive tasks.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.25,
+      "outputPerM": 1.5
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: true,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": true,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 1,
+    "accessTier": "free",
+    "creditCost": 1
   },
   {
-    id: 'gemini-2.5-flash-lite',
-    name: 'Gemini 2.5 Flash-Lite',
-    provider: 'google',
-    description:
-      'Ultra-fast, cost-efficient Gemini. 1M context. Best for high-volume, latency-sensitive tasks.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.1,
-      outputPerM: 0.4,
+    "id": "gemini-2.5-flash-lite",
+    "name": "Gemini 2.5 Flash-Lite",
+    "provider": "google",
+    "description": "Ultra-fast, cost-efficient Gemini. 1M context. Best for high-volume, latency-sensitive tasks.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.1,
+      "outputPerM": 0.4
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 1,
+    "accessTier": "free",
+    "creditCost": 1
   },
   {
-    id: 'gemini-3.1-flash-image',
-    name: 'Nano Banana 2',
-    provider: 'google',
-    description:
-      'GA image generation from Gemini 3.1. Up to 4K resolution, advanced text rendering, grounding with Google Search for images, mix up to 14 reference images.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 0.5,
-      outputPerM: 60,
+    "id": "gemini-3.1-flash-image",
+    "name": "Nano Banana 2",
+    "provider": "google",
+    "description": "GA image generation from Gemini 3.1. Up to 4K resolution, advanced text rendering, grounding with Google Search for images, mix up to 14 reference images.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 0.5,
+      "outputPerM": 60
     },
-    context: {
-      inputTokens: 32000,
-      outputTokens: 8192,
+    "context": {
+      "inputTokens": 32000,
+      "outputTokens": 8192
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 8,
+    "accessTier": "pro",
+    "creditCost": 8
   },
   {
-    id: 'gemini-3.1-flash-image-preview',
-    name: 'Nano Banana 2',
-    provider: 'google',
-    description: 'Next-gen Google image generation from Gemini 3.1. High quality, fast rendering.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 0.15,
-      outputPerM: 0.6,
+    "id": "gemini-3.1-flash-image-preview",
+    "name": "Nano Banana 2",
+    "provider": "google",
+    "description": "Next-gen Google image generation from Gemini 3.1. High quality, fast rendering.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 0.15,
+      "outputPerM": 0.6
     },
-    context: {
-      inputTokens: 32000,
-      outputTokens: 8192,
+    "context": {
+      "inputTokens": 32000,
+      "outputTokens": 8192
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 4,
+    "accessTier": "lite",
+    "creditCost": 4
   },
   {
-    id: 'gemini-2.5-flash-image',
-    name: 'Nano Banana',
-    provider: 'google',
-    description: 'Free image generation from Gemini 2.5 Flash. Good quality, budget-friendly.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 0.075,
-      outputPerM: 0.3,
+    "id": "gemini-2.5-flash-image",
+    "name": "Nano Banana",
+    "provider": "google",
+    "description": "Free image generation from Gemini 2.5 Flash. Good quality, budget-friendly.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 0.075,
+      "outputPerM": 0.3
     },
-    context: {
-      inputTokens: 32000,
-      outputTokens: 8192,
+    "context": {
+      "inputTokens": 32000,
+      "outputTokens": 8192
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'imagen-4.0-fast-generate-001',
-    name: 'Imagen 4 Fast',
-    provider: 'google',
-    description: 'Fast image generation from Google Imagen 4. Optimized for speed.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1,
-      outputPerM: 4,
+    "id": "imagen-4.0-fast-generate-001",
+    "name": "Imagen 4 Fast",
+    "provider": "google",
+    "description": "Fast image generation from Google Imagen 4. Optimized for speed.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1,
+      "outputPerM": 4
     },
-    context: {
-      inputTokens: 4096,
-      outputTokens: 1024,
+    "context": {
+      "inputTokens": 4096,
+      "outputTokens": 1024
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'imagen-4.0-generate-001',
-    name: 'Imagen 4 Standard',
-    provider: 'google',
-    description:
-      'Premium image generation from Google Imagen 4. Highest quality, photorealistic output.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 2,
-      outputPerM: 8,
+    "id": "imagen-4.0-generate-001",
+    "name": "Imagen 4 Standard",
+    "provider": "google",
+    "description": "Premium image generation from Google Imagen 4. Highest quality, photorealistic output.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 2,
+      "outputPerM": 8
     },
-    context: {
-      inputTokens: 4096,
-      outputTokens: 1024,
+    "context": {
+      "inputTokens": 4096,
+      "outputTokens": 1024
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: true,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": true,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 6,
+    "accessTier": "lite",
+    "creditCost": 6
   },
   {
-    id: 'veo-3.1-generate-preview',
-    name: 'Veo 3.1',
-    provider: 'google',
-    description:
-      'Google video generation model. Text-to-video with high fidelity and cinematic quality.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 12,
-      outputPerM: 50,
+    "id": "veo-3.1-generate-preview",
+    "name": "Veo 3.1",
+    "provider": "google",
+    "description": "Google video generation model. Text-to-video with high fidelity and cinematic quality.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 12,
+      "outputPerM": 50
     },
-    context: {
-      inputTokens: 16000,
-      outputTokens: 4096,
+    "context": {
+      "inputTokens": 16000,
+      "outputTokens": 4096
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 80,
+    "accessTier": "pro",
+    "creditCost": 80
   },
   {
-    id: 'gemini-2.5-flash-preview-tts',
-    name: 'Gemini 2.5 Flash TTS',
-    provider: 'google',
-    description:
-      'Text-to-speech from Gemini Flash. Natural-sounding voice synthesis with multiple voices.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.15,
-      outputPerM: 0.6,
+    "id": "gemini-2.5-flash-preview-tts",
+    "name": "Gemini 2.5 Flash TTS",
+    "provider": "google",
+    "description": "Text-to-speech from Gemini Flash. Natural-sounding voice synthesis with multiple voices.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.15,
+      "outputPerM": 0.6
     },
-    context: {
-      inputTokens: 16000,
-      outputTokens: 8000,
+    "context": {
+      "inputTokens": 16000,
+      "outputTokens": 8000
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: true,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": true,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 2,
+    "accessTier": "lite",
+    "creditCost": 2
   },
   {
-    id: 'gemini-2.5-flash-native-audio-preview-12-2025',
-    name: 'Gemini 2.5 Flash Live',
-    provider: 'google',
-    description:
-      'Realtime audio model from Google. Low-latency voice conversations with native audio.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 3,
-      outputPerM: 12,
+    "id": "gemini-2.5-flash-native-audio-preview-12-2025",
+    "name": "Gemini 2.5 Flash Live",
+    "provider": "google",
+    "description": "Realtime audio model from Google. Low-latency voice conversations with native audio.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 3,
+      "outputPerM": 12
     },
-    context: {
-      inputTokens: 128000,
-      outputTokens: 16384,
+    "context": {
+      "inputTokens": 128000,
+      "outputTokens": 16384
     },
-    capabilities: {
-      vision: true,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: true,
-      stt: true,
+    "capabilities": {
+      "vision": true,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": true,
+      "stt": true
     },
-    accessTier: 'pro',
-    creditCost: 15,
+    "accessTier": "pro",
+    "creditCost": 15
   },
   {
-    id: 'deep-research-pro-preview-12-2025',
-    name: 'Gemini Deep Research',
-    provider: 'google',
-    description:
-      'Google deep research agent. Multi-step web research with comprehensive synthesis.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1.25,
-      outputPerM: 10,
+    "id": "deep-research-pro-preview-12-2025",
+    "name": "Gemini Deep Research",
+    "provider": "google",
+    "description": "Google deep research agent. Multi-step web research with comprehensive synthesis.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1.25,
+      "outputPerM": 10
     },
-    context: {
-      inputTokens: 1000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 1000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 40,
+    "accessTier": "pro",
+    "creditCost": 40
   },
   {
-    id: 'grok-4',
-    name: 'Grok 4',
-    provider: 'xai',
-    description:
-      'xAI flagship reasoning model. Strong at web search, reasoning, and real-time data. 256K context.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 3,
-      outputPerM: 15,
+    "id": "grok-4",
+    "name": "Grok 4",
+    "provider": "xai",
+    "description": "xAI flagship reasoning model. Strong at web search, reasoning, and real-time data. 256K context.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 3,
+      "outputPerM": 15
     },
-    context: {
-      inputTokens: 256000,
-      outputTokens: 32768,
+    "context": {
+      "inputTokens": 256000,
+      "outputTokens": 32768
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: true,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": true,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 10,
+    "accessTier": "lite",
+    "creditCost": 10
   },
   {
-    id: 'grok-4.1-fast',
-    name: 'Grok 4.1 Fast',
-    provider: 'xai',
-    description: 'Latest fast Grok model. 2M context window. Great for large document processing.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 0.5,
-      outputPerM: 2,
+    "id": "grok-4.1-fast",
+    "name": "Grok 4.1 Fast",
+    "provider": "xai",
+    "description": "Latest fast Grok model. 2M context window. Great for large document processing.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 0.5,
+      "outputPerM": 2
     },
-    context: {
-      inputTokens: 2000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 2000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'grok-4-fast',
-    name: 'Grok 4 Fast',
-    provider: 'xai',
-    description: 'Fast Grok 4 model. 2M context. Efficient for everyday tasks with web access.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 0.5,
-      outputPerM: 2,
+    "id": "grok-4-fast",
+    "name": "Grok 4 Fast",
+    "provider": "xai",
+    "description": "Fast Grok 4 model. 2M context. Efficient for everyday tasks with web access.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 0.5,
+      "outputPerM": 2
     },
-    context: {
-      inputTokens: 2000000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 2000000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: true,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: true,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": true,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": true,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'sonar',
-    name: 'Perplexity Sonar',
-    provider: 'perplexity',
-    description: 'Real-time web search AI. Answers with citations from live web data.',
-    speedTier: 'balanced',
-    pricing: {
-      inputPerM: 1,
-      outputPerM: 1,
+    "id": "sonar",
+    "name": "Perplexity Sonar",
+    "provider": "perplexity",
+    "description": "Real-time web search AI. Answers with citations from live web data.",
+    "speedTier": "balanced",
+    "pricing": {
+      "inputPerM": 1,
+      "outputPerM": 1
     },
-    context: {
-      inputTokens: 128000,
-      outputTokens: 16384,
+    "context": {
+      "inputTokens": 128000,
+      "outputTokens": 16384
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'free',
-    creditCost: 2,
+    "accessTier": "free",
+    "creditCost": 2
   },
   {
-    id: 'sonar-pro',
-    name: 'Perplexity Sonar Pro',
-    provider: 'perplexity',
-    description:
-      'Advanced search AI with multi-step web research. Deeper analysis and more comprehensive results.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 3,
-      outputPerM: 15,
+    "id": "sonar-pro",
+    "name": "Perplexity Sonar Pro",
+    "provider": "perplexity",
+    "description": "Advanced search AI with multi-step web research. Deeper analysis and more comprehensive results.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 3,
+      "outputPerM": 15
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 32768,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 32768
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 8,
+    "accessTier": "lite",
+    "creditCost": 8
   },
   {
-    id: 'sonar-reasoning-pro',
-    name: 'Perplexity Sonar Reasoning Pro',
-    provider: 'perplexity',
-    description:
-      'Reasoning-enhanced search. Combines chain-of-thought with real-time web search for complex questions.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 2,
-      outputPerM: 8,
+    "id": "sonar-reasoning-pro",
+    "name": "Perplexity Sonar Reasoning Pro",
+    "provider": "perplexity",
+    "description": "Reasoning-enhanced search. Combines chain-of-thought with real-time web search for complex questions.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 2,
+      "outputPerM": 8
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 32768,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 32768
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 15,
+    "accessTier": "pro",
+    "creditCost": 15
   },
   {
-    id: 'sonar-deep-research',
-    name: 'Perplexity Sonar Deep Research',
-    provider: 'perplexity',
-    description:
-      'Deep research agent. Autonomous multi-step web research with comprehensive analysis and citations.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 2,
-      outputPerM: 8,
+    "id": "sonar-deep-research",
+    "name": "Perplexity Sonar Deep Research",
+    "provider": "perplexity",
+    "description": "Deep research agent. Autonomous multi-step web research with comprehensive analysis and citations.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 2,
+      "outputPerM": 8
     },
-    context: {
-      inputTokens: 200000,
-      outputTokens: 65536,
+    "context": {
+      "inputTokens": 200000,
+      "outputTokens": 65536
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: true,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": true,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 30,
+    "accessTier": "pro",
+    "creditCost": 30
   },
   {
-    id: 'eleven_flash_v2_5',
-    name: 'ElevenLabs TTS Flash',
-    provider: 'elevenlabs',
-    description:
-      'Low-latency text-to-speech. Natural voices with fast generation. Ideal for real-time applications.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.8,
-      outputPerM: 0,
+    "id": "eleven_flash_v2_5",
+    "name": "ElevenLabs TTS Flash",
+    "provider": "elevenlabs",
+    "description": "Low-latency text-to-speech. Natural voices with fast generation. Ideal for real-time applications.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.8,
+      "outputPerM": 0
     },
-    context: {
-      inputTokens: 40000,
-      outputTokens: 0,
+    "context": {
+      "inputTokens": 40000,
+      "outputTokens": 0
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: true,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": true,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 2,
+    "accessTier": "lite",
+    "creditCost": 2
   },
   {
-    id: 'eleven_multilingual_v2',
-    name: 'ElevenLabs TTS Multilingual',
-    provider: 'elevenlabs',
-    description:
-      'Premium multilingual text-to-speech. 29 languages with voice cloning. Highest quality voice synthesis.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 1.6,
-      outputPerM: 0,
+    "id": "eleven_multilingual_v2",
+    "name": "ElevenLabs TTS Multilingual",
+    "provider": "elevenlabs",
+    "description": "Premium multilingual text-to-speech. 29 languages with voice cloning. Highest quality voice synthesis.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 1.6,
+      "outputPerM": 0
     },
-    context: {
-      inputTokens: 40000,
-      outputTokens: 0,
+    "context": {
+      "inputTokens": 40000,
+      "outputTokens": 0
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: true,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": true,
+      "stt": false
     },
-    accessTier: 'pro',
-    creditCost: 5,
+    "accessTier": "pro",
+    "creditCost": 5
   },
   {
-    id: 'scribe_v2',
-    name: 'ElevenLabs Scribe STT',
-    provider: 'elevenlabs',
-    description:
-      'High-accuracy speech-to-text. Supports 99 languages with speaker diarization and timestamps.',
-    speedTier: 'fast',
-    pricing: {
-      inputPerM: 0.5,
-      outputPerM: 0,
+    "id": "scribe_v2",
+    "name": "ElevenLabs Scribe STT",
+    "provider": "elevenlabs",
+    "description": "High-accuracy speech-to-text. Supports 99 languages with speaker diarization and timestamps.",
+    "speedTier": "fast",
+    "pricing": {
+      "inputPerM": 0.5,
+      "outputPerM": 0
     },
-    context: {
-      inputTokens: 0,
-      outputTokens: 128000,
+    "context": {
+      "inputTokens": 0,
+      "outputTokens": 128000
     },
-    capabilities: {
-      vision: false,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: true,
-      imageGeneration: false,
-      tts: false,
-      stt: true,
+    "capabilities": {
+      "vision": false,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": true,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": true
     },
-    accessTier: 'lite',
-    creditCost: 2,
+    "accessTier": "lite",
+    "creditCost": 2
   },
   {
-    id: 'elevenlabs-music',
-    name: 'ElevenLabs Music',
-    provider: 'elevenlabs',
-    description: 'AI music generation. Create original music tracks from text descriptions.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 2,
-      outputPerM: 0,
+    "id": "elevenlabs-music",
+    "name": "ElevenLabs Music",
+    "provider": "elevenlabs",
+    "description": "AI music generation. Create original music tracks from text descriptions.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 2,
+      "outputPerM": 0
     },
-    context: {
-      inputTokens: 4096,
-      outputTokens: 0,
+    "context": {
+      "inputTokens": 4096,
+      "outputTokens": 0
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 5,
+    "accessTier": "lite",
+    "creditCost": 5
   },
   {
-    id: 'elevenlabs-sfx',
-    name: 'ElevenLabs Sound Effects',
-    provider: 'elevenlabs',
-    description: 'AI sound effects generation. Create custom sound effects from text descriptions.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 1,
-      outputPerM: 0,
+    "id": "elevenlabs-sfx",
+    "name": "ElevenLabs Sound Effects",
+    "provider": "elevenlabs",
+    "description": "AI sound effects generation. Create custom sound effects from text descriptions.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 1,
+      "outputPerM": 0
     },
-    context: {
-      inputTokens: 4096,
-      outputTokens: 0,
+    "context": {
+      "inputTokens": 4096,
+      "outputTokens": 0
     },
-    capabilities: {
-      vision: false,
-      audio: false,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": false,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 3,
+    "accessTier": "lite",
+    "creditCost": 3
   },
   {
-    id: 'elevenlabs-voice-isolator',
-    name: 'ElevenLabs Voice Isolator',
-    provider: 'elevenlabs',
-    description:
-      'AI voice isolation and noise removal. Separate voice from background noise in audio.',
-    speedTier: 'powerful',
-    pricing: {
-      inputPerM: 0.8,
-      outputPerM: 0,
+    "id": "elevenlabs-voice-isolator",
+    "name": "ElevenLabs Voice Isolator",
+    "provider": "elevenlabs",
+    "description": "AI voice isolation and noise removal. Separate voice from background noise in audio.",
+    "speedTier": "powerful",
+    "pricing": {
+      "inputPerM": 0.8,
+      "outputPerM": 0
     },
-    context: {
-      inputTokens: 0,
-      outputTokens: 0,
+    "context": {
+      "inputTokens": 0,
+      "outputTokens": 0
     },
-    capabilities: {
-      vision: false,
-      audio: true,
-      extendedThinking: false,
-      webSearch: false,
-      functionCalling: false,
-      streaming: false,
-      imageGeneration: false,
-      tts: false,
-      stt: false,
+    "capabilities": {
+      "vision": false,
+      "audio": true,
+      "extendedThinking": false,
+      "webSearch": false,
+      "functionCalling": false,
+      "streaming": false,
+      "imageGeneration": false,
+      "tts": false,
+      "stt": false
     },
-    accessTier: 'lite',
-    creditCost: 2,
-  },
+    "accessTier": "lite",
+    "creditCost": 2
+  }
 ];
 
-export const BUNDLED_MODELS_SYNCED_AT = '2026-06-19T16:18:01.567Z';
+export const BUNDLED_MODELS_SYNCED_AT = "2026-06-20T07:30:42.756Z";
