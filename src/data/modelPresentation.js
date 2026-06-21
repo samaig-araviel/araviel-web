@@ -184,26 +184,6 @@ export const MODEL_PRESENTATION = {
     bestFor: ['Image generation', 'Marketing assets', 'Infographics', 'Multi-image composition'],
     badge: 'New',
   },
-  'gemini-3.1-flash-image-preview': {
-    tagline: 'High-efficiency image generation and editing',
-    bestFor: ['Image generation', 'Image editing'],
-    badge: 'Image Gen',
-  },
-  'gemini-2.5-flash-image': {
-    tagline: 'Native image generation and editing',
-    bestFor: ['Budget image generation', 'Image editing'],
-    badge: 'Image Gen',
-  },
-  'imagen-4.0-fast-generate-001': {
-    tagline: 'Fast text-to-image with exceptional clarity',
-    bestFor: ['Fast image creation', 'High-clarity images'],
-    badge: 'Image Gen',
-  },
-  'imagen-4.0-generate-001': {
-    tagline: 'Best text rendering and highest quality images',
-    bestFor: ['Highest quality images', 'Text rendering', 'Visual content'],
-    badge: 'Image Gen',
-  },
   'veo-3.1-generate-preview': {
     tagline: 'Cinematic video generation with synced audio',
     bestFor: ['Video creation', 'Cinematic content', 'High-fidelity video'],
