@@ -1772,6 +1772,7 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
   const { downloading, handleDownload } = useImageDownload();
   const thumbListRef = useRef(null);
   const activeThumbRef = useRef(null);
+  const touchStartRef = useRef(null);
 
   const activeImage = images[activeIndex] || images[0];
   const providerData = activeImage?.provider ? PROVIDERS[activeImage.provider] : null;
@@ -1796,6 +1797,27 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
       activeThumbRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [activeIndex]);
+
+  const handleTouchStart = (e) => {
+    if (images.length <= 1) return;
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStartRef.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touchStartRef.current.x;
+    const dy = t.clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    // Horizontal swipe only — must travel >50px and dominate any vertical motion
+    if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+    setActiveIndex((prev) => {
+      if (dx < 0 && prev < images.length - 1) return prev + 1;
+      if (dx > 0 && prev > 0) return prev - 1;
+      return prev;
+    });
+  };
 
   if (!activeImage) return null;
 
@@ -1856,7 +1878,11 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
           )}
 
           <div className={styles.genLightboxStage}>
-            <div className={styles.genLightboxBody}>
+            <div
+              className={styles.genLightboxBody}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               {images.length > 1 && (
                 <button
                   type="button"
