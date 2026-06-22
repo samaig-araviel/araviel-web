@@ -1176,6 +1176,17 @@ export default function MainContent() {
               // Save the conversationId from backend (may be newly created)
               if (data.conversationId) {
                 dispatch(setCurrentChat(data.conversationId));
+                // Sync the address bar so back/forward, refresh, and copy-link all
+                // work. replaceState (not navigate) because a real route change would
+                // remount MainContent and kill the in-flight stream — the router
+                // still picks up the new URL on refresh, share, and popstate.
+                const targetPath = `/conversations/${data.conversationId}`;
+                if (
+                  window.location.pathname !== targetPath &&
+                  window.location.pathname !== `/chat/${data.conversationId}`
+                ) {
+                  window.history.replaceState(null, '', targetPath);
+                }
                 // Notify sidebar to refresh conversations list immediately
                 window.dispatchEvent(new CustomEvent('araviel-conversation-updated'));
                 // Once the backend creates a native conversation, clear imported context

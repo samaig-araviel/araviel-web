@@ -232,15 +232,18 @@ export default function ImageGalleryView() {
     setDisplayedCount(PAGE_SIZE);
   }, [filterModel]);
 
-  // Handle deep link to specific image via route param
+  // Sync lightbox with URL: opens on /images/:id, closes on /images.
   useEffect(() => {
-    if (routeImageId && images.length > 0) {
-      const idx = images.findIndex((img) => img.id === routeImageId);
-      if (idx !== -1) {
-        // Ensure the target image is within the currently displayed slice
-        setDisplayedCount((c) => (idx >= c ? Math.ceil((idx + 1) / PAGE_SIZE) * PAGE_SIZE : c));
-        setLightboxIdx(idx);
-      }
+    if (!routeImageId) {
+      setLightboxIdx(null);
+      return;
+    }
+    if (images.length === 0) return;
+    const idx = images.findIndex((img) => img.id === routeImageId);
+    if (idx !== -1) {
+      // Ensure the target image is within the currently displayed slice
+      setDisplayedCount((c) => (idx >= c ? Math.ceil((idx + 1) / PAGE_SIZE) * PAGE_SIZE : c));
+      setLightboxIdx(idx);
     }
   }, [routeImageId, images]);
 
@@ -692,7 +695,10 @@ export default function ImageGalleryView() {
                   return (
                     <div key={img.id} className={cardClassName} style={cardStyle}>
                       <div className={styles.cardImageWrapper}>
-                        <button className={styles.cardImage} onClick={() => setLightboxIdx(idx)}>
+                        <button
+                          className={styles.cardImage}
+                          onClick={() => navigate(`/images/${img.id}`)}
+                        >
                           <img
                             src={img.url}
                             alt={img.prompt || 'Generated image'}
@@ -712,7 +718,7 @@ export default function ImageGalleryView() {
                           <div className={styles.cardOverlayBottom}>
                             <button
                               className={styles.cardOverlayBtn}
-                              onClick={() => setLightboxIdx(idx)}
+                              onClick={() => navigate(`/images/${img.id}`)}
                               title="View full size"
                             >
                               <MaximizeIcon />
@@ -820,11 +826,11 @@ export default function ImageGalleryView() {
           <ImageDetailView
             images={visibleImages}
             startIndex={lightboxIdx}
-            onClose={() => setLightboxIdx(null)}
+            onClose={() => navigate('/images')}
             onDownload={handleDownload}
             onDelete={(id) => {
               handleDelete(id);
-              setLightboxIdx(null);
+              navigate('/images');
             }}
           />,
           document.body
