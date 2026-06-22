@@ -1627,17 +1627,205 @@
     flex-direction: column;
     gap: 16px;
     padding: 0 20px 16px;
+    overflow: hidden;
+  }
+  .genLightboxBody {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
   }
   .genLightboxSidePanel {
-    width: 100%;
-    max-width: min(640px, 92vw);
-    max-height: 28vh;
-    align-self: stretch;
-    padding: 0;
+    display: none;
   }
   .genLightboxImg {
-    max-height: calc(var(--app-height) - 260px);
+    max-height: 100%;
+    max-width: 100%;
   }
+  /* Detach nav chevrons from the flex row so wide images can't push them
+     off-screen. They overlay the image edges with their backdrop blur. */
+  .genLightboxNav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+  }
+  .genLightboxNav:hover {
+    transform: translateY(-50%) scale(1.06);
+  }
+  .genLightboxNavPrev {
+    left: 4px;
+  }
+  .genLightboxNavNext {
+    right: 4px;
+  }
+  .genLightboxDots {
+    display: flex;
+  }
+}
+
+/* Swipe affordance: small dots below image on mobile, hidden on desktop
+   (desktop has the thumbnail sidebar). */
+.genLightboxDots {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.genLightboxDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.28);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.genLightboxDot:hover {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.genLightboxDotActive {
+  background: rgba(255, 255, 255, 0.92);
+  transform: scale(1.25);
+}
+
+/* Mobile-only "Prompt" pill in the top bar that opens a bottom sheet
+   so the image takes center stage. Desktop keeps the side panel. */
+.genLightboxPromptToggle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .genLightboxPromptToggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  }
+  .genLightboxPromptToggle:hover,
+  .genLightboxPromptToggle:active {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+  .genLightboxPromptToggle svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.genLightboxPromptSheetBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 3100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: genLightboxFadeIn 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes genLightboxFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.genLightboxPromptSheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: 72vh;
+  background: #161616;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 22px max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.5);
+  animation: genLightboxSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes genLightboxSheetUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.genLightboxPromptSheetHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+  margin: 0 auto 14px;
+}
+
+.genLightboxPromptSheetTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 10px;
+}
+
+.genLightboxPromptSheetContent {
+  overflow-y: auto;
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.85);
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.genLightboxPromptSheetContent::-webkit-scrollbar {
+  width: 6px;
+}
+.genLightboxPromptSheetContent::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+}
+
+.genLightboxPromptSheetContent > * {
+  margin: 0 0 10px;
+}
+.genLightboxPromptSheetContent > *:last-child {
+  margin-bottom: 0;
+}
+
+.genLightboxPromptSheetContent strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.genLightboxPromptSheetContent code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12.5px;
 }
 
 @media (max-width: 640px) {

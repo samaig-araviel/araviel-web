@@ -1769,6 +1769,7 @@ function GeneratedImageBlock({ imageData, allImages }) {
  */
 function GeneratedImageLightbox({ images, initialIndex, onClose }) {
   const [activeIndex, setActiveIndex] = useState(initialIndex || 0);
+  const [promptOpen, setPromptOpen] = useState(false);
   const { downloading, handleDownload } = useImageDownload();
   const thumbListRef = useRef(null);
   const activeThumbRef = useRef(null);
@@ -1779,7 +1780,12 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (promptOpen) setPromptOpen(false);
+        else onClose();
+        return;
+      }
+      if (promptOpen) return;
       if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
         setActiveIndex((prev) => (prev > 0 ? prev - 1 : prev));
       }
@@ -1789,7 +1795,7 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
     };
     document.addEventListener('keydown', handleKey);
     return () => document.removeEventListener('keydown', handleKey);
-  }, [onClose, images.length]);
+  }, [onClose, images.length, promptOpen]);
 
   // Scroll active thumbnail into view
   useEffect(() => {
@@ -1839,6 +1845,17 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
                 )}
                 {activeImage.model}
               </span>
+            )}
+            {activeImage.prompt && (
+              <button
+                type="button"
+                className={styles.genLightboxPromptToggle}
+                onClick={() => setPromptOpen(true)}
+                aria-label="View prompt"
+              >
+                <InfoIcon />
+                <span>Prompt</span>
+              </button>
             )}
           </div>
           <div className={styles.genLightboxTopRight}>
@@ -1915,6 +1932,24 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
               )}
             </div>
 
+            {images.length > 1 && (
+              <div className={styles.genLightboxDots} role="tablist" aria-label="Image navigation">
+                {images.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    role="tab"
+                    aria-selected={idx === activeIndex}
+                    aria-label={`View image ${idx + 1}`}
+                    className={`${styles.genLightboxDot} ${
+                      idx === activeIndex ? styles.genLightboxDotActive : ''
+                    }`}
+                    onClick={() => setActiveIndex(idx)}
+                  />
+                ))}
+              </div>
+            )}
+
             {(activeImage.prompt || activeImage.size || images.length > 1) && (
               <aside className={styles.genLightboxSidePanel}>
                 {activeImage.prompt && (
@@ -1936,6 +1971,26 @@ function GeneratedImageLightbox({ images, initialIndex, onClose }) {
             )}
           </div>
         </div>
+
+        {promptOpen && activeImage.prompt && (
+          <div
+            className={styles.genLightboxPromptSheetBackdrop}
+            onClick={() => setPromptOpen(false)}
+          >
+            <div
+              className={styles.genLightboxPromptSheet}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-label="Image prompt"
+            >
+              <div className={styles.genLightboxPromptSheetHandle} />
+              <p className={styles.genLightboxPromptSheetTitle}>Prompt</p>
+              <div className={styles.genLightboxPromptSheetContent}>
+                {renderMarkdown(activeImage.prompt)}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
