@@ -15,15 +15,38 @@ import {
   getModelsByProvider,
   getFeaturedModelsForTier,
 } from '../../data/models';
-import { ChevronDownIcon, ChevronLeftIcon, CheckIcon, ChevronRightIcon } from '../Icons';
+import {
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  SearchIcon,
+  CloseIcon,
+} from '../Icons';
 import styles from './ModelSelector.module.css';
 
-// Routing strategies shown as top-level options
 const ROUTING_OPTIONS = [
   { id: 'default', label: 'Auto', tagline: 'Best model for each task' },
   { id: 'taskBased', label: 'Balanced', tagline: 'Optimized for the task' },
   { id: 'humanFactors', label: 'Quality', tagline: 'Uses context, tone and mood' },
 ];
+
+const MOBILE_BREAKPOINT = 768;
+
+function matchesModel(model, query) {
+  if (model.name.toLowerCase().includes(query)) return true;
+  if (model.tagline && model.tagline.toLowerCase().includes(query)) return true;
+  const provider = PROVIDERS[model.provider];
+  if (provider) {
+    if (provider.name.toLowerCase().includes(query)) return true;
+    if (provider.shortName && provider.shortName.toLowerCase().includes(query)) return true;
+  }
+  return false;
+}
+
+function matchesRouting(route, query) {
+  return route.label.toLowerCase().includes(query) || route.tagline.toLowerCase().includes(query);
+}
 
 export default function ModelSelector({ imageOnly = false }) {
   const dispatch = useDispatch();
@@ -34,8 +57,10 @@ export default function ModelSelector({ imageOnly = false }) {
   const [dropdownDir, setDropdownDir] = useState('down');
   const [showAllModels, setShowAllModels] = useState(false);
   const [mobileDropdownStyle, setMobileDropdownStyle] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef(null);
   const triggerRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const userTier = useSelector(selectCurrentTier);
   const tierModels = useMemo(() => {
@@ -54,7 +79,23 @@ export default function ModelSelector({ imageOnly = false }) {
 
   const activeProviders = PROVIDER_ORDER.filter((pid) => tierModelsByProvider[pid]?.length > 0);
 
-  // Close on click outside
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const isSearching = trimmedQuery.length > 0;
+
+  const filteredRouting =
+    isSearching && !imageOnly ? ROUTING_OPTIONS.filter((r) => matchesRouting(r, trimmedQuery)) : [];
+
+  const filteredModelsByProvider = useMemo(() => {
+    if (!isSearching) return null;
+    const filtered = tierModels.filter((m) => matchesModel(m, trimmedQuery));
+    return getModelsByProvider(filtered);
+  }, [tierModels, trimmedQuery, isSearching]);
+
+  const filteredProviders = filteredModelsByProvider
+    ? PROVIDER_ORDER.filter((pid) => filteredModelsByProvider[pid]?.length > 0)
+    : [];
+  const hasResults = filteredRouting.length > 0 || filteredProviders.length > 0;
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -65,32 +106,44 @@ export default function ModelSelector({ imageOnly = false }) {
       ) {
         setIsOpen(false);
         setShowAllModels(false);
+        setSearchQuery('');
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        if (showAllModels) {
-          setShowAllModels(false);
-        } else {
-          setIsOpen(false);
-        }
+      if (e.key !== 'Escape') return;
+      if (isSearching) {
+        setSearchQuery('');
+      } else if (showAllModels) {
+        setShowAllModels(false);
+      } else {
+        setIsOpen(false);
       }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [showAllModels]);
+  }, [showAllModels, isSearching]);
+
+  // Autofocus the search input on open — desktop only, to avoid popping the
+  // mobile keyboard for users who just want to pick from the visible options.
+  useEffect(() => {
+    if (!isOpen) return;
+    if (window.innerWidth <= MOBILE_BREAKPOINT) return;
+    const frame = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen]);
 
   const handleTriggerClick = () => {
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       const spaceBelow = window.innerHeight - rect.bottom;
-      const isMobile = window.innerWidth <= 768;
+      const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
 
       if (isMobile) {
         const availableAbove = rect.top - 12;
@@ -108,6 +161,7 @@ export default function ModelSelector({ imageOnly = false }) {
         setMobileDropdownStyle({});
       }
       setShowAllModels(false);
+      setSearchQuery('');
     }
     setIsOpen((prev) => !prev);
   };
@@ -115,21 +169,114 @@ export default function ModelSelector({ imageOnly = false }) {
   const handleModelSelect = (modelId) => {
     dispatch(setSelectedModel(modelId));
     setIsOpen(false);
+    setShowAllModels(false);
+    setSearchQuery('');
   };
 
   const handleRoutingSelect = (strategyId) => {
     dispatch(setSelectedModel(null));
     dispatch(setAutoStrategy(strategyId));
     setIsOpen(false);
+    setShowAllModels(false);
+    setSearchQuery('');
   };
 
-  // Determine trigger label
+  const handleSearchClear = () => {
+    setSearchQuery('');
+    searchInputRef.current?.focus();
+  };
+
   const currentStrategy = isAutoMode
     ? ROUTING_OPTIONS.find((r) => r.id === (autoStrategy || 'default'))
     : null;
   const triggerLabel = isAutoMode
     ? currentStrategy?.label || 'Auto'
     : selectedModel?.name ?? 'Auto';
+
+  const renderRoutingOption = (route) => {
+    const isActive = isAutoMode && (autoStrategy || 'default') === route.id;
+    return (
+      <button
+        key={route.id}
+        className={`${styles.modelOption} ${isActive ? styles.modelOptionSelected : ''}`}
+        onClick={() => handleRoutingSelect(route.id)}
+        role="option"
+        aria-selected={isActive}
+      >
+        <div className={styles.modelOptionContent}>
+          <span className={styles.modelOptionName}>{route.label}</span>
+          <span className={styles.modelOptionTagline}>{route.tagline}</span>
+        </div>
+        {isActive && (
+          <span className={styles.checkmark}>
+            <CheckIcon />
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  const renderModelOption = (model) => {
+    const provider = PROVIDERS[model.provider];
+    const isSelected = selectedModelId === model.id;
+    return (
+      <button
+        key={model.id}
+        className={`${styles.modelOption} ${isSelected ? styles.modelOptionSelected : ''}`}
+        onClick={() => handleModelSelect(model.id)}
+        role="option"
+        aria-selected={isSelected}
+      >
+        <div className={styles.modelOptionContent}>
+          <div className={styles.modelOptionRow}>
+            <span className={styles.modelOptionName}>{model.name}</span>
+            {model.badge && (
+              <span
+                className={styles.modelBadge}
+                style={{
+                  '--badge-bg': provider.accentBg,
+                  '--badge-text': provider.accentText,
+                  '--badge-bg-dark': provider.accentBgDark,
+                }}
+              >
+                {model.badge}
+              </span>
+            )}
+          </div>
+          <span className={styles.modelOptionTagline}>{model.tagline}</span>
+        </div>
+        {isSelected && (
+          <span className={styles.checkmark}>
+            <CheckIcon />
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  const renderProviderGroup = (providerId, groups) => {
+    const provider = PROVIDERS[providerId];
+    const providerModels = groups[providerId];
+    if (!provider || !providerModels || providerModels.length === 0) return null;
+    return (
+      <div key={providerId}>
+        <div className={styles.providerGroupLabel}>
+          <span
+            className={styles.providerGroupChip}
+            style={{
+              '--chip-bg': provider.accentBg,
+              '--chip-text': provider.accentText,
+              '--chip-bg-dark': provider.accentBgDark,
+            }}
+          >
+            {provider.logoChar}
+          </span>
+          {provider.name}
+        </div>
+        {providerModels.map(renderModelOption)}
+      </div>
+    );
+  };
 
   return (
     <div className={styles.wrapper}>
@@ -158,7 +305,53 @@ export default function ModelSelector({ imageOnly = false }) {
           role="listbox"
           aria-label="Model selection"
         >
-          {showAllModels ? (
+          <div className={styles.searchBar}>
+            <span className={styles.searchIcon}>
+              <SearchIcon />
+            </span>
+            <input
+              ref={searchInputRef}
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search models or providers"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck="false"
+              aria-label="Search models"
+            />
+            {isSearching && (
+              <button
+                type="button"
+                className={styles.searchClear}
+                onClick={handleSearchClear}
+                aria-label="Clear search"
+              >
+                <CloseIcon />
+              </button>
+            )}
+          </div>
+
+          {isSearching ? (
+            <div className={styles.allModelsList}>
+              {hasResults ? (
+                <>
+                  {filteredRouting.map(renderRoutingOption)}
+                  {filteredRouting.length > 0 && filteredProviders.length > 0 && (
+                    <div className={styles.divider} />
+                  )}
+                  {filteredProviders.map((pid) =>
+                    renderProviderGroup(pid, filteredModelsByProvider)
+                  )}
+                </>
+              ) : (
+                <div className={styles.emptyState}>
+                  No matches for &ldquo;{searchQuery.trim()}&rdquo;
+                </div>
+              )}
+            </div>
+          ) : showAllModels ? (
             <>
               <div className={styles.allModelsHeader}>
                 <button
@@ -171,138 +364,16 @@ export default function ModelSelector({ imageOnly = false }) {
                 </button>
               </div>
               <div className={styles.allModelsList}>
-                {activeProviders.map((providerId) => {
-                  const provider = PROVIDERS[providerId];
-                  const providerModels = tierModelsByProvider[providerId];
-                  if (!providerModels || providerModels.length === 0) return null;
-                  return (
-                    <div key={providerId}>
-                      <div className={styles.providerGroupLabel}>
-                        <span
-                          className={styles.providerGroupChip}
-                          style={{
-                            '--chip-bg': provider.accentBg,
-                            '--chip-text': provider.accentText,
-                            '--chip-bg-dark': provider.accentBgDark,
-                          }}
-                        >
-                          {provider.logoChar}
-                        </span>
-                        {provider.name}
-                      </div>
-                      {providerModels.map((model) => {
-                        const isSelected = selectedModelId === model.id;
-                        return (
-                          <button
-                            key={model.id}
-                            className={`${styles.modelOption} ${
-                              isSelected ? styles.modelOptionSelected : ''
-                            }`}
-                            onClick={() => handleModelSelect(model.id)}
-                            role="option"
-                            aria-selected={isSelected}
-                          >
-                            <div className={styles.modelOptionContent}>
-                              <div className={styles.modelOptionRow}>
-                                <span className={styles.modelOptionName}>{model.name}</span>
-                                {model.badge && (
-                                  <span
-                                    className={styles.modelBadge}
-                                    style={{
-                                      '--badge-bg': provider.accentBg,
-                                      '--badge-text': provider.accentText,
-                                      '--badge-bg-dark': provider.accentBgDark,
-                                    }}
-                                  >
-                                    {model.badge}
-                                  </span>
-                                )}
-                              </div>
-                              <span className={styles.modelOptionTagline}>{model.tagline}</span>
-                            </div>
-                            {isSelected && (
-                              <span className={styles.checkmark}>
-                                <CheckIcon />
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
+                {activeProviders.map((pid) => renderProviderGroup(pid, tierModelsByProvider))}
               </div>
             </>
           ) : (
             <>
-              {/* Routing options */}
-              {ROUTING_OPTIONS.map((route) => {
-                const isActive = isAutoMode && (autoStrategy || 'default') === route.id;
-                return (
-                  <button
-                    key={route.id}
-                    className={`${styles.modelOption} ${
-                      isActive ? styles.modelOptionSelected : ''
-                    }`}
-                    onClick={() => handleRoutingSelect(route.id)}
-                    role="option"
-                    aria-selected={isActive}
-                  >
-                    <div className={styles.modelOptionContent}>
-                      <span className={styles.modelOptionName}>{route.label}</span>
-                      <span className={styles.modelOptionTagline}>{route.tagline}</span>
-                    </div>
-                    {isActive && (
-                      <span className={styles.checkmark}>
-                        <CheckIcon />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {ROUTING_OPTIONS.map(renderRoutingOption)}
 
               <div className={styles.divider} />
 
-              {/* Featured models */}
-              {featuredModels.map((model) => {
-                const provider = PROVIDERS[model.provider];
-                const isSelected = selectedModelId === model.id;
-                return (
-                  <button
-                    key={model.id}
-                    className={`${styles.modelOption} ${
-                      isSelected ? styles.modelOptionSelected : ''
-                    }`}
-                    onClick={() => handleModelSelect(model.id)}
-                    role="option"
-                    aria-selected={isSelected}
-                  >
-                    <div className={styles.modelOptionContent}>
-                      <div className={styles.modelOptionRow}>
-                        <span className={styles.modelOptionName}>{model.name}</span>
-                        {model.badge && (
-                          <span
-                            className={styles.modelBadge}
-                            style={{
-                              '--badge-bg': provider.accentBg,
-                              '--badge-text': provider.accentText,
-                              '--badge-bg-dark': provider.accentBgDark,
-                            }}
-                          >
-                            {model.badge}
-                          </span>
-                        )}
-                      </div>
-                      <span className={styles.modelOptionTagline}>{model.tagline}</span>
-                    </div>
-                    {isSelected && (
-                      <span className={styles.checkmark}>
-                        <CheckIcon />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              {featuredModels.map(renderModelOption)}
 
               <div className={styles.divider} />
 
