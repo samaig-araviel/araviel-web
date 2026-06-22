@@ -905,6 +905,9 @@ export default function ProjectsView() {
     const result = await createProjectApi(data);
     const newProject = result.project || result;
     dispatch(addProject(newProject));
+    if (newProject?.id) {
+      navigate(`/projects/${newProject.id}`);
+    }
   };
 
   const handleEdit = async (data) => {
