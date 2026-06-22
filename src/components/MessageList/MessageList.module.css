@@ -1754,13 +1754,13 @@
   width: 100%;
   max-width: 640px;
   max-height: 72vh;
-  background: #161616;
+  background: var(--bg-primary);
   border-radius: 20px 20px 0 0;
   padding: 12px 22px max(24px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.5);
+  border-top: 1px solid var(--border-color);
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.45);
   animation: genLightboxSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1777,14 +1777,14 @@
   width: 36px;
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--border-color);
   margin: 0 auto 14px;
 }
 
 .genLightboxPromptSheetTitle {
   font-size: 11px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin: 0 0 10px;
@@ -1795,17 +1795,17 @@
   flex: 1;
   font-size: 14px;
   line-height: 1.65;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
   word-break: break-word;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--text-muted) transparent;
 }
 
 .genLightboxPromptSheetContent::-webkit-scrollbar {
   width: 6px;
 }
 .genLightboxPromptSheetContent::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.18);
+  background-color: var(--text-muted);
   border-radius: 3px;
 }
 
@@ -1817,12 +1817,13 @@
 }
 
 .genLightboxPromptSheetContent strong {
-  color: #fff;
+  color: var(--text-primary);
   font-weight: 700;
 }
 
 .genLightboxPromptSheetContent code {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-hover);
+  color: var(--text-primary);
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 12.5px;
