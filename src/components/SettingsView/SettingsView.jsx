@@ -40,7 +40,7 @@ import useSharedChats from '../../hooks/useSharedChats';
 import { useToast } from '../Toast/Toast';
 import { logger } from '../../lib/logger';
 import ConfirmPackModal from '../ConfirmPackModal/ConfirmPackModal';
-import { GuestGate } from '../GuestGate';
+import RequireAuth from '../RequireAuth';
 import SubscriptionSummary from '../SubscriptionView/SubscriptionSummary';
 import {
   ChevronLeftIcon,
@@ -372,32 +372,7 @@ export default function SettingsView() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div ref={pageRef} className={styles.container}>
-        <div className={styles.inner}>
-          <div className={styles.header}>
-            <button className={styles.backBtn} onClick={handleBack}>
-              <ChevronLeftIcon />
-              <span>Back</span>
-            </button>
-            <div className={styles.headerTitle}>
-              <SettingsIcon />
-              <h1>Settings</h1>
-            </div>
-          </div>
-          <GuestGate
-            icon={<SettingsIcon />}
-            title="Your settings, your way"
-            description="Sign in to personalise your experience, manage your profile, and configure preferences."
-            actionLabel="Sign in to access Settings"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (isAuthenticated && loading) {
     return (
       <div ref={pageRef} className={styles.container}>
         <div className={styles.loadingState}>
@@ -422,1049 +397,1071 @@ export default function SettingsView() {
               <SettingsIcon />
               <h1>Settings</h1>
             </div>
-            <button
-              className={`${styles.saveBtn} ${saved ? styles.saveBtnSaved : ''}`}
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saved ? 'Saved!' : saving ? 'Saving...' : 'Save changes'}
-            </button>
+            {isAuthenticated && (
+              <button
+                className={`${styles.saveBtn} ${saved ? styles.saveBtnSaved : ''}`}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saved ? 'Saved!' : saving ? 'Saving...' : 'Save changes'}
+              </button>
+            )}
           </div>
 
-          <div className={styles.layout}>
-            {/* Sidebar navigation */}
-            <nav className={styles.nav}>
-              {SECTIONS.map((section) => (
-                <button
-                  key={section.id}
-                  className={`${styles.navItem} ${
-                    activeSection === section.id ? styles.navItemActive : ''
-                  }`}
-                  onClick={() => navigate(`/settings/${section.id}`)}
-                >
-                  {section.label}
-                </button>
-              ))}
-            </nav>
+          <RequireAuth
+            icon={<SettingsIcon />}
+            title="Your settings, your way"
+            description="Sign in to personalise your experience, manage your profile, and configure preferences."
+            actionLabel="Sign in to access Settings"
+          >
+            <div className={styles.layout}>
+              {/* Sidebar navigation */}
+              <nav className={styles.nav}>
+                {SECTIONS.map((section) => (
+                  <button
+                    key={section.id}
+                    className={`${styles.navItem} ${
+                      activeSection === section.id ? styles.navItemActive : ''
+                    }`}
+                    onClick={() => navigate(`/settings/${section.id}`)}
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </nav>
 
-            {/* Content area */}
-            <div className={styles.content}>
-              {/* ═══ PROFILE ═══ */}
-              {activeSection === 'profile' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Profile</h2>
-                    <p className={styles.sectionDesc}>
-                      Manage your profile information and how you appear in the app.
-                    </p>
-                  </div>
+              {/* Content area */}
+              <div className={styles.content}>
+                {/* ═══ PROFILE ═══ */}
+                {activeSection === 'profile' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Profile</h2>
+                      <p className={styles.sectionDesc}>
+                        Manage your profile information and how you appear in the app.
+                      </p>
+                    </div>
 
-                  {(() => {
-                    const resolvedAvatar = settings.avatarUrl || authUser?.avatarUrl;
-                    const resolvedName =
-                      settings.displayName && settings.displayName !== 'User'
-                        ? settings.displayName
-                        : authUser?.fullName || settings.displayName || 'User';
-                    return (
-                      <div className={styles.avatarRow}>
-                        <div
-                          className={`${styles.avatarLarge} ${
-                            avatarUploading ? styles.avatarUploading : ''
-                          }`}
-                        >
-                          {resolvedAvatar ? (
-                            <img
-                              src={resolvedAvatar}
-                              alt="Avatar"
-                              referrerPolicy="no-referrer"
-                              crossOrigin="anonymous"
-                              className={styles.avatarImage}
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = '';
-                              }}
-                            />
-                          ) : null}
-                          <span style={{ display: resolvedAvatar ? 'none' : '' }}>
-                            <UserIcon />
-                          </span>
-                        </div>
-                        <div className={styles.avatarInfo}>
-                          <span className={styles.avatarName}>{resolvedName}</span>
-                          {authUser?.email && (
-                            <span className={styles.avatarPlan}>{authUser.email}</span>
-                          )}
-                          <button
-                            className={styles.avatarEditBtn}
-                            onClick={() => avatarInputRef.current?.click()}
-                            disabled={avatarUploading}
+                    {(() => {
+                      const resolvedAvatar = settings.avatarUrl || authUser?.avatarUrl;
+                      const resolvedName =
+                        settings.displayName && settings.displayName !== 'User'
+                          ? settings.displayName
+                          : authUser?.fullName || settings.displayName || 'User';
+                      return (
+                        <div className={styles.avatarRow}>
+                          <div
+                            className={`${styles.avatarLarge} ${
+                              avatarUploading ? styles.avatarUploading : ''
+                            }`}
                           >
-                            <EditIcon />
-                            <span>{avatarUploading ? 'Uploading...' : 'Change avatar'}</span>
-                          </button>
-                          <input
-                            ref={avatarInputRef}
-                            type="file"
-                            accept="image/png,image/jpeg,image/webp"
-                            style={{ display: 'none' }}
-                            onChange={handleAvatarChange}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Full name</label>
-                    <input
-                      className={styles.fieldInput}
-                      value={settings.fullName}
-                      onChange={(e) => updateSetting('fullName', e.target.value)}
-                      placeholder="Your full name"
-                    />
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Display name</label>
-                    <input
-                      className={styles.fieldInput}
-                      value={settings.displayName}
-                      onChange={(e) => updateSetting('displayName', e.target.value)}
-                      placeholder="What should Araviel call you?"
-                    />
-                    <span className={styles.fieldHint}>
-                      This is the name Araviel uses to address you.
-                    </span>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Email</label>
-                    <input
-                      className={styles.fieldInputReadonly}
-                      value={authUser?.email || ''}
-                      readOnly
-                    />
-                    <span className={styles.fieldHint}>
-                      Managed by your authentication provider.
-                    </span>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Bio</label>
-                    <textarea
-                      className={styles.fieldTextarea}
-                      value={settings.bio}
-                      onChange={(e) => updateSetting('bio', e.target.value)}
-                      placeholder="Tell us a little about yourself..."
-                      rows={3}
-                    />
-                    <span className={styles.fieldHint}>
-                      This helps personalize your experience.
-                    </span>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Occupation</label>
-                    <input
-                      className={styles.fieldInput}
-                      value={settings.occupation}
-                      onChange={(e) => updateSetting('occupation', e.target.value)}
-                      placeholder="e.g. Software Engineer, Designer, Student..."
-                    />
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Areas of expertise</label>
-                    <input
-                      className={styles.fieldInput}
-                      value={settings.expertise}
-                      onChange={(e) => updateSetting('expertise', e.target.value)}
-                      placeholder="e.g. Machine learning, Web development, Data analysis..."
-                    />
-                    <span className={styles.fieldHint}>
-                      Araviel will tailor responses to your expertise level.
-                    </span>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Phone</label>
-                    <input
-                      className={styles.fieldInput}
-                      type="tel"
-                      value={settings.phone}
-                      onChange={(e) => updateSetting('phone', e.target.value)}
-                      placeholder="e.g. +1 (555) 123-4567"
-                    />
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Website</label>
-                    <input
-                      className={styles.fieldInput}
-                      type="url"
-                      value={settings.website}
-                      onChange={(e) => updateSetting('website', e.target.value)}
-                      placeholder="e.g. https://yoursite.com"
-                    />
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Location</label>
-                    <input
-                      className={styles.fieldInput}
-                      value={settings.location}
-                      onChange={(e) => updateSetting('location', e.target.value)}
-                      placeholder="e.g. San Francisco, CA"
-                    />
-                  </div>
-                </section>
-              )}
-
-              {/* ═══ APPEARANCE ═══ */}
-              {activeSection === 'appearance' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Appearance</h2>
-                    <p className={styles.sectionDesc}>Customize how Araviel looks and feels.</p>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Theme</label>
-                    <div className={styles.themeCards}>
-                      <button
-                        className={`${styles.themeCard} ${
-                          themeMode === 'light' ? styles.themeCardActive : ''
-                        }`}
-                        onClick={() => dispatch(setTheme('light'))}
-                      >
-                        <div className={styles.themeCardPreview} data-theme-preview="light">
-                          <div className={styles.themePreviewBar} />
-                          <div className={styles.themePreviewContent}>
-                            <div className={styles.themePreviewLine} />
-                            <div className={styles.themePreviewLineShort} />
-                          </div>
-                        </div>
-                        <div className={styles.themeCardInfo}>
-                          <SunIcon />
-                          <span>Light</span>
-                        </div>
-                      </button>
-                      <button
-                        className={`${styles.themeCard} ${
-                          themeMode === 'dark' ? styles.themeCardActive : ''
-                        }`}
-                        onClick={() => dispatch(setTheme('dark'))}
-                      >
-                        <div className={`${styles.themeCardPreview} ${styles.themePreviewDark}`}>
-                          <div className={styles.themePreviewBar} />
-                          <div className={styles.themePreviewContent}>
-                            <div className={styles.themePreviewLine} />
-                            <div className={styles.themePreviewLineShort} />
-                          </div>
-                        </div>
-                        <div className={styles.themeCardInfo}>
-                          <MoonIcon />
-                          <span>Dark</span>
-                        </div>
-                      </button>
-                      <button
-                        className={`${styles.themeCard} ${
-                          themeMode === 'system' ? styles.themeCardActive : ''
-                        }`}
-                        onClick={() => dispatch(setTheme('system'))}
-                      >
-                        <div className={`${styles.themeCardPreview} ${styles.themePreviewSystem}`}>
-                          <div className={styles.themePreviewBar} />
-                          <div className={styles.themePreviewContent}>
-                            <div className={styles.themePreviewLine} />
-                            <div className={styles.themePreviewLineShort} />
-                          </div>
-                        </div>
-                        <div className={styles.themeCardInfo}>
-                          <MonitorIcon />
-                          <span>System</span>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Answer font style</label>
-                    <p className={styles.fieldLabelDesc}>Choose the font style for AI responses.</p>
-                    <div className={styles.segmentedControl}>
-                      {ANSWER_FONTS.map((font) => (
-                        <button
-                          key={font.id}
-                          className={`${styles.segmentedBtn} ${
-                            settings.answerFont === font.id ? styles.segmentedBtnActive : ''
-                          }`}
-                          onClick={() => {
-                            updateSetting('answerFont', font.id);
-                            // Apply immediately so the user sees the change
-                            // without having to hit "Save changes".
-                            const el = document.documentElement;
-                            if (font.id === 'system') {
-                              el.removeAttribute('data-answer-font');
-                            } else {
-                              el.setAttribute('data-answer-font', font.id);
-                            }
-                          }}
-                          style={{ fontFamily: font.sample }}
-                        >
-                          {font.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* ═══ PERSONALIZATION ═══ */}
-              {activeSection === 'personalization' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Personalization</h2>
-                    <p className={styles.sectionDesc}>
-                      Help Araviel understand you better for more relevant responses.
-                    </p>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Preferred response language</label>
-                    <p className={styles.fieldLabelDesc}>
-                      The language Araviel will use when responding to you.
-                    </p>
-                    <select
-                      className={styles.fieldSelect}
-                      value={settings.preferredLanguage}
-                      onChange={(e) => updateSetting('preferredLanguage', e.target.value)}
-                    >
-                      {LANGUAGES.map((lang) => (
-                        <option key={lang} value={lang}>
-                          {lang}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Response tone</label>
-                    <p className={styles.fieldLabelDesc}>
-                      Choose how Araviel communicates with you.
-                    </p>
-                    <div className={styles.toneGrid}>
-                      {TONES.map((tone) => (
-                        <button
-                          key={tone.id}
-                          className={`${styles.toneCard} ${
-                            settings.responseTone === tone.id ? styles.toneCardActive : ''
-                          }`}
-                          onClick={() => {
-                            updateSetting('responseTone', tone.id);
-                            dispatch(setTone(tone.id));
-                          }}
-                        >
-                          <span className={styles.toneCardLabel}>{tone.label}</span>
-                          <span className={styles.toneCardDesc}>{tone.description}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>
-                      What personal preferences should Araviel consider in responses?
-                    </label>
-                    <p className={styles.fieldLabelDesc}>
-                      Your preferences will apply to all conversations.
-                    </p>
-                    <textarea
-                      className={styles.fieldTextarea}
-                      value={settings.customInstructions}
-                      onChange={(e) => {
-                        if (e.target.value.length <= 2000) {
-                          updateSetting('customInstructions', e.target.value);
-                        }
-                      }}
-                      placeholder="e.g. When writing code, be very concise. Follow good coding principles and practices. Always adhere to good programming principles, OOP, DRY, SOLID, etc when writing code. All code must be written at top quality, clean, easy to read and understand..."
-                      rows={6}
-                    />
-                    <div className={styles.textareaFooter}>
-                      <span className={styles.fieldHint}>
-                        {settings.customInstructions.length} / 2,000 characters
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Send message with Enter</span>
-                        <span className={styles.toggleDesc}>
-                          Use Enter to send messages. When off, use {modKey}+Enter instead.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.sendWithEnter}
-                        onChange={(v) => updateSetting('sendWithEnter', v)}
-                      />
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* ═══ MODEL PREFERENCES ═══ */}
-              {activeSection === 'models' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Model preferences</h2>
-                    <p className={styles.sectionDesc}>
-                      Configure how AI models are selected and behave.
-                    </p>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Web search</label>
-                    <p className={styles.fieldLabelDesc}>
-                      Control when Araviel searches the web for current information.
-                    </p>
-                    <div className={styles.segmentedControl}>
-                      {[
-                        { id: 'auto', label: 'Auto' },
-                        { id: 'always', label: 'Always' },
-                        { id: 'never', label: 'Never' },
-                      ].map((opt) => (
-                        <button
-                          key={opt.id}
-                          className={`${styles.segmentedBtn} ${
-                            settings.webSearchDefault === opt.id ? styles.segmentedBtnActive : ''
-                          }`}
-                          onClick={() => {
-                            updateSetting('webSearchDefault', opt.id);
-                            const val =
-                              opt.id === 'always' ? true : opt.id === 'never' ? false : null;
-                            dispatch(setWebSearchEnabled(val));
-                          }}
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                    <span className={styles.fieldHint}>
-                      {settings.webSearchDefault === 'auto' &&
-                        'Araviel decides when web search is needed based on your query.'}
-                      {settings.webSearchDefault === 'always' &&
-                        'Every query will include web search results.'}
-                      {settings.webSearchDefault === 'never' &&
-                        'Web search is disabled. Responses use model knowledge only.'}
-                    </span>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Default image quality</label>
-                    <p className={styles.fieldLabelDesc}>
-                      Set the default quality for AI-generated images.
-                    </p>
-                    <div className={styles.segmentedControl}>
-                      {[
-                        { id: 'standard', label: 'Standard (1 credit)' },
-                        { id: 'hd', label: 'HD (2 credits)' },
-                        { id: 'ultra', label: 'Ultra (4 credits)' },
-                      ].map((q) => (
-                        <button
-                          key={q.id}
-                          className={`${styles.segmentedBtn} ${
-                            settings.imageQualityDefault === q.id ? styles.segmentedBtnActive : ''
-                          }`}
-                          onClick={() => {
-                            updateSetting('imageQualityDefault', q.id);
-                            dispatch(setImageQuality(q.id));
-                          }}
-                        >
-                          {q.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Enable reasoning / thinking</span>
-                        <span className={styles.toggleDesc}>
-                          Enable deep chain-of-thought reasoning when available.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.enableReasoning}
-                        onChange={(v) => {
-                          updateSetting('enableReasoning', v);
-                          dispatch(setExtendedThinking(v));
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Follow-up suggestions</span>
-                        <span className={styles.toggleDesc}>
-                          Show suggested follow-up questions after each response.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.enableFollowUps}
-                        onChange={(v) => updateSetting('enableFollowUps', v)}
-                      />
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* ═══ SUBSCRIPTION ═══ */}
-              {activeSection === 'subscription' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Subscription</h2>
-                    <p className={styles.sectionDesc}>
-                      Manage your plan, monitor credit usage, and access billing.
-                    </p>
-                  </div>
-                  <SubscriptionSummary />
-                </section>
-              )}
-
-              {/* ═══ USAGE & CREDITS ═══ */}
-              {activeSection === 'usage' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Usage & credits</h2>
-                    <p className={styles.sectionDesc}>
-                      Monitor your credit balance and manage your plan.
-                    </p>
-                  </div>
-
-                  {/* ── Subscription management ── */}
-                  {(() => {
-                    const tierInfo = getTierById(currentTier);
-                    const tierName =
-                      tierInfo?.name ||
-                      currentTier?.charAt(0).toUpperCase() + currentTier?.slice(1) ||
-                      'Free';
-                    const tierId = currentTier || 'free';
-                    const badgeClass =
-                      tierId === 'pro'
-                        ? styles.planBadgePro
-                        : tierId === 'lite'
-                        ? styles.planBadgeLite
-                        : styles.planBadgeFree;
-
-                    // Text credits
-                    const monthlyLimit = textCredits?.monthlyLimit || 0;
-                    const monthlyUsed = textCredits?.monthlyUsed || 0;
-                    const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
-                    const monthlyPct =
-                      monthlyLimit > 0
-                        ? Math.min(100, Math.round((monthlyUsed / monthlyLimit) * 100))
-                        : 0;
-                    const monthlyRatio = monthlyLimit > 0 ? monthlyRemaining / monthlyLimit : 1;
-                    const monthlyColor =
-                      monthlyRatio > 0.5
-                        ? styles.creditProgressHealthy
-                        : monthlyRatio > 0.2
-                        ? styles.creditProgressLow
-                        : styles.creditProgressCritical;
-
-                    // 3-hour window
-                    const windowLimit = textCredits?.windowLimit || 0;
-                    const windowUsed = textCredits?.windowUsed || 0;
-                    const windowRemaining = Math.max(0, windowLimit - windowUsed);
-                    const windowPct =
-                      windowLimit > 0
-                        ? Math.min(100, Math.round((windowUsed / windowLimit) * 100))
-                        : 0;
-                    const windowRatio = windowLimit > 0 ? windowRemaining / windowLimit : 1;
-                    const windowColor =
-                      windowRatio > 0.5
-                        ? styles.creditProgressHealthy
-                        : windowRatio > 0.2
-                        ? styles.creditProgressLow
-                        : styles.creditProgressCritical;
-                    const windowResetAt = textCredits?.windowResetAt;
-
-                    // Image credits
-                    const imgRemaining = imageCredits?.remaining || 0;
-                    const imgLimit = imageCredits?.limit || 0;
-                    const imgUsed = Math.max(0, imgLimit - imgRemaining);
-                    const imgPct =
-                      imgLimit > 0 ? Math.min(100, Math.round((imgUsed / imgLimit) * 100)) : 0;
-                    const imgRatio = imgLimit > 0 ? imgRemaining / imgLimit : 1;
-                    const imgColor =
-                      imgRatio > 0.5
-                        ? styles.creditProgressHealthy
-                        : imgRatio > 0.2
-                        ? styles.creditProgressLow
-                        : styles.creditProgressCritical;
-                    const cycleResetsAt = imageCredits?.cycleResetsAt;
-
-                    return (
-                      <div className={styles.subscriptionSection}>
-                        <div className={styles.planRow}>
-                          <span className={`${styles.planBadge} ${badgeClass}`}>{tierName}</span>
-                        </div>
-
-                        {/* Text credits */}
-                        <div className={styles.creditProgressSection}>
-                          <div className={styles.creditProgressLabel}>
-                            <span>Text credits</span>
-                            <span>
-                              {monthlyUsed} of {monthlyLimit} used
+                            {resolvedAvatar ? (
+                              <img
+                                src={resolvedAvatar}
+                                alt="Avatar"
+                                referrerPolicy="no-referrer"
+                                crossOrigin="anonymous"
+                                className={styles.avatarImage}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = '';
+                                }}
+                              />
+                            ) : null}
+                            <span style={{ display: resolvedAvatar ? 'none' : '' }}>
+                              <UserIcon />
                             </span>
                           </div>
-                          <div className={styles.creditProgressBar}>
-                            <div
-                              className={`${styles.creditProgressFill} ${monthlyColor}`}
-                              style={{ width: `${monthlyPct}%` }}
+                          <div className={styles.avatarInfo}>
+                            <span className={styles.avatarName}>{resolvedName}</span>
+                            {authUser?.email && (
+                              <span className={styles.avatarPlan}>{authUser.email}</span>
+                            )}
+                            <button
+                              className={styles.avatarEditBtn}
+                              onClick={() => avatarInputRef.current?.click()}
+                              disabled={avatarUploading}
+                            >
+                              <EditIcon />
+                              <span>{avatarUploading ? 'Uploading...' : 'Change avatar'}</span>
+                            </button>
+                            <input
+                              ref={avatarInputRef}
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              style={{ display: 'none' }}
+                              onChange={handleAvatarChange}
                             />
                           </div>
                         </div>
+                      );
+                    })()}
 
-                        {/* Current session (3-hour window) */}
-                        {windowResetAt && (
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Full name</label>
+                      <input
+                        className={styles.fieldInput}
+                        value={settings.fullName}
+                        onChange={(e) => updateSetting('fullName', e.target.value)}
+                        placeholder="Your full name"
+                      />
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Display name</label>
+                      <input
+                        className={styles.fieldInput}
+                        value={settings.displayName}
+                        onChange={(e) => updateSetting('displayName', e.target.value)}
+                        placeholder="What should Araviel call you?"
+                      />
+                      <span className={styles.fieldHint}>
+                        This is the name Araviel uses to address you.
+                      </span>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Email</label>
+                      <input
+                        className={styles.fieldInputReadonly}
+                        value={authUser?.email || ''}
+                        readOnly
+                      />
+                      <span className={styles.fieldHint}>
+                        Managed by your authentication provider.
+                      </span>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Bio</label>
+                      <textarea
+                        className={styles.fieldTextarea}
+                        value={settings.bio}
+                        onChange={(e) => updateSetting('bio', e.target.value)}
+                        placeholder="Tell us a little about yourself..."
+                        rows={3}
+                      />
+                      <span className={styles.fieldHint}>
+                        This helps personalize your experience.
+                      </span>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Occupation</label>
+                      <input
+                        className={styles.fieldInput}
+                        value={settings.occupation}
+                        onChange={(e) => updateSetting('occupation', e.target.value)}
+                        placeholder="e.g. Software Engineer, Designer, Student..."
+                      />
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Areas of expertise</label>
+                      <input
+                        className={styles.fieldInput}
+                        value={settings.expertise}
+                        onChange={(e) => updateSetting('expertise', e.target.value)}
+                        placeholder="e.g. Machine learning, Web development, Data analysis..."
+                      />
+                      <span className={styles.fieldHint}>
+                        Araviel will tailor responses to your expertise level.
+                      </span>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Phone</label>
+                      <input
+                        className={styles.fieldInput}
+                        type="tel"
+                        value={settings.phone}
+                        onChange={(e) => updateSetting('phone', e.target.value)}
+                        placeholder="e.g. +1 (555) 123-4567"
+                      />
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Website</label>
+                      <input
+                        className={styles.fieldInput}
+                        type="url"
+                        value={settings.website}
+                        onChange={(e) => updateSetting('website', e.target.value)}
+                        placeholder="e.g. https://yoursite.com"
+                      />
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Location</label>
+                      <input
+                        className={styles.fieldInput}
+                        value={settings.location}
+                        onChange={(e) => updateSetting('location', e.target.value)}
+                        placeholder="e.g. San Francisco, CA"
+                      />
+                    </div>
+                  </section>
+                )}
+
+                {/* ═══ APPEARANCE ═══ */}
+                {activeSection === 'appearance' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Appearance</h2>
+                      <p className={styles.sectionDesc}>Customize how Araviel looks and feels.</p>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Theme</label>
+                      <div className={styles.themeCards}>
+                        <button
+                          className={`${styles.themeCard} ${
+                            themeMode === 'light' ? styles.themeCardActive : ''
+                          }`}
+                          onClick={() => dispatch(setTheme('light'))}
+                        >
+                          <div className={styles.themeCardPreview} data-theme-preview="light">
+                            <div className={styles.themePreviewBar} />
+                            <div className={styles.themePreviewContent}>
+                              <div className={styles.themePreviewLine} />
+                              <div className={styles.themePreviewLineShort} />
+                            </div>
+                          </div>
+                          <div className={styles.themeCardInfo}>
+                            <SunIcon />
+                            <span>Light</span>
+                          </div>
+                        </button>
+                        <button
+                          className={`${styles.themeCard} ${
+                            themeMode === 'dark' ? styles.themeCardActive : ''
+                          }`}
+                          onClick={() => dispatch(setTheme('dark'))}
+                        >
+                          <div className={`${styles.themeCardPreview} ${styles.themePreviewDark}`}>
+                            <div className={styles.themePreviewBar} />
+                            <div className={styles.themePreviewContent}>
+                              <div className={styles.themePreviewLine} />
+                              <div className={styles.themePreviewLineShort} />
+                            </div>
+                          </div>
+                          <div className={styles.themeCardInfo}>
+                            <MoonIcon />
+                            <span>Dark</span>
+                          </div>
+                        </button>
+                        <button
+                          className={`${styles.themeCard} ${
+                            themeMode === 'system' ? styles.themeCardActive : ''
+                          }`}
+                          onClick={() => dispatch(setTheme('system'))}
+                        >
+                          <div
+                            className={`${styles.themeCardPreview} ${styles.themePreviewSystem}`}
+                          >
+                            <div className={styles.themePreviewBar} />
+                            <div className={styles.themePreviewContent}>
+                              <div className={styles.themePreviewLine} />
+                              <div className={styles.themePreviewLineShort} />
+                            </div>
+                          </div>
+                          <div className={styles.themeCardInfo}>
+                            <MonitorIcon />
+                            <span>System</span>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Answer font style</label>
+                      <p className={styles.fieldLabelDesc}>
+                        Choose the font style for AI responses.
+                      </p>
+                      <div className={styles.segmentedControl}>
+                        {ANSWER_FONTS.map((font) => (
+                          <button
+                            key={font.id}
+                            className={`${styles.segmentedBtn} ${
+                              settings.answerFont === font.id ? styles.segmentedBtnActive : ''
+                            }`}
+                            onClick={() => {
+                              updateSetting('answerFont', font.id);
+                              // Apply immediately so the user sees the change
+                              // without having to hit "Save changes".
+                              const el = document.documentElement;
+                              if (font.id === 'system') {
+                                el.removeAttribute('data-answer-font');
+                              } else {
+                                el.setAttribute('data-answer-font', font.id);
+                              }
+                            }}
+                            style={{ fontFamily: font.sample }}
+                          >
+                            {font.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* ═══ PERSONALIZATION ═══ */}
+                {activeSection === 'personalization' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Personalization</h2>
+                      <p className={styles.sectionDesc}>
+                        Help Araviel understand you better for more relevant responses.
+                      </p>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Preferred response language</label>
+                      <p className={styles.fieldLabelDesc}>
+                        The language Araviel will use when responding to you.
+                      </p>
+                      <select
+                        className={styles.fieldSelect}
+                        value={settings.preferredLanguage}
+                        onChange={(e) => updateSetting('preferredLanguage', e.target.value)}
+                      >
+                        {LANGUAGES.map((lang) => (
+                          <option key={lang} value={lang}>
+                            {lang}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Response tone</label>
+                      <p className={styles.fieldLabelDesc}>
+                        Choose how Araviel communicates with you.
+                      </p>
+                      <div className={styles.toneGrid}>
+                        {TONES.map((tone) => (
+                          <button
+                            key={tone.id}
+                            className={`${styles.toneCard} ${
+                              settings.responseTone === tone.id ? styles.toneCardActive : ''
+                            }`}
+                            onClick={() => {
+                              updateSetting('responseTone', tone.id);
+                              dispatch(setTone(tone.id));
+                            }}
+                          >
+                            <span className={styles.toneCardLabel}>{tone.label}</span>
+                            <span className={styles.toneCardDesc}>{tone.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>
+                        What personal preferences should Araviel consider in responses?
+                      </label>
+                      <p className={styles.fieldLabelDesc}>
+                        Your preferences will apply to all conversations.
+                      </p>
+                      <textarea
+                        className={styles.fieldTextarea}
+                        value={settings.customInstructions}
+                        onChange={(e) => {
+                          if (e.target.value.length <= 2000) {
+                            updateSetting('customInstructions', e.target.value);
+                          }
+                        }}
+                        placeholder="e.g. When writing code, be very concise. Follow good coding principles and practices. Always adhere to good programming principles, OOP, DRY, SOLID, etc when writing code. All code must be written at top quality, clean, easy to read and understand..."
+                        rows={6}
+                      />
+                      <div className={styles.textareaFooter}>
+                        <span className={styles.fieldHint}>
+                          {settings.customInstructions.length} / 2,000 characters
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                          <span className={styles.toggleLabel}>Send message with Enter</span>
+                          <span className={styles.toggleDesc}>
+                            Use Enter to send messages. When off, use {modKey}+Enter instead.
+                          </span>
+                        </div>
+                        <ToggleSwitch
+                          value={settings.sendWithEnter}
+                          onChange={(v) => updateSetting('sendWithEnter', v)}
+                        />
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* ═══ MODEL PREFERENCES ═══ */}
+                {activeSection === 'models' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Model preferences</h2>
+                      <p className={styles.sectionDesc}>
+                        Configure how AI models are selected and behave.
+                      </p>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Web search</label>
+                      <p className={styles.fieldLabelDesc}>
+                        Control when Araviel searches the web for current information.
+                      </p>
+                      <div className={styles.segmentedControl}>
+                        {[
+                          { id: 'auto', label: 'Auto' },
+                          { id: 'always', label: 'Always' },
+                          { id: 'never', label: 'Never' },
+                        ].map((opt) => (
+                          <button
+                            key={opt.id}
+                            className={`${styles.segmentedBtn} ${
+                              settings.webSearchDefault === opt.id ? styles.segmentedBtnActive : ''
+                            }`}
+                            onClick={() => {
+                              updateSetting('webSearchDefault', opt.id);
+                              const val =
+                                opt.id === 'always' ? true : opt.id === 'never' ? false : null;
+                              dispatch(setWebSearchEnabled(val));
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <span className={styles.fieldHint}>
+                        {settings.webSearchDefault === 'auto' &&
+                          'Araviel decides when web search is needed based on your query.'}
+                        {settings.webSearchDefault === 'always' &&
+                          'Every query will include web search results.'}
+                        {settings.webSearchDefault === 'never' &&
+                          'Web search is disabled. Responses use model knowledge only.'}
+                      </span>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Default image quality</label>
+                      <p className={styles.fieldLabelDesc}>
+                        Set the default quality for AI-generated images.
+                      </p>
+                      <div className={styles.segmentedControl}>
+                        {[
+                          { id: 'standard', label: 'Standard (1 credit)' },
+                          { id: 'hd', label: 'HD (2 credits)' },
+                          { id: 'ultra', label: 'Ultra (4 credits)' },
+                        ].map((q) => (
+                          <button
+                            key={q.id}
+                            className={`${styles.segmentedBtn} ${
+                              settings.imageQualityDefault === q.id ? styles.segmentedBtnActive : ''
+                            }`}
+                            onClick={() => {
+                              updateSetting('imageQualityDefault', q.id);
+                              dispatch(setImageQuality(q.id));
+                            }}
+                          >
+                            {q.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                          <span className={styles.toggleLabel}>Enable reasoning / thinking</span>
+                          <span className={styles.toggleDesc}>
+                            Enable deep chain-of-thought reasoning when available.
+                          </span>
+                        </div>
+                        <ToggleSwitch
+                          value={settings.enableReasoning}
+                          onChange={(v) => {
+                            updateSetting('enableReasoning', v);
+                            dispatch(setExtendedThinking(v));
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                          <span className={styles.toggleLabel}>Follow-up suggestions</span>
+                          <span className={styles.toggleDesc}>
+                            Show suggested follow-up questions after each response.
+                          </span>
+                        </div>
+                        <ToggleSwitch
+                          value={settings.enableFollowUps}
+                          onChange={(v) => updateSetting('enableFollowUps', v)}
+                        />
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* ═══ SUBSCRIPTION ═══ */}
+                {activeSection === 'subscription' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Subscription</h2>
+                      <p className={styles.sectionDesc}>
+                        Manage your plan, monitor credit usage, and access billing.
+                      </p>
+                    </div>
+                    <SubscriptionSummary />
+                  </section>
+                )}
+
+                {/* ═══ USAGE & CREDITS ═══ */}
+                {activeSection === 'usage' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Usage & credits</h2>
+                      <p className={styles.sectionDesc}>
+                        Monitor your credit balance and manage your plan.
+                      </p>
+                    </div>
+
+                    {/* ── Subscription management ── */}
+                    {(() => {
+                      const tierInfo = getTierById(currentTier);
+                      const tierName =
+                        tierInfo?.name ||
+                        currentTier?.charAt(0).toUpperCase() + currentTier?.slice(1) ||
+                        'Free';
+                      const tierId = currentTier || 'free';
+                      const badgeClass =
+                        tierId === 'pro'
+                          ? styles.planBadgePro
+                          : tierId === 'lite'
+                          ? styles.planBadgeLite
+                          : styles.planBadgeFree;
+
+                      // Text credits
+                      const monthlyLimit = textCredits?.monthlyLimit || 0;
+                      const monthlyUsed = textCredits?.monthlyUsed || 0;
+                      const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
+                      const monthlyPct =
+                        monthlyLimit > 0
+                          ? Math.min(100, Math.round((monthlyUsed / monthlyLimit) * 100))
+                          : 0;
+                      const monthlyRatio = monthlyLimit > 0 ? monthlyRemaining / monthlyLimit : 1;
+                      const monthlyColor =
+                        monthlyRatio > 0.5
+                          ? styles.creditProgressHealthy
+                          : monthlyRatio > 0.2
+                          ? styles.creditProgressLow
+                          : styles.creditProgressCritical;
+
+                      // 3-hour window
+                      const windowLimit = textCredits?.windowLimit || 0;
+                      const windowUsed = textCredits?.windowUsed || 0;
+                      const windowRemaining = Math.max(0, windowLimit - windowUsed);
+                      const windowPct =
+                        windowLimit > 0
+                          ? Math.min(100, Math.round((windowUsed / windowLimit) * 100))
+                          : 0;
+                      const windowRatio = windowLimit > 0 ? windowRemaining / windowLimit : 1;
+                      const windowColor =
+                        windowRatio > 0.5
+                          ? styles.creditProgressHealthy
+                          : windowRatio > 0.2
+                          ? styles.creditProgressLow
+                          : styles.creditProgressCritical;
+                      const windowResetAt = textCredits?.windowResetAt;
+
+                      // Image credits
+                      const imgRemaining = imageCredits?.remaining || 0;
+                      const imgLimit = imageCredits?.limit || 0;
+                      const imgUsed = Math.max(0, imgLimit - imgRemaining);
+                      const imgPct =
+                        imgLimit > 0 ? Math.min(100, Math.round((imgUsed / imgLimit) * 100)) : 0;
+                      const imgRatio = imgLimit > 0 ? imgRemaining / imgLimit : 1;
+                      const imgColor =
+                        imgRatio > 0.5
+                          ? styles.creditProgressHealthy
+                          : imgRatio > 0.2
+                          ? styles.creditProgressLow
+                          : styles.creditProgressCritical;
+                      const cycleResetsAt = imageCredits?.cycleResetsAt;
+
+                      return (
+                        <div className={styles.subscriptionSection}>
+                          <div className={styles.planRow}>
+                            <span className={`${styles.planBadge} ${badgeClass}`}>{tierName}</span>
+                          </div>
+
+                          {/* Text credits */}
                           <div className={styles.creditProgressSection}>
                             <div className={styles.creditProgressLabel}>
-                              <span>Current session</span>
+                              <span>Text credits</span>
                               <span>
-                                {windowUsed} of {windowLimit} used
+                                {monthlyUsed} of {monthlyLimit} used
                               </span>
                             </div>
                             <div className={styles.creditProgressBar}>
                               <div
-                                className={`${styles.creditProgressFill} ${windowColor}`}
-                                style={{ width: `${windowPct}%` }}
+                                className={`${styles.creditProgressFill} ${monthlyColor}`}
+                                style={{ width: `${monthlyPct}%` }}
                               />
                             </div>
-                            <div className={styles.creditProgressLabel}>
-                              <span>
-                                Resets at{' '}
-                                {new Date(windowResetAt).toLocaleTimeString(undefined, {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </span>
-                            </div>
                           </div>
-                        )}
 
-                        {/* Image credits */}
-                        <div className={styles.creditProgressSection}>
-                          <div className={styles.creditProgressLabel}>
-                            <span>Image credits</span>
-                            <span>{imgPct}% used</span>
-                          </div>
-                          <div className={styles.creditProgressBar}>
-                            <div
-                              className={`${styles.creditProgressFill} ${imgColor}`}
-                              style={{ width: `${imgPct}%` }}
-                            />
-                          </div>
-                          {cycleResetsAt && (
+                          {/* Current session (3-hour window) */}
+                          {windowResetAt && (
+                            <div className={styles.creditProgressSection}>
+                              <div className={styles.creditProgressLabel}>
+                                <span>Current session</span>
+                                <span>
+                                  {windowUsed} of {windowLimit} used
+                                </span>
+                              </div>
+                              <div className={styles.creditProgressBar}>
+                                <div
+                                  className={`${styles.creditProgressFill} ${windowColor}`}
+                                  style={{ width: `${windowPct}%` }}
+                                />
+                              </div>
+                              <div className={styles.creditProgressLabel}>
+                                <span>
+                                  Resets at{' '}
+                                  {new Date(windowResetAt).toLocaleTimeString(undefined, {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Image credits */}
+                          <div className={styles.creditProgressSection}>
                             <div className={styles.creditProgressLabel}>
-                              <span>
-                                Resets{' '}
-                                {new Date(cycleResetsAt).toLocaleDateString(undefined, {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                })}
-                              </span>
+                              <span>Image credits</span>
+                              <span>{imgPct}% used</span>
+                            </div>
+                            <div className={styles.creditProgressBar}>
+                              <div
+                                className={`${styles.creditProgressFill} ${imgColor}`}
+                                style={{ width: `${imgPct}%` }}
+                              />
+                            </div>
+                            {cycleResetsAt && (
+                              <div className={styles.creditProgressLabel}>
+                                <span>
+                                  Resets{' '}
+                                  {new Date(cycleResetsAt).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {periodEnd && (
+                            <div className={styles.billingInfo}>
+                              Next billing:{' '}
+                              {new Date(periodEnd).toLocaleDateString(undefined, {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </div>
+                          )}
+
+                          {cancelAtPeriodEnd && (
+                            <div className={styles.cancelNotice}>
+                              Your plan will be cancelled at the end of the current period
+                            </div>
+                          )}
+
+                          {(tierId === 'free' || tierId === 'lite') && (
+                            <div className={styles.subscriptionActions}>
+                              <button
+                                className={styles.upgradeBtn}
+                                onClick={() => navigate('/plans')}
+                              >
+                                Upgrade Plan
+                              </button>
                             </div>
                           )}
                         </div>
+                      );
+                    })()}
 
-                        {periodEnd && (
-                          <div className={styles.billingInfo}>
-                            Next billing:{' '}
-                            {new Date(periodEnd).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
+                    {creditsLoading ? (
+                      <div className={styles.usageLoading}>
+                        <div className={styles.loadingSpinner} />
+                        <span>Loading usage data...</span>
+                      </div>
+                    ) : creditBalance?.balance ? (
+                      <>
+                        {/* ── Current plan card ── */}
+                        {(() => {
+                          const tierInfo = getTierById(currentTier);
+                          const tier = currentTier || 'free';
+                          const tierLabel =
+                            tierInfo?.name || tier.charAt(0).toUpperCase() + tier.slice(1);
+                          const tierCredits = tierInfo?.monthlyImageCredits ?? 5;
+                          return (
+                            <div className={styles.planCard}>
+                              <div className={styles.planInfo}>
+                                <span className={styles.planName}>
+                                  <span
+                                    className={`${styles.tierBadge} ${
+                                      styles[`tierBadge${tierLabel}`] || ''
+                                    }`}
+                                  >
+                                    {tierLabel}
+                                  </span>
+                                  {tierLabel} plan
+                                </span>
+                                <span className={styles.planDesc}>
+                                  {tierCredits} image credits per month
+                                </span>
+                              </div>
+                              <button
+                                className={styles.planUpgradeBtn}
+                                onClick={() =>
+                                  tier === 'free'
+                                    ? navigate('/plans')
+                                    : dispatch(createPortalThunk())
+                                }
+                                disabled={tier !== 'free' && portalLoading}
+                              >
+                                {tier === 'free'
+                                  ? 'Upgrade plan'
+                                  : portalLoading
+                                  ? 'Opening...'
+                                  : 'Manage plan'}
+                              </button>
+                            </div>
+                          );
+                        })()}
+
+                        {/* ── Plan usage limits ── */}
+                        <div className={styles.fieldGroup}>
+                          <label className={styles.fieldLabel}>Plan usage limits</label>
+
+                          {/* Monthly image credits */}
+                          {(() => {
+                            const monthly = creditBalance.balance.monthly || {
+                              total: 0,
+                              used: 0,
+                              remaining: 0,
+                            };
+                            const pct = monthly.total
+                              ? Math.round((monthly.used / monthly.total) * 100)
+                              : 0;
+                            const resetDate = creditBalance.balance.cycleResetsAt
+                              ? new Date(creditBalance.balance.cycleResetsAt)
+                              : null;
+                            const daysUntilReset = resetDate
+                              ? Math.max(
+                                  0,
+                                  Math.ceil(
+                                    (resetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                  )
+                                )
+                              : null;
+                            return (
+                              <div className={styles.usageRow}>
+                                <div className={styles.usageRowHeader}>
+                                  <span className={styles.usageRowLabel}>Image credits</span>
+                                  <span className={styles.usageRowValue}>{pct}% used</span>
+                                </div>
+                                <div className={styles.usageProgressBar}>
+                                  <div
+                                    className={`${styles.usageProgressFill} ${
+                                      pct > 80 ? styles.usageProgressFillWarn : ''
+                                    }`}
+                                    style={{ width: `${Math.min(100, pct)}%` }}
+                                  />
+                                </div>
+                                <div className={styles.usageRowFooter}>
+                                  <span>
+                                    {monthly.used} of {monthly.total} used
+                                  </span>
+                                  {daysUntilReset !== null && (
+                                    <span>
+                                      Resets in {daysUntilReset} day
+                                      {daysUntilReset !== 1 ? 's' : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })()}
+
+                          {/* Pack credits */}
+                          {(() => {
+                            const packs = creditBalance.balance.packs || {
+                              total: 0,
+                              used: 0,
+                              remaining: 0,
+                            };
+                            const packPct = packs.total
+                              ? Math.round((packs.used / packs.total) * 100)
+                              : 0;
+                            return (
+                              <div className={styles.usageRow}>
+                                <div className={styles.usageRowHeader}>
+                                  <span className={styles.usageRowLabel}>Purchased credits</span>
+                                  <span className={styles.usageRowValue}>
+                                    {packs.remaining} remaining
+                                  </span>
+                                </div>
+                                <div className={styles.usageProgressBar}>
+                                  <div
+                                    className={`${styles.usageProgressFill} ${styles.usageProgressFillPack}`}
+                                    style={{
+                                      width: `${packs.total ? Math.min(100, packPct) : 0}%`,
+                                    }}
+                                  />
+                                </div>
+                                <div className={styles.usageRowFooter}>
+                                  <span>
+                                    {packs.used} of {packs.total} used
+                                  </span>
+                                  <span>Packs expire after 90 days</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </div>
+
+                        {/* ── Total available ── */}
+                        <div className={styles.totalCreditsCard}>
+                          <div className={styles.totalCreditsLeft}>
+                            <span className={styles.totalCreditsValue}>
+                              {creditBalance.balance.combined ?? 0}
+                            </span>
+                            <span className={styles.totalCreditsLabel}>
+                              Total credits available
+                            </span>
+                          </div>
+                          <span className={styles.totalCreditsSub}>
+                            {creditBalance.balance.monthly?.remaining ?? 0} monthly +{' '}
+                            {creditBalance.balance.packs?.remaining ?? 0} pack
+                          </span>
+                        </div>
+
+                        {/* ── Credit costs ── */}
+                        <div className={styles.fieldGroup}>
+                          <label className={styles.fieldLabel}>Image generation costs</label>
+                          <div className={styles.costTable}>
+                            <div className={styles.costRow}>
+                              <span>Standard quality</span>
+                              <span className={styles.costValue}>
+                                {creditBalance.costs?.standard ?? 1} credit
+                              </span>
+                            </div>
+                            <div className={styles.costRow}>
+                              <span>HD quality</span>
+                              <span className={styles.costValue}>
+                                {creditBalance.costs?.hd ?? 2} credits
+                              </span>
+                            </div>
+                            <div className={styles.costRow}>
+                              <span>Ultra quality</span>
+                              <span className={styles.costValue}>
+                                {creditBalance.costs?.ultra ?? 4} credits
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ── Add more credits ── */}
+                        <div className={styles.fieldGroup}>
+                          <label className={styles.fieldLabel}>Add more credits</label>
+                          <p className={styles.fieldLabelDesc}>
+                            Purchase credit packs for additional image generations. Credits expire
+                            after 90 days.
+                          </p>
+                          <div className={styles.packCards}>
+                            {Object.entries(creditBalance.packs || {}).map(([key, pack]) => {
+                              const price = IMAGE_PACKS[key]?.price || pack.price;
+                              return (
+                                <div key={key} className={styles.packCard}>
+                                  <div className={styles.packCardBody}>
+                                    <span className={styles.packCardCredits}>{pack.credits}</span>
+                                    <span className={styles.packCardLabel}>{pack.label}</span>
+                                    {price && <span className={styles.packCardPrice}>{price}</span>}
+                                  </div>
+                                  <button
+                                    className={styles.packCardBtn}
+                                    onClick={() => handlePackSelect(key)}
+                                    disabled={packLoading}
+                                  >
+                                    Add credits
+                                  </button>
+                                </div>
+                              );
                             })}
                           </div>
-                        )}
-
-                        {cancelAtPeriodEnd && (
-                          <div className={styles.cancelNotice}>
-                            Your plan will be cancelled at the end of the current period
-                          </div>
-                        )}
-
-                        {(tierId === 'free' || tierId === 'lite') && (
-                          <div className={styles.subscriptionActions}>
-                            <button
-                              className={styles.upgradeBtn}
-                              onClick={() => navigate('/plans')}
-                            >
-                              Upgrade Plan
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {creditsLoading ? (
-                    <div className={styles.usageLoading}>
-                      <div className={styles.loadingSpinner} />
-                      <span>Loading usage data...</span>
-                    </div>
-                  ) : creditBalance?.balance ? (
-                    <>
-                      {/* ── Current plan card ── */}
-                      {(() => {
-                        const tierInfo = getTierById(currentTier);
-                        const tier = currentTier || 'free';
-                        const tierLabel =
-                          tierInfo?.name || tier.charAt(0).toUpperCase() + tier.slice(1);
-                        const tierCredits = tierInfo?.monthlyImageCredits ?? 5;
-                        return (
-                          <div className={styles.planCard}>
-                            <div className={styles.planInfo}>
-                              <span className={styles.planName}>
-                                <span
-                                  className={`${styles.tierBadge} ${
-                                    styles[`tierBadge${tierLabel}`] || ''
-                                  }`}
-                                >
-                                  {tierLabel}
-                                </span>
-                                {tierLabel} plan
-                              </span>
-                              <span className={styles.planDesc}>
-                                {tierCredits} image credits per month
-                              </span>
-                            </div>
-                            <button
-                              className={styles.planUpgradeBtn}
-                              onClick={() =>
-                                tier === 'free' ? navigate('/plans') : dispatch(createPortalThunk())
-                              }
-                              disabled={tier !== 'free' && portalLoading}
-                            >
-                              {tier === 'free'
-                                ? 'Upgrade plan'
-                                : portalLoading
-                                ? 'Opening...'
-                                : 'Manage plan'}
-                            </button>
-                          </div>
-                        );
-                      })()}
-
-                      {/* ── Plan usage limits ── */}
-                      <div className={styles.fieldGroup}>
-                        <label className={styles.fieldLabel}>Plan usage limits</label>
-
-                        {/* Monthly image credits */}
-                        {(() => {
-                          const monthly = creditBalance.balance.monthly || {
-                            total: 0,
-                            used: 0,
-                            remaining: 0,
-                          };
-                          const pct = monthly.total
-                            ? Math.round((monthly.used / monthly.total) * 100)
-                            : 0;
-                          const resetDate = creditBalance.balance.cycleResetsAt
-                            ? new Date(creditBalance.balance.cycleResetsAt)
-                            : null;
-                          const daysUntilReset = resetDate
-                            ? Math.max(
-                                0,
-                                Math.ceil(
-                                  (resetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                                )
-                              )
-                            : null;
-                          return (
-                            <div className={styles.usageRow}>
-                              <div className={styles.usageRowHeader}>
-                                <span className={styles.usageRowLabel}>Image credits</span>
-                                <span className={styles.usageRowValue}>{pct}% used</span>
-                              </div>
-                              <div className={styles.usageProgressBar}>
-                                <div
-                                  className={`${styles.usageProgressFill} ${
-                                    pct > 80 ? styles.usageProgressFillWarn : ''
-                                  }`}
-                                  style={{ width: `${Math.min(100, pct)}%` }}
-                                />
-                              </div>
-                              <div className={styles.usageRowFooter}>
-                                <span>
-                                  {monthly.used} of {monthly.total} used
-                                </span>
-                                {daysUntilReset !== null && (
-                                  <span>
-                                    Resets in {daysUntilReset} day{daysUntilReset !== 1 ? 's' : ''}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Pack credits */}
-                        {(() => {
-                          const packs = creditBalance.balance.packs || {
-                            total: 0,
-                            used: 0,
-                            remaining: 0,
-                          };
-                          const packPct = packs.total
-                            ? Math.round((packs.used / packs.total) * 100)
-                            : 0;
-                          return (
-                            <div className={styles.usageRow}>
-                              <div className={styles.usageRowHeader}>
-                                <span className={styles.usageRowLabel}>Purchased credits</span>
-                                <span className={styles.usageRowValue}>
-                                  {packs.remaining} remaining
-                                </span>
-                              </div>
-                              <div className={styles.usageProgressBar}>
-                                <div
-                                  className={`${styles.usageProgressFill} ${styles.usageProgressFillPack}`}
-                                  style={{
-                                    width: `${packs.total ? Math.min(100, packPct) : 0}%`,
-                                  }}
-                                />
-                              </div>
-                              <div className={styles.usageRowFooter}>
-                                <span>
-                                  {packs.used} of {packs.total} used
-                                </span>
-                                <span>Packs expire after 90 days</span>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                      {/* ── Total available ── */}
-                      <div className={styles.totalCreditsCard}>
-                        <div className={styles.totalCreditsLeft}>
-                          <span className={styles.totalCreditsValue}>
-                            {creditBalance.balance.combined ?? 0}
-                          </span>
-                          <span className={styles.totalCreditsLabel}>Total credits available</span>
                         </div>
-                        <span className={styles.totalCreditsSub}>
-                          {creditBalance.balance.monthly?.remaining ?? 0} monthly +{' '}
-                          {creditBalance.balance.packs?.remaining ?? 0} pack
-                        </span>
-                      </div>
 
-                      {/* ── Credit costs ── */}
-                      <div className={styles.fieldGroup}>
-                        <label className={styles.fieldLabel}>Image generation costs</label>
-                        <div className={styles.costTable}>
-                          <div className={styles.costRow}>
-                            <span>Standard quality</span>
-                            <span className={styles.costValue}>
-                              {creditBalance.costs?.standard ?? 1} credit
-                            </span>
-                          </div>
-                          <div className={styles.costRow}>
-                            <span>HD quality</span>
-                            <span className={styles.costValue}>
-                              {creditBalance.costs?.hd ?? 2} credits
-                            </span>
-                          </div>
-                          <div className={styles.costRow}>
-                            <span>Ultra quality</span>
-                            <span className={styles.costValue}>
-                              {creditBalance.costs?.ultra ?? 4} credits
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* ── Add more credits ── */}
-                      <div className={styles.fieldGroup}>
-                        <label className={styles.fieldLabel}>Add more credits</label>
-                        <p className={styles.fieldLabelDesc}>
-                          Purchase credit packs for additional image generations. Credits expire
-                          after 90 days.
+                        <button className={styles.refreshBtn} onClick={loadCredits}>
+                          Refresh usage data
+                        </button>
+                      </>
+                    ) : (
+                      <div className={styles.usageEmpty}>
+                        <p>
+                          {creditsError ||
+                            'Unable to load usage data. Check your connection and try again.'}
                         </p>
-                        <div className={styles.packCards}>
-                          {Object.entries(creditBalance.packs || {}).map(([key, pack]) => {
-                            const price = IMAGE_PACKS[key]?.price || pack.price;
-                            return (
-                              <div key={key} className={styles.packCard}>
-                                <div className={styles.packCardBody}>
-                                  <span className={styles.packCardCredits}>{pack.credits}</span>
-                                  <span className={styles.packCardLabel}>{pack.label}</span>
-                                  {price && <span className={styles.packCardPrice}>{price}</span>}
-                                </div>
-                                <button
-                                  className={styles.packCardBtn}
-                                  onClick={() => handlePackSelect(key)}
-                                  disabled={packLoading}
-                                >
-                                  Add credits
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      <button className={styles.refreshBtn} onClick={loadCredits}>
-                        Refresh usage data
-                      </button>
-                    </>
-                  ) : (
-                    <div className={styles.usageEmpty}>
-                      <p>
-                        {creditsError ||
-                          'Unable to load usage data. Check your connection and try again.'}
-                      </p>
-                      <button className={styles.refreshBtn} onClick={loadCredits}>
-                        Retry
-                      </button>
-                    </div>
-                  )}
-                </section>
-              )}
-
-              {/* ═══ NOTIFICATIONS ═══ */}
-              {activeSection === 'notifications' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Notifications</h2>
-                    <p className={styles.sectionDesc}>Choose what you want to be notified about.</p>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Usage limit warnings</span>
-                        <span className={styles.toggleDesc}>
-                          Get alerted when you&apos;re approaching your credit or usage limits.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.notifyUsageLimits}
-                        onChange={(v) => updateSetting('notifyUsageLimits', v)}
-                      />
-                    </div>
-
-                    {settings.notifyUsageLimits && (
-                      <div className={styles.thresholdPanel}>
-                        <span className={styles.thresholdTitle}>Warn me when I have</span>
-                        <span className={styles.thresholdDesc}>
-                          Pick one or more thresholds — we&apos;ll nudge you as each one gets
-                          crossed so there are no surprises.
-                        </span>
-                        <div className={styles.thresholdChipRow}>
-                          {USAGE_THRESHOLD_OPTIONS.map((pct) => {
-                            const current = Array.isArray(settings.usageLimitThresholds)
-                              ? settings.usageLimitThresholds
-                              : [];
-                            const active = current.includes(pct);
-                            return (
-                              <button
-                                key={pct}
-                                type="button"
-                                className={`${styles.thresholdChip} ${
-                                  active ? styles.thresholdChipActive : ''
-                                }`}
-                                aria-pressed={active}
-                                onClick={() => {
-                                  const next = active
-                                    ? current.filter((v) => v !== pct)
-                                    : [...current, pct].sort((a, b) => b - a);
-                                  updateSetting('usageLimitThresholds', next);
-                                }}
-                              >
-                                {pct}% left
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <button className={styles.refreshBtn} onClick={loadCredits}>
+                          Retry
+                        </button>
                       </div>
                     )}
-                  </div>
-                </section>
-              )}
+                  </section>
+                )}
 
-              {/* ═══ DATA & PRIVACY ═══ */}
-              {activeSection === 'data' && (
-                <section className={styles.section}>
-                  <div className={styles.sectionHeader}>
-                    <h2 className={styles.sectionTitle}>Data & privacy</h2>
-                    <p className={styles.sectionDesc}>Control how your data is stored and used.</p>
-                  </div>
-
-                  <div className={styles.fieldGroup}>
-                    <div className={styles.toggleRow}>
-                      <div className={styles.toggleInfo}>
-                        <span className={styles.toggleLabel}>Location metadata</span>
-                        <span className={styles.toggleDesc}>
-                          Allow Araviel to use coarse location data (city/region) to improve
-                          responses.
-                        </span>
-                      </div>
-                      <ToggleSwitch
-                        value={settings.locationMetadata}
-                        onChange={(v) => updateSetting('locationMetadata', v)}
-                      />
+                {/* ═══ NOTIFICATIONS ═══ */}
+                {activeSection === 'notifications' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Notifications</h2>
+                      <p className={styles.sectionDesc}>
+                        Choose what you want to be notified about.
+                      </p>
                     </div>
-                  </div>
 
-                  <div className={styles.fieldGroup}>
-                    <label className={styles.fieldLabel}>Shared chats</label>
-                    <p className={styles.fieldLabelDesc}>
-                      Links to conversations you&rsquo;ve shared publicly. Manage every active link
-                      from the Shared tab in Conversations.
-                    </p>
-                    <SharedChatsStub active={activeSection === 'data'} />
-                  </div>
+                    <div className={styles.fieldGroup}>
+                      <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                          <span className={styles.toggleLabel}>Usage limit warnings</span>
+                          <span className={styles.toggleDesc}>
+                            Get alerted when you&apos;re approaching your credit or usage limits.
+                          </span>
+                        </div>
+                        <ToggleSwitch
+                          value={settings.notifyUsageLimits}
+                          onChange={(v) => updateSetting('notifyUsageLimits', v)}
+                        />
+                      </div>
 
-                  <div className={styles.dangerZone}>
-                    <h3 className={styles.dangerTitle}>Danger zone</h3>
-                    <div className={styles.dangerCard}>
-                      <div className={styles.dangerInfo}>
-                        <span className={styles.dangerLabel}>Delete all conversations</span>
-                        <span className={styles.dangerDesc}>
-                          Move every conversation to Recently deleted. You have 15 days to restore
-                          them before they&rsquo;re permanently removed.
-                        </span>
-                      </div>
-                      <button
-                        className={styles.dangerBtn}
-                        onClick={() => setShowDeleteAllConfirm(true)}
-                        disabled={deletingAll}
-                      >
-                        {deletingAll ? 'Deleting…' : 'Delete all'}
-                      </button>
+                      {settings.notifyUsageLimits && (
+                        <div className={styles.thresholdPanel}>
+                          <span className={styles.thresholdTitle}>Warn me when I have</span>
+                          <span className={styles.thresholdDesc}>
+                            Pick one or more thresholds — we&apos;ll nudge you as each one gets
+                            crossed so there are no surprises.
+                          </span>
+                          <div className={styles.thresholdChipRow}>
+                            {USAGE_THRESHOLD_OPTIONS.map((pct) => {
+                              const current = Array.isArray(settings.usageLimitThresholds)
+                                ? settings.usageLimitThresholds
+                                : [];
+                              const active = current.includes(pct);
+                              return (
+                                <button
+                                  key={pct}
+                                  type="button"
+                                  className={`${styles.thresholdChip} ${
+                                    active ? styles.thresholdChipActive : ''
+                                  }`}
+                                  aria-pressed={active}
+                                  onClick={() => {
+                                    const next = active
+                                      ? current.filter((v) => v !== pct)
+                                      : [...current, pct].sort((a, b) => b - a);
+                                    updateSetting('usageLimitThresholds', next);
+                                  }}
+                                >
+                                  {pct}% left
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className={styles.dangerCard}>
-                      <div className={styles.dangerInfo}>
-                        <span className={styles.dangerLabel}>Delete account</span>
-                        <span className={styles.dangerDesc}>
-                          Permanently delete your account and all associated data.
-                        </span>
-                      </div>
-                      <button className={styles.dangerBtn}>Delete account</button>
+                  </section>
+                )}
+
+                {/* ═══ DATA & PRIVACY ═══ */}
+                {activeSection === 'data' && (
+                  <section className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                      <h2 className={styles.sectionTitle}>Data & privacy</h2>
+                      <p className={styles.sectionDesc}>
+                        Control how your data is stored and used.
+                      </p>
                     </div>
-                  </div>
-                </section>
-              )}
+
+                    <div className={styles.fieldGroup}>
+                      <div className={styles.toggleRow}>
+                        <div className={styles.toggleInfo}>
+                          <span className={styles.toggleLabel}>Location metadata</span>
+                          <span className={styles.toggleDesc}>
+                            Allow Araviel to use coarse location data (city/region) to improve
+                            responses.
+                          </span>
+                        </div>
+                        <ToggleSwitch
+                          value={settings.locationMetadata}
+                          onChange={(v) => updateSetting('locationMetadata', v)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldGroup}>
+                      <label className={styles.fieldLabel}>Shared chats</label>
+                      <p className={styles.fieldLabelDesc}>
+                        Links to conversations you&rsquo;ve shared publicly. Manage every active
+                        link from the Shared tab in Conversations.
+                      </p>
+                      <SharedChatsStub active={activeSection === 'data'} />
+                    </div>
+
+                    <div className={styles.dangerZone}>
+                      <h3 className={styles.dangerTitle}>Danger zone</h3>
+                      <div className={styles.dangerCard}>
+                        <div className={styles.dangerInfo}>
+                          <span className={styles.dangerLabel}>Delete all conversations</span>
+                          <span className={styles.dangerDesc}>
+                            Move every conversation to Recently deleted. You have 15 days to restore
+                            them before they&rsquo;re permanently removed.
+                          </span>
+                        </div>
+                        <button
+                          className={styles.dangerBtn}
+                          onClick={() => setShowDeleteAllConfirm(true)}
+                          disabled={deletingAll}
+                        >
+                          {deletingAll ? 'Deleting…' : 'Delete all'}
+                        </button>
+                      </div>
+                      <div className={styles.dangerCard}>
+                        <div className={styles.dangerInfo}>
+                          <span className={styles.dangerLabel}>Delete account</span>
+                          <span className={styles.dangerDesc}>
+                            Permanently delete your account and all associated data.
+                          </span>
+                        </div>
+                        <button className={styles.dangerBtn}>Delete account</button>
+                      </div>
+                    </div>
+                  </section>
+                )}
+              </div>
             </div>
-          </div>
+          </RequireAuth>
         </div>
       </div>
 

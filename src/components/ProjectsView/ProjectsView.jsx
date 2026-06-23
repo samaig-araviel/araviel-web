@@ -13,7 +13,7 @@ import {
 } from '../../store/slices/projectsSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
 import { showUpgradeModal } from '../../store/slices/subscriptionSlice';
-import { GuestGate } from '../GuestGate';
+import RequireAuth from '../RequireAuth';
 import { getProjectLimit, getNextTier } from '../../config/subscription';
 import { selectCurrentTier } from '../../store/slices/subscriptionSlice';
 import {
@@ -1106,27 +1106,6 @@ export default function ProjectsView() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div ref={pageRef} className={styles.page}>
-        <div className={styles.inner}>
-          <div className={styles.header}>
-            <div className={styles.headerLeft}>
-              <h1 className={styles.title}>Projects</h1>
-              <p className={styles.subtitle}>Organise your conversations with custom context</p>
-            </div>
-          </div>
-          <GuestGate
-            icon={<ProjectsIcon />}
-            title="Organise with Projects"
-            description="Sign in to create projects, group conversations, and add custom context to your chats."
-            actionLabel="Sign in to use Projects"
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div ref={pageRef} className={styles.page}>
       <div className={styles.inner}>
@@ -1136,232 +1115,241 @@ export default function ProjectsView() {
             <h1 className={styles.title}>Projects</h1>
             <p className={styles.subtitle}>Organise your conversations with custom context</p>
           </div>
-          <button
-            className={styles.newProjectBtn}
-            onClick={() => {
-              setEditingProject(null);
-              setShowModal(true);
-            }}
-          >
-            <PlusIcon />
-            <span>New project</span>
-          </button>
-        </div>
-
-        {/* Search & Sort */}
-        <div className={styles.searchFilterBar}>
-          <div className={styles.searchWrapper}>
-            <div className={styles.searchIcon}>
-              <SearchIcon />
-            </div>
-            <input
-              className={styles.searchInput}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search projects..."
-            />
-            {search && (
-              <button className={styles.searchClear} onClick={() => setSearch('')}>
-                <CloseIcon />
-              </button>
-            )}
-            {!search && (
-              <div className={styles.searchWebIcon} title="Web search">
-                <GlobeIcon />
-              </div>
-            )}
-          </div>
-
-          <div className={styles.sortWrapper} ref={sortRef}>
-            <button className={styles.sortBtn} onClick={() => setSortOpen(!sortOpen)}>
-              <span>Sort by</span>
-              <ChevronDownIcon />
-            </button>
-            {sortOpen && (
-              <div className={styles.sortDropdown}>
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    className={`${styles.sortOption} ${
-                      sortBy === opt.id ? styles.sortOptionActive : ''
-                    }`}
-                    onClick={() => {
-                      setSortBy(opt.id);
-                      setSortOpen(false);
-                    }}
-                  >
-                    <span className={styles.sortCheck}>{sortBy === opt.id && <CheckIcon />}</span>
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Filter Tabs */}
-        <div className={styles.filterTabs}>
-          {FILTER_TABS.map((tab) => (
+          {isAuthenticated && (
             <button
-              key={tab.id}
-              className={`${styles.filterTab} ${filter === tab.id ? styles.filterTabActive : ''}`}
-              onClick={() => setFilter(tab.id)}
+              className={styles.newProjectBtn}
+              onClick={() => {
+                setEditingProject(null);
+                setShowModal(true);
+              }}
             >
-              <span>{tab.label}</span>
-              <span className={styles.filterTabBadge}>{counts[tab.id] || 0}</span>
+              <PlusIcon />
+              <span>New project</span>
             </button>
-          ))}
+          )}
         </div>
 
-        {/* Content */}
-        {loading && projects.length === 0 ? (
-          <div className={styles.skeleton}>
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className={styles.skeletonCard}>
-                <div className={styles.skeletonIcon} />
-                <div className={styles.skeletonTitle} />
-                <div className={styles.skeletonDesc} />
-                <div className={styles.skeletonFooter} />
+        <RequireAuth
+          icon={<ProjectsIcon />}
+          title="Organise with Projects"
+          description="Sign in to create projects, group conversations, and add custom context to your chats."
+          actionLabel="Sign in to use Projects"
+        >
+          {/* Search & Sort */}
+          <div className={styles.searchFilterBar}>
+            <div className={styles.searchWrapper}>
+              <div className={styles.searchIcon}>
+                <SearchIcon />
               </div>
-            ))}
-          </div>
-        ) : filteredProjects.length > 0 ? (
-          <div className={styles.grid}>
-            {filteredProjects.map((project) => (
-              <div
-                key={project.id}
-                className={`${styles.card} ${project.is_starred ? styles.cardStarred : ''} ${
-                  menuOpenId === project.id ? styles.cardMenuOpen : ''
-                }`}
-                onClick={() => handleCardClick(project)}
-              >
-                <div className={styles.cardHeader}>
-                  <div className={styles.cardIcon}>
-                    <ProjectsIcon />
-                  </div>
-                  <button
-                    ref={menuOpenId === project.id ? menuRef : null}
-                    className={`${styles.cardMenu} ${
-                      menuOpenId === project.id ? styles.cardMenuVisible : ''
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpenId((prev) => (prev === project.id ? null : project.id));
-                    }}
-                  >
-                    <MoreVerticalIcon />
-                  </button>
+              <input
+                className={styles.searchInput}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search projects..."
+              />
+              {search && (
+                <button className={styles.searchClear} onClick={() => setSearch('')}>
+                  <CloseIcon />
+                </button>
+              )}
+              {!search && (
+                <div className={styles.searchWebIcon} title="Web search">
+                  <GlobeIcon />
                 </div>
-
-                <div className={styles.cardName}>{project.name}</div>
-                <div className={styles.cardDesc}>{project.description || 'No description'}</div>
-
-                <div className={styles.cardFooter}>
-                  <span className={styles.cardTime}>
-                    Updated {formatRelativeTime(project.updated_at || project.created_at)}
-                  </span>
-                  <div className={styles.cardBadges}>
-                    {project.is_starred && (
-                      <span className={styles.cardStarBadge}>
-                        <StarIcon filled />
-                      </span>
-                    )}
-                    {project.instructions && (
-                      <span className={styles.cardInstructionsBadge}>
-                        <FileTextIcon />
-                        <span>Instructions</span>
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Card dropdown */}
-                {menuOpenId === project.id && (
-                  <div className={styles.cardDropdown} ref={dropdownRef}>
-                    <button
-                      className={styles.cardDropdownItem}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleStar(project);
-                        setMenuOpenId(null);
-                      }}
-                    >
-                      <StarIcon filled={project.is_starred} />
-                      <span>{project.is_starred ? 'Unstar' : 'Star'}</span>
-                    </button>
-                    <button
-                      className={styles.cardDropdownItem}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditModal(project);
-                      }}
-                    >
-                      <EditIcon />
-                      <span>Edit details</span>
-                    </button>
-                    <button
-                      className={styles.cardDropdownItem}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleArchive(project);
-                      }}
-                    >
-                      <ArchiveIcon />
-                      <span>{project.is_archived ? 'Unarchive' : 'Archive'}</span>
-                    </button>
-                    <div className={styles.cardDropdownDivider} />
-                    <button
-                      className={`${styles.cardDropdownItem} ${styles.cardDropdownItemDanger}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDeleteConfirm(project);
-                      }}
-                    >
-                      <TrashIcon />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className={styles.empty}>
-            <div className={styles.emptyVisual}>
-              <ProjectsIcon />
+              )}
             </div>
-            <h3 className={styles.emptyTitle}>
-              {search
-                ? 'No projects found'
-                : filter === 'starred'
-                ? 'No starred projects'
-                : filter === 'archived'
-                ? 'No archived projects'
-                : 'No projects yet'}
-            </h3>
-            <p className={styles.emptyDesc}>
-              {search
-                ? `No projects match "${search}". Try a different search term.`
-                : filter === 'starred'
-                ? 'Star your important projects to find them quickly here.'
-                : filter === 'archived'
-                ? 'Archived projects will appear here.'
-                : 'Create your first project to organise conversations with custom instructions and context.'}
-            </p>
-            {!search && filter === 'all' && (
-              <button
-                className={styles.emptyAction}
-                onClick={() => {
-                  setEditingProject(null);
-                  setShowModal(true);
-                }}
-              >
-                <PlusIcon />
-                <span>Create a project</span>
+
+            <div className={styles.sortWrapper} ref={sortRef}>
+              <button className={styles.sortBtn} onClick={() => setSortOpen(!sortOpen)}>
+                <span>Sort by</span>
+                <ChevronDownIcon />
               </button>
-            )}
+              {sortOpen && (
+                <div className={styles.sortDropdown}>
+                  {SORT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.id}
+                      className={`${styles.sortOption} ${
+                        sortBy === opt.id ? styles.sortOptionActive : ''
+                      }`}
+                      onClick={() => {
+                        setSortBy(opt.id);
+                        setSortOpen(false);
+                      }}
+                    >
+                      <span className={styles.sortCheck}>{sortBy === opt.id && <CheckIcon />}</span>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        )}
+
+          {/* Filter Tabs */}
+          <div className={styles.filterTabs}>
+            {FILTER_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                className={`${styles.filterTab} ${filter === tab.id ? styles.filterTabActive : ''}`}
+                onClick={() => setFilter(tab.id)}
+              >
+                <span>{tab.label}</span>
+                <span className={styles.filterTabBadge}>{counts[tab.id] || 0}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          {loading && projects.length === 0 ? (
+            <div className={styles.skeleton}>
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={styles.skeletonCard}>
+                  <div className={styles.skeletonIcon} />
+                  <div className={styles.skeletonTitle} />
+                  <div className={styles.skeletonDesc} />
+                  <div className={styles.skeletonFooter} />
+                </div>
+              ))}
+            </div>
+          ) : filteredProjects.length > 0 ? (
+            <div className={styles.grid}>
+              {filteredProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className={`${styles.card} ${project.is_starred ? styles.cardStarred : ''} ${
+                    menuOpenId === project.id ? styles.cardMenuOpen : ''
+                  }`}
+                  onClick={() => handleCardClick(project)}
+                >
+                  <div className={styles.cardHeader}>
+                    <div className={styles.cardIcon}>
+                      <ProjectsIcon />
+                    </div>
+                    <button
+                      ref={menuOpenId === project.id ? menuRef : null}
+                      className={`${styles.cardMenu} ${
+                        menuOpenId === project.id ? styles.cardMenuVisible : ''
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenId((prev) => (prev === project.id ? null : project.id));
+                      }}
+                    >
+                      <MoreVerticalIcon />
+                    </button>
+                  </div>
+
+                  <div className={styles.cardName}>{project.name}</div>
+                  <div className={styles.cardDesc}>{project.description || 'No description'}</div>
+
+                  <div className={styles.cardFooter}>
+                    <span className={styles.cardTime}>
+                      Updated {formatRelativeTime(project.updated_at || project.created_at)}
+                    </span>
+                    <div className={styles.cardBadges}>
+                      {project.is_starred && (
+                        <span className={styles.cardStarBadge}>
+                          <StarIcon filled />
+                        </span>
+                      )}
+                      {project.instructions && (
+                        <span className={styles.cardInstructionsBadge}>
+                          <FileTextIcon />
+                          <span>Instructions</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card dropdown */}
+                  {menuOpenId === project.id && (
+                    <div className={styles.cardDropdown} ref={dropdownRef}>
+                      <button
+                        className={styles.cardDropdownItem}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleStar(project);
+                          setMenuOpenId(null);
+                        }}
+                      >
+                        <StarIcon filled={project.is_starred} />
+                        <span>{project.is_starred ? 'Unstar' : 'Star'}</span>
+                      </button>
+                      <button
+                        className={styles.cardDropdownItem}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(project);
+                        }}
+                      >
+                        <EditIcon />
+                        <span>Edit details</span>
+                      </button>
+                      <button
+                        className={styles.cardDropdownItem}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleArchive(project);
+                        }}
+                      >
+                        <ArchiveIcon />
+                        <span>{project.is_archived ? 'Unarchive' : 'Archive'}</span>
+                      </button>
+                      <div className={styles.cardDropdownDivider} />
+                      <button
+                        className={`${styles.cardDropdownItem} ${styles.cardDropdownItemDanger}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDeleteConfirm(project);
+                        }}
+                      >
+                        <TrashIcon />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.empty}>
+              <div className={styles.emptyVisual}>
+                <ProjectsIcon />
+              </div>
+              <h3 className={styles.emptyTitle}>
+                {search
+                  ? 'No projects found'
+                  : filter === 'starred'
+                  ? 'No starred projects'
+                  : filter === 'archived'
+                  ? 'No archived projects'
+                  : 'No projects yet'}
+              </h3>
+              <p className={styles.emptyDesc}>
+                {search
+                  ? `No projects match "${search}". Try a different search term.`
+                  : filter === 'starred'
+                  ? 'Star your important projects to find them quickly here.'
+                  : filter === 'archived'
+                  ? 'Archived projects will appear here.'
+                  : 'Create your first project to organise conversations with custom instructions and context.'}
+              </p>
+              {!search && filter === 'all' && (
+                <button
+                  className={styles.emptyAction}
+                  onClick={() => {
+                    setEditingProject(null);
+                    setShowModal(true);
+                  }}
+                >
+                  <PlusIcon />
+                  <span>Create a project</span>
+                </button>
+              )}
+            </div>
+          )}
+        </RequireAuth>
       </div>
 
       {/* Create/Edit Modal */}

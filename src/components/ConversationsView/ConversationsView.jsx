@@ -17,7 +17,7 @@ import {
   createNewChat,
 } from '../../store/slices/chatSlice';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
-import { GuestGate } from '../GuestGate';
+import RequireAuth from '../RequireAuth';
 import {
   fetchConversations,
   fetchImportedConversations,
@@ -1707,530 +1707,530 @@ export default function ConversationsView() {
     ? filteredImportedConversations
     : filteredConversations;
 
-  if (!isAuthenticated) {
-    return (
-      <div ref={pageRef} className={styles.page}>
-        <div className={styles.inner}>
-          <div className={styles.header}>
-            <h1 className={styles.title}>Conversations</h1>
-          </div>
-          <GuestGate
-            icon={<ChatIcon />}
-            title="Your conversations live here"
-            description="Sign in to save your conversations, access conversation history, and pick up where you left off."
-            actionLabel="Sign in to view conversations"
-          />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div ref={pageRef} className={styles.page}>
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>
           <h1 className={styles.title}>Conversations</h1>
-          <div className={styles.headerActions}>
-            <button className={styles.importBtn} onClick={() => setShowImportModal(true)}>
-              <ImportIcon />
-              <span>Import</span>
-            </button>
-            <button
-              className={styles.newChatBtn}
-              onClick={() => {
-                dispatch(createNewChat());
-                navigate('/');
-              }}
-            >
-              <PlusIcon />
-              <span>New conversation</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Section switcher */}
-        <div className={styles.sectionSwitcher}>
-          <button
-            className={`${styles.sectionTab} ${
-              activeSection === 'my-chats' ? styles.sectionTabActive : ''
-            }`}
-            onClick={() => {
-              setActiveSection('my-chats');
-              exitSelectMode();
-              setSearchQuery('');
-            }}
-          >
-            <ChatIcon />
-            <span>My Conversations</span>
-          </button>
-          <button
-            className={`${styles.sectionTab} ${
-              activeSection === 'imported' ? styles.sectionTabActive : ''
-            }`}
-            onClick={() => {
-              setActiveSection('imported');
-              exitSelectMode();
-              setSearchQuery('');
-            }}
-          >
-            <ImportIcon />
-            <span>Imported Conversations</span>
-          </button>
-        </div>
-
-        {/* Search bar */}
-        <div className={styles.searchWrapper}>
-          <div className={styles.searchIcon}>
-            <SearchIcon />
-          </div>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder={
-              isImportedSection
-                ? 'Search imported conversations...'
-                : 'Search your conversations...'
-            }
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          {searchQuery && (
-            <button
-              className={styles.searchClear}
-              onClick={() => setSearchQuery('')}
-              aria-label="Clear search"
-            >
-              <CloseIcon />
-            </button>
+          {isAuthenticated && (
+            <div className={styles.headerActions}>
+              <button className={styles.importBtn} onClick={() => setShowImportModal(true)}>
+                <ImportIcon />
+                <span>Import</span>
+              </button>
+              <button
+                className={styles.newChatBtn}
+                onClick={() => {
+                  dispatch(createNewChat());
+                  navigate('/');
+                }}
+              >
+                <PlusIcon />
+                <span>New conversation</span>
+              </button>
+            </div>
           )}
         </div>
 
-        {/* My Chats Section */}
-        {!isImportedSection && (
-          <>
-            {/* Toolbar: Tabs + Select toggle */}
-            <div className={styles.toolbar}>
-              <div className={styles.tabs}>
-                {TABS.map((tab) => (
-                  <button
-                    key={tab.id}
-                    className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      exitSelectMode();
-                    }}
-                  >
-                    {tab.label}
-                    {tab.id === 'starred' && starredIds.size > 0 && (
-                      <span className={styles.tabBadge}>{starredIds.size}</span>
-                    )}
-                    {tab.id === 'archived' && archivedIds.size > 0 && (
-                      <span className={styles.tabBadge}>{archivedIds.size}</span>
-                    )}
-                    {tab.id === 'shared' && sharedChats.shares && sharedChats.shares.length > 0 && (
-                      <span className={styles.tabBadge}>{sharedChats.shares.length}</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              {activeTab !== 'shared' && (
-                <button
-                  className={`${styles.selectToggle} ${
-                    selectMode ? styles.selectToggleActive : ''
-                  }`}
-                  onClick={() => {
-                    if (selectMode) {
-                      exitSelectMode();
-                    } else {
-                      setSelectMode(true);
-                    }
-                  }}
-                >
-                  {selectMode ? 'Cancel' : 'Select'}
-                </button>
-              )}
+        <RequireAuth
+          icon={<ChatIcon />}
+          title="Your conversations live here"
+          description="Sign in to save your conversations, access conversation history, and pick up where you left off."
+          actionLabel="Sign in to view conversations"
+        >
+          {/* Section switcher */}
+          <div className={styles.sectionSwitcher}>
+            <button
+              className={`${styles.sectionTab} ${
+                activeSection === 'my-chats' ? styles.sectionTabActive : ''
+              }`}
+              onClick={() => {
+                setActiveSection('my-chats');
+                exitSelectMode();
+                setSearchQuery('');
+              }}
+            >
+              <ChatIcon />
+              <span>My Conversations</span>
+            </button>
+            <button
+              className={`${styles.sectionTab} ${
+                activeSection === 'imported' ? styles.sectionTabActive : ''
+              }`}
+              onClick={() => {
+                setActiveSection('imported');
+                exitSelectMode();
+                setSearchQuery('');
+              }}
+            >
+              <ImportIcon />
+              <span>Imported Conversations</span>
+            </button>
+          </div>
+
+          {/* Search bar */}
+          <div className={styles.searchWrapper}>
+            <div className={styles.searchIcon}>
+              <SearchIcon />
             </div>
-
-            {selectMode && (
-              <div className={styles.selectionBar}>
-                <div className={styles.selectionLeft}>
-                  <span className={styles.selectionCount}>{selectedIds.size} selected</span>
-                  {selectedIds.size < selectableCount && (
-                    <button className={styles.selectAllBtn} onClick={selectAll}>
-                      Select all
-                    </button>
-                  )}
-                </div>
-                <div className={styles.selectionActions}>
-                  {activeTab === 'trash' ? (
-                    <>
-                      <button
-                        className={styles.selectionAction}
-                        onClick={() => hasSelection && handleBulkRestore()}
-                        disabled={!hasSelection || bulkRestoring}
-                        title="Restore"
-                      >
-                        <RefreshIcon />
-                      </button>
-                      <button
-                        className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
-                        onClick={() => hasSelection && setPurgeTargetIds([...selectedIds])}
-                        disabled={!hasSelection || purging}
-                        title="Delete permanently"
-                      >
-                        <TrashIcon />
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        className={styles.selectionAction}
-                        onClick={() => hasSelection && handleBulkAddToProject()}
-                        disabled={!hasSelection}
-                        title="Add to project"
-                      >
-                        <ProjectsIcon />
-                      </button>
-                      <button
-                        className={styles.selectionAction}
-                        onClick={() => hasSelection && handleBulkRemoveFromProject()}
-                        disabled={!hasSelection}
-                        title="Remove from project"
-                      >
-                        <LinkIcon />
-                      </button>
-                      <button
-                        className={styles.selectionAction}
-                        onClick={() => hasSelection && toggleStar(selectedIds)}
-                        disabled={!hasSelection}
-                        title="Star"
-                      >
-                        <StarIcon />
-                      </button>
-                      <button
-                        className={styles.selectionAction}
-                        onClick={() => hasSelection && toggleArchive(selectedIds)}
-                        disabled={!hasSelection}
-                        title={activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}
-                      >
-                        <ArchiveIcon />
-                      </button>
-                      <button
-                        className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
-                        onClick={() => hasSelection && handleBulkDelete()}
-                        disabled={!hasSelection}
-                        title="Delete"
-                      >
-                        <TrashIcon />
-                      </button>
-                    </>
-                  )}
-                </div>
-                <button
-                  className={styles.selectionClose}
-                  onClick={exitSelectMode}
-                  aria-label="Exit selection"
-                >
-                  <CloseIcon />
-                </button>
-              </div>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder={
+                isImportedSection
+                  ? 'Search imported conversations...'
+                  : 'Search your conversations...'
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                className={styles.searchClear}
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                <CloseIcon />
+              </button>
             )}
+          </div>
 
-            <div className={styles.list} ref={listRef}>
-              {activeTab === 'trash' ? (
-                <TrashList
-                  conversations={trashedConversations}
-                  total={trashedTotal}
-                  loading={trashLoading}
-                  error={trashError}
-                  restoringId={restoringId}
-                  onRestore={handleRestoreConversation}
-                  onPurgeRequest={setPurgeTargetIds}
-                  onRetry={() => loadTrash(0)}
-                  onLoadMore={handleLoadMoreTrash}
-                  selectMode={selectMode}
-                  selectedIds={selectedIds}
-                  onToggleSelect={toggleSelect}
-                />
-              ) : activeTab === 'shared' ? (
-                <SharedChatsTabPanel
-                  shares={sharedChats.shares}
-                  loading={sharedChats.loading}
-                  error={sharedChats.error}
-                  searchQuery={searchQuery}
-                  busyConversationId={sharedBusyConversationId}
-                  onRetry={sharedChats.refetch}
-                  onRowClick={handleSharedRowClick}
-                  onCopy={handleSharedCopy}
-                  onUnshare={setSharedUnshareTarget}
-                />
-              ) : conversationsLoading && conversations.length === 0 ? (
-                <div className={styles.skeleton}>
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
-                    <div key={i} className={styles.skeletonItem}>
-                      <div className={styles.skeletonContent}>
-                        <div
-                          className={styles.skeletonTitle}
-                          style={{ width: `${45 + ((i * 11) % 30)}%` }}
-                        />
-                        <div
-                          className={styles.skeletonSub}
-                          style={{ width: `${25 + ((i * 7) % 20)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : groupedFilteredConversations.length > 0 ? (
-                <>
-                  {groupedFilteredConversations.map((group) => (
-                    <div key={group.label} className={styles.timeGroup}>
-                      <div className={styles.timeGroupLabel}>{group.label}</div>
-                      {group.items.map((chat) => renderConversationItem(chat))}
-                    </div>
-                  ))}
-                  {conversations.length < conversationsTotal && (
-                    <div className={styles.loadMoreWrapper}>
-                      {conversationsLoading ? (
-                        <div className={styles.loadingMore}>
-                          <div className={styles.loadingDots}>
-                            <span />
-                            <span />
-                            <span />
-                          </div>
-                        </div>
-                      ) : (
-                        <button className={styles.loadMoreBtn} onClick={handleLoadMore}>
-                          Load more conversations
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className={styles.empty}>
-                  <div className={styles.emptyIcon}>
-                    <ChatIcon />
-                  </div>
-                  <h3 className={styles.emptyTitle}>
-                    {activeTab === 'starred'
-                      ? 'No starred conversations'
-                      : activeTab === 'archived'
-                      ? 'No archived conversations'
-                      : searchQuery
-                      ? 'No results found'
-                      : 'No conversations yet'}
-                  </h3>
-                  <p className={styles.emptyDesc}>
-                    {activeTab === 'starred'
-                      ? 'Star your important conversations to find them quickly.'
-                      : activeTab === 'archived'
-                      ? 'Archived conversations will appear here.'
-                      : searchQuery
-                      ? 'Try a different search term.'
-                      : 'Start a new conversation.'}
-                  </p>
-                  {!searchQuery && activeTab === 'all' && (
+          {/* My Chats Section */}
+          {!isImportedSection && (
+            <>
+              {/* Toolbar: Tabs + Select toggle */}
+              <div className={styles.toolbar}>
+                <div className={styles.tabs}>
+                  {TABS.map((tab) => (
                     <button
-                      className={styles.emptyAction}
+                      key={tab.id}
+                      className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
                       onClick={() => {
-                        dispatch(createNewChat());
-                        navigate('/');
+                        setActiveTab(tab.id);
+                        exitSelectMode();
                       }}
                     >
-                      <PlusIcon />
-                      <span>New conversation</span>
+                      {tab.label}
+                      {tab.id === 'starred' && starredIds.size > 0 && (
+                        <span className={styles.tabBadge}>{starredIds.size}</span>
+                      )}
+                      {tab.id === 'archived' && archivedIds.size > 0 && (
+                        <span className={styles.tabBadge}>{archivedIds.size}</span>
+                      )}
+                      {tab.id === 'shared' &&
+                        sharedChats.shares &&
+                        sharedChats.shares.length > 0 && (
+                          <span className={styles.tabBadge}>{sharedChats.shares.length}</span>
+                        )}
                     </button>
-                  )}
+                  ))}
                 </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Imported Chats Section */}
-        {isImportedSection && (
-          <>
-            {/* Provider filter tabs */}
-            {importedProviders.length > 0 && (
-              <div className={styles.toolbar}>
-                <div className={styles.providerFilters}>
+                {activeTab !== 'shared' && (
                   <button
-                    className={`${styles.tab} ${
-                      activeImportProvider === 'all' ? styles.tabActive : ''
+                    className={`${styles.selectToggle} ${
+                      selectMode ? styles.selectToggleActive : ''
                     }`}
                     onClick={() => {
-                      setActiveImportProvider('all');
-                      exitSelectMode();
+                      if (selectMode) {
+                        exitSelectMode();
+                      } else {
+                        setSelectMode(true);
+                      }
                     }}
                   >
-                    All
-                    <span className={styles.tabBadge}>{importedConversations.length}</span>
+                    {selectMode ? 'Cancel' : 'Select'}
                   </button>
-                  {importedProviders.map((p) => {
-                    const count = importedConversations.filter((c) => c.provider === p.id).length;
-                    const ProviderLogo = getProviderLogo(p.id);
-                    return (
-                      <button
-                        key={p.id}
-                        className={`${styles.tab} ${
-                          activeImportProvider === p.id ? styles.tabActive : ''
-                        }`}
-                        onClick={() => {
-                          setActiveImportProvider(p.id);
-                          exitSelectMode();
-                        }}
-                      >
-                        <span className={styles.tabProviderIcon}>
-                          <ProviderLogo size={14} />
-                        </span>
-                        {p.name}
-                        <span className={styles.tabBadge}>{count}</span>
+                )}
+              </div>
+
+              {selectMode && (
+                <div className={styles.selectionBar}>
+                  <div className={styles.selectionLeft}>
+                    <span className={styles.selectionCount}>{selectedIds.size} selected</span>
+                    {selectedIds.size < selectableCount && (
+                      <button className={styles.selectAllBtn} onClick={selectAll}>
+                        Select all
                       </button>
-                    );
-                  })}
-                </div>
-                <button
-                  className={`${styles.selectToggle} ${
-                    selectMode ? styles.selectToggleActive : ''
-                  }`}
-                  onClick={() => {
-                    if (selectMode) exitSelectMode();
-                    else setSelectMode(true);
-                  }}
-                >
-                  {selectMode ? 'Cancel' : 'Select'}
-                </button>
-              </div>
-            )}
-
-            {/* Compact context bar */}
-            {importedProviders.length > 0 && (
-              <div className={styles.contextBar}>
-                <span className={styles.contextBarLabel}>
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                  </svg>
-                  <span>Context</span>
-                </span>
-                <div className={styles.contextBarDivider} />
-                <div className={styles.contextBarChips}>
-                  {(activeImportProvider === 'all'
-                    ? importedProviders
-                    : importedProviders.filter((p) => p.id === activeImportProvider)
-                  ).map((p) => {
-                    const ProviderLogo = getProviderLogo(p.id);
-                    const isEnabled = !!contextProviders[p.id];
-                    return (
-                      <button
-                        key={p.id}
-                        className={`${styles.contextChip} ${
-                          isEnabled ? styles.contextChipActive : ''
-                        }`}
-                        onClick={() => toggleProviderContext(p.id)}
-                        title={isEnabled ? `Disable ${p.name} context` : `Enable ${p.name} context`}
-                      >
-                        <ProviderLogo size={13} />
-                        <span>{p.name}</span>
-                        <span className={styles.contextChipDot} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Selection action bar for imported */}
-            {selectMode && (
-              <div className={styles.selectionBar}>
-                <div className={styles.selectionLeft}>
-                  <span className={styles.selectionCount}>{selectedIds.size} selected</span>
-                  {selectedIds.size < filteredImportedConversations.length && (
-                    <button className={styles.selectAllBtn} onClick={selectAll}>
-                      Select all
-                    </button>
-                  )}
-                </div>
-                <div className={styles.selectionActions}>
-                  <button
-                    className={styles.selectionAction}
-                    onClick={() => hasSelection && toggleImportedStar(selectedIds)}
-                    disabled={!hasSelection}
-                    title="Star"
-                  >
-                    <StarIcon />
-                  </button>
-                  <button
-                    className={styles.selectionAction}
-                    onClick={() => hasSelection && toggleImportedArchive(selectedIds)}
-                    disabled={!hasSelection}
-                    title={activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}
-                  >
-                    <ArchiveIcon />
-                  </button>
-                  <button
-                    className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
-                    onClick={() => hasSelection && handleBulkDelete()}
-                    disabled={!hasSelection}
-                    title="Delete"
-                  >
-                    <TrashIcon />
-                  </button>
-                </div>
-                <button
-                  className={styles.selectionClose}
-                  onClick={exitSelectMode}
-                  aria-label="Exit selection"
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-            )}
-
-            {/* Imported conversations list */}
-            <div className={styles.list}>
-              {groupedImportedConversations.length > 0 ? (
-                groupedImportedConversations.map((group) => (
-                  <div key={group.label} className={styles.timeGroup}>
-                    <div className={styles.timeGroupLabel}>{group.label}</div>
-                    {group.items.map((chat) => renderConversationItem(chat, { isImported: true }))}
+                    )}
                   </div>
-                ))
-              ) : (
-                <div className={styles.empty}>
-                  <div className={styles.emptyIcon}>
-                    <ImportIcon />
+                  <div className={styles.selectionActions}>
+                    {activeTab === 'trash' ? (
+                      <>
+                        <button
+                          className={styles.selectionAction}
+                          onClick={() => hasSelection && handleBulkRestore()}
+                          disabled={!hasSelection || bulkRestoring}
+                          title="Restore"
+                        >
+                          <RefreshIcon />
+                        </button>
+                        <button
+                          className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                          onClick={() => hasSelection && setPurgeTargetIds([...selectedIds])}
+                          disabled={!hasSelection || purging}
+                          title="Delete permanently"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className={styles.selectionAction}
+                          onClick={() => hasSelection && handleBulkAddToProject()}
+                          disabled={!hasSelection}
+                          title="Add to project"
+                        >
+                          <ProjectsIcon />
+                        </button>
+                        <button
+                          className={styles.selectionAction}
+                          onClick={() => hasSelection && handleBulkRemoveFromProject()}
+                          disabled={!hasSelection}
+                          title="Remove from project"
+                        >
+                          <LinkIcon />
+                        </button>
+                        <button
+                          className={styles.selectionAction}
+                          onClick={() => hasSelection && toggleStar(selectedIds)}
+                          disabled={!hasSelection}
+                          title="Star"
+                        >
+                          <StarIcon />
+                        </button>
+                        <button
+                          className={styles.selectionAction}
+                          onClick={() => hasSelection && toggleArchive(selectedIds)}
+                          disabled={!hasSelection}
+                          title={activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}
+                        >
+                          <ArchiveIcon />
+                        </button>
+                        <button
+                          className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                          onClick={() => hasSelection && handleBulkDelete()}
+                          disabled={!hasSelection}
+                          title="Delete"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <h3 className={styles.emptyTitle}>
-                    {searchQuery ? 'No results found' : 'No imported conversations yet'}
-                  </h3>
-                  <p className={styles.emptyDesc}>
-                    {searchQuery
-                      ? 'Try a different search term.'
-                      : 'Bring your conversations from ChatGPT, Claude, Gemini, and more.'}
-                  </p>
-                  {!searchQuery && (
-                    <button className={styles.emptyAction} onClick={() => setShowImportModal(true)}>
-                      <ImportIcon />
-                      <span>Import conversations</span>
-                    </button>
-                  )}
+                  <button
+                    className={styles.selectionClose}
+                    onClick={exitSelectMode}
+                    aria-label="Exit selection"
+                  >
+                    <CloseIcon />
+                  </button>
                 </div>
               )}
-            </div>
-          </>
-        )}
+
+              <div className={styles.list} ref={listRef}>
+                {activeTab === 'trash' ? (
+                  <TrashList
+                    conversations={trashedConversations}
+                    total={trashedTotal}
+                    loading={trashLoading}
+                    error={trashError}
+                    restoringId={restoringId}
+                    onRestore={handleRestoreConversation}
+                    onPurgeRequest={setPurgeTargetIds}
+                    onRetry={() => loadTrash(0)}
+                    onLoadMore={handleLoadMoreTrash}
+                    selectMode={selectMode}
+                    selectedIds={selectedIds}
+                    onToggleSelect={toggleSelect}
+                  />
+                ) : activeTab === 'shared' ? (
+                  <SharedChatsTabPanel
+                    shares={sharedChats.shares}
+                    loading={sharedChats.loading}
+                    error={sharedChats.error}
+                    searchQuery={searchQuery}
+                    busyConversationId={sharedBusyConversationId}
+                    onRetry={sharedChats.refetch}
+                    onRowClick={handleSharedRowClick}
+                    onCopy={handleSharedCopy}
+                    onUnshare={setSharedUnshareTarget}
+                  />
+                ) : conversationsLoading && conversations.length === 0 ? (
+                  <div className={styles.skeleton}>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <div key={i} className={styles.skeletonItem}>
+                        <div className={styles.skeletonContent}>
+                          <div
+                            className={styles.skeletonTitle}
+                            style={{ width: `${45 + ((i * 11) % 30)}%` }}
+                          />
+                          <div
+                            className={styles.skeletonSub}
+                            style={{ width: `${25 + ((i * 7) % 20)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : groupedFilteredConversations.length > 0 ? (
+                  <>
+                    {groupedFilteredConversations.map((group) => (
+                      <div key={group.label} className={styles.timeGroup}>
+                        <div className={styles.timeGroupLabel}>{group.label}</div>
+                        {group.items.map((chat) => renderConversationItem(chat))}
+                      </div>
+                    ))}
+                    {conversations.length < conversationsTotal && (
+                      <div className={styles.loadMoreWrapper}>
+                        {conversationsLoading ? (
+                          <div className={styles.loadingMore}>
+                            <div className={styles.loadingDots}>
+                              <span />
+                              <span />
+                              <span />
+                            </div>
+                          </div>
+                        ) : (
+                          <button className={styles.loadMoreBtn} onClick={handleLoadMore}>
+                            Load more conversations
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className={styles.empty}>
+                    <div className={styles.emptyIcon}>
+                      <ChatIcon />
+                    </div>
+                    <h3 className={styles.emptyTitle}>
+                      {activeTab === 'starred'
+                        ? 'No starred conversations'
+                        : activeTab === 'archived'
+                        ? 'No archived conversations'
+                        : searchQuery
+                        ? 'No results found'
+                        : 'No conversations yet'}
+                    </h3>
+                    <p className={styles.emptyDesc}>
+                      {activeTab === 'starred'
+                        ? 'Star your important conversations to find them quickly.'
+                        : activeTab === 'archived'
+                        ? 'Archived conversations will appear here.'
+                        : searchQuery
+                        ? 'Try a different search term.'
+                        : 'Start a new conversation.'}
+                    </p>
+                    {!searchQuery && activeTab === 'all' && (
+                      <button
+                        className={styles.emptyAction}
+                        onClick={() => {
+                          dispatch(createNewChat());
+                          navigate('/');
+                        }}
+                      >
+                        <PlusIcon />
+                        <span>New conversation</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Imported Chats Section */}
+          {isImportedSection && (
+            <>
+              {/* Provider filter tabs */}
+              {importedProviders.length > 0 && (
+                <div className={styles.toolbar}>
+                  <div className={styles.providerFilters}>
+                    <button
+                      className={`${styles.tab} ${
+                        activeImportProvider === 'all' ? styles.tabActive : ''
+                      }`}
+                      onClick={() => {
+                        setActiveImportProvider('all');
+                        exitSelectMode();
+                      }}
+                    >
+                      All
+                      <span className={styles.tabBadge}>{importedConversations.length}</span>
+                    </button>
+                    {importedProviders.map((p) => {
+                      const count = importedConversations.filter((c) => c.provider === p.id).length;
+                      const ProviderLogo = getProviderLogo(p.id);
+                      return (
+                        <button
+                          key={p.id}
+                          className={`${styles.tab} ${
+                            activeImportProvider === p.id ? styles.tabActive : ''
+                          }`}
+                          onClick={() => {
+                            setActiveImportProvider(p.id);
+                            exitSelectMode();
+                          }}
+                        >
+                          <span className={styles.tabProviderIcon}>
+                            <ProviderLogo size={14} />
+                          </span>
+                          {p.name}
+                          <span className={styles.tabBadge}>{count}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    className={`${styles.selectToggle} ${
+                      selectMode ? styles.selectToggleActive : ''
+                    }`}
+                    onClick={() => {
+                      if (selectMode) exitSelectMode();
+                      else setSelectMode(true);
+                    }}
+                  >
+                    {selectMode ? 'Cancel' : 'Select'}
+                  </button>
+                </div>
+              )}
+
+              {/* Compact context bar */}
+              {importedProviders.length > 0 && (
+                <div className={styles.contextBar}>
+                  <span className={styles.contextBarLabel}>
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                    <span>Context</span>
+                  </span>
+                  <div className={styles.contextBarDivider} />
+                  <div className={styles.contextBarChips}>
+                    {(activeImportProvider === 'all'
+                      ? importedProviders
+                      : importedProviders.filter((p) => p.id === activeImportProvider)
+                    ).map((p) => {
+                      const ProviderLogo = getProviderLogo(p.id);
+                      const isEnabled = !!contextProviders[p.id];
+                      return (
+                        <button
+                          key={p.id}
+                          className={`${styles.contextChip} ${
+                            isEnabled ? styles.contextChipActive : ''
+                          }`}
+                          onClick={() => toggleProviderContext(p.id)}
+                          title={
+                            isEnabled ? `Disable ${p.name} context` : `Enable ${p.name} context`
+                          }
+                        >
+                          <ProviderLogo size={13} />
+                          <span>{p.name}</span>
+                          <span className={styles.contextChipDot} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Selection action bar for imported */}
+              {selectMode && (
+                <div className={styles.selectionBar}>
+                  <div className={styles.selectionLeft}>
+                    <span className={styles.selectionCount}>{selectedIds.size} selected</span>
+                    {selectedIds.size < filteredImportedConversations.length && (
+                      <button className={styles.selectAllBtn} onClick={selectAll}>
+                        Select all
+                      </button>
+                    )}
+                  </div>
+                  <div className={styles.selectionActions}>
+                    <button
+                      className={styles.selectionAction}
+                      onClick={() => hasSelection && toggleImportedStar(selectedIds)}
+                      disabled={!hasSelection}
+                      title="Star"
+                    >
+                      <StarIcon />
+                    </button>
+                    <button
+                      className={styles.selectionAction}
+                      onClick={() => hasSelection && toggleImportedArchive(selectedIds)}
+                      disabled={!hasSelection}
+                      title={activeTab === 'archived' ? 'Move to Conversations' : 'Archive'}
+                    >
+                      <ArchiveIcon />
+                    </button>
+                    <button
+                      className={`${styles.selectionAction} ${styles.selectionActionDanger}`}
+                      onClick={() => hasSelection && handleBulkDelete()}
+                      disabled={!hasSelection}
+                      title="Delete"
+                    >
+                      <TrashIcon />
+                    </button>
+                  </div>
+                  <button
+                    className={styles.selectionClose}
+                    onClick={exitSelectMode}
+                    aria-label="Exit selection"
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+              )}
+
+              {/* Imported conversations list */}
+              <div className={styles.list}>
+                {groupedImportedConversations.length > 0 ? (
+                  groupedImportedConversations.map((group) => (
+                    <div key={group.label} className={styles.timeGroup}>
+                      <div className={styles.timeGroupLabel}>{group.label}</div>
+                      {group.items.map((chat) =>
+                        renderConversationItem(chat, { isImported: true })
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.empty}>
+                    <div className={styles.emptyIcon}>
+                      <ImportIcon />
+                    </div>
+                    <h3 className={styles.emptyTitle}>
+                      {searchQuery ? 'No results found' : 'No imported conversations yet'}
+                    </h3>
+                    <p className={styles.emptyDesc}>
+                      {searchQuery
+                        ? 'Try a different search term.'
+                        : 'Bring your conversations from ChatGPT, Claude, Gemini, and more.'}
+                    </p>
+                    {!searchQuery && (
+                      <button
+                        className={styles.emptyAction}
+                        onClick={() => setShowImportModal(true)}
+                      >
+                        <ImportIcon />
+                        <span>Import conversations</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </RequireAuth>
       </div>
 
       {/* Floating action bar for selections */}
