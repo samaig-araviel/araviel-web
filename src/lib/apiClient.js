@@ -23,6 +23,27 @@ const API_BASE =
   import.meta.env.VITE_ARAVIEL_API_BASE ||
   (import.meta.env.DEV ? '' : 'https://araviel-api.vercel.app');
 
+const inflightSubscribers = new Set();
+let inflightCount = 0;
+
+function notifyInflight() {
+  for (const fn of inflightSubscribers) fn(inflightCount);
+}
+
+/**
+ * Subscribe to the global `apiFetch` in-flight counter. The callback is
+ * invoked immediately with the current count and again on every change.
+ * Returns an unsubscribe function.
+ *
+ * @param {(count: number) => void} callback
+ * @returns {() => void}
+ */
+export function subscribeToInflight(callback) {
+  inflightSubscribers.add(callback);
+  callback(inflightCount);
+  return () => inflightSubscribers.delete(callback);
+}
+
 /**
  * Resolve the full URL for an API path. Relative paths are mounted under the
  * configured API base; absolute URLs are used as-is so callers can point at
@@ -97,70 +118,78 @@ export async function apiFetch(path, options = {}) {
     errorContext,
   } = options;
 
-  const requestId = generateRequestId();
-  const url = resolveUrl(path);
-  const headers = await buildHeaders({ auth, headers: extraHeaders, body, json });
-  headers.set('X-Request-Id', requestId);
+  inflightCount += 1;
+  notifyInflight();
 
-  const init = {
-    method,
-    headers,
-    signal,
-  };
-  if (json !== undefined) {
-    init.body = JSON.stringify(json);
-  } else if (body !== undefined) {
-    init.body = body;
-  }
-
-  let response;
   try {
-    response = await fetch(url, init);
-  } catch (cause) {
-    if (cause?.name === 'AbortError') throw cause;
-    const err = new NetworkError({ cause });
-    err.requestId = requestId;
-    logger.error('API request failed (network)', err, {
-      route: errorContext || path,
-      method,
-      requestId,
-    });
-    throw err;
-  }
+    const requestId = generateRequestId();
+    const url = resolveUrl(path);
+    const headers = await buildHeaders({ auth, headers: extraHeaders, body, json });
+    headers.set('X-Request-Id', requestId);
 
-  if (!response.ok) {
-    const { technicalMessage, userMessage } = await readErrorBody(response);
-    const serverRequestId = response.headers.get('x-request-id') || requestId;
-    const err = errorFromResponse(response, technicalMessage, serverRequestId);
-    if (userMessage) err.userMessage = userMessage;
-    logger.error('API request failed', err, {
-      route: errorContext || path,
+    const init = {
       method,
-      status: response.status,
-      requestId: serverRequestId,
-    });
-    throw err;
-  }
+      headers,
+      signal,
+    };
+    if (json !== undefined) {
+      init.body = JSON.stringify(json);
+    } else if (body !== undefined) {
+      init.body = body;
+    }
 
-  if (!parse) return response;
+    let response;
+    try {
+      response = await fetch(url, init);
+    } catch (cause) {
+      if (cause?.name === 'AbortError') throw cause;
+      const err = new NetworkError({ cause });
+      err.requestId = requestId;
+      logger.error('API request failed (network)', err, {
+        route: errorContext || path,
+        method,
+        requestId,
+      });
+      throw err;
+    }
 
-  if (response.status === 204) return null;
-  try {
-    return await response.json();
-  } catch (cause) {
-    const err = new ServiceError({
-      userMessage: 'We received an unexpected response. Please try again.',
-      technicalMessage: cause instanceof Error ? cause.message : 'Invalid JSON response',
-      status: response.status,
-      requestId,
-      cause,
-    });
-    logger.error('API response parse failed', err, {
-      route: errorContext || path,
-      method,
-      requestId,
-    });
-    throw err;
+    if (!response.ok) {
+      const { technicalMessage, userMessage } = await readErrorBody(response);
+      const serverRequestId = response.headers.get('x-request-id') || requestId;
+      const err = errorFromResponse(response, technicalMessage, serverRequestId);
+      if (userMessage) err.userMessage = userMessage;
+      logger.error('API request failed', err, {
+        route: errorContext || path,
+        method,
+        status: response.status,
+        requestId: serverRequestId,
+      });
+      throw err;
+    }
+
+    if (!parse) return response;
+
+    if (response.status === 204) return null;
+    try {
+      return await response.json();
+    } catch (cause) {
+      const err = new ServiceError({
+        userMessage: 'We received an unexpected response. Please try again.',
+        technicalMessage: cause instanceof Error ? cause.message : 'Invalid JSON response',
+        status: response.status,
+        requestId,
+        cause,
+      });
+      logger.error('API response parse failed', err, {
+        route: errorContext || path,
+        method,
+        requestId,
+      });
+      throw err;
+    }
+  } finally {
+    inflightCount -= 1;
+    notifyInflight();
   }
 }
 
