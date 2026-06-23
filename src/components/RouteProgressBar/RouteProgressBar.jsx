@@ -1,17 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { subscribeToInflight } from '../../lib/apiClient';
 import styles from './RouteProgressBar.module.css';
 
 const START_DELAY_MS = 20;
-const LOADING_HOLD_MS = 500;
+const FETCH_GRACE_MS = 150;
+const SETTLE_DEBOUNCE_MS = 80;
 const COMPLETE_FADE_MS = 300;
+const SAFETY_TIMEOUT_MS = 10000;
 
 /**
- * Slim top-of-viewport progress bar that animates on route changes. Pure
- * UI affordance — runs on a fixed timeline (~800ms total) rather than
- * tracking actual data-load completion. Quick navigations still benefit
- * from the perceived-progress feedback. The bar is hidden in `idle` and
- * skips the very first render so a cold load doesn't flash.
+ * Slim top-of-viewport progress bar that animates on route changes and
+ * tracks actual in-flight `apiFetch` calls.
+ *
+ * Timeline per navigation:
+ *   1. pathname changes → bar appears (`start`)
+ *   2. ~20ms later → slow climb to ~90% (`loading`)
+ *   3. After a short grace period, watch the in-flight counter
+ *   4. When the counter settles at 0 → snap to 100% + fade (`complete`)
+ *   5. → `idle`
+ *
+ * The grace period lets the new route mount and kick off its fetches before
+ * we start watching; otherwise we'd settle immediately on routes whose data
+ * is already cached. A safety timeout guarantees the bar never sticks.
  */
 export default function RouteProgressBar() {
   const { pathname } = useLocation();
@@ -24,15 +35,47 @@ export default function RouteProgressBar() {
       return undefined;
     }
 
+    let cancelled = false;
+    let settleTimer = null;
+    let unsubscribe = null;
+    let settled = false;
+
+    const finish = () => {
+      if (cancelled || settled) return;
+      settled = true;
+      if (unsubscribe) unsubscribe();
+      setPhase('complete');
+      const idle = setTimeout(() => {
+        if (!cancelled) setPhase('idle');
+      }, COMPLETE_FADE_MS);
+      settleTimer = idle;
+    };
+
     setPhase('start');
-    const loadingTimer = setTimeout(() => setPhase('loading'), START_DELAY_MS);
-    const completeTimer = setTimeout(() => setPhase('complete'), LOADING_HOLD_MS);
-    const idleTimer = setTimeout(() => setPhase('idle'), LOADING_HOLD_MS + COMPLETE_FADE_MS);
+    const loadingTimer = setTimeout(() => {
+      if (!cancelled) setPhase('loading');
+    }, START_DELAY_MS);
+
+    const watchTimer = setTimeout(() => {
+      if (cancelled) return;
+      unsubscribe = subscribeToInflight((count) => {
+        if (cancelled) return;
+        if (settleTimer) clearTimeout(settleTimer);
+        if (count === 0) {
+          settleTimer = setTimeout(finish, SETTLE_DEBOUNCE_MS);
+        }
+      });
+    }, FETCH_GRACE_MS);
+
+    const safetyTimer = setTimeout(finish, SAFETY_TIMEOUT_MS);
 
     return () => {
+      cancelled = true;
       clearTimeout(loadingTimer);
-      clearTimeout(completeTimer);
-      clearTimeout(idleTimer);
+      clearTimeout(watchTimer);
+      clearTimeout(safetyTimer);
+      if (settleTimer) clearTimeout(settleTimer);
+      if (unsubscribe) unsubscribe();
     };
   }, [pathname]);
 
