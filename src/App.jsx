@@ -18,6 +18,7 @@ import useAnswerFont from './hooks/useAnswerFont';
 import useUsageLimitWarnings from './hooks/useUsageLimitWarnings';
 import Sidebar from './components/Sidebar';
 import UpgradeModal from './components/UpgradeModal/UpgradeModal';
+import RouteProgressBar from './components/RouteProgressBar';
 import styles from './components/Auth/AuthModal.module.css';
 import './App.css';
 
@@ -69,15 +70,7 @@ export default function App() {
         },
       });
     }
-  }, [
-    authLoading,
-    isAuthenticated,
-    user,
-    location.pathname,
-    location.search,
-    navigate,
-    dispatch,
-  ]);
+  }, [authLoading, isAuthenticated, user, location.pathname, location.search, navigate, dispatch]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', effectiveTheme);
@@ -177,6 +170,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <RouteProgressBar />
       <Sidebar />
       <Outlet />
       <UpgradeModal />
