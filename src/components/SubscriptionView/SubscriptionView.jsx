@@ -1,6 +1,8 @@
+import { useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import GuestGate from '../GuestGate/GuestGate';
 import SubscriptionSummary from './SubscriptionSummary';
 import styles from './SubscriptionView.module.css';
@@ -14,10 +16,12 @@ import styles from './SubscriptionView.module.css';
 export default function SubscriptionView() {
   const navigate = useNavigate();
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const pageRef = useRef(null);
+  useScrollRestoration(pageRef);
 
   if (!isAuthenticated) {
     return (
-      <div className={styles.container}>
+      <div ref={pageRef} className={styles.container}>
         <div className={styles.inner}>
           <GuestGate
             title="View your subscription"
@@ -30,7 +34,7 @@ export default function SubscriptionView() {
   }
 
   return (
-    <div className={styles.container}>
+    <div ref={pageRef} className={styles.container}>
       <div className={styles.inner}>
         <div className={styles.header}>
           <button

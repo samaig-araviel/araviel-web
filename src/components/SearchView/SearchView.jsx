@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SearchIcon, ChatIcon, ProjectsIcon, StarIcon, CalendarIcon, PhotoIcon } from '../Icons';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   useSearch,
   TYPE_FILTERS,
@@ -40,6 +41,8 @@ function readInitialState(params) {
 export default function SearchView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const inputRef = useRef(null);
+  const pageRef = useRef(null);
+  useScrollRestoration(pageRef);
 
   // Read URL params once on first render; URL is the source of truth for
   // initial values but we then own the state locally to avoid re-render loops.
@@ -140,7 +143,7 @@ export default function SearchView() {
   const viewAll = (tab) => setTypeFilter(tab);
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
       <div className={styles.inner}>
         <div className={styles.header}>
           <h1 className={styles.title}>Search</h1>

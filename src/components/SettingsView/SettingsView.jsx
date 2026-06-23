@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { selectTheme, setTheme } from '../../store/slices/themeSlice';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   selectCurrentTier,
   selectTextCredits,
@@ -185,6 +186,8 @@ export default function SettingsView() {
   const { section } = useParams();
   const themeMode = useSelector(selectTheme);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const pageRef = useRef(null);
+  useScrollRestoration(pageRef);
   const authUser = useSelector(selectAuthUser);
   const currentTier = useSelector(selectCurrentTier);
   const textCredits = useSelector(selectTextCredits);
@@ -371,7 +374,7 @@ export default function SettingsView() {
 
   if (!isAuthenticated) {
     return (
-      <div className={styles.container}>
+      <div ref={pageRef} className={styles.container}>
         <div className={styles.inner}>
           <div className={styles.header}>
             <button className={styles.backBtn} onClick={handleBack}>
@@ -396,7 +399,7 @@ export default function SettingsView() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
+      <div ref={pageRef} className={styles.container}>
         <div className={styles.loadingState}>
           <div className={styles.loadingSpinner} />
           <span>Loading settings...</span>
@@ -407,7 +410,7 @@ export default function SettingsView() {
 
   return (
     <>
-      <div className={styles.container}>
+      <div ref={pageRef} className={styles.container}>
         <div className={styles.inner}>
           {/* Header */}
           <div className={styles.header}>

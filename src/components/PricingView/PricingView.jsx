@@ -1,6 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   selectCurrentTier,
   selectBillingCycle,
@@ -27,6 +28,8 @@ export default function PricingView() {
   const checkoutLoading = useSelector(selectCheckoutLoading);
   const subscriptionError = useSelector(selectSubscriptionError);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const pageRef = useRef(null);
+  useScrollRestoration(pageRef);
   const tiers = getAvailableTiers();
 
   const handleCtaClick = (tier) => {
@@ -56,7 +59,7 @@ export default function PricingView() {
   }, [subscriptionError, showError]);
 
   return (
-    <div className={styles.container}>
+    <div ref={pageRef} className={styles.container}>
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>

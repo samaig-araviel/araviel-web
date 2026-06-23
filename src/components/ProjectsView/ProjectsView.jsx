@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   selectProjects,
   selectProjectsLoading,
@@ -774,6 +775,8 @@ export default function ProjectsView() {
   const loading = useSelector(selectProjectsLoading);
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const currentTier = useSelector(selectCurrentTier);
+  const pageRef = useRef(null);
+  useScrollRestoration(pageRef);
 
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
@@ -1067,7 +1070,7 @@ export default function ProjectsView() {
 
   if (!isAuthenticated) {
     return (
-      <div className={styles.page}>
+      <div ref={pageRef} className={styles.page}>
         <div className={styles.inner}>
           <div className={styles.header}>
             <div className={styles.headerLeft}>
@@ -1087,7 +1090,7 @@ export default function ProjectsView() {
   }
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>
