@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './ConversationTrail.module.css';
 
-const MIN_MARKERS_TO_SHOW = 3;
+const MIN_MARKERS_TO_SHOW = 1;
 const ACTIVE_ANCHOR_RATIO = 0.32;
 const FLASH_DURATION_MS = 1100;
 const TOP_INSET_PX = 96;
