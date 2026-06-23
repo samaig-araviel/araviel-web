@@ -713,6 +713,10 @@ function SharedChatsTabPanel({
 }
 
 const VALID_TABS = new Set(TABS.map((t) => t.id));
+const VALID_SECTIONS = new Set(['my-chats', 'imported']);
+const DEFAULT_SECTION = 'my-chats';
+const DEFAULT_TAB = 'all';
+const SEARCH_DEBOUNCE_MS = 250;
 
 export default function ConversationsView() {
   const dispatch = useDispatch();
@@ -731,19 +735,15 @@ export default function ConversationsView() {
   const pageRef = useRef(null);
   useScrollRestoration(pageRef);
 
-  // Section: 'my-chats' or 'imported'
-  const [activeSection, setActiveSection] = useState('my-chats');
-  // Active tab mirrors the `?tab=` query param so other surfaces (e.g.
-  // Settings → Data Controls) can deep-link straight to a specific tab.
-  const tabParam = searchParams.get('tab');
-  const activeTab = tabParam && VALID_TABS.has(tabParam) ? tabParam : 'all';
-  const setActiveTab = useCallback(
-    (next) => {
+  // Filters mirror the URL query string so deep links restore the view and
+  // browser back walks the filter timeline alongside any pushed navigations.
+  const updateParam = useCallback(
+    (name, value, defaultValue) => {
       setSearchParams(
         (prev) => {
           const params = new URLSearchParams(prev);
-          if (next === 'all') params.delete('tab');
-          else params.set('tab', next);
+          if (!value || value === defaultValue) params.delete(name);
+          else params.set(name, value);
           return params;
         },
         { replace: true }
@@ -751,7 +751,26 @@ export default function ConversationsView() {
     },
     [setSearchParams]
   );
-  const [searchQuery, setSearchQuery] = useState('');
+
+  const sectionParam = searchParams.get('section');
+  const activeSection =
+    sectionParam && VALID_SECTIONS.has(sectionParam) ? sectionParam : DEFAULT_SECTION;
+  const setActiveSection = useCallback(
+    (next) => updateParam('section', next, DEFAULT_SECTION),
+    [updateParam]
+  );
+
+  const tabParam = searchParams.get('tab');
+  const activeTab = tabParam && VALID_TABS.has(tabParam) ? tabParam : DEFAULT_TAB;
+  const setActiveTab = useCallback((next) => updateParam('tab', next, DEFAULT_TAB), [updateParam]);
+
+  const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') || '');
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      updateParam('q', searchQuery.trim(), '');
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [searchQuery, updateParam]);
   const [trashedConversations, setTrashedConversations] = useState(null);
   const [trashedTotal, setTrashedTotal] = useState(0);
   const [trashLoading, setTrashLoading] = useState(false);
@@ -884,7 +903,7 @@ export default function ConversationsView() {
       setActiveSection('imported');
       setActiveImportProvider(providerId);
     },
-    [loadImportedConversations, importedConversations]
+    [loadImportedConversations, importedConversations, setActiveSection]
   );
 
   const toggleProviderContext = useCallback((providerId) => {

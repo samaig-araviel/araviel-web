@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   selectProjects,
@@ -74,6 +74,12 @@ const SORT_OPTIONS = [
   { id: 'created', label: 'Date created' },
   { id: 'name', label: 'Name' },
 ];
+
+const VALID_FILTERS = new Set(FILTER_TABS.map((t) => t.id));
+const VALID_SORTS = new Set(SORT_OPTIONS.map((s) => s.id));
+const DEFAULT_FILTER = 'all';
+const DEFAULT_SORT = 'activity';
+const SEARCH_DEBOUNCE_MS = 250;
 
 function formatRelativeTime(dateStr) {
   if (!dateStr) return '';
@@ -778,9 +784,41 @@ export default function ProjectsView() {
   const pageRef = useRef(null);
   useScrollRestoration(pageRef);
 
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('activity');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filterParam = searchParams.get('filter');
+  const sortParam = searchParams.get('sort');
+  const filter = filterParam && VALID_FILTERS.has(filterParam) ? filterParam : DEFAULT_FILTER;
+  const sortBy = sortParam && VALID_SORTS.has(sortParam) ? sortParam : DEFAULT_SORT;
+
+  const updateParam = useCallback(
+    (name, value, defaultValue) => {
+      setSearchParams(
+        (prev) => {
+          const params = new URLSearchParams(prev);
+          if (!value || value === defaultValue) params.delete(name);
+          else params.set(name, value);
+          return params;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  const setFilter = useCallback(
+    (next) => updateParam('filter', next, DEFAULT_FILTER),
+    [updateParam]
+  );
+  const setSortBy = useCallback((next) => updateParam('sort', next, DEFAULT_SORT), [updateParam]);
+
+  const [search, setSearch] = useState(() => searchParams.get('q') || '');
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      updateParam('q', search.trim(), '');
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+  }, [search, updateParam]);
+
   const [sortOpen, setSortOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [showModal, setShowModal] = useState(false);
