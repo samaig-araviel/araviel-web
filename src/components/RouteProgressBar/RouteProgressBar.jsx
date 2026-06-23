@@ -6,7 +6,7 @@ import styles from './RouteProgressBar.module.css';
 const START_DELAY_MS = 20;
 const FETCH_GRACE_MS = 150;
 const SETTLE_DEBOUNCE_MS = 80;
-const COMPLETE_FADE_MS = 300;
+const COMPLETE_FADE_MS = 800;
 const SAFETY_TIMEOUT_MS = 10000;
 
 /**
