@@ -5,13 +5,7 @@ import { selectEffectiveTheme } from '../../store/slices/themeSlice';
 import { setInputValue, dismissMessageError } from '../../store/slices/chatSlice';
 import { selectSidebarCollapsed } from '../../store/slices/sidebarSlice';
 import { getProviderLogo } from '../getProviderLogo';
-import {
-  PROVIDERS,
-  MODELS,
-  SPEED_TIERS,
-  formatTokens,
-  isImageGenerationModel,
-} from '../../data/models';
+import { PROVIDERS, MODELS, SPEED_TIERS, formatTokens } from '../../data/models';
 import ImageGenerationPlaceholder from '../ImageGenerationPlaceholder';
 import {
   createSubConversation,
@@ -5671,9 +5665,7 @@ function Message({
   const displayText = isStreaming ? streamedText : message.content;
   const isImageGenerationTurn =
     !isUser &&
-    (message.requestedModality === 'image' ||
-      message.analysis?.intent === 'image_generation' ||
-      isImageGenerationModel(message.modelId));
+    (message.requestedModality === 'image' || message.analysis?.intent === 'image_generation');
   const provider = message.provider;
   const providerData = provider ? PROVIDERS[provider] : null;
   const LogoComponent = provider ? getProviderLogo(provider) : null;
