@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   selectSelectedModelId,
   setSelectedModel as setReduxSelectedModel,
@@ -691,6 +692,8 @@ export default function ModelsView() {
   const dispatch = useDispatch();
   const selectedModelId = useSelector(selectSelectedModelId);
   const isAuthenticated = useSelector(selectIsAuthenticated);
+  const pageRef = useRef(null);
+  useScrollRestoration(pageRef);
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [tierFilter, setTierFilter] = useState('all'); // 'all' | 'free' | 'lite' | 'pro'
@@ -805,7 +808,7 @@ export default function ModelsView() {
   const isDetailLocked = detailModel ? !isAccessible(detailModel) : false;
 
   return (
-    <div className={styles.container}>
+    <div ref={pageRef} className={styles.container}>
       {/* Sticky header */}
       <div className={styles.headerBar}>
         <div className={styles.headerTop}>

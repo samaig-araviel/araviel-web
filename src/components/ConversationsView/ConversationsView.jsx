@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   selectConversations,
   selectConversationsTotal,
@@ -727,6 +728,8 @@ export default function ConversationsView() {
 
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const [projectPickerFor, setProjectPickerFor] = useState(null);
+  const pageRef = useRef(null);
+  useScrollRestoration(pageRef);
 
   // Section: 'my-chats' or 'imported'
   const [activeSection, setActiveSection] = useState('my-chats');
@@ -1687,7 +1690,7 @@ export default function ConversationsView() {
 
   if (!isAuthenticated) {
     return (
-      <div className={styles.page}>
+      <div ref={pageRef} className={styles.page}>
         <div className={styles.inner}>
           <div className={styles.header}>
             <h1 className={styles.title}>Conversations</h1>
@@ -1704,7 +1707,7 @@ export default function ConversationsView() {
   }
 
   return (
-    <div className={styles.page}>
+    <div ref={pageRef} className={styles.page}>
       <div className={styles.inner}>
         {/* Header */}
         <div className={styles.header}>
@@ -1766,7 +1769,9 @@ export default function ConversationsView() {
             type="text"
             className={styles.searchInput}
             placeholder={
-              isImportedSection ? 'Search imported conversations...' : 'Search your conversations...'
+              isImportedSection
+                ? 'Search imported conversations...'
+                : 'Search your conversations...'
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

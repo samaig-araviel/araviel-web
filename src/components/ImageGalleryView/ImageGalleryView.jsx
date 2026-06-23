@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { selectIsAuthenticated } from '../../store/slices/authSlice';
+import useScrollRestoration from '../../hooks/useScrollRestoration';
 import {
   setInputValue,
   createNewChat,
@@ -387,6 +388,8 @@ export default function ImageGalleryView() {
     enabled: true,
   });
   usePasteImages({ onFiles: handleDroppedFiles, enabled: true });
+
+  useScrollRestoration(dropTargetRef);
 
   const handleQuickPromptClick = (item) => {
     // Allow guests to preview the prompt — gate happens on submit
