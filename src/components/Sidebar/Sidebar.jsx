@@ -3,8 +3,10 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef, useMemo } fr
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   selectSidebarCollapsed,
+  selectSidebarView,
   toggleSidebar,
   setCollapsed,
+  setView,
 } from '../../store/slices/sidebarSlice';
 import {
   createNewChat,
@@ -164,7 +166,8 @@ export default function Sidebar() {
   const [isMobile, setIsMobile] = useState(false);
   const [projectPickerFor, setProjectPickerFor] = useState(null); // chatId to assign to project
   const [recentsExpanded, setRecentsExpanded] = useState(true);
-  const [sidebarView, setSidebarView] = useState('recents'); // 'recents' | 'archived'
+  const sidebarView = useSelector(selectSidebarView);
+  const setSidebarView = useCallback((next) => dispatch(setView(next)), [dispatch]);
   const [menuOpenId, setMenuOpenId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
