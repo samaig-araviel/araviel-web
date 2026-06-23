@@ -1,0 +1,42 @@
+.bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--bg-icon-button);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10000;
+  will-change: transform, opacity;
+}
+
+.start {
+  transform: scaleX(0.08);
+  opacity: 1;
+  transition: opacity 0.1s linear;
+}
+
+.loading {
+  transform: scaleX(0.7);
+  opacity: 1;
+  transition: transform 0.5s cubic-bezier(0.1, 0.7, 0.1, 1), opacity 0.1s linear;
+}
+
+.complete {
+  transform: scaleX(1);
+  opacity: 0;
+  transition: transform 0.2s ease-out, opacity 0.3s ease-out 0.1s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar,
+  .start,
+  .loading,
+  .complete {
+    transition: opacity 0.15s linear;
+    transform: scaleX(1);
+  }
+}
