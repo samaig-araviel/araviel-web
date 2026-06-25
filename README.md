@@ -13,22 +13,49 @@ Araviel Web is the React frontend that talks to the **Araviel API**. You send a 
 
 Key features:
 
-- **Chat** — streamed responses, with thinking and citations where supported
+- **Chat** — streamed responses with thinking timelines, citations, and markdown support
 - **Projects** — group related conversations with shared context
-- **Images** — generated image gallery
+- **Images** — generated image gallery with download options
 - **Shares** — public, read-only snapshots of conversations
-- **Subscriptions & credits** — plan management and usage tracking
-- **Settings** — theme, preferences, and account
+- **Exports** — save conversations as Word, PDF, Excel, or PowerPoint files
+- **Model selection & comparison** — switch between models or compare responses side-by-side
+- **Subscriptions & credits** — Stripe-powered plan management, usage tracking, and credit packs
+- **Settings** — theme (light/dark/system), preferences, account, and usage insights
+- **Analytics** — dashboard to track usage patterns
+- **Age verification** — COPPA-compliant 13+ requirement with age gating
 
 ---
 
 ## Tech Stack
 
-- **React 18** + **React Router**
-- **Redux Toolkit** for state
-- **Vite** for the dev server and build
-- **Supabase** for auth and realtime data
-- **Vitest** + **Testing Library** for tests
+### Core Framework
+
+- **React 18** + **React Router** for the UI and navigation
+- **Redux Toolkit** for global state management
+
+### Build & Dev
+
+- **Vite** for fast dev server and optimized builds
+- **Vitest** + **Testing Library** for unit and component tests
+
+### Backend & Auth
+
+- **Supabase** for authentication, realtime subscriptions, and storage
+- **@vercel/speed-insights** for performance monitoring
+
+### Content & Export
+
+- **Highlight.js** for syntax highlighting code blocks
+- **Mermaid** for diagram rendering
+- **Recharts** for data visualization and analytics
+- **DOMPurify** for HTML sanitization
+- **File export libraries**: docx, exceljs, pdfmake, pptxgenjs for Word, Excel, PDF, & PowerPoint
+
+### Code Quality
+
+- **ESLint** with React and React Hooks plugins
+- **Prettier** for consistent code formatting
+- **Husky** + **Lint-Staged** for git hooks and pre-commit linting
 
 ---
 
@@ -62,14 +89,40 @@ VITE_SITE_ORIGIN=        # Public origin used for share links and SEO
 
 ```bash
 npm run dev       # start the dev server at http://localhost:5173
-npm run build     # production build
+npm run build     # production build (includes prebuild model sync)
 npm run preview   # preview the production build
-npm test          # run the test suite
-npm run lint      # lint
+
+# Testing
+npm test          # run the test suite once
+npm run test:watch   # run tests in watch mode
+
+# Code Quality
+npm run lint      # lint the codebase
+npm run lint:fix  # automatically fix linting issues
+npm run format    # format code with Prettier
+
+# Development
+npm run sync-models  # manually sync AI models from backend
 ```
+
+---
+
+## Code Quality & Style
+
+This project enforces code consistency through:
+
+- **ESLint** for static analysis — catches bugs and enforces best practices
+- **Prettier** for formatting — all code is automatically formatted
+- **Husky** + **Lint-Staged** — linting and formatting run automatically before commits
+
+No need to manually format; just use `npm run lint:fix` and `npm run format` before pushing.
 
 ---
 
 ## Deployment
 
-Built for Vercel: connect the repository (Vite is auto-detected), set the `VITE_*` environment variables in the project dashboard, and deploy. Any static host that serves the `dist/` folder with SPA fallback works too.
+Built for **Vercel**: connect the repository (Vite is auto-detected), set the `VITE_*` environment variables in the project settings, and deploy.
+
+**Note:** The build process automatically syncs AI models from the backend during `prebuild` — you don't need to manually run `sync-models` (though you can run it locally for development).
+
+Any static host that serves the `dist/` folder with SPA fallback works too (Next.js, Firebase Hosting, Netlify, etc.).
