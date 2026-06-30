@@ -828,7 +828,11 @@ function extractPanelBlocks(text) {
   let m;
   while ((m = codeBlockRegex.exec(text)) !== null) {
     const lang = m[1] || '';
-    const code = m[2];
+    // Strip trailing whitespace so the line-number gutter and the rendered
+    // <pre> agree on row count — otherwise the regex's captured trailing \n
+    // before the closing fence (and any blank lines the model padded with)
+    // become phantom empty rows you can scroll past in the side panel.
+    const code = m[2].replace(/\s+$/, '');
 
     if (isArtifactCandidate(lang, code)) {
       blocks.push({
