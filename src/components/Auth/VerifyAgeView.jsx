@@ -246,6 +246,23 @@ export default function VerifyAgeView() {
       return;
     }
 
+    // Duplicate-email rejection from signUpWithEmail (Supabase returns
+    // success with an empty identities array when the address is already
+    // registered — see the thunk for the detection). Send the user back
+    // to /signup so they can switch to sign-in instead of being stuck
+    // on the age-verification screen.
+    if (raw === 'email_already_registered') {
+      navigate('/signup', {
+        replace: true,
+        state: {
+          ...location.state,
+          emailExistsError:
+            'An account with this email already exists. Try signing in instead.',
+        },
+      });
+      return;
+    }
+
     // If Supabase's password policy is stricter than our client-side
     // rules (or someone bypassed them), the server can still reject the
     // signUp with a password error after the user has already filled

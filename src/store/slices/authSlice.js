@@ -155,6 +155,18 @@ export const signUpWithEmail = createAsyncThunk(
         },
       });
       if (error) return rejectWithValue(error.message);
+      // Supabase's anti-enumeration behaviour: when email confirmation is
+      // ON and the address is already registered, signUp succeeds with an
+      // obfuscated user and an empty `identities` array (rather than
+      // returning a clear error). Surface that as a structured rejection
+      // so the UI can show "this email is already registered".
+      if (
+        data?.user &&
+        Array.isArray(data.user.identities) &&
+        data.user.identities.length === 0
+      ) {
+        return rejectWithValue('email_already_registered');
+      }
       return {
         user: mapUser(data.user),
         session: mapSession(data.session),
@@ -217,14 +229,36 @@ export const signOut = createAsyncThunk('auth/signOut', async (_, { rejectWithVa
   }
 });
 
-/** Send a password-reset email. */
+/** Send a password-reset email. The redirectTo is required so the link
+ *  in the email lands on /reset-password where the user can set a new
+ *  password — without it, Supabase falls back to the project's Site URL
+ *  and the recovery session has nowhere to be handled. */
 export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
   async ({ email }, { rejectWithValue }) => {
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo:
+          typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined,
+      });
       if (error) return rejectWithValue(error.message);
       return null;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/** Update the signed-in user's password. Used by ResetPasswordView after
+ *  the user clicks the recovery email link and Supabase hydrates a
+ *  recovery session into the client. */
+export const updatePassword = createAsyncThunk(
+  'auth/updatePassword',
+  async ({ password }, { rejectWithValue }) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({ password });
+      if (error) return rejectWithValue(error.message);
+      return { user: mapUser(data.user) };
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -387,6 +421,21 @@ const authSlice = createSlice({
       .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Password reset failed';
+      });
+
+    // updatePassword
+    builder
+      .addCase(updatePassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(updatePassword.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (action.payload?.user) state.user = action.payload.user;
+      })
+      .addCase(updatePassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload || 'Password update failed';
       });
   },
 });

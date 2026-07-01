@@ -145,6 +145,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'signin' }) {
       setLocalError(passwordError);
       return;
     }
+    const emailExistsError = location.state?.emailExistsError;
+    if (emailExistsError) {
+      setLocalError(emailExistsError);
+      return;
+    }
     const rejection = location.state?.ageRejection;
     if (rejection) {
       setLocalError(rejection);

@@ -14,7 +14,7 @@ import SharedConversationView from './components/SharedConversationView';
 import RouteErrorBoundary from './components/ErrorBoundary/RouteErrorBoundary';
 import NotFound from './components/ErrorBoundary/NotFound';
 import RouteShell from './components/RouteShell/RouteShell';
-import { AuthRoute, VerifyAgeView, CheckEmailView } from './components/Auth';
+import { AuthRoute, VerifyAgeView, CheckEmailView, ResetPasswordView } from './components/Auth';
 import { WEB_APPLICATION_JSON_LD, ORGANIZATION_JSON_LD } from './lib/seo';
 
 const router = createBrowserRouter([
@@ -119,6 +119,21 @@ const router = createBrowserRouter([
             }}
           >
             <CheckEmailView />
+          </RouteShell>
+        ),
+      },
+      {
+        path: 'reset-password',
+        element: (
+          <RouteShell
+            feature="reset-password"
+            seo={{
+              title: 'Set a new password',
+              description: 'Choose a new password for your Araviel account.',
+              noindex: true,
+            }}
+          >
+            <ResetPasswordView />
           </RouteShell>
         ),
       },
